@@ -1,13 +1,15 @@
+using System.Collections.Immutable;
+
 namespace LinkDotNet.NCronJob;
 
 internal sealed class CronRegistry : IInstantJobRegistry
 {
-    private readonly List<CronRegistryEntry> cronJobs = [];
+    private readonly ImmutableArray<CronRegistryEntry> cronJobs;
     private readonly List<InstantEntry> instantJobs = [];
 
     public CronRegistry(IEnumerable<CronRegistryEntry> cronJobs)
     {
-        this.cronJobs.AddRange(cronJobs);
+        this.cronJobs = cronJobs.ToImmutableArray();
     }
 
     public IEnumerable<CronRegistryEntry> GetAllCronJobs() => cronJobs;
