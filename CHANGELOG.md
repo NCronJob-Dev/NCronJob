@@ -6,10 +6,16 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.9.0] - 2024-03-17
+
 ### Added
 
-- Initial Release of **NCronJob** with lots of features
-- The ability to schedule jobs using a cron expression
-- The ability to instantly run a job
-- Parameterized jobs - instant as well as cron jobs!
-- Integrated in ASP.NET - Access your DI container like you would in any other service
+-   Initial Release of **NCronJob** with lots of features
+-   The ability to schedule jobs using a cron expression
+-   The ability to instantly run a job
+-   Parameterized jobs - instant as well as cron jobs!
+-   Integrated in ASP.NET - Access your DI container like you would in any other service
+
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.9.0...HEAD
+
+[0.9.0]: https://github.com/linkdotnet/NCronJob/compare/cf7df8ffb3a740fa63ccc439336b42b890c9519c...0.9.0
