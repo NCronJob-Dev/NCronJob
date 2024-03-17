@@ -26,6 +26,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".items", ".items", "{AD5C8E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NCronJobSample", "sample\NCronJobSample\NCronJobSample.csproj", "{A313F7A8-60BD-46C4-87C9-E71EF46B4A31}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NCronJob.Tests", "tests\NCronJob.Tests\NCronJob.Tests.csproj", "{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{904F2F27-6F69-48F8-8FC8-20014CA41636} = {52E839FA-954F-4B06-98F4-BEEB716D0806}
 		{A313F7A8-60BD-46C4-87C9-E71EF46B4A31} = {3E4D3870-EC64-4974-8FD2-F6B19E4A2BE6}
+		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93} = {C0DF0EA7-EE6B-4657-87F1-F380FF89FE76}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{904F2F27-6F69-48F8-8FC8-20014CA41636}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -47,5 +50,9 @@ Global
 		{A313F7A8-60BD-46C4-87C9-E71EF46B4A31}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A313F7A8-60BD-46C4-87C9-E71EF46B4A31}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A313F7A8-60BD-46C4-87C9-E71EF46B4A31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
