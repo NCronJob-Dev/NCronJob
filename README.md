@@ -20,6 +20,15 @@ This library aims to fill that gap by providing a simple and easy to use job sch
 - [x] Integrated in ASP.NET - Access your DI container like you would in any other service
 - [ ] Get notified when a job is done (either successfully or with an error) - currently in development
 
+## Not features
+
+As this is a simple scheduler, some features are not included by design. If you need these features, you might want to look into a more advanced scheduler like `Hangfire` or `Quartz`.
+
+- [ ] Job persistence - Jobs are not persisted between restarts of the application.
+- [ ] Job history - There is no history of jobs that have been run.
+- [ ] Retries - If a job fails, it is not retried.
+- [ ] Progress state - There is no way to track the progress of a job. The library will support notifying when a job is done, but not the progress of the job itself.
+
 ## Short example
 1. Import the namespace (or let your IDE do the dirty work)
 ```csharp
