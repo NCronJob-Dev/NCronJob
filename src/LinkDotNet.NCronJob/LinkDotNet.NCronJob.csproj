@@ -26,7 +26,7 @@
 		<Copyright>Steven Giesel</Copyright>
 		<Product>NCronJob</Product>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<PackageIcon>logo-small.png</PackageIcon>
+		<PackageIcon>logo_small.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
 			Changes in NCronJob #{RELEASE_VERSION}#
@@ -45,12 +45,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\assets\logo-small.png" Pack="true" PackagePath="" Visible="false" />
-		<None Include="..\README.MD">
+		<None Include="..\..\assets\logo_small.png" Pack="true" PackagePath="" Visible="false" />
+		<None Include="..\..\README.MD">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-		<None Include="..\LICENSE">
+		<None Include="..\..\LICENSE">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

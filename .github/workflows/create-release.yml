@@ -22,7 +22,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.NCRONTABPAT }}
+        token: ${{ secrets.PAT }}
         persist-credentials: true
         fetch-depth: 0
 
@@ -58,7 +58,7 @@ jobs:
     - name: Create release on GitHub
       uses: thomaseizinger/create-release@1.0.0
       env:
-        GITHUB_TOKEN: ${{ secrets.SBPAT }}
+        GITHUB_TOKEN: ${{ secrets.PAT }}
       with:
         tag_name: v${{ github.event.inputs.versionIncrement }}
         target_commitish: ${{ env.RELEASE_COMMIT_HASH }}
