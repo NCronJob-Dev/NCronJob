@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Fixed some docs
+
 ## [0.9.0] - 2024-03-17
 
 ### Added

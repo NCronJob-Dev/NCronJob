@@ -7,6 +7,10 @@
   <br>
 </p>
 
+[![.NET](https://github.com/linkdotnet/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/linkdotnet/NCronJob/actions/workflows/dotnet.yml)
+[![NuGet](https://img.shields.io/nuget/dt/LinkDotNet.NCronJob.svg)](https://www.nuget.org/packages/LinkDotNet.NCronJob)
+[![NuGet](https://img.shields.io/nuget/vpre/LinkDotNet.NCronJob.svg)](https://www.nuget.org/packages/LinkDotNet.NCronJob)
+
 # NCronJob
 A Job Scheduler sitting on top of `IHostedService` in dotnet.
 
@@ -79,5 +83,24 @@ public class MyService
   public MyService(IInstantJobRegistry jobRegistry) => this.jobRegistry = jobRegistry;
 
   public void MyMethod() => jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
+}
+```
+
+## Retrieving scoped services
+Every job is registered as singleton inside the container, so be careful if you have state and furthermore be careful when retrieving scoped services.
+To come around this "limitation", you can simply create your own scope inside the job:
+
+```csharp
+public class JobWithScope : IJob
+{
+	private readonly IServiceProvider services;
+
+	public JobWithScope(IServiceProvider services) => this.services = services;
+	public async Task Run(JobExecutionContext context, CancellationToken token = default)
+	{
+		using var scope = services.CreateScope();
+		var myScopedService = scope.ServiceProvider.GetRequiredService<MyScopedService>();
+		await myScopedService.DoSomething();
+	}
 }
 ```

@@ -46,7 +46,7 @@
 
 	<ItemGroup>
 		<None Include="..\..\assets\logo_small.png" Pack="true" PackagePath="" Visible="false" />
-		<None Include="..\..\README.MD">
+		<None Include="..\..\README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
