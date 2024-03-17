@@ -29,7 +29,7 @@ app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
     {
-        instantJobRegistry.AddInstantJob<PrintHelloWorld>();
+        instantJobRegistry.AddInstantJob<PrintHelloWorld>("Hello from instant job!");
     })
     .WithName("TriggerInstantJob")
     .WithOpenApi();

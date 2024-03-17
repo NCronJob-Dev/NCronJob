@@ -26,23 +26,16 @@ internal sealed class CronScheduler : BackgroundService
     {
         using var tickTimer = new PeriodicTimer(TimeSpan.FromSeconds(1), timeProvider);
 
-        var runMap = new Dictionary<DateTime, List<Run>>();
         while (await tickTimer.WaitForNextTickAsync(stoppingToken))
         {
-            var now = UtcNowMinutePrecision();
-            RunActiveJobs(runMap, now, stoppingToken);
-            runMap = GetJobRuns();
+            var runs = GetJobRuns();
+            RunActiveJobs(runs, stoppingToken);
         }
     }
 
-    private void RunActiveJobs(Dictionary<DateTime, List<Run>> runMap, DateTime now, CancellationToken stoppingToken)
+    private void RunActiveJobs(List<Run> runs, CancellationToken stoppingToken)
     {
-        if (!runMap.TryGetValue(now, out var currentRuns))
-        {
-            return;
-        }
-
-        foreach (var run in currentRuns)
+        foreach (var run in runs)
         {
             var job = (IJob)serviceProvider.GetRequiredService(run.Type);
 
@@ -52,48 +45,23 @@ internal sealed class CronScheduler : BackgroundService
         }
     }
 
-    private Dictionary<DateTime, List<Run>> GetJobRuns()
+    private List<Run> GetJobRuns()
     {
-        var runMap = new Dictionary<DateTime, List<Run>>();
-
-        foreach (var instant in registry.GetAllInstantJobs())
-        {
-            AddJobRuns(runMap, [timeProvider.GetUtcNow().DateTime], instant);
-        }
+        var entries = registry.GetAllInstantJobsAndClear()
+            .Select(instant => new Run(instant.Type, instant.Context))
+            .ToList();
 
         foreach (var cron in registry.GetAllCronJobs())
         {
             var utcNow = timeProvider.GetUtcNow().DateTime;
-            var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.AddMinutes(1));
-            AddJobRuns(runMap, runDates, cron);
-        }
-
-        return runMap;
-    }
-
-    private static void AddJobRuns(
-        Dictionary<DateTime, List<Run>> runMap,
-        IEnumerable<DateTime> runDates,
-        RegistryEntry entry)
-    {
-        foreach (var runDate in runDates)
-        {
-            var run = new Run(entry.Type, entry.Context);
-            if (runMap.TryGetValue(runDate, out var value))
+            var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.AddSeconds(1)).ToArray();
+            if (runDates.Length > 0)
             {
-                value.Add(run);
-            }
-            else
-            {
-                runMap[runDate] = [run];
+                entries.Add(new Run(cron.Type, new JobExecutionContext(cron.Context.Parameter)));
             }
         }
-    }
 
-    private DateTime UtcNowMinutePrecision()
-    {
-        var now = timeProvider.GetUtcNow().DateTime;
-        return new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+        return entries;
     }
 
     private record struct Run(Type Type, JobExecutionContext Context);

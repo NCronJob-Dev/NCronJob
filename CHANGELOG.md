@@ -6,6 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Simplified much of the logic for scheduling
+
+### Fixed
+- Instant jobs weren't executed correctly
+
 ## [0.9.1] - 2024-03-17
 
 ### Changed
