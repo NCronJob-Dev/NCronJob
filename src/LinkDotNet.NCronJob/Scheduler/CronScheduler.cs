@@ -63,12 +63,9 @@ internal sealed class CronScheduler : BackgroundService
 
         foreach (var cron in registry.GetAllCronJobs())
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = timeProvider.GetUtcNow().DateTime;
             var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.AddMinutes(1));
-            if (runDates is not null)
-            {
-                AddJobRuns(runMap, runDates, cron);
-            }
+            AddJobRuns(runMap, runDates, cron);
         }
 
         return runMap;
@@ -95,7 +92,7 @@ internal sealed class CronScheduler : BackgroundService
 
     private DateTime UtcNowMinutePrecision()
     {
-        var now = timeProvider.GetUtcNow();
+        var now = timeProvider.GetUtcNow().DateTime;
         return new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
     }
 
