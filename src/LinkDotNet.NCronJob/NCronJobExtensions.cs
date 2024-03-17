@@ -10,46 +10,32 @@ namespace LinkDotNet.NCronJob;
 public static class NCronJobExtensions
 {
     /// <summary>
-    /// Adds a job definition to the service collection that can get executed instantly.
-    /// </summary>
-    /// <param name="services">The service collection used to register the job.</param>
-    /// <typeparam name="T">The job type.</typeparam>
-    public static IServiceCollection AddJob<T>(this IServiceCollection services)
-        where T : class, IJob
-    {
-        services.AddCommonServices();
-        services.TryAddSingleton<T>();
-
-        return services;
-    }
-
-    /// <summary>
     /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// </summary>
     /// <param name="services">The service collection used to register the job.</param>
-    /// <param name="cronExpression">The cron expression on which the job gets executed.</param>
+    /// <param name="options">Configures the option, like the cron expression or parameters that get passed down.</param>
     /// <typeparam name="T">The job type.</typeparam>
     /// <exception cref="ArgumentException">Throws if the cron expression is invalid.</exception>
-    public static IServiceCollection AddCronJob<T>(this IServiceCollection services, string cronExpression)
+    /// <remarks>The cron expression is evaluated against UTC timezone.</remarks>
+    public static IServiceCollection AddCronJob<T>(this IServiceCollection services, Action<JobOption>? options = null)
         where T : class, IJob
     {
-        var cron = CrontabSchedule.TryParse(cronExpression)
-                   ?? throw new ArgumentException("Invalid cron expression", nameof(cronExpression));
+        JobOption option = new();
+        options?.Invoke(option);
 
-        var entry = new CronRegistryEntry(typeof(T), cron);
+        if (!string.IsNullOrEmpty(option.CronExpression))
+        {
+            var cron = CrontabSchedule.TryParse(option.CronExpression)
+                       ?? throw new InvalidOperationException("Invalid cron expression");
+            var entry = new CronRegistryEntry(typeof(T), new(option.Parameter), cron);
+            services.AddSingleton(entry);
+        }
 
-        services.AddCommonServices();
-        services.TryAddSingleton<T>();
-        services.AddSingleton(entry);
-
-        return services;
-    }
-
-    private static IServiceCollection AddCommonServices(this IServiceCollection services)
-    {
         services.AddHostedService<CronScheduler>();
         services.TryAddSingleton<CronRegistry>();
         services.TryAddSingleton<IInstantJobRegistry, CronRegistry>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<T>();
 
         return services;
     }

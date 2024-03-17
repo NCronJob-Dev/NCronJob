@@ -14,8 +14,8 @@ internal sealed class CronRegistry : IInstantJobRegistry
     public IEnumerable<InstantEntry> GetAllInstantJobs() => cronJobs.OfType<InstantEntry>();
 
     /// <inheritdoc />
-    public void AddInstantJob<TJob>() where TJob : IJob
+    public void AddInstantJob<TJob>(object? parameter = null) where TJob : IJob
     {
-        cronJobs.Add(new InstantEntry(typeof(TJob)));
+        cronJobs.Add(new InstantEntry(typeof(TJob), new JobExecutionContext(parameter)));
     }
 }

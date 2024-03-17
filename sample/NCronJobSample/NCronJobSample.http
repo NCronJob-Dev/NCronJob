@@ -1,0 +1,6 @@
+@NCronJobSample_HostAddress = http://localhost:5138
+
+POST {{NCronJobSample_HostAddress}}/trigger-instant/
+Accept: application/json
+
+###

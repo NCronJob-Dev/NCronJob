@@ -26,7 +26,7 @@ internal sealed class CronScheduler : BackgroundService
     {
         using var tickTimer = new PeriodicTimer(TimeSpan.FromSeconds(1), timeProvider);
 
-        var runMap = new Dictionary<DateTime, List<Type>>();
+        var runMap = new Dictionary<DateTime, List<Run>>();
         while (await tickTimer.WaitForNextTickAsync(stoppingToken))
         {
             var now = UtcNowMinutePrecision();
@@ -35,28 +35,30 @@ internal sealed class CronScheduler : BackgroundService
         }
     }
 
-    private void RunActiveJobs(Dictionary<DateTime, List<Type>> runMap, DateTime now, CancellationToken stoppingToken)
+    private void RunActiveJobs(Dictionary<DateTime, List<Run>> runMap, DateTime now, CancellationToken stoppingToken)
     {
         if (!runMap.TryGetValue(now, out var currentRuns))
         {
             return;
         }
 
-        foreach (var job in currentRuns.Select(run => (IJob)serviceProvider.GetRequiredService(run)))
+        foreach (var run in currentRuns)
         {
+            var job = (IJob)serviceProvider.GetRequiredService(run.Type);
+
             // We don't want to await jobs explicitly because that
             // could interfere with other job runs
-            _ = job.Run(stoppingToken);
+            _ = job.Run(run.Context, stoppingToken);
         }
     }
 
-    private Dictionary<DateTime, List<Type>> GetJobRuns()
+    private Dictionary<DateTime, List<Run>> GetJobRuns()
     {
-        var runMap = new Dictionary<DateTime, List<Type>>();
+        var runMap = new Dictionary<DateTime, List<Run>>();
 
         foreach (var instant in registry.GetAllInstantJobs())
         {
-            AddJobRuns(runMap, [timeProvider.GetUtcNow().DateTime], instant.Type);
+            AddJobRuns(runMap, [timeProvider.GetUtcNow().DateTime], instant);
         }
 
         foreach (var cron in registry.GetAllCronJobs())
@@ -65,24 +67,28 @@ internal sealed class CronScheduler : BackgroundService
             var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.AddMinutes(1));
             if (runDates is not null)
             {
-                AddJobRuns(runMap, runDates, cron.Type);
+                AddJobRuns(runMap, runDates, cron);
             }
         }
 
         return runMap;
     }
 
-    private static void AddJobRuns(Dictionary<DateTime, List<Type>> runMap, IEnumerable<DateTime> runDates, Type type)
+    private static void AddJobRuns(
+        Dictionary<DateTime, List<Run>> runMap,
+        IEnumerable<DateTime> runDates,
+        RegistryEntry entry)
     {
         foreach (var runDate in runDates)
         {
+            var run = new Run(entry.Type, entry.Context);
             if (runMap.TryGetValue(runDate, out var value))
             {
-                value.Add(type);
+                value.Add(run);
             }
             else
             {
-                runMap[runDate] = [type];
+                runMap[runDate] = [run];
             }
         }
     }
@@ -92,4 +98,6 @@ internal sealed class CronScheduler : BackgroundService
         var now = timeProvider.GetUtcNow();
         return new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
     }
+
+    private record struct Run(Type Type, JobExecutionContext Context);
 }
