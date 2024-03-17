@@ -58,7 +58,7 @@ public class PrintHelloWorld : IJob
 
 3. Register the job in your `Program.cs`
 ```csharp
-builder.Services.AddNCronJob<PrintHelloWorld>(options => 
+builder.Services.AddCronJob<PrintHelloWorld>(options => 
 {
 	// Every minute
 	options.CronExpression = "* * * * * *";
