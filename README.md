@@ -69,21 +69,15 @@ builder.Services.AddCronJob<PrintHelloWorld>(options =>
 
 4. Run your application and see the magic happen
 
-## Triggering a instant job
+## Triggering an instant job
 If the need arises and you want to trigger a job instantly, you can do so:
 ```csharp
 public class MyService
 {
   private readonly IInstantJobRegistry jobRegistry;
   
-  public MyService(IInstantJobRegistry jobRegistry)
-  {
-    this.jobRegistry = jobRegistry;
-  }
+  public MyService(IInstantJobRegistry jobRegistry) => this.jobRegistry = jobRegistry;
 
-  public void MyMethod()
-  {
-	jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
-  }
+  public void MyMethod() => jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
 }
 ```
