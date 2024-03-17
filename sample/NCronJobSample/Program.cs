@@ -31,7 +31,7 @@ app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
     {
         instantJobRegistry.AddInstantJob<PrintHelloWorld>();
     })
-    .WithName("GetWeatherForecast")
+    .WithName("TriggerInstantJob")
     .WithOpenApi();
 
 app.Run();
