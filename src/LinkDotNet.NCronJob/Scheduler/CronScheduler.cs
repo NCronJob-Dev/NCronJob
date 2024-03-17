@@ -51,9 +51,9 @@ internal sealed class CronScheduler : BackgroundService
             .Select(instant => new Run(instant.Type, instant.Context))
             .ToList();
 
+        var utcNow = timeProvider.GetUtcNow().DateTime;
         foreach (var cron in registry.GetAllCronJobs())
         {
-            var utcNow = timeProvider.GetUtcNow().DateTime;
             var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.AddSeconds(1)).ToArray();
             if (runDates.Length > 0)
             {
