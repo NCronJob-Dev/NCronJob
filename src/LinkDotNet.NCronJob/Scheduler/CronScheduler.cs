@@ -31,7 +31,7 @@ internal sealed class CronScheduler : BackgroundService
         using var tickTimer = new PeriodicTimer(options.TimerInterval, timeProvider);
 
         var runs = new List<Run>();
-        while (await tickTimer.WaitForNextTickAsync(stoppingToken))
+        while (await tickTimer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
             RunActiveJobs(runs, stoppingToken);
             runs = GetNextJobRuns();
@@ -66,8 +66,8 @@ internal sealed class CronScheduler : BackgroundService
         var utcNow = timeProvider.GetUtcNow().DateTime;
         foreach (var cron in registry.GetAllCronJobs())
         {
-            var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.Add(options.TimerInterval)).ToArray();
-            if (runDates.Length > 0)
+            var runDate = cron.CrontabSchedule.GetNextOccurrence(utcNow);
+            if (runDate <= utcNow.Add(options.TimerInterval))
             {
                 entries.Add(new Run(cron.Type, new JobExecutionContext(cron.Context.Parameter)));
             }
