@@ -11,7 +11,8 @@ public sealed class JobOption
     public string? CronExpression { get; set; }
 
     /// <summary>
-    /// The parameter that can be passed down to the job. This only applies to cron jobs.
+    /// The parameter that can be passed down to the job. This only applies to cron jobs.<br/>
+    /// When an instant job is triggered a parameter can be passed down via the <see cref="IInstantJobRegistry"/> interface.
     /// </summary>
     public object? Parameter { get; set; }
 }
