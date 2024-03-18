@@ -89,22 +89,3 @@ public class MyService
   public void MyMethod() => jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
 }
 ```
-
-## Retrieving scoped services
-Every job is registered as singleton inside the container, so be careful if you have state and furthermore be careful when retrieving scoped services.
-To come around this "limitation", you can simply create your own scope inside the job:
-
-```csharp
-public class JobWithScope : IJob
-{
-	private readonly IServiceProvider services;
-
-	public JobWithScope(IServiceProvider services) => this.services = services;
-	public async Task Run(JobExecutionContext context, CancellationToken token = default)
-	{
-		using var scope = services.CreateScope();
-		var myScopedService = scope.ServiceProvider.GetRequiredService<MyScopedService>();
-		await myScopedService.DoSomething();
-	}
-}
-```
