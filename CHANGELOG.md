@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Ability to set the timer interval
+
 ## [0.9.3] - 2024-03-18
 
 ### Changed

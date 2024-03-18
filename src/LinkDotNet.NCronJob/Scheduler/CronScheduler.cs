@@ -11,25 +11,29 @@ internal sealed class CronScheduler : BackgroundService
     private readonly IServiceProvider serviceProvider;
     private readonly CronRegistry registry;
     private readonly TimeProvider timeProvider;
+    private readonly NCronJobOptions options;
 
     public CronScheduler(
         IServiceProvider serviceProvider,
         CronRegistry registry,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        NCronJobOptions options)
     {
         this.serviceProvider = serviceProvider;
         this.registry = registry;
         this.timeProvider = timeProvider;
+        this.options = options;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var tickTimer = new PeriodicTimer(TimeSpan.FromSeconds(1), timeProvider);
+        using var tickTimer = new PeriodicTimer(options.TimerInterval, timeProvider);
 
+        var runs = new List<Run>();
         while (await tickTimer.WaitForNextTickAsync(stoppingToken))
         {
-            var runs = GetJobRuns();
             RunActiveJobs(runs, stoppingToken);
+            runs = GetNextJobRuns();
         }
     }
 
@@ -45,7 +49,7 @@ internal sealed class CronScheduler : BackgroundService
         }
     }
 
-    private List<Run> GetJobRuns()
+    private List<Run> GetNextJobRuns()
     {
         var entries = registry.GetAllInstantJobsAndClear()
             .Select(instant => new Run(instant.Type, instant.Context))
@@ -54,7 +58,7 @@ internal sealed class CronScheduler : BackgroundService
         var utcNow = timeProvider.GetUtcNow().DateTime;
         foreach (var cron in registry.GetAllCronJobs())
         {
-            var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.AddSeconds(1)).ToArray();
+            var runDates = cron.CrontabSchedule.GetNextOccurrences(utcNow, utcNow.Add(options.TimerInterval)).ToArray();
             if (runDates.Length > 0)
             {
                 entries.Add(new Run(cron.Type, new JobExecutionContext(cron.Context.Parameter)));

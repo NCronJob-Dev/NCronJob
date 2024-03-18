@@ -9,6 +9,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 
+// Add NCronJob to the container.
+builder.Services.AddNCronJob(o =>
+{
+    o.TimerInterval = TimeSpan.FromSeconds(1);
+});
+
 // Execute the job every minute
 builder.Services.AddCronJob<PrintHelloWorld>(p =>
 {

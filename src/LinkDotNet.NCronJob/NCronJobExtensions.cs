@@ -10,6 +10,27 @@ namespace LinkDotNet.NCronJob;
 public static class NCronJobExtensions
 {
     /// <summary>
+    /// Adds NCronJob services to the service container.
+    /// </summary>
+    /// <param name="services">The service collection used to register the services.</param>
+    /// <param name="options">Configures the scheduler engine.</param>
+    public static IServiceCollection AddNCronJob(
+        this IServiceCollection services,
+        Action<NCronJobOptions>? options = null)
+    {
+        NCronJobOptions option = new();
+        options?.Invoke(option);
+
+        services.AddHostedService<CronScheduler>();
+        services.AddSingleton<CronRegistry>();
+        services.AddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton(option);
+
+        return services;
+    }
+
+    /// <summary>
     /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// </summary>
     /// <param name="services">The service collection used to register the job.</param>
@@ -31,10 +52,6 @@ public static class NCronJobExtensions
             services.AddSingleton(entry);
         }
 
-        services.AddHostedService<CronScheduler>();
-        services.TryAddSingleton<CronRegistry>();
-        services.TryAddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
-        services.TryAddSingleton(TimeProvider.System);
         services.TryAddTransient<T>();
 
         return services;
