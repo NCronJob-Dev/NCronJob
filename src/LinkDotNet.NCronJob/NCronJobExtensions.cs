@@ -35,7 +35,7 @@ public static class NCronJobExtensions
         services.TryAddSingleton<CronRegistry>();
         services.TryAddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<T>();
+        services.TryAddTransient<T>();
 
         return services;
     }

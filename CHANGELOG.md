@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- `AddCronJob` registers the job as transient instead of singleton
+
 ## [0.9.2] - 2024-03-17
 
 ### Changed
