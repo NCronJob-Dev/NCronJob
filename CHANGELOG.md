@@ -6,12 +6,15 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.10.0] - 2024-03-18
+
 ### Added
 
-- Ability to set the timer interval
+-   Ability to set the timer interval
 
 ### Changed
-- `AddCronJob` registers as scoped service instead of transient
+
+-   `AddCronJob` registers as scoped service instead of transient
 
 ## [0.9.3] - 2024-03-18
 
@@ -45,7 +48,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.9.3...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.10.0...HEAD
+
+[0.10.0]: https://github.com/linkdotnet/NCronJob/compare/0.9.3...0.10.0
 
 [0.9.3]: https://github.com/linkdotnet/NCronJob/compare/0.9.2...0.9.3
 
