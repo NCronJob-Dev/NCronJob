@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -37,16 +38,23 @@ internal sealed class CronScheduler : BackgroundService
         }
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Tasks are not awaited.")]
     private void RunActiveJobs(List<Run> runs, CancellationToken stoppingToken)
     {
+        var scope = serviceProvider.CreateScope();
+        var tasks = new List<Task>(runs.Count);
+
         foreach (var run in runs)
         {
-            var job = (IJob)serviceProvider.GetRequiredService(run.Type);
+            var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
             // We don't want to await jobs explicitly because that
             // could interfere with other job runs
-            _ = job.Run(run.Context, stoppingToken);
+            var jobRun = job.Run(run.Context, stoppingToken);
+            tasks.Add(jobRun);
         }
+
+        _ = Task.WhenAll(tasks).ContinueWith(_ => scope.Dispose(), TaskScheduler.Default);
     }
 
     private List<Run> GetNextJobRuns()

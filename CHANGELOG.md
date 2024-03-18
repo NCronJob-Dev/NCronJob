@@ -10,6 +10,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 - Ability to set the timer interval
 
+### Changed
+- `AddCronJob` registers as scoped service instead of transient
+
 ## [0.9.3] - 2024-03-18
 
 ### Changed

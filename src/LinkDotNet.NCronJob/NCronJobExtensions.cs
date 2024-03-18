@@ -52,7 +52,7 @@ public static class NCronJobExtensions
             services.AddSingleton(entry);
         }
 
-        services.TryAddTransient<T>();
+        services.TryAddScoped<T>();
 
         return services;
     }
