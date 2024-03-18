@@ -6,8 +6,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.9.3] - 2024-03-18
+
 ### Changed
-- `AddCronJob` registers the job as transient instead of singleton
+
+-   `AddCronJob` registers the job as transient instead of singleton
 
 ## [0.9.2] - 2024-03-17
 
@@ -35,7 +38,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.9.2...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.9.3...HEAD
+
+[0.9.3]: https://github.com/linkdotnet/NCronJob/compare/0.9.2...0.9.3
 
 [0.9.2]: https://github.com/linkdotnet/NCronJob/compare/0.9.1...0.9.2
 
