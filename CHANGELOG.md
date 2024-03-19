@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Every Job-Run has its own scope
+
 ## [0.10.0] - 2024-03-18
 
 ### Added
