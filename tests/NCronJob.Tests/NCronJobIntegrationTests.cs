@@ -11,7 +11,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
 {
     private static readonly Task TimeoutTask = Task.Delay(500);
     private readonly CancellationTokenSource cancellationTokenSource = new();
-    private readonly Channel<bool> channel = Channel.CreateUnbounded<bool>();
+    private readonly Channel<object> channel = Channel.CreateUnbounded<object>();
 
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
@@ -21,7 +21,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
         serviceCollection.AddNCronJob();
         serviceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
-        serviceCollection.AddScoped<ChannelWriter<bool>>(_ => channel.Writer);
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
         var provider = serviceCollection.BuildServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
@@ -40,7 +40,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
         serviceCollection.AddNCronJob();
         serviceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
-        serviceCollection.AddScoped<ChannelWriter<bool>>(_ => channel.Writer);
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
         var provider = serviceCollection.BuildServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
@@ -63,7 +63,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         serviceCollection.AddNCronJob();
         serviceCollection.AddCronJob<ScopedServiceJob>(p => p.CronExpression = "* * * * *");
         serviceCollection.AddCronJob<ScopedServiceJob>(p => p.CronExpression = "* * * * *");
-        serviceCollection.AddScoped<ChannelWriter<bool>>(_ => channel.Writer);
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
         var provider = serviceCollection.BuildServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
@@ -82,7 +82,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
         serviceCollection.AddNCronJob();
         serviceCollection.AddCronJob<SimpleJob>();
-        serviceCollection.AddScoped<ChannelWriter<bool>>(_ => channel.Writer);
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
         var provider = serviceCollection.BuildServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().AddInstantJob<SimpleJob>();
 
@@ -92,6 +92,47 @@ public sealed class NCronJobIntegrationTests : IDisposable
         Task[] tasks = [..GetCompletionJobs(2), TimeoutTask];
         var winner = await Task.WhenAny(tasks);
         winner.ShouldNotBe(TimeoutTask);
+    }
+
+    [Fact]
+    public async Task CronJobShouldPassDownParameter()
+    {
+        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        serviceCollection.AddNCronJob();
+        serviceCollection.AddCronJob<ParameterJob>(p =>
+        {
+            p.CronExpression = "* * * * *";
+            p.Parameter = "Hello World";
+        });
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
+        var provider = serviceCollection.BuildServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var content = await channel.Reader.ReadAsync(cancellationTokenSource.Token);
+        content.ShouldBe("Hello World");
+    }
+
+    [Fact]
+    public async Task InstantJobShouldGetParameter()
+    {
+        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        serviceCollection.AddNCronJob();
+        serviceCollection.AddCronJob<ParameterJob>();
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
+        var provider = serviceCollection.BuildServiceProvider();
+        provider.GetRequiredService<IInstantJobRegistry>().AddInstantJob<ParameterJob>("Hello World");
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var content = await channel.Reader.ReadAsync(cancellationTokenSource.Token);
+        content.ShouldBe("Hello World");
     }
 
     public void Dispose()
@@ -110,7 +151,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         public ConcurrentBag<Guid> Guids { get; } = new();
     }
 
-    private sealed class SimpleJob(ChannelWriter<bool> writer) : IJob
+    private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
         public async Task Run(JobExecutionContext context, CancellationToken token = default)
         {
@@ -118,12 +159,20 @@ public sealed class NCronJobIntegrationTests : IDisposable
         }
     }
 
-    private sealed class ScopedServiceJob(ChannelWriter<bool> writer, Storage storage, GuidGenerator guidGenerator) : IJob
+    private sealed class ScopedServiceJob(ChannelWriter<object> writer, Storage storage, GuidGenerator guidGenerator) : IJob
     {
         public async Task Run(JobExecutionContext context, CancellationToken token = default)
         {
             storage.Guids.Add(guidGenerator.NewGuid);
             await writer.WriteAsync(true, token);
+        }
+    }
+
+    private sealed class ParameterJob(ChannelWriter<object> writer) : IJob
+    {
+        public async Task Run(JobExecutionContext context, CancellationToken token = default)
+        {
+            await writer.WriteAsync(context.Parameter!, token);
         }
     }
 
