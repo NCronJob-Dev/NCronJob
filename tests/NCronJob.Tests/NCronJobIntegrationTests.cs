@@ -6,41 +6,52 @@ using TimeProviderExtensions;
 
 namespace NCronJob.Tests;
 
-public class NCronJobIntegrationTests
+public sealed class NCronJobIntegrationTests : IDisposable
 {
+    private readonly CancellationTokenSource cancellationTokenSource = new();
+
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
     {
-        using var tokenSource = new CancellationTokenSource();
+        var fakeTimer = GetOneSecondTickManualTimeProvider();
+        var channel = new CommunicationChannel();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        serviceCollection.AddNCronJob();
+        serviceCollection.AddCronJob<SampleJob>(p => p.CronExpression = "* * * * *");
+        serviceCollection.AddScoped<CommunicationChannel>(_ => channel);
+        var provider = serviceCollection.BuildServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(2));
+        var delay = Task.Delay(100, cancellationTokenSource.Token);
+        var finishTask = await Task.WhenAny(channel.TaskCompletionSource.Task, delay);
+        finishTask.ShouldBe(channel.TaskCompletionSource.Task);
+    }
+
+    private static ManualTimeProvider GetOneSecondTickManualTimeProvider()
+    {
         var autoAdvanceBehavior = new AutoAdvanceBehavior
         {
             TimestampAdvanceAmount = TimeSpan.FromSeconds(1),
         };
         var fakeTimer = new ManualTimeProvider { AutoAdvanceBehavior = autoAdvanceBehavior };
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        serviceCollection.AddNCronJob();
-        serviceCollection.AddCronJob<SampleJob>(p => p.CronExpression = "* * * * *");
-        var provider = serviceCollection.BuildServiceProvider();
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(tokenSource.Token);
-
-        fakeTimer.Advance(TimeSpan.FromMinutes(2));
-        var delay = Task.Delay(100, tokenSource.Token);
-        var finishTask = await Task.WhenAny(SampleJob.WasCalledTask, delay);
-        finishTask.ShouldNotBe(delay);
-        await tokenSource.CancelAsync();
+        return fakeTimer;
     }
 
-    private sealed class SampleJob : IJob
+    private sealed class SampleJob(CommunicationChannel channel) : IJob
     {
-        private static readonly TaskCompletionSource WasCalledTcs = new();
-        public static Task WasCalledTask => WasCalledTcs.Task;
-
         public Task Run(JobExecutionContext context, CancellationToken token = default)
         {
-            WasCalledTcs.SetResult();
+            channel.TaskCompletionSource.SetResult();
             return Task.CompletedTask;
         }
+    }
+
+    public void Dispose()
+    {
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource.Dispose();
     }
 }
