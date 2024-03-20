@@ -16,6 +16,18 @@ public class NCronJobTests
         act.ShouldThrow<InvalidOperationException>();
     }
 
+     [Fact]
+    public void AddingCronJobWithSecondPrecisionExpressionNotThrowException()
+    {
+        var everySecond = "* * * * * *";
+        var collection = new ServiceCollection();
+        collection.AddNCronJob(options => options.EnableSecondPrecision  = true);
+
+        Action act = () => collection.AddCronJob<FakeJob>(o => o.CronExpression = everySecond);
+
+        act.ShouldNotThrow();
+    }
+
     private sealed class FakeJob : IJob
     {
         public Task Run(JobExecutionContext context, CancellationToken token = default)
