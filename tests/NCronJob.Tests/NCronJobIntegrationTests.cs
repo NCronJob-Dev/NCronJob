@@ -27,7 +27,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(1)), TimeoutTask);
+        var winner = await WaitForJobsOrTimeout(1);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -45,7 +45,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(10));
-        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(10)), TimeoutTask);
+        var winner = await WaitForJobsOrTimeout(10);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -87,7 +87,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(1)), TimeoutTask);
+        var winner = await WaitForJobsOrTimeout(1);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -146,7 +146,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromSeconds(3));
-        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(2)), TimeoutTask);
+        var winner = await WaitForJobsOrTimeout(2);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -154,6 +154,15 @@ public sealed class NCronJobIntegrationTests : IDisposable
     {
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
+    }
+
+    private Task<Task> WaitForJobsOrTimeout(int jobRuns) => Task.WhenAny(Task.WhenAll(GetCompletionJobs(jobRuns)), TimeoutTask);
+    private IEnumerable<Task> GetCompletionJobs(int expectedJobCount)
+    {
+        for (var i = 0; i < expectedJobCount; i++)
+        {
+            yield return channel.Reader.ReadAsync().AsTask();
+        }
     }
 
     private sealed class GuidGenerator
@@ -188,14 +197,6 @@ public sealed class NCronJobIntegrationTests : IDisposable
         public async Task Run(JobExecutionContext context, CancellationToken token = default)
         {
             await writer.WriteAsync(context.Parameter!, token);
-        }
-    }
-
-    private IEnumerable<Task> GetCompletionJobs(int expectedJobCount)
-    {
-        for (var i = 0; i < expectedJobCount; i++)
-        {
-            yield return channel.Reader.ReadAsync().AsTask();
         }
     }
 }
