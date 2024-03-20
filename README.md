@@ -70,7 +70,7 @@ builder.Services.AddNCronJob();
 builder.Services.AddCronJob<PrintHelloWorld>(options => 
 {
 	// Every minute
-	options.CronExpression = "* * * * * *";
+	options.CronExpression = "* * * * *";
 	// Optional parameter
 	options.Parameter = "Hello World";
 });
