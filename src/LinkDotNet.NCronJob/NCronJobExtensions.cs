@@ -46,18 +46,7 @@ public static class NCronJobExtensions
 
         if (!string.IsNullOrEmpty(option.CronExpression))
         {
-            using var serviceProvider = services.BuildServiceProvider();
-
-            var nCronJobOptions = serviceProvider.GetRequiredService<NCronJobOptions>();
-            
-            var cronParseOptions = new CrontabSchedule.ParseOptions 
-            { 
-                IncludingSeconds = nCronJobOptions.EnableSecondPrecision
-            };
-
-            var cron = CrontabSchedule.TryParse(option.CronExpression, cronParseOptions)
-                       ?? throw new InvalidOperationException("Invalid cron expression");
-
+            var cron = GetCronExpression(services, option);
             var entry = new CronRegistryEntry(typeof(T), new(option.Parameter), cron);
             services.AddSingleton(entry);
         }
@@ -65,5 +54,20 @@ public static class NCronJobExtensions
         services.TryAddScoped<T>();
 
         return services;
+    }
+
+    private static CrontabSchedule GetCronExpression(IServiceCollection services, JobOption option)
+    {
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var nCronJobOptions = serviceProvider.GetRequiredService<NCronJobOptions>();
+
+        var cronParseOptions = new CrontabSchedule.ParseOptions
+        {
+            IncludingSeconds = nCronJobOptions.EnableSecondPrecision
+        };
+
+        return CrontabSchedule.TryParse(option.CronExpression, cronParseOptions)
+                   ?? throw new InvalidOperationException("Invalid cron expression");
     }
 }
