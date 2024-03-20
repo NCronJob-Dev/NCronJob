@@ -448,16 +448,6 @@ dotnet_diagnostic.S1186.severity = suggestion # S1186: Methods should not be emp
 dotnet_diagnostic.S2292.severity = suggestion # S2292: Trivial properties should be auto-implemented
 dotnet_diagnostic.S4158.severity = none # BUGGY with C#9 code - doesnt understand local methods
 
-# Razor specific rules
-[*.{cs,razor}]
-dotnet_diagnostic.BL0001.severity = none
-dotnet_diagnostic.BL0002.severity = none
-dotnet_diagnostic.BL0003.severity = none
-dotnet_diagnostic.BL0004.severity = none
-dotnet_diagnostic.BL0005.severity = none
-dotnet_diagnostic.BL0006.severity = none
-dotnet_diagnostic.BL0007.severity = none
-
 ##########################################
 # Custom Test Code Analyzers Rules
 ##########################################
@@ -497,4 +487,5 @@ dotnet_diagnostic.S125.severity = none # S125: Sections of code should not be co
 dotnet_diagnostic.S3459.severity = none # S3459: Unassigned members should be removed
 dotnet_diagnostic.S3871.severity = none # S3871: Exception types should be "public"
 dotnet_diagnostic.S1186.severity = none # S1186: Methods should not be empty
+dotnet_diagnostic.S1144.severity = none # S1144: Unused private types should be removed
 dotnet_diagnostic.S6608.severity = none # S6608: Indexing at Count-1 should be used instead of "Enumerable" extension method "Last"

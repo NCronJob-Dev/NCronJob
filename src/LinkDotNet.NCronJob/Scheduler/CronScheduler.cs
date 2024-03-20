@@ -41,20 +41,16 @@ internal sealed class CronScheduler : BackgroundService
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Tasks are not awaited.")]
     private void RunActiveJobs(List<Run> runs, CancellationToken stoppingToken)
     {
-        var scope = serviceProvider.CreateScope();
-        var tasks = new List<Task>(runs.Count);
-
         foreach (var run in runs)
         {
+            var scope = serviceProvider.CreateScope();
             var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
             // We don't want to await jobs explicitly because that
             // could interfere with other job runs
-            var jobRun = job.Run(run.Context, stoppingToken);
-            tasks.Add(jobRun);
+            _ = job.Run(run.Context, stoppingToken)
+                .ContinueWith(_ => scope.Dispose(), TaskScheduler.Current);
         }
-
-        _ = Task.WhenAll(tasks).ContinueWith(_ => scope.Dispose(), TaskScheduler.Default);
     }
 
     private List<Run> GetNextJobRuns()
