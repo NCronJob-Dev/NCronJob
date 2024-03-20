@@ -6,11 +6,16 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+-   Ability to set cron expressions with second-level precision
+
 ## [0.10.1] - 2024-03-19
 
 ### Changed
 
 -   Every Job-Run has its own scope
+
 
 ## [0.10.0] - 2024-03-18
 
