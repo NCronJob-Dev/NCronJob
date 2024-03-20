@@ -46,9 +46,18 @@ public static class NCronJobExtensions
 
         if (!string.IsNullOrEmpty(option.CronExpression))
         {
-            var cronParseOptions = new CrontabSchedule.ParseOptions { IncludingSeconds = true };
+            using var serviceProvider = services.BuildServiceProvider();
+
+            var nCronJobOptions = serviceProvider.GetRequiredService<NCronJobOptions>();
+            
+            var cronParseOptions = new CrontabSchedule.ParseOptions 
+            { 
+                IncludingSeconds = nCronJobOptions.EnableSecondPrecision
+            };
+
             var cron = CrontabSchedule.TryParse(option.CronExpression, cronParseOptions)
                        ?? throw new InvalidOperationException("Invalid cron expression");
+
             var entry = new CronRegistryEntry(typeof(T), new(option.Parameter), cron);
             services.AddSingleton(entry);
         }
