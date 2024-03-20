@@ -27,8 +27,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        Task[] tasks = [..GetCompletionJobs(1), TimeoutTask];
-        var winner = await Task.WhenAny(tasks);
+        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(1)), TimeoutTask);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -46,8 +45,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(10));
-        Task[] tasks = [..GetCompletionJobs(10), TimeoutTask];
-        var winner = await Task.WhenAny(tasks);
+        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(10)), TimeoutTask);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -89,8 +87,7 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        Task[] tasks = [..GetCompletionJobs(2), TimeoutTask];
-        var winner = await Task.WhenAny(tasks);
+        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(1)), TimeoutTask);
         winner.ShouldNotBe(TimeoutTask);
     }
 
@@ -133,6 +130,24 @@ public sealed class NCronJobIntegrationTests : IDisposable
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var content = await channel.Reader.ReadAsync(cancellationTokenSource.Token);
         content.ShouldBe("Hello World");
+    }
+
+    [Fact]
+    public async Task CronJobThatIsScheduledEverySecondShouldBeExecuted()
+    {
+        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        serviceCollection.AddNCronJob(p => p.EnableSecondPrecision = true);
+        serviceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * * *");
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
+        var provider = serviceCollection.BuildServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
+
+        fakeTimer.Advance(TimeSpan.FromSeconds(3));
+        var winner = await Task.WhenAny(Task.WhenAll(GetCompletionJobs(2)), TimeoutTask);
+        winner.ShouldNotBe(TimeoutTask);
     }
 
     public void Dispose()
