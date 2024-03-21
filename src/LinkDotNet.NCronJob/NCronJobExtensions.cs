@@ -59,6 +59,24 @@ public static class NCronJobExtensions
         return services;
     }
 
+    /// <summary>
+    /// Adds a notification handler for a given <see cref="IJob"/>.
+    /// </summary>
+    /// <param name="services">The service collection used to register the handler.</param>
+    /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
+    /// <typeparam name="TJob">The job type.</typeparam>
+    /// <remarks>
+    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
+    /// Also only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
+    /// </remarks>
+    public static IServiceCollection AddNotificationHandler<TJobNotificationHandler, TJob>(this IServiceCollection services)
+        where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
+        where TJob : class, IJob
+    {
+        services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return services;
+    }
+
     private static CrontabSchedule GetCronExpression(IServiceCollection services, JobOption option)
     {
         using var serviceProvider = services.BuildServiceProvider();

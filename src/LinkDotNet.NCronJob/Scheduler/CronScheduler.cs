@@ -33,6 +33,8 @@ internal sealed class CronScheduler : BackgroundService
         var runs = new List<Run>();
         while (await tickTimer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
+            // We don't want to await jobs explicitly because that
+            // could interfere with other job runs)
             RunActiveJobs(runs, stoppingToken);
             runs = GetNextJobRuns();
         }
@@ -46,13 +48,51 @@ internal sealed class CronScheduler : BackgroundService
             var scope = serviceProvider.CreateScope();
             var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
-            // We don't want to await jobs explicitly because that
-            // could interfere with other job runs)
-            var jobTask = run.IsolationLevel == IsolationLevel.None
+            RunJob(run, job, scope, stoppingToken);
+        }
+    }
+
+    private static void RunJob(Run run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    {
+        try
+        {
+            GetJobTask()
+                .ContinueWith(
+                    task => AfterJobCompletionTask(task.Exception),
+                    TaskScheduler.Current)
+                .ConfigureAwait(false);
+        }
+        catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
+        {
+            // This part is only reached if the synchronous part of the job throws an exception
+            AfterJobCompletionTask(exc);
+        }
+
+        Task GetJobTask()
+        {
+            return run.IsolationLevel == IsolationLevel.None
                 ? job.Run(run.Context, stoppingToken)
                 : Task.Run(() => job.Run(run.Context, stoppingToken), stoppingToken);
+        }
 
-            jobTask.ContinueWith(_ => scope.Dispose(), TaskScheduler.Current).ConfigureAwait(false);
+        void AfterJobCompletionTask(Exception? exc)
+        {
+            var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(run.Type);
+
+            if (serviceScope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
+            {
+                try
+                {
+                    notificationService.HandleAsync(run.Context, exc, stoppingToken).ConfigureAwait(false);
+                }
+                catch (Exception innerExc) when (innerExc is not OperationCanceledException or AggregateException)
+                {
+                    // We don't want to throw exceptions from the notification service
+                }
+
+            }
+
+            serviceScope.Dispose();
         }
     }
 

@@ -16,11 +16,14 @@ builder.Services.AddNCronJob(o =>
 });
 
 // Execute the job every minute
-builder.Services.AddCronJob<PrintHelloWorld>(p =>
+builder.Services.AddCronJob<PrintHelloWorldJob>(p =>
 {
     p.CronExpression = "* * * * *";
     p.Parameter = "Hello from NCronJob";
 });
+
+// Register a handler that gets executed when the job is done
+builder.Services.AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>();
 
 var app = builder.Build();
 
@@ -35,7 +38,7 @@ app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
     {
-        instantJobRegistry.AddInstantJob<PrintHelloWorld>("Hello from instant job!");
+        instantJobRegistry.AddInstantJob<PrintHelloWorldJob>("Hello from instant job!");
     })
     .WithName("TriggerInstantJob")
     .WithOpenApi();
