@@ -46,6 +46,7 @@ jobs:
       with:
         dotnet-version: |
           8.0.x
+          9.0.x
 
     - name: Update CHANGELOG file
       if: github.event.inputs.prerelease == false

@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>LinkDotNet.NCronJob</RootNamespace>
 	</PropertyGroup>
-	
+
 	<PropertyGroup Label="NuGet">
 		<PackageId>LinkDotNet.NCronJob</PackageId>
 		<Title>NCronJob</Title>
@@ -36,7 +36,7 @@
 			See the full changelog at https://github.com/linkdotnet/NCronJob/releases
 		</PackageReleaseNotes>
 	</PropertyGroup>
-	
+
 	<PropertyGroup Label="Build information">
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<OutputType>Library</OutputType>

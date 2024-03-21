@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 
 -   Ability to set cron expressions with second-level precision
+-   Support for `net9.0`
 
 ## [0.10.1] - 2024-03-19
 
