@@ -21,9 +21,13 @@ jobs:
     - name: Determine Version
       id: version
       run: |
-        VERSION="${{ github.event.inputs.versionIncrement }}${{ if eq(github.event.inputs.prerelease, 'true') }}-preview${{ endif }}"
-        echo "VERSION=$VERSION" >> $GITHUB_ENV
-        echo "::set-output name=resolved_version::$VERSION"
+        if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+          echo "FINAL_VERSION=${{ github.event.inputs.versionIncrement }}-preview" >> $GITHUB_ENV
+          echo "::set-output name=version::${{ github.event.inputs.versionIncrement }}-preview"
+        else
+          echo "FINAL_VERSION=${{ github.event.inputs.versionIncrement }}" >> $GITHUB_ENV
+          echo "::set-output name=version::${{ github.event.inputs.versionIncrement }}"
+        fi
 
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -78,7 +82,7 @@ jobs:
 
     - name: Create release package
       run: |
-          dotnet pack -c RELEASE -p:PackageVersion=${{ steps.version.outputs.resolved_version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
+          dotnet pack -c RELEASE -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
 
     - name: Upload to nuget
       run: |
