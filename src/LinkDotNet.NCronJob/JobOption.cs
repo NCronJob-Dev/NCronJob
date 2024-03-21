@@ -27,7 +27,7 @@ public sealed class JobOption
 }
 
 /// <summary>
-/// Isolation level of
+/// Isolation level of the job. This determines how the job is executed.
 /// </summary>
 public enum IsolationLevel
 {
@@ -45,7 +45,8 @@ public enum IsolationLevel
     /// </summary>
     /// <remarks>
     /// This will wrap calls to the job in a new task and therefore not block the scheduler.
-    /// This can decrease scalability as the number of tasks increases.
+    /// This can decrease scalability as the number of tasks increases. Use this option with caution.
+    /// Almost the same can be achieved with a <c>await Task.Yield()</c> at the beginning of the job.
     /// </remarks>
     NewTask
 }

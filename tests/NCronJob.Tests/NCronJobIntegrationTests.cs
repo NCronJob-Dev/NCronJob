@@ -9,7 +9,6 @@ namespace NCronJob.Tests;
 
 public sealed class NCronJobIntegrationTests : IDisposable
 {
-    private static readonly Task TimeoutTask = Task.Delay(500);
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private readonly Channel<object> channel = Channel.CreateUnbounded<object>();
 
@@ -27,8 +26,8 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var winner = await WaitForJobsOrTimeout(1);
-        winner.ShouldNotBe(TimeoutTask);
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
     }
 
     [Fact]
@@ -45,8 +44,8 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(10));
-        var winner = await WaitForJobsOrTimeout(10);
-        winner.ShouldNotBe(TimeoutTask);
+        var jobFinished = await WaitForJobsOrTimeout(10);
+        jobFinished.ShouldBeTrue();
     }
 
     [Fact]
@@ -87,8 +86,8 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var winner = await WaitForJobsOrTimeout(1);
-        winner.ShouldNotBe(TimeoutTask);
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
     }
 
     [Fact]
@@ -146,8 +145,52 @@ public sealed class NCronJobIntegrationTests : IDisposable
         await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
 
         fakeTimer.Advance(TimeSpan.FromSeconds(3));
-        var winner = await WaitForJobsOrTimeout(2);
-        winner.ShouldNotBe(TimeoutTask);
+        var jobFinished = await WaitForJobsOrTimeout(2);
+        jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task LongRunningJobShouldNotBlockSchedulerWithIsolationLevelTask()
+    {
+        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        serviceCollection.AddNCronJob();
+        serviceCollection.AddCronJob<LongRunningJob>(p =>
+        {
+            p.CronExpression = "* * * * *";
+            p.IsolationLevel = IsolationLevel.NewTask;
+        });
+        serviceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
+
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
+        var provider = serviceCollection.BuildServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task LongRunningJobBlocksSchedulerWithoutIsolationLevelTask()
+    {
+        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        serviceCollection.AddNCronJob();
+        serviceCollection.AddCronJob<LongRunningJob>(p => p.CronExpression = "* * * * *");
+        serviceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
+        serviceCollection.AddScoped<ChannelWriter<object>>(_ => channel.Writer);
+        var provider = serviceCollection.BuildServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(cancellationTokenSource.Token);
+
+        // Advancing the timer will lead to a synchronous blocking of the scheduler
+        _ = Task.Run(() => fakeTimer.Advance(TimeSpan.FromMinutes(1)));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeFalse();
     }
 
     public void Dispose()
@@ -156,23 +199,36 @@ public sealed class NCronJobIntegrationTests : IDisposable
         cancellationTokenSource.Dispose();
     }
 
-    private Task<Task> WaitForJobsOrTimeout(int jobRuns) => Task.WhenAny(Task.WhenAll(GetCompletionJobs(jobRuns)), TimeoutTask);
-    private IEnumerable<Task> GetCompletionJobs(int expectedJobCount)
+    private async Task<bool> WaitForJobsOrTimeout(int jobRuns)
+    {
+        using var timeoutTcs = new CancellationTokenSource(100);
+        try
+        {
+            await Task.WhenAll(GetCompletionJobs(jobRuns, timeoutTcs.Token));
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+
+    private IEnumerable<Task> GetCompletionJobs(int expectedJobCount, CancellationToken cancellationToken = default)
     {
         for (var i = 0; i < expectedJobCount; i++)
         {
-            yield return channel.Reader.ReadAsync().AsTask();
+            yield return channel.Reader.ReadAsync(cancellationToken).AsTask();
         }
     }
 
     private sealed class GuidGenerator
     {
-        public Guid NewGuid { get; set; } = Guid.NewGuid();
+        public Guid NewGuid { get; } = Guid.NewGuid();
     }
 
     private sealed class Storage
     {
-        public ConcurrentBag<Guid> Guids { get; } = new();
+        public ConcurrentBag<Guid> Guids { get; } = [];
     }
 
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
@@ -180,6 +236,15 @@ public sealed class NCronJobIntegrationTests : IDisposable
         public async Task Run(JobExecutionContext context, CancellationToken token = default)
         {
             await writer.WriteAsync(true, token);
+        }
+    }
+
+    private sealed class LongRunningJob : IJob
+    {
+        public Task Run(JobExecutionContext context, CancellationToken token = default)
+        {
+            Task.Delay(10000, token).GetAwaiter().GetResult();
+            return Task.CompletedTask;
         }
     }
 

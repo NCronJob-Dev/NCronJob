@@ -48,9 +48,11 @@ internal sealed class CronScheduler : BackgroundService
 
             // We don't want to await jobs explicitly because that
             // could interfere with other job runs)
-            job.Run(run.Context, stoppingToken)
-                .RunInIsolation(run.IsolationLevel)
-                .ContinueWith(_ => scope.Dispose(), TaskScheduler.Current);
+            var jobTask = run.IsolationLevel == IsolationLevel.None
+                ? job.Run(run.Context, stoppingToken)
+                : Task.Run(() => job.Run(run.Context, stoppingToken), stoppingToken);
+
+            jobTask.ContinueWith(_ => scope.Dispose(), TaskScheduler.Current).ConfigureAwait(false);
         }
     }
 
