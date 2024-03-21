@@ -10,6 +10,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 -   Ability to set cron expressions with second-level precision
 -   Support for `net9.0`
+-   Support for Isolation Level to run jobs independent of the current scheduler
 
 ## [0.10.1] - 2024-03-19
 

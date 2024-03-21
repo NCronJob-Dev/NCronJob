@@ -44,10 +44,13 @@ public static class NCronJobExtensions
         JobOption option = new();
         options?.Invoke(option);
 
-        if (!string.IsNullOrEmpty(option.CronExpression))
+        var cron = string.IsNullOrEmpty(option.CronExpression)
+            ? null
+            : GetCronExpression(services, option);
+
+        if (cron is not null)
         {
-            var cron = GetCronExpression(services, option);
-            var entry = new CronRegistryEntry(typeof(T), new(option.Parameter), cron);
+            var entry = new RegistryEntry(typeof(T), new(option.Parameter), option.IsolationLevel, cron);
             services.AddSingleton(entry);
         }
 

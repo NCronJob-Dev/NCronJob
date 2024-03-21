@@ -47,8 +47,9 @@ internal sealed class CronScheduler : BackgroundService
             var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
             // We don't want to await jobs explicitly because that
-            // could interfere with other job runs
-            _ = job.Run(run.Context, stoppingToken)
+            // could interfere with other job runs)
+            job.Run(run.Context, stoppingToken)
+                .RunInIsolation(run.IsolationLevel)
                 .ContinueWith(_ => scope.Dispose(), TaskScheduler.Current);
         }
     }
@@ -56,21 +57,24 @@ internal sealed class CronScheduler : BackgroundService
     private List<Run> GetNextJobRuns()
     {
         var entries = registry.GetAllInstantJobsAndClear()
-            .Select(instant => new Run(instant.Type, instant.Context))
+            .Select(instant => (Run)instant)
             .ToList();
 
         var utcNow = timeProvider.GetUtcNow().DateTime;
         foreach (var cron in registry.GetAllCronJobs())
         {
-            var runDate = cron.CrontabSchedule.GetNextOccurrence(utcNow);
+            var runDate = cron.CrontabSchedule!.GetNextOccurrence(utcNow);
             if (runDate <= utcNow.Add(options.TimerInterval))
             {
-                entries.Add(new Run(cron.Type, new JobExecutionContext(cron.Context.Parameter)));
+                entries.Add((Run)cron);
             }
         }
 
         return entries;
     }
 
-    private record struct Run(Type Type, JobExecutionContext Context);
+    private record struct Run(Type Type, JobExecutionContext Context, IsolationLevel IsolationLevel)
+    {
+        public static explicit operator Run(RegistryEntry entry) => new(entry.Type, entry.Context, entry.IsolationLevel);
+    }
 }
