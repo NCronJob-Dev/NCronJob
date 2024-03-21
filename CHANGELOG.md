@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.11.4] - 2024-03-21
+
 ### Added
 
 -   Ability to set cron expressions with second-level precision
@@ -18,7 +20,6 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Changed
 
 -   Every Job-Run has its own scope
-
 
 ## [0.10.0] - 2024-03-18
 
@@ -62,7 +63,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.10.1...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.11.4...HEAD
+
+[0.11.4]: https://github.com/linkdotnet/NCronJob/compare/0.10.1...0.11.4
 
 [0.10.1]: https://github.com/linkdotnet/NCronJob/compare/0.10.0...0.10.1
 
