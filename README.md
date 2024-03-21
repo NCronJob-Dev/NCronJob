@@ -14,7 +14,7 @@
 # NCronJob
 A Job Scheduler sitting on top of `IHostedService` in dotnet.
 
-Often times one finds themself between the simplicisty of the `BackgroundService`/`IHostedService` and the complexity of a full blown `Hangfire` or `Quartz` scheduler. 
+Often times one finds themself between the simplicity of the `BackgroundService`/`IHostedService` and the complexity of a full blown `Hangfire` or `Quartz` scheduler. 
 This library aims to fill that gap by providing a simple and easy to use job scheduler that can be used in any dotnet application and feels "native".
 
 So no need for setting up a database, just schedule your stuff right away! The library gives you two ways of scheduling jobs:
@@ -26,7 +26,7 @@ So no need for setting up a database, just schedule your stuff right away! The l
 - [x] The ability to instantly run a job
 - [x] Parameterized jobs - instant as well as cron jobs!
 - [x] Integrated in ASP.NET - Access your DI container like you would in any other service
-- [ ] Get notified when a job is done (either successfully or with an error) - currently in development
+- [x] Get notified when a job is done (either successfully or with an error).
 
 ## Not features
 
@@ -90,6 +90,42 @@ public class MyService
   public void MyMethod() => jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
 }
 ```
+
+## Getting notified when a job is done
+**NCronJob** provides a way to get notified when a job is done. For this, implement a `IJobNotificationHandler<TJob>` and register it in your DI container.
+```csharp
+Services.AddNotificationHandler<MyJobNotificationHandler, MyJob>();
+```
+
+This allows to run logic after a job is done. The `JobExecutionContext` and the `Exception` (if there was one) are passed to the `Handle` method.
+
+```csharp
+public class MyJobNotificationHandler : IJobNotificationHandler<MyJob>
+{
+	private readonly ILogger<MyJobNotificationHandler> logger;
+
+	public MyJobNotificationHandler(ILogger<MyJobNotificationHandler> logger)
+	{
+		this.logger = logger;
+	}
+
+	public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken token)
+	{
+		if (exception is not null)
+		{
+			logger.LogError(exception, "Job failed");
+		}
+		else
+		{
+			logger.LogInformation("Job was successful");
+			logger.LogInformation("Output: {Output}", context.Output);
+		}
+
+		return Task.CompletedTask;
+	}
+}
+```
+
 
 ## Advanced Cases
 

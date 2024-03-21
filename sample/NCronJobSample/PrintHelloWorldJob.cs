@@ -2,11 +2,11 @@ using LinkDotNet.NCronJob;
 
 namespace NCronJobSample;
 
-public partial class PrintHelloWorld : IJob
+public partial class PrintHelloWorldJob : IJob
 {
-    private readonly ILogger<PrintHelloWorld> logger;
+    private readonly ILogger<PrintHelloWorldJob> logger;
 
-    public PrintHelloWorld(ILogger<PrintHelloWorld> logger)
+    public PrintHelloWorldJob(ILogger<PrintHelloWorldJob> logger)
     {
         this.logger = logger;
     }
@@ -16,6 +16,8 @@ public partial class PrintHelloWorld : IJob
         ArgumentNullException.ThrowIfNull(context);
 
         LogMessage(context.Parameter);
+
+        context.Output = "Hey there!";
 
         return Task.CompletedTask;
     }
