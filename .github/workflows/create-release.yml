@@ -22,11 +22,9 @@ jobs:
       id: version
       run: |
         if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
-          echo "FINAL_VERSION=${{ github.event.inputs.versionIncrement }}-preview" >> $GITHUB_ENV
-          echo "::set-output name=version::${{ github.event.inputs.versionIncrement }}-preview"
+          echo "version=${{ github.event.inputs.versionIncrement }}-preview" >> $GITHUB_OUTPUT
         else
-          echo "FINAL_VERSION=${{ github.event.inputs.versionIncrement }}" >> $GITHUB_ENV
-          echo "::set-output name=version::${{ github.event.inputs.versionIncrement }}"
+          echo "version=${{ github.event.inputs.versionIncrement }}" >> $GITHUB_OUTPUT
         fi
 
     - name: Checkout repository
