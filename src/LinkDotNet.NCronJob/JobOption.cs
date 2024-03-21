@@ -19,4 +19,33 @@ public sealed class JobOption
     /// When an instant job is triggered a parameter can be passed down via the <see cref="IInstantJobRegistry"/> interface.
     /// </summary>
     public object? Parameter { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="IsolationLevel"/> of the executed job.
+    /// </summary>
+    public IsolationLevel IsolationLevel { get; set; }
+}
+
+/// <summary>
+/// Isolation level of
+/// </summary>
+public enum IsolationLevel
+{
+    /// <summary>
+    /// The job is executed in the same thread as the scheduler. This is the default value.
+    /// </summary>
+    /// <remarks>
+    /// Running jobs in the same thread as the scheduler can lead to performance issues if the synchronous part of the job takes long.
+    /// The scheduler can't guarantee then to schedule new jobs in the given interval.
+    /// </remarks>
+    None,
+
+    /// <summary>
+    /// The job is executed in a new task.
+    /// </summary>
+    /// <remarks>
+    /// This will wrap calls to the job in a new task and therefore not block the scheduler.
+    /// This can decrease scalability as the number of tasks increases.
+    /// </remarks>
+    NewTask
 }
