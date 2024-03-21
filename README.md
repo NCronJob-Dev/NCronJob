@@ -90,3 +90,25 @@ public class MyService
   public void MyMethod() => jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
 }
 ```
+
+## Advanced Cases
+
+### Isolation Level
+By default, the jobs are run in the same scope as the scheduler. If there are long-running jobs that are synchronous, this might block the scheduler from running other jobs. To avoid this, you can set the `IsolationLevel`.
+```csharp
+Services.AddCronJob<LongRunningJob>(options => 
+{
+	options.CronExpression = "* * * * *";
+	options.IsolationLevel = IsolationLevel.Task;
+});
+```
+
+You can achieve the same by using `await Task.Yield()` at the beginning your job, but this is a more explicit way of doing it.
+
+## Support & Contributing
+
+Thanks to all [contributors](https://github.com/linkdotnet/NCronJob/graphs/contributors) and people that are creating bug-reports and valuable input:
+
+<a href="https://github.com/linkdotnet/NCronJob/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=linkdotnet/NCronJob" alt="Supporters" />
+</a>
