@@ -1,29 +1,33 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
 /// Represents a background service that schedules jobs based on a cron expression.
 /// </summary>
-internal sealed class CronScheduler : BackgroundService
+internal sealed partial class CronScheduler : BackgroundService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly CronRegistry registry;
     private readonly TimeProvider timeProvider;
     private readonly NCronJobOptions options;
+    private readonly ILogger<CronScheduler> logger;
 
     public CronScheduler(
         IServiceProvider serviceProvider,
         CronRegistry registry,
         TimeProvider timeProvider,
-        NCronJobOptions options)
+        NCronJobOptions options,
+        ILogger<CronScheduler> logger)
     {
         this.serviceProvider = serviceProvider;
         this.registry = registry;
         this.timeProvider = timeProvider;
         this.options = options;
+        this.logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,10 +56,11 @@ internal sealed class CronScheduler : BackgroundService
         }
     }
 
-    private static void RunJob(Run run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    private void RunJob(Run run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
         try
         {
+            LogRunningJob(run.Type, run.IsolationLevel);
             GetJobTask()
                 .ContinueWith(
                     task => AfterJobCompletionTask(task.Exception),
@@ -98,20 +103,26 @@ internal sealed class CronScheduler : BackgroundService
 
     private List<Run> GetNextJobRuns()
     {
+        LogBeginGetNextJobRuns();
         var entries = registry.GetAllInstantJobsAndClear()
             .Select(instant => (Run)instant)
             .ToList();
 
+        LogInstantJobRuns(entries.Count);
+
         var utcNow = timeProvider.GetUtcNow().DateTime;
         foreach (var cron in registry.GetAllCronJobs())
         {
+            LogCronJobGetsScheduled(cron.Type);
             var runDate = cron.CrontabSchedule!.GetNextOccurrence(utcNow);
             if (runDate <= utcNow.Add(options.TimerInterval))
             {
+                LogNextJobRun(cron.Type, runDate);
                 entries.Add((Run)cron);
             }
         }
 
+        LogEndGetNextJobRuns();
         return entries;
     }
 

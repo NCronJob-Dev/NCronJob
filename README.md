@@ -141,6 +141,17 @@ Services.AddCronJob<LongRunningJob>(options =>
 
 You can achieve the same by using `await Task.Yield()` at the beginning your job, but this is a more explicit way of doing it.
 
+### Log Level
+The **NCronJob** scheduler can be configured to log at a specific log level. 
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+			"LinkDotNet.NCronJob": "Debug"
+```
+
 ## Support & Contributing
 
 Thanks to all [contributors](https://github.com/linkdotnet/NCronJob/graphs/contributors) and people that are creating bug-reports and valuable input:
