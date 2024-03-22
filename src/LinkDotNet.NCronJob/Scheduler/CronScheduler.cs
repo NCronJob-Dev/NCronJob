@@ -76,8 +76,8 @@ internal sealed partial class CronScheduler : BackgroundService
         Task GetJobTask()
         {
             return run.IsolationLevel == IsolationLevel.None
-                ? job.Run(run.Context, stoppingToken)
-                : Task.Run(() => job.Run(run.Context, stoppingToken), stoppingToken);
+                ? job.RunAsync(run.Context, stoppingToken)
+                : Task.Run(() => job.RunAsync(run.Context, stoppingToken), stoppingToken);
         }
 
         void AfterJobCompletionTask(Exception? exc)

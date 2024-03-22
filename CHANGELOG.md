@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+-  Breaking Change: `Run` is now called `RunAsync` to reflect the asynchronous nature of the method
+- `Run` doesn't take an optional `CancellationToken` anymore, as this is passed in anyway.
+
 ## [0.11.5] - 2024-03-22
 
 ## [0.11.4] - 2024-03-21

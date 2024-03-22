@@ -54,7 +54,7 @@ public class PrintHelloWorld : IJob
         this.logger = logger;
     }
 
-    public Task Run(JobExecutionContext context, CancellationToken token = default)
+    public Task RunAsync(JobExecutionContext context, CancellationToken token)
     {
         logger.LogInformation("Hello World");
         logger.LogInformation("Parameter: {Parameter}", context.Parameter);

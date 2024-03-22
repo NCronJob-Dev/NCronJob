@@ -10,5 +10,5 @@ public interface IJob
     /// </summary>
     /// <param name="context">The context of the job execution.</param>
     /// <param name="token">A cancellation token that can be used to cancel the job.</param>
-    Task Run(JobExecutionContext context, CancellationToken token = default);
+    Task RunAsync(JobExecutionContext context, CancellationToken token);
 }

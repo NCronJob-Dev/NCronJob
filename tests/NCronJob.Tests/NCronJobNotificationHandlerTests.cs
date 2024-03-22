@@ -80,7 +80,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
     private sealed class SimpleJob : IJob
     {
-        public Task Run(JobExecutionContext context, CancellationToken token = default)
+        public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             context.Output = "Foo";
             return Task.CompletedTask;
@@ -89,7 +89,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
     private sealed class ExceptionJob : IJob
     {
-        public Task Run(JobExecutionContext context, CancellationToken token = default)
+        public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             throw new InvalidOperationException();
         }

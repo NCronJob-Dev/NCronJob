@@ -16,7 +16,7 @@ public class CronRegistryTests
 
     private sealed class SimpleJob : IJob
     {
-        public Task Run(JobExecutionContext context, CancellationToken token = default)
+        public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             return Task.CompletedTask;
         }

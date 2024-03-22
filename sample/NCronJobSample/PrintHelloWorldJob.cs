@@ -11,7 +11,7 @@ public partial class PrintHelloWorldJob : IJob
         this.logger = logger;
     }
 
-    public Task Run(JobExecutionContext context, CancellationToken token = default)
+    public Task RunAsync(JobExecutionContext context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 

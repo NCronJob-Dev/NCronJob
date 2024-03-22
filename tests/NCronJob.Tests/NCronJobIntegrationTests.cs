@@ -183,7 +183,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task Run(JobExecutionContext context, CancellationToken token = default)
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             await writer.WriteAsync(true, token);
         }
@@ -191,7 +191,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
     private sealed class LongRunningJob : IJob
     {
-        public Task Run(JobExecutionContext context, CancellationToken token = default)
+        public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             Task.Delay(10000, token).GetAwaiter().GetResult();
             return Task.CompletedTask;
@@ -200,7 +200,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
     private sealed class ScopedServiceJob(ChannelWriter<object> writer, Storage storage, GuidGenerator guidGenerator) : IJob
     {
-        public async Task Run(JobExecutionContext context, CancellationToken token = default)
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             storage.Guids.Add(guidGenerator.NewGuid);
             await writer.WriteAsync(true, token);
@@ -209,7 +209,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
     private sealed class ParameterJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task Run(JobExecutionContext context, CancellationToken token = default)
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             await writer.WriteAsync(context.Parameter!, token);
         }
