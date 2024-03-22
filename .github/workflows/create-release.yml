@@ -13,6 +13,13 @@ on:
         required: false
         default: false
 
+env:
+    VSTEST_CONNECTION_TIMEOUT: 180
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+    DOTNET_NOLOGO: true
+    DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: 1
+    TERM: xterm
+
 jobs:
   release:
     name: Publish new release
