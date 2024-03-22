@@ -12,7 +12,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
@@ -28,7 +28,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task AdvancingTheWholeTimeShouldHaveTenEntries()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider(TimeSpan.FromMinutes(1));
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
@@ -44,7 +44,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task EachJobRunHasItsOwnScope()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         var storage = new Storage();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton(storage);
@@ -65,7 +65,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task ExecuteAnInstantJob()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>();
@@ -82,7 +82,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobShouldPassDownParameter()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<ParameterJob>(p =>
@@ -102,7 +102,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobShouldGetParameter()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<ParameterJob>();
@@ -119,7 +119,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobThatIsScheduledEverySecondShouldBeExecuted()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(p => p.EnableSecondPrecision = true);
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * * *");
@@ -135,7 +135,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task LongRunningJobShouldNotBlockSchedulerWithIsolationLevelTask()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<LongRunningJob>(p =>
@@ -156,7 +156,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task LongRunningJobBlocksSchedulerWithoutIsolationLevelTask()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<LongRunningJob>(p => p.CronExpression = "* * * * *");

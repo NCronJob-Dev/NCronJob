@@ -11,7 +11,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldCallNotificationHandlerWhenJobIsDone()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
@@ -28,7 +28,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldPassDownExceptionToNotificationHandler()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<ExceptionJob>(p => p.CronExpression = "* * * * *");
@@ -45,7 +45,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task HandlerThatThrowsExceptionShouldNotInfluenceOtherHandlers()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
@@ -63,7 +63,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task HandlerThatThrowsExceptionInAsyncPartShouldNotInfluenceOtherHandlers()
     {
-        var fakeTimer = TimeProviderFactory.GetAutoTickingTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");

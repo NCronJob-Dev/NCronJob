@@ -38,7 +38,7 @@ internal sealed partial class CronScheduler : BackgroundService
         while (await tickTimer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
             // We don't want to await jobs explicitly because that
-            // could interfere with other job runs)
+            // could interfere with other job runs
             RunActiveJobs(runs, stoppingToken);
             runs = GetNextJobRuns();
         }
