@@ -6,9 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.12.0] - 2024-03-22
+
 ### Changed
--  Breaking Change: `Run` is now called `RunAsync` to reflect the asynchronous nature of the method
-- `Run` doesn't take an optional `CancellationToken` anymore, as this is passed in anyway.
+
+-   Breaking Change: `Run` is now called `RunAsync` to reflect the asynchronous nature of the method
+-   `Run` doesn't take an optional `CancellationToken` anymore, as this is passed in anyway.
 
 ## [0.11.5] - 2024-03-22
 
@@ -69,7 +72,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.11.5...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.12.0...HEAD
+
+[0.12.0]: https://github.com/linkdotnet/NCronJob/compare/0.11.5...0.12.0
 
 [0.11.5]: https://github.com/linkdotnet/NCronJob/compare/0.11.4...0.11.5
 
