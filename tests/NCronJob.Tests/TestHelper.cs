@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NCronJob.Tests;
 
@@ -8,6 +9,14 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected CancellationToken CancellationToken => cancellationTokenSource.Token;
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
+    protected ServiceCollection ServiceCollection { get; }
+
+    protected JobIntegrationBase()
+    {
+        ServiceCollection = new();
+        ServiceCollection.AddLogging()
+            .AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
+    }
 
     public void Dispose()
     {
