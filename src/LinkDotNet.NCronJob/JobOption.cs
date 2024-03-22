@@ -41,7 +41,7 @@ public enum IsolationLevel
     None,
 
     /// <summary>
-    /// The job is executed in a new task.
+    /// The job is executed in a new task. This can be helpful if the synchronous part of the job takes long (before any <c>await</c> is called).
     /// </summary>
     /// <remarks>
     /// This will wrap calls to the job in a new task and therefore not block the scheduler.
