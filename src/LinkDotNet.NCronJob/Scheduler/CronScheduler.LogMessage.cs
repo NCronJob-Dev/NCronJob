@@ -21,4 +21,7 @@ internal sealed partial class CronScheduler
 
     [LoggerMessage(LogLevel.Trace, "End getting next job runs")]
     private partial void LogEndGetNextJobRuns();
+
+    [LoggerMessage(LogLevel.Error, "The type '{Type}' is not registered. Register the service via 'AddCronJob<{Type}>()'.")]
+    private partial void LogJobNotRegistered(Type type);
 }

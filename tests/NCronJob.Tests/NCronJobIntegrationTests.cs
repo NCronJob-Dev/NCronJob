@@ -199,6 +199,23 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task NotRegisteredJobShouldNotAbortOtherRuns()
+    {
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob();
+        ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
+        await using var provider = ServiceCollection.BuildServiceProvider();
+        provider.GetRequiredService<IInstantJobRegistry>().AddInstantJob<ParameterJob>();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();

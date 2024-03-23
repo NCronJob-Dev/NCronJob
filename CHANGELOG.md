@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Changed
 
 - Moved `EnableSecondPrecision` from `AddNCronJob` to `AddCronJob` to allow for more granular control over the precision of the cron expression
+- When a job is not registered, a error is logged, but the execution of other jobs is not interrupted
 
 ## [0.12.0] - 2024-03-22
 

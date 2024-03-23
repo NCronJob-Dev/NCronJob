@@ -50,7 +50,11 @@ internal sealed partial class CronScheduler : BackgroundService
         foreach (var run in runs)
         {
             var scope = serviceProvider.CreateScope();
-            var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
+            if (scope.ServiceProvider.GetService(run.Type) is not IJob job)
+            {
+                LogJobNotRegistered(run.Type);
+                continue;
+            }
 
             RunJob(run, job, scope, stoppingToken);
         }
