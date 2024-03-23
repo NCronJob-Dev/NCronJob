@@ -21,9 +21,13 @@ public class NCronJobTests
     {
         var everySecond = "* * * * * *";
         var collection = new ServiceCollection();
-        collection.AddNCronJob(options => options.EnableSecondPrecision  = true);
+        collection.AddNCronJob();
 
-        Action act = () => collection.AddCronJob<FakeJob>(o => o.CronExpression = everySecond);
+        Action act = () => collection.AddCronJob<FakeJob>(o =>
+        {
+            o.EnableSecondPrecision = true;
+            o.CronExpression = everySecond;
+        });
 
         act.ShouldNotThrow();
     }

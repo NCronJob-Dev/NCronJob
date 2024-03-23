@@ -24,6 +24,17 @@ public sealed class JobOption
     /// Gets or sets the <see cref="IsolationLevel"/> of the executed job.
     /// </summary>
     public IsolationLevel IsolationLevel { get; set; }
+
+    /// <summary>
+    /// Determines whether the cron expression can specify second-level precision.
+    /// </summary>
+    /// <remarks>
+    /// When enabled, cron expressions must include a seconds field, allowing for more precise scheduling.
+    /// By default, this is disabled, and cron expressions are expected to start with the minute field.
+    /// Enabling this affects scheduling granularity and may influence performance, especially for jobs
+    /// that are scheduled to run very frequently.
+    /// </remarks>
+    public bool EnableSecondPrecision { get; set; }
 }
 
 /// <summary>

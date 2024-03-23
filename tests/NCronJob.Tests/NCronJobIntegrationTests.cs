@@ -121,14 +121,42 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob(p => p.EnableSecondPrecision = true);
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * * *");
+        ServiceCollection.AddNCronJob();
+        ServiceCollection.AddCronJob<SimpleJob>(p =>
+        {
+            p.EnableSecondPrecision = true;
+            p.CronExpression = "* * * * * *";
+        });
         await using var provider = ServiceCollection.BuildServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         fakeTimer.Advance(TimeSpan.FromSeconds(3));
         var jobFinished = await WaitForJobsOrTimeout(2);
+        jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
+    {
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob();
+        ServiceCollection.AddCronJob<SimpleJob>(p =>
+        {
+            p.EnableSecondPrecision = true;
+            p.CronExpression = "* * * * * *";
+        });
+        ServiceCollection.AddCronJob<SimpleJob>(p =>
+        {
+            p.CronExpression = "* * * * *";
+        });
+        await using var provider = ServiceCollection.BuildServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        fakeTimer.Advance(TimeSpan.FromSeconds(61));
+        var jobFinished = await WaitForJobsOrTimeout(61);
         jobFinished.ShouldBeTrue();
     }
 

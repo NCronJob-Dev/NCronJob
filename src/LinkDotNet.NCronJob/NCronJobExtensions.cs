@@ -81,11 +81,9 @@ public static class NCronJobExtensions
     {
         using var serviceProvider = services.BuildServiceProvider();
 
-        var nCronJobOptions = serviceProvider.GetRequiredService<NCronJobOptions>();
-
         var cronParseOptions = new CrontabSchedule.ParseOptions
         {
-            IncludingSeconds = nCronJobOptions.EnableSecondPrecision
+            IncludingSeconds = option.EnableSecondPrecision
         };
 
         return CrontabSchedule.TryParse(option.CronExpression, cronParseOptions)
