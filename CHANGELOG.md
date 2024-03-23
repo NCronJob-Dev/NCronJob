@@ -6,10 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.13.0] - 2024-03-23
+
 ### Changed
 
-- Moved `EnableSecondPrecision` from `AddNCronJob` to `AddCronJob` to allow for more granular control over the precision of the cron expression
-- When a job is not registered, a error is logged, but the execution of other jobs is not interrupted
+-   Moved `EnableSecondPrecision` from `AddNCronJob` to `AddCronJob` to allow for more granular control over the precision of the cron expression
+-   When a job is not registered, a error is logged, but the execution of other jobs is not interrupted
 
 ## [0.12.0] - 2024-03-22
 
@@ -77,7 +79,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.12.0...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.13.0...HEAD
+
+[0.13.0]: https://github.com/linkdotnet/NCronJob/compare/0.12.0...0.13.0
 
 [0.12.0]: https://github.com/linkdotnet/NCronJob/compare/0.11.5...0.12.0
 
