@@ -1,15 +1,11 @@
 root = true
 
 [*]
-indent_style = tab
-indent_size = tab
-tab_width = 4
+indent_style = space
+indent_size = 4
 charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
-
-[*.cs]
-indent_style = space
 
 [*.{xml,config,*proj,nuspec,props,resx,targets,yml,tasks}]
 tab_width = 2
@@ -24,7 +20,6 @@ tab_width = 2
 end_of_line = lf
 
 [*.{yml,yaml}]
-indent_style = space
 tab_width = 2
 
 [*.md]
