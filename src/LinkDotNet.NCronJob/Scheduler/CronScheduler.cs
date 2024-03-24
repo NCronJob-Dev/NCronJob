@@ -101,7 +101,6 @@ internal sealed partial class CronScheduler : BackgroundService
                 {
                     // We don't want to throw exceptions from the notification service
                 }
-
             }
 
             serviceScope.Dispose();

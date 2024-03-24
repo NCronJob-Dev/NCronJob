@@ -21,7 +21,8 @@ internal sealed class CronRegistry : IInstantJobRegistry
     }
 
     /// <inheritdoc />
-    public void AddInstantJob<TJob>(object? parameter = null, IsolationLevel level = IsolationLevel.None) where TJob : IJob
+    public void AddInstantJob<TJob>(object? parameter = null, IsolationLevel level = IsolationLevel.None)
+        where TJob : IJob
     {
         jobs.Add(new RegistryEntry(typeof(TJob), new JobExecutionContext(parameter), level, null));
     }
