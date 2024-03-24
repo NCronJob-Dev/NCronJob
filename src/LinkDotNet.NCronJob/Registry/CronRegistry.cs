@@ -1,5 +1,3 @@
-using System.Collections.Frozen;
-
 namespace LinkDotNet.NCronJob;
 
 internal sealed class CronRegistry : IInstantJobRegistry
