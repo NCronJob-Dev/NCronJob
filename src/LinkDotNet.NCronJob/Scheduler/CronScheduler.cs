@@ -79,9 +79,12 @@ internal sealed partial class CronScheduler : BackgroundService
 
         Task GetJobTask()
         {
-            return run.IsolationLevel == IsolationLevel.None
-                ? job.RunAsync(run.Context, stoppingToken)
-                : Task.Run(() => job.RunAsync(run.Context, stoppingToken), stoppingToken);
+            return run.IsolationLevel switch
+            {
+                IsolationLevel.None => job.RunAsync(run.Context, stoppingToken),
+                IsolationLevel.NewTask => Task.Run(() => job.RunAsync(run.Context, stoppingToken), stoppingToken),
+                _ => throw new InvalidOperationException($"Unknown isolation level {run.IsolationLevel}"),
+            };
         }
 
         void AfterJobCompletionTask(Exception? exc)
