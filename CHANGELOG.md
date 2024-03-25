@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Check if `IsolationLevel` is in a valid range - otherwise it throws an exception
+- Small refactorings
+
 ## [0.13.0] - 2024-03-23
 
 ### Changed
