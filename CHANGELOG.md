@@ -6,9 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.13.1] - 2024-03-25
+
 ### Changed
-- Check if `IsolationLevel` is in a valid range - otherwise it throws an exception
-- Small refactorings
+
+-   Check if `IsolationLevel` is in a valid range - otherwise it throws an exception
+-   Small refactorings
 
 ## [0.13.0] - 2024-03-23
 
@@ -83,7 +86,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.13.0...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.13.1...HEAD
+
+[0.13.1]: https://github.com/linkdotnet/NCronJob/compare/0.13.0...0.13.1
 
 [0.13.0]: https://github.com/linkdotnet/NCronJob/compare/0.12.0...0.13.0
 
