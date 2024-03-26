@@ -44,6 +44,7 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
 - [ ] Retries - If a job fails, it is not retried.
 - [ ] Progress state - There is no way to track the progress of a job. The library will support notifying when a job is
   done, but not the progress of the job itself.
+- [ ] The job scheduler always uses UTC time. We might change that in the future.
 
 ## Short example
 
