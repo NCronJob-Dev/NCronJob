@@ -1,22 +1,24 @@
+using System.Collections.Frozen;
+using System.Collections.Immutable;
+
 namespace LinkDotNet.NCronJob;
 
 internal sealed class CronRegistry : IInstantJobRegistry
 {
-    private readonly List<RegistryEntry> jobs;
+    private readonly FrozenSet<RegistryEntry> cronJobs;
+    private readonly List<RegistryEntry> instantJobs = [];
 
-    public CronRegistry(IEnumerable<RegistryEntry> cronJobs)
+    public CronRegistry(IEnumerable<RegistryEntry> jobs)
     {
-        jobs = cronJobs.ToList();
+        cronJobs = jobs.Where(c => c.CrontabSchedule is not null).ToFrozenSet();
     }
 
-    public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() =>
-        jobs.Where(j => j.CrontabSchedule is not null)
-            .ToList();
+    public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
 
     public IReadOnlyCollection<RegistryEntry> GetAllInstantJobsAndClear()
     {
-        var returnedJobs = jobs.Where(j => j.CrontabSchedule is null).ToList();
-        returnedJobs.ForEach(j => jobs.Remove(j));
+        var returnedJobs = instantJobs.ToImmutableArray();
+        instantJobs.Clear();
         return returnedJobs;
     }
 
@@ -24,6 +26,6 @@ internal sealed class CronRegistry : IInstantJobRegistry
     public void AddInstantJob<TJob>(object? parameter = null, IsolationLevel level = IsolationLevel.None)
         where TJob : IJob
     {
-        jobs.Add(new RegistryEntry(typeof(TJob), new JobExecutionContext(parameter), level, null));
+        instantJobs.Add(new RegistryEntry(typeof(TJob), new JobExecutionContext(parameter), level, null));
     }
 }
