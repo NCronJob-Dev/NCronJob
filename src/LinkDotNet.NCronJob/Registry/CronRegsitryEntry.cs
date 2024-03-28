@@ -2,7 +2,7 @@ using NCrontab;
 
 namespace LinkDotNet.NCronJob;
 
-internal record RegistryEntry(
+internal sealed record RegistryEntry(
     Type Type,
     JobExecutionContext Context,
     IsolationLevel IsolationLevel,
