@@ -34,7 +34,7 @@ internal sealed partial class CronScheduler : BackgroundService
     {
         using var tickTimer = new PeriodicTimer(options.TimerInterval, timeProvider);
 
-        var runs = new List<Run>();
+        var runs = new List<RegistryEntry>();
         while (await tickTimer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
             // We don't want to await jobs explicitly because that
@@ -45,7 +45,7 @@ internal sealed partial class CronScheduler : BackgroundService
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Tasks are not awaited.")]
-    private void RunActiveJobs(List<Run> runs, CancellationToken stoppingToken)
+    private void RunActiveJobs(List<RegistryEntry> runs, CancellationToken stoppingToken)
     {
         foreach (var run in runs)
         {
@@ -60,7 +60,7 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
-    private void RunJob(Run run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    private void RunJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
         try
         {
@@ -107,12 +107,10 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
-    private List<Run> GetNextJobRuns()
+    private List<RegistryEntry> GetNextJobRuns()
     {
         LogBeginGetNextJobRuns();
-        var entries = registry.GetAllInstantJobsAndClear()
-            .Select(instant => (Run)instant)
-            .ToList();
+        var entries = registry.GetAllInstantJobsAndClear().ToList();
 
         LogInstantJobRuns(entries.Count);
 
@@ -124,16 +122,11 @@ internal sealed partial class CronScheduler : BackgroundService
             if (runDate <= utcNow.Add(options.TimerInterval))
             {
                 LogNextJobRun(cron.Type, runDate);
-                entries.Add((Run)cron);
+                entries.Add(cron);
             }
         }
 
         LogEndGetNextJobRuns();
         return entries;
-    }
-
-    private record struct Run(Type Type, JobExecutionContext Context, IsolationLevel IsolationLevel)
-    {
-        public static explicit operator Run(RegistryEntry entry) => new(entry.Type, entry.Context, entry.IsolationLevel);
     }
 }
