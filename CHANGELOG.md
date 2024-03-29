@@ -6,8 +6,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [0.13.2] - 2024-03-29
+
 ### Changed
-- Smaller performance improvements
+
+-   Smaller performance improvements
 
 ## [0.13.1] - 2024-03-25
 
@@ -89,7 +92,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.13.1...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.13.2...HEAD
+
+[0.13.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.1...0.13.2
 
 [0.13.1]: https://github.com/linkdotnet/NCronJob/compare/0.13.0...0.13.1
 
