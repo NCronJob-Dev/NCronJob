@@ -7,7 +7,7 @@ namespace LinkDotNet.NCronJob;
 public interface IJobNotificationHandler
 {
     /// <summary>
-    /// This method is invoked when a <see cref="IJob"/> is finished (either successfully or with an exception).
+    /// This method is invoked when an <see cref="IJob"/> is finished (either successfully or with an exception).
     /// </summary>
     /// <param name="context">The <see cref="JobExecutionContext"/> that was used for this run.</param>
     /// <param name="exception">The exception that was thrown during the execution of the job. If the job was successful, this will be <c>null</c>.</param>
