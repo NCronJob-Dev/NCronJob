@@ -1,7 +1,8 @@
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
-/// Classes implementing this interface can handle the notification of a job execution.
+/// This is in pub-internal interface that is used to avoid reflection.
+/// Please derive directly from <see cref="IJobNotificationHandler{TJob}"/>.
 /// </summary>
 public interface IJobNotificationHandler
 {
@@ -17,6 +18,8 @@ public interface IJobNotificationHandler
     Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken);
 }
 
-/// <inheritdoc />
+/// <summary>
+/// Classes implementing this interface can handle the notification of a job execution.
+/// </summary>
 public interface IJobNotificationHandler<TJob> : IJobNotificationHandler
     where TJob : IJob;

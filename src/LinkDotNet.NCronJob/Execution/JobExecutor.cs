@@ -20,6 +20,12 @@ internal sealed partial class JobExecutor : IDisposable
         Justification = "Tasks are not awaited.")]
     public void RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
+        if (isDisposed)
+        {
+            LogSkipAsDisposed();
+            return;
+        }
+
         var scope = serviceProvider.CreateScope();
         if (scope.ServiceProvider.GetService(run.Type) is not IJob job)
         {
@@ -39,12 +45,6 @@ internal sealed partial class JobExecutor : IDisposable
 
     private void ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
-        if (isDisposed)
-        {
-            LogSkipAsDisposed();
-            return;
-        }
-
         try
         {
             LogRunningJob(run.Type);
