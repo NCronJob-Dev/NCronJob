@@ -13,5 +13,6 @@ public interface IInstantJobRegistry
     /// <remarks>
     /// The contents of <paramref name="parameter" /> are not serialized and deserialized. It is the reference to the passed in object.
     /// </remarks>
-    void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default) where TJob : IJob;
+    void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+        where TJob : IJob;
 }
