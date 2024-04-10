@@ -4,9 +4,6 @@ namespace LinkDotNet.NCronJob;
 
 internal sealed partial class CronScheduler
 {
-    [LoggerMessage(LogLevel.Debug, "Running job: '{JobType}' in isolation level '{IsolationLevel}'")]
-    private partial void LogRunningJob(Type jobType, IsolationLevel isolationLevel);
-
     [LoggerMessage(LogLevel.Debug, "Next run of job '{JobType}' is at {NextRun} UTC")]
     private partial void LogNextJobRun(Type jobType, DateTime nextRun);
 
@@ -21,7 +18,4 @@ internal sealed partial class CronScheduler
 
     [LoggerMessage(LogLevel.Trace, "End getting next job runs")]
     private partial void LogEndGetNextJobRuns();
-
-    [LoggerMessage(LogLevel.Error, "The type '{Type}' is not registered. Register the service via 'AddCronJob<{Type}>()'.")]
-    private partial void LogJobNotRegistered(Type type);
 }

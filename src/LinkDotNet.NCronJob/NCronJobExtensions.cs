@@ -23,6 +23,7 @@ public static class NCronJobExtensions
 
         services.AddHostedService<CronScheduler>();
         services.AddSingleton<CronRegistry>();
+        services.AddSingleton<JobExecutor>();
         services.AddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton(option);
