@@ -11,55 +11,43 @@ internal sealed partial class CronScheduler : BackgroundService
     private readonly JobExecutor jobExecutor;
     private readonly CronRegistry registry;
     private readonly TimeProvider timeProvider;
-    private readonly NCronJobOptions options;
     private readonly ILogger<CronScheduler> logger;
 
     public CronScheduler(
         JobExecutor jobExecutor,
         CronRegistry registry,
         TimeProvider timeProvider,
-        NCronJobOptions options,
         ILogger<CronScheduler> logger)
     {
         this.jobExecutor = jobExecutor;
         this.registry = registry;
         this.timeProvider = timeProvider;
-        this.options = options;
         this.logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var tickTimer = new PeriodicTimer(options.TimerInterval, timeProvider);
-
-        var runs = new List<RegistryEntry>();
-        while (await tickTimer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
-        {
-            jobExecutor.RunActiveJobs(runs, stoppingToken);
-            runs = GetNextJobRuns();
-        }
-    }
-
-    private List<RegistryEntry> GetNextJobRuns()
-    {
-        LogBeginGetNextJobRuns();
-        var entries = registry.GetAllInstantJobsAndClear().ToList();
-
-        LogInstantJobRuns(entries.Count);
-
-        var utcNow = timeProvider.GetUtcNow().DateTime;
         foreach (var cron in registry.GetAllCronJobs())
         {
-            LogCronJobGetsScheduled(cron.Type);
-            var runDate = cron.CrontabSchedule!.GetNextOccurrence(utcNow);
-            if (runDate <= utcNow.Add(options.TimerInterval))
-            {
-                LogNextJobRun(cron.Type, runDate);
-                entries.Add(cron);
-            }
+            ScheduleJob(cron, stoppingToken);
         }
 
-        LogEndGetNextJobRuns();
-        return entries;
+        return Task.CompletedTask;
+    }
+
+    private void ScheduleJob(RegistryEntry entry, CancellationToken stoppingToken)
+    {
+        var now = timeProvider.GetUtcNow().DateTime;
+        var runDate = entry.CrontabSchedule!.GetNextOccurrence(now);
+        LogNextJobRun(entry.Type, runDate);
+        var delay = runDate - now;
+        _ = Task.Delay(delay, timeProvider, stoppingToken)
+            .ContinueWith(_ =>
+                {
+                    LogRunningJob(entry.Type);
+                    jobExecutor.RunJob(entry, stoppingToken);
+                    ScheduleJob(entry, stoppingToken);
+                }, stoppingToken,
+                TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
     }
 }

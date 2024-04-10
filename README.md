@@ -147,22 +147,6 @@ public class MyJobNotificationHandler : IJobNotificationHandler<MyJob>
 
 ## Advanced Cases
 
-### Isolation Level
-
-By default, the jobs are run in the same scope as the scheduler. If there are long-running jobs that are synchronous,
-this might block the scheduler from running other jobs. To avoid this, you can set the `IsolationLevel`.
-
-```csharp
-Services.AddCronJob<LongRunningJob>(options => 
-{
-    options.CronExpression = "* * * * *";
-    options.IsolationLevel = IsolationLevel.Task;
-});
-```
-
-You can achieve the same by using `await Task.Yield()` at the beginning your job, but this is a more explicit way of
-doing it.
-
 ### Log Level
 
 The **NCronJob** scheduler can be configured to log at a specific log level.

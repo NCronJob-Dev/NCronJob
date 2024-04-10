@@ -13,20 +13,14 @@ public static class NCronJobExtensions
     /// Adds NCronJob services to the service container.
     /// </summary>
     /// <param name="services">The service collection used to register the services.</param>
-    /// <param name="options">Configures the scheduler engine.</param>
     public static IServiceCollection AddNCronJob(
-        this IServiceCollection services,
-        Action<NCronJobOptions>? options = null)
+        this IServiceCollection services)
     {
-        NCronJobOptions option = new();
-        options?.Invoke(option);
-
         services.AddHostedService<CronScheduler>();
         services.AddSingleton<CronRegistry>();
         services.AddSingleton<JobExecutor>();
         services.AddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
         services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton(option);
 
         return services;
     }
@@ -51,7 +45,7 @@ public static class NCronJobExtensions
 
         if (cron is not null)
         {
-            var entry = new RegistryEntry(typeof(T), new(option.Parameter), option.IsolationLevel, cron);
+            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
             services.AddSingleton(entry);
         }
 

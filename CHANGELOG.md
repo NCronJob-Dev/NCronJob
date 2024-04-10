@@ -6,6 +6,13 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Removed internal periodic timer so that instant jobs are really executed instantly and cron jobs on the correct time (rather than too late)
+
+### Migration
+- The `IsolationLevel` was completely removed as jobs are executed in their own scope anyway. It behaves like `Isolation.NewTask` by default.
+- `TimerInterval` in `NCronJobOptions` was removed as it no longer used.
+
 ## [0.13.2] - 2024-03-29
 
 ### Changed

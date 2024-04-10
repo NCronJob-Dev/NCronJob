@@ -8,6 +8,6 @@ internal sealed partial class JobExecutor
         "The type '{Type}' is not registered. Register the service via 'AddCronJob<{Type}>()'.")]
     private partial void LogJobNotRegistered(Type type);
 
-    [LoggerMessage(LogLevel.Debug, "Running job: '{JobType}' in isolation level '{IsolationLevel}'")]
-    private partial void LogRunningJob(Type jobType, IsolationLevel isolationLevel);
+    [LoggerMessage(LogLevel.Debug, "Running job: '{JobType}'.")]
+    private partial void LogRunningJob(Type jobType);
 }

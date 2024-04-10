@@ -15,30 +15,28 @@ internal sealed partial class JobExecutor
         this.logger = logger;
     }
 
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Tasks are not awaited.")]
-    public void RunActiveJobs(List<RegistryEntry> runs, CancellationToken stoppingToken)
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
+        Justification = "Tasks are not awaited.")]
+    public void RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
-        foreach (var run in runs)
+        var scope = serviceProvider.CreateScope();
+        if (scope.ServiceProvider.GetService(run.Type) is not IJob job)
         {
-            var scope = serviceProvider.CreateScope();
-            if (scope.ServiceProvider.GetService(run.Type) is not IJob job)
-            {
-                LogJobNotRegistered(run.Type);
-                continue;
-            }
-
-            // We don't want to await jobs explicitly because that
-            // could interfere with other job runs
-            RunJob(run, job, scope, stoppingToken);
+            LogJobNotRegistered(run.Type);
+            return;
         }
+
+        // We don't want to await jobs explicitly because that
+        // could interfere with other job runs
+        ExecuteJob(run, job, scope, stoppingToken);
     }
 
-    private void RunJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    private void ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
         try
         {
-            LogRunningJob(run.Type, run.IsolationLevel);
-            GetJobTask()
+            LogRunningJob(run.Type);
+            job.RunAsync(run.Context, stoppingToken)
                 .ContinueWith(
                     task => AfterJobCompletionTask(task.Exception),
                     TaskScheduler.Current)
@@ -48,16 +46,6 @@ internal sealed partial class JobExecutor
         {
             // This part is only reached if the synchronous part of the job throws an exception
             AfterJobCompletionTask(exc);
-        }
-
-        Task GetJobTask()
-        {
-            return run.IsolationLevel switch
-            {
-                IsolationLevel.None => job.RunAsync(run.Context, stoppingToken),
-                IsolationLevel.NewTask => Task.Run(() => job.RunAsync(run.Context, stoppingToken), stoppingToken),
-                _ => throw new InvalidOperationException($"Unknown isolation level {run.IsolationLevel}"),
-            };
         }
 
         void AfterJobCompletionTask(Exception? exc)

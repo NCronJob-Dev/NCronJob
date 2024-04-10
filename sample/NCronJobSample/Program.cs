@@ -10,10 +10,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 
 // Add NCronJob to the container.
-builder.Services.AddNCronJob(o =>
-{
-    o.TimerInterval = TimeSpan.FromSeconds(1);
-});
+builder.Services.AddNCronJob();
 
 // Execute the job every minute
 builder.Services.AddCronJob<PrintHelloWorldJob>(p =>
@@ -38,7 +35,7 @@ app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
     {
-        instantJobRegistry.AddInstantJob<PrintHelloWorldJob>("Hello from instant job!");
+        instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
     })
     .WithName("TriggerInstantJob")
     .WithOpenApi();
