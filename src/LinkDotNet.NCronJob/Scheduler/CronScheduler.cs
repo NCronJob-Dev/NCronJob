@@ -40,6 +40,7 @@ internal sealed partial class CronScheduler : BackgroundService
         var now = timeProvider.GetUtcNow().DateTime;
         var runDate = entry.CrontabSchedule!.GetNextOccurrence(now);
         LogNextJobRun(entry.Type, runDate);
+
         var delay = runDate - now;
         _ = Task.Delay(delay, timeProvider, stoppingToken)
             .ContinueWith(_ =>
@@ -47,7 +48,7 @@ internal sealed partial class CronScheduler : BackgroundService
                 stoppingToken,
                 TaskContinuationOptions.OnlyOnRanToCompletion,
                 TaskScheduler.Default)
-            .ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            .ConfigureAwait(false);
     }
 
     private void RunAndRescheduleJob(RegistryEntry entry, CancellationToken stoppingToken)
