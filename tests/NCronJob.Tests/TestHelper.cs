@@ -6,6 +6,7 @@ namespace NCronJob.Tests;
 public abstract class JobIntegrationBase : IDisposable
 {
     private readonly CancellationTokenSource cancellationTokenSource = new();
+    private ServiceProvider? serviceProvider;
 
     protected CancellationToken CancellationToken => cancellationTokenSource.Token;
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
@@ -28,7 +29,10 @@ public abstract class JobIntegrationBase : IDisposable
     {
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
+        serviceProvider?.Dispose();
     }
+
+    protected ServiceProvider CreateServiceProvider() => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
     protected async Task<bool> WaitForJobsOrTimeout(int jobRuns)
     {
