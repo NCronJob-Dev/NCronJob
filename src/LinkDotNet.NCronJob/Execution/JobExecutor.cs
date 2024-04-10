@@ -39,7 +39,7 @@ internal sealed partial class JobExecutor
             job.RunAsync(run.Context, stoppingToken)
                 .ContinueWith(
                     task => AfterJobCompletionTask(task.Exception),
-                    TaskScheduler.Current)
+                    TaskScheduler.Default)
                 .ConfigureAwait(false);
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
