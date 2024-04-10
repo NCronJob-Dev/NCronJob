@@ -4,10 +4,11 @@ using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
 
-internal sealed partial class JobExecutor
+internal sealed partial class JobExecutor : IDisposable
 {
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
+    private bool isDisposed;
 
     public JobExecutor(IServiceProvider serviceProvider, ILogger<JobExecutor> logger)
     {
@@ -31,8 +32,18 @@ internal sealed partial class JobExecutor
         ExecuteJob(run, job, scope, stoppingToken);
     }
 
+    public void Dispose()
+    {
+        isDisposed = true;
+    }
+
     private void ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
+        if (isDisposed)
+        {
+            return;
+        }
+
         try
         {
             LogRunningJob(run.Type);
@@ -50,6 +61,11 @@ internal sealed partial class JobExecutor
 
         void AfterJobCompletionTask(Exception? exc)
         {
+            if (isDisposed)
+            {
+                return;
+            }
+
             var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(run.Type);
 
             if (serviceScope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
