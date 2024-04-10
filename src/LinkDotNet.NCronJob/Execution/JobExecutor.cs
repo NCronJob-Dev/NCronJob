@@ -41,6 +41,7 @@ internal sealed partial class JobExecutor : IDisposable
     {
         if (isDisposed)
         {
+            LogSkipAsDisposed();
             return;
         }
 
@@ -63,6 +64,7 @@ internal sealed partial class JobExecutor : IDisposable
         {
             if (isDisposed)
             {
+                LogSkipAsDisposed();
                 return;
             }
 
