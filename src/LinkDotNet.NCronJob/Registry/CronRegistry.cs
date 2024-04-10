@@ -21,6 +21,6 @@ internal sealed class CronRegistry : IInstantJobRegistry
     {
         var executionContext = new JobExecutionContext(parameter);
         var run = new RegistryEntry(typeof(TJob), executionContext, null);
-        jobExecutor.RunJob(run, CancellationToken.None);
+        jobExecutor.RunJob(run, token);
     }
 }
