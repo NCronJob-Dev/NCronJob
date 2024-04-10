@@ -16,7 +16,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
         ServiceCollection.AddNotificationHandler<SimpleJobHandler, SimpleJob>();
-        await using var provider = ServiceCollection.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -33,7 +33,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<ExceptionJob>(p => p.CronExpression = "* * * * *");
         ServiceCollection.AddNotificationHandler<ExceptionHandler, ExceptionJob>();
-        await using var provider = ServiceCollection.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -51,7 +51,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
         ServiceCollection.AddNotificationHandler<HandlerThatThrowsException, ExceptionJob>();
         ServiceCollection.AddNotificationHandler<SimpleJobHandler, SimpleJob>();
-        await using var provider = ServiceCollection.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -69,7 +69,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
         ServiceCollection.AddNotificationHandler<HandlerThatThrowsInAsyncPartException, ExceptionJob>();
         ServiceCollection.AddNotificationHandler<SimpleJobHandler, SimpleJob>();
-        await using var provider = ServiceCollection.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
