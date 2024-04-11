@@ -33,8 +33,6 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
-        // We don't want to await jobs explicitly because that
-        // could interfere with other job runs
         ExecuteJob(run, job, scope, stoppingToken);
     }
 
@@ -48,6 +46,9 @@ internal sealed partial class JobExecutor : IDisposable
         try
         {
             LogRunningJob(run.Type);
+
+            // We don't want to await jobs explicitly because that
+            // could interfere with other job runs
             job.RunAsync(run.Context, stoppingToken)
                 .ContinueWith(
                     task => AfterJobCompletionTask(task.Exception),
