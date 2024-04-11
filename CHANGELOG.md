@@ -6,12 +6,16 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [1.0.2] - 2024-04-11
+
 ### Changed
-- Removed internal periodic timer so that instant jobs are really executed instantly and cron jobs on the correct time (rather than too late)
+
+-   Removed internal periodic timer so that instant jobs are really executed instantly and cron jobs on the correct time (rather than too late)
 
 ### Migration
-- The `IsolationLevel` was completely removed as jobs are executed in their own scope anyway. It behaves like `Isolation.NewTask` by default.
-- `TimerInterval` in `NCronJobOptions` was removed as it no longer used.
+
+-   The `IsolationLevel` was completely removed as jobs are executed in their own scope anyway. It behaves like `Isolation.NewTask` by default.
+-   `TimerInterval` in `NCronJobOptions` was removed as it no longer used.
 
 ## [0.13.2] - 2024-03-29
 
@@ -99,7 +103,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/0.13.2...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/1.0.2...HEAD
+
+[1.0.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.2...1.0.2
 
 [0.13.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.1...0.13.2
 
