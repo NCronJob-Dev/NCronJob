@@ -17,7 +17,7 @@ internal sealed partial class JobExecutor : IDisposable
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
-        Justification = "Tasks are not awaited.")]
+        Justification = "Service will be disposed in continuation task")]
     public void RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
         if (isDisposed)
