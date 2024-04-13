@@ -33,20 +33,24 @@ public static class NCronJobExtensions
     /// <typeparam name="T">The job type.</typeparam>
     /// <exception cref="ArgumentException">Throws if the cron expression is invalid.</exception>
     /// <remarks>The cron expression is evaluated against UTC timezone.</remarks>
-    public static IServiceCollection AddCronJob<T>(this IServiceCollection services, Action<JobOption>? options = null)
+    public static IServiceCollection AddCronJob<T>(this IServiceCollection services, Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
-        JobOption option = new();
-        options?.Invoke(option);
+        var builder = new JobOptionBuilder();
+        options?.Invoke(builder);
+        var jobOptions = builder.GetJobOptions();
 
-        var cron = string.IsNullOrEmpty(option.CronExpression)
-            ? null
-            : GetCronExpression(services, option);
-
-        if (cron is not null)
+        foreach (var option in jobOptions)
         {
-            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
-            services.AddSingleton(entry);
+            var cron = string.IsNullOrEmpty(option.CronExpression)
+                ? null
+                : GetCronExpression(services, option);
+
+            if (cron is not null)
+            {
+                var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
+                services.AddSingleton(entry);
+            }
         }
 
         services.TryAddScoped<T>();

@@ -11,7 +11,7 @@ public class NCronJobTests
     {
         var collection = new ServiceCollection();
 
-        Action act = () => collection.AddCronJob<FakeJob>(o => o.CronExpression = "not-valid");
+        Action act = () => collection.AddCronJob<FakeJob>(o => o.WithCronExpression("not-valid"));
 
         act.ShouldThrow<InvalidOperationException>();
     }
@@ -19,14 +19,12 @@ public class NCronJobTests
     [Fact]
     public void AddingCronJobWithSecondPrecisionExpressionNotThrowException()
     {
-        var everySecond = "* * * * * *";
         var collection = new ServiceCollection();
         collection.AddNCronJob();
 
         Action act = () => collection.AddCronJob<FakeJob>(o =>
         {
-            o.EnableSecondPrecision = true;
-            o.CronExpression = everySecond;
+            o.WithCronExpression("* * * * * *", true);
         });
 
         act.ShouldNotThrow();

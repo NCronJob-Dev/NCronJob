@@ -15,8 +15,7 @@ builder.Services.AddNCronJob();
 // Execute the job every minute
 builder.Services.AddCronJob<PrintHelloWorldJob>(p =>
 {
-    p.CronExpression = "* * * * *";
-    p.Parameter = "Hello from NCronJob";
+    p.WithCronExpression("* * * * *").WithParameter("Hello from NCronJob");
 });
 
 // Register a handler that gets executed when the job is done
