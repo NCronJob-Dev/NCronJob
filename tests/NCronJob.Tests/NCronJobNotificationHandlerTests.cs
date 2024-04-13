@@ -90,33 +90,25 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     private sealed class ExceptionJob : IJob
     {
         public Task RunAsync(JobExecutionContext context, CancellationToken token)
-        {
-            throw new InvalidOperationException();
-        }
+            => throw new InvalidOperationException();
     }
 
     private sealed class SimpleJobHandler(ChannelWriter<object> writer) : IJobNotificationHandler<SimpleJob>
     {
         public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
-        {
-            return writer.WriteAsync(context.Output!, cancellationToken).AsTask();
-        }
+            => writer.WriteAsync(context.Output!, cancellationToken).AsTask();
     }
 
     private sealed class ExceptionHandler(ChannelWriter<object> writer) : IJobNotificationHandler<ExceptionJob>
     {
         public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
-        {
-            return writer.WriteAsync(exception!, cancellationToken).AsTask();
-        }
+            => writer.WriteAsync(exception!, cancellationToken).AsTask();
     }
 
     private sealed class HandlerThatThrowsException : IJobNotificationHandler<ExceptionJob>
     {
         public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
-        {
-            throw new InvalidOperationException();
-        }
+            => throw new InvalidOperationException();
     }
 
     private sealed class HandlerThatThrowsInAsyncPartException : IJobNotificationHandler<ExceptionJob>

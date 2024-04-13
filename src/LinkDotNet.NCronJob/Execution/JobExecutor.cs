@@ -36,10 +36,7 @@ internal sealed partial class JobExecutor : IDisposable
         ExecuteJob(run, job, scope, stoppingToken);
     }
 
-    public void Dispose()
-    {
-        isDisposed = true;
-    }
+    public void Dispose() => isDisposed = true;
 
     private void ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {

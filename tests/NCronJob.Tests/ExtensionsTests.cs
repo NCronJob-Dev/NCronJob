@@ -16,7 +16,7 @@ public class NCronJobTests
         act.ShouldThrow<InvalidOperationException>();
     }
 
-     [Fact]
+    [Fact]
     public void AddingCronJobWithSecondPrecisionExpressionNotThrowException()
     {
         var everySecond = "* * * * * *";

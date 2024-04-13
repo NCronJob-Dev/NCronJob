@@ -5,8 +5,7 @@ namespace NCronJob.Tests;
 internal static class TimeProviderFactory
 {
     public static ManualTimeProvider GetTimeProvider(TimeSpan? advanceTime = null)
-    {
-        return new ManualTimeProvider
+        => new()
         {
             AutoAdvanceBehavior = new AutoAdvanceBehavior
             {
@@ -14,5 +13,4 @@ internal static class TimeProviderFactory
                 TimerAutoTriggerCount = 1,
             },
         };
-    }
 }

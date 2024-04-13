@@ -6,10 +6,7 @@ public partial class PrintHelloWorldJob : IJob
 {
     private readonly ILogger<PrintHelloWorldJob> logger;
 
-    public PrintHelloWorldJob(ILogger<PrintHelloWorldJob> logger)
-    {
-        this.logger = logger;
-    }
+    public PrintHelloWorldJob(ILogger<PrintHelloWorldJob> logger) => this.logger = logger;
 
     public Task RunAsync(JobExecutionContext context, CancellationToken token)
     {

@@ -6,10 +6,7 @@ public partial class HelloWorldJobHandler : IJobNotificationHandler<PrintHelloWo
 {
     private readonly ILogger<HelloWorldJobHandler> logger;
 
-    public HelloWorldJobHandler(ILogger<HelloWorldJobHandler> logger)
-    {
-        this.logger = logger;
-    }
+    public HelloWorldJobHandler(ILogger<HelloWorldJobHandler> logger) => this.logger = logger;
 
     public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
     {

@@ -203,9 +203,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token)
-        {
-            await writer.WriteAsync(true, token);
-        }
+            => await writer.WriteAsync(true, token);
     }
 
     private sealed class LongRunningJob : IJob
@@ -229,8 +227,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     private sealed class ParameterJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token)
-        {
-            await writer.WriteAsync(context.Parameter!, token);
-        }
+            => await writer.WriteAsync(context.Parameter!, token);
     }
 }
