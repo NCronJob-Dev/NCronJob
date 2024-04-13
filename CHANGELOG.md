@@ -6,6 +6,24 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## Changed
+- In `v1` one would define as such:
+```csharp
+services.AddCronJob<PrintHelloWorld>(options => 
+{
+    options.CronExpression = "* * * * *";
+    options.Parameter = "Hello World";
+});
+```
+
+With `v2` the `CronExpression` is moved towards the builder pattern:
+```csharp
+services.AddCronJob<PrintHelloWorld>(options => 
+{
+    options.WithCronExpression("* * * * *")
+           .WithParameter("Hello World");
+});
+
 ## [1.0.2] - 2024-04-11
 
 ### Changed

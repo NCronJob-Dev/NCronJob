@@ -14,7 +14,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
+        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
         ServiceCollection.AddNotificationHandler<SimpleJobHandler, SimpleJob>();
         var provider = CreateServiceProvider();
 
@@ -31,7 +31,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<ExceptionJob>(p => p.CronExpression = "* * * * *");
+        ServiceCollection.AddCronJob<ExceptionJob>(p => p.WithCronExpression("* * * * *"));
         ServiceCollection.AddNotificationHandler<ExceptionHandler, ExceptionJob>();
         var provider = CreateServiceProvider();
 
@@ -48,7 +48,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
+        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
         ServiceCollection.AddNotificationHandler<HandlerThatThrowsException, ExceptionJob>();
         ServiceCollection.AddNotificationHandler<SimpleJobHandler, SimpleJob>();
         var provider = CreateServiceProvider();
@@ -66,7 +66,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.CronExpression = "* * * * *");
+        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
         ServiceCollection.AddNotificationHandler<HandlerThatThrowsInAsyncPartException, ExceptionJob>();
         ServiceCollection.AddNotificationHandler<SimpleJobHandler, SimpleJob>();
         var provider = CreateServiceProvider();

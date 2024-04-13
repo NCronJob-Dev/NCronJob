@@ -16,7 +16,7 @@
 A Job Scheduler sitting on top of `IHostedService` in dotnet.
 
 Often times one finds themself between the simplicity of the `BackgroundService`/`IHostedService` and the complexity of
-a full blown `Hangfire` or `Quartz` scheduler.
+a full-blown `Hangfire` or `Quartz` scheduler.
 This library aims to fill that gap by providing a simple and easy to use job scheduler that can be used in any dotnet
 application and feels "native".
 
@@ -82,10 +82,9 @@ public class PrintHelloWorld : IJob
 builder.Services.AddNCronJob();
 builder.Services.AddCronJob<PrintHelloWorld>(options => 
 {
-    // Every minute
-    options.CronExpression = "* * * * *";
-    // Optional parameter
-    options.Parameter = "Hello World";
+    // Every minute and optional parameter
+    options.WithCronExpression("* * * * *")
+           .WithParameter("Hello World");
 });
 ```
 
@@ -158,6 +157,37 @@ The **NCronJob** scheduler can be configured to log at a specific log level.
       "Default": "Information",
       "Microsoft.AspNetCore": "Warning",
       "LinkDotNet.NCronJob": "Debug"
+```
+
+## Migration from `v1` to `v2`
+Version 2 of **NCronJob** brings some breaking changes to mae a better API.
+
+### `CronExpression` moved towards builder
+In `v1` one would define as such:
+```csharp
+services.AddCronJob<PrintHelloWorld>(options => 
+{
+    options.CronExpression = "* * * * *";
+    options.Parameter = "Hello World";
+});
+```
+
+With `v2` the `CronExpression` is moved towards the builder pattern:
+```csharp
+services.AddCronJob<PrintHelloWorld>(options => 
+{
+    options.WithCronExpression("* * * * *")
+           .WithParameter("Hello World");
+});
+```
+
+This allows to easily define multiple jobs without adding mich boilerplate code.
+```csharp
+services.AddCronJob<PrintHelloWorld>(options => 
+{
+    options.WithCronExpression("0 * * * *").WithParameter("Foo");
+           .WithCronExpression("0 0 * * *").WithParmeter("Bar");
+});
 ```
 
 ## Support & Contributing
