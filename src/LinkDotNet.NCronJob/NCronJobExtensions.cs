@@ -33,6 +33,12 @@ public static class NCronJobExtensions
     /// <typeparam name="T">The job type. It will be registered scoped into the container.</typeparam>
     /// <exception cref="ArgumentException">Throws if the cron expression is invalid.</exception>
     /// <remarks>The cron expression is evaluated against UTC timezone.</remarks>
+    /// <example>
+    /// Registering a job that runs once every hour:
+    /// <code>
+    /// Services.AddCronJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
+    /// </code>
+    /// </example>
     public static IServiceCollection AddCronJob<T>(this IServiceCollection services, Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
@@ -60,7 +66,7 @@ public static class NCronJobExtensions
     /// <typeparam name="TJob">The job type.</typeparam>
     /// <remarks>
     /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
-    /// Also only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
+    /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
     /// </remarks>
     public static IServiceCollection AddNotificationHandler<TJobNotificationHandler, TJob>(this IServiceCollection services)
         where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
