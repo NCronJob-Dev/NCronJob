@@ -201,7 +201,8 @@ This allows to easily define multiple jobs without adding mich boilerplate code.
 ```csharp
 services.AddCronJob<PrintHelloWorld>(options => 
 {
-    options.WithCronExpression("0 * * * *").WithParameter("Foo");
+    options.WithCronExpression("0 * * * *").WithParameter("Foo")
+           .And
            .WithCronExpression("0 0 * * *").WithParmeter("Bar");
 });
 ```
