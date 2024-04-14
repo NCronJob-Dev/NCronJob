@@ -29,7 +29,7 @@
 		<PackageIcon>logo_small.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-			Changes in NCronJob #{RELEASE_VERSION}#
+			Changes in NCronJob
 
 			#{RELEASE_NOTES}#
 
