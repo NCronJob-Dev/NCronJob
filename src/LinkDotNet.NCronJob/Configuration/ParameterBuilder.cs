@@ -5,12 +5,16 @@ namespace LinkDotNet.NCronJob;
 /// </summary>
 public sealed class ParameterBuilder
 {
-    private readonly JobOptionBuilder optionBuilder;
     private readonly JobOption jobOption;
+
+    /// <summary>
+    /// Chains another cron expression to the job.
+    /// </summary>
+    public JobOptionBuilder And { get; }
 
     internal ParameterBuilder(JobOptionBuilder optionBuilder, JobOption jobOption)
     {
-        this.optionBuilder = optionBuilder;
+        And = optionBuilder;
         this.jobOption = jobOption;
     }
 
@@ -29,21 +33,12 @@ public sealed class ParameterBuilder
     /// Will result in the parameter "second" being passed to the job.
     /// To pass multiple parameters, create multiple cron expressions with the same value:
     /// <code>
-    /// p => p.WithCronExpression("* * * * *").WithParameter("first").WithCronExpression("* * * * *").WithParameter("second")
+    /// p => p.WithCronExpression("* * * * *").WithParameter("first").And.WithCronExpression("* * * * *").WithParameter("second")
     /// </code>
     /// </remarks>
-    public JobOptionBuilder WithParameter(object? parameter)
+    public ParameterBuilder WithParameter(object? parameter)
     {
         jobOption.Parameter = parameter;
-        return optionBuilder;
+        return this;
     }
-
-    /// <summary>
-    /// Adds a cron expression for the given job.
-    /// </summary>
-    /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
-    /// <param name="enableSecondPrecision">If set to <c>true</c>, the cron expression can specify second-level precision.</param>
-    /// <returns>Returns a <see cref="JobOptionBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder WithCronExpression(string cronExpression, bool enableSecondPrecision = false)
-        => optionBuilder.WithCronExpression(cronExpression, enableSecondPrecision);
 }

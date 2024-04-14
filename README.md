@@ -146,6 +146,22 @@ public class MyJobNotificationHandler : IJobNotificationHandler<MyJob>
 
 ## Advanced Cases
 
+### Scheduling multiple schedules for the same job
+
+If you want to schedule a job multiple times, you can do so by calling utilizing the builder:
+
+```csharp
+AddCronJob<PrintHelloWorld>(options => 
+{
+    options.WithCronExpression("0 * * * *")
+           .WithParameter("Hello World")
+           .And
+           .WithCronExpression("45 * * * *")
+           .WithParameter("Hello World");
+});
+
+```
+
 ### Log Level
 
 The **NCronJob** scheduler can be configured to log at a specific log level.
