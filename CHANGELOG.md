@@ -23,6 +23,9 @@ services.AddCronJob<PrintHelloWorld>(options =>
     options.WithCronExpression("* * * * *")
            .WithParameter("Hello World");
 });
+```
+
+- Cleaned up `AddCronJob` to not accidentally build the service container
 
 ## [1.0.2] - 2024-04-11
 
