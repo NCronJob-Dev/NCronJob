@@ -203,7 +203,7 @@ services.AddCronJob<PrintHelloWorld>(options =>
 {
     options.WithCronExpression("0 * * * *").WithParameter("Foo")
            .And
-           .WithCronExpression("0 0 * * *").WithParmeter("Bar");
+           .WithCronExpression("0 0 * * *").WithParameter("Bar");
 });
 ```
 
