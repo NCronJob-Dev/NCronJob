@@ -25,6 +25,7 @@ public class JobOptionBuilderTests
         var builder = new JobOptionBuilder();
         builder.WithCronExpression("* * * * *")
             .WithParameter("foo")
+            .And
             .WithCronExpression("0 * * * *")
             .WithParameter("bar");
 
@@ -43,7 +44,9 @@ public class JobOptionBuilderTests
     public void ShouldAddMultipleCronJobsEvenWithoutParameters()
     {
         var builder = new JobOptionBuilder();
-        builder.WithCronExpression("* * * * *")
+        builder
+            .WithCronExpression("* * * * *")
+            .And
             .WithCronExpression("0 * * * *");
 
         var options = builder.GetJobOptions();

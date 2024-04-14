@@ -51,6 +51,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob();
         ServiceCollection.AddCronJob<ScopedServiceJob>(p => p
             .WithCronExpression("* * * * *")
+            .And
             .WithCronExpression("* * * * *"));
         var provider = CreateServiceProvider();
 
