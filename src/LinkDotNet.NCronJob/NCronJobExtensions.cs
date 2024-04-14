@@ -30,7 +30,7 @@ public static class NCronJobExtensions
     /// </summary>
     /// <param name="services">The service collection used to register the job.</param>
     /// <param name="options">Configures the option, like the cron expression or parameters that get passed down.</param>
-    /// <typeparam name="T">The job type.</typeparam>
+    /// <typeparam name="T">The job type. It will be registered scoped into the container.</typeparam>
     /// <exception cref="ArgumentException">Throws if the cron expression is invalid.</exception>
     /// <remarks>The cron expression is evaluated against UTC timezone.</remarks>
     public static IServiceCollection AddCronJob<T>(this IServiceCollection services, Action<JobOptionBuilder>? options = null)
