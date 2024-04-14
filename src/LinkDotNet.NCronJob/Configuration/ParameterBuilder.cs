@@ -20,6 +20,14 @@ public sealed class ParameterBuilder
     /// </summary>
     /// <param name="parameter">The paramter to add that will be passed to the cron job.</param>
     /// <returns>Returns a <see cref="JobOptionBuilder"/> that allows adding more options (like additional cron defintions) to the job.</returns>
+    /// <remarks>
+    /// Calling this method multiple times on the same cron expression, will overwrite the last set value.
+    /// Therefore:
+    /// <code>
+    /// p => p.WithCronExpression("* * * * *").WithParameter("first").WithParameter("second")
+    /// </code>
+    /// Will result in the parameter "second" being passed to the job.
+    /// </remarks>
     public JobOptionBuilder WithParameter(object? parameter)
     {
         jobOption.Parameter = parameter;

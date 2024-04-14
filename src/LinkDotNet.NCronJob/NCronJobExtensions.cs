@@ -40,17 +40,11 @@ public static class NCronJobExtensions
         options?.Invoke(builder);
         var jobOptions = builder.GetJobOptions();
 
-        foreach (var option in jobOptions)
+        foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
-            var cron = string.IsNullOrEmpty(option.CronExpression)
-                ? null
-                : GetCronExpression(services, option);
-
-            if (cron is not null)
-            {
-                var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
-                services.AddSingleton(entry);
-            }
+            var cron = GetCronExpression(option);
+            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
+            services.AddSingleton(entry);
         }
 
         services.TryAddScoped<T>();
@@ -76,10 +70,8 @@ public static class NCronJobExtensions
         return services;
     }
 
-    private static CrontabSchedule GetCronExpression(IServiceCollection services, JobOption option)
+    private static CrontabSchedule GetCronExpression(JobOption option)
     {
-        using var serviceProvider = services.BuildServiceProvider();
-
         var cronParseOptions = new CrontabSchedule.ParseOptions
         {
             IncludingSeconds = option.EnableSecondPrecision
