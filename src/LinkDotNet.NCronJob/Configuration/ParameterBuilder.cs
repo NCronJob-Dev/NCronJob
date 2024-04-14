@@ -27,6 +27,10 @@ public sealed class ParameterBuilder
     /// p => p.WithCronExpression("* * * * *").WithParameter("first").WithParameter("second")
     /// </code>
     /// Will result in the parameter "second" being passed to the job.
+    /// To pass multiple parameters, create multiple cron expressions with the same value:
+    /// <code>
+    /// p => p.WithCronExpression("* * * * *").WithParameter("first").WithCronExpression("* * * * *").WithParameter("second")
+    /// </code>
     /// </remarks>
     public JobOptionBuilder WithParameter(object? parameter)
     {

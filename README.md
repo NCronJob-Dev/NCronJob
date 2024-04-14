@@ -101,7 +101,7 @@ public class MyService
   
   public MyService(IInstantJobRegistry jobRegistry) => this.jobRegistry = jobRegistry;
 
-  public void MyMethod() => jobRegistry.AddInstantJob<MyJob>("I am an optional parameter");
+  public void MyMethod() => jobRegistry.RunInstantJob<MyJob>("I am an optional parameter");
 }
 ```
 
