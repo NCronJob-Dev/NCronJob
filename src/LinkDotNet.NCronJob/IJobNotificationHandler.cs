@@ -1,7 +1,7 @@
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
-/// This is in pub-internal interface that is used to avoid reflection.
+/// This is an pub-internal interface that is used to avoid reflection.
 /// Please derive directly from <see cref="IJobNotificationHandler{TJob}"/>.
 /// </summary>
 public interface IJobNotificationHandler
