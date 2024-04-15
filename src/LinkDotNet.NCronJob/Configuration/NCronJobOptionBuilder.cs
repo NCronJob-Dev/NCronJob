@@ -23,7 +23,7 @@ public sealed class NCronJobOptionBuilder
     /// <example>
     /// Registering a job that runs once every hour:
     /// <code>
-    /// Services.AddCronJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
+    /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
     /// </code>
     /// </example>
     public NCronJobOptionBuilder AddJob<T>(Action<JobOptionBuilder>? options = null)
