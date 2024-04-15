@@ -211,11 +211,12 @@ Services.AddNCronJob(options =>
 
 This allows to easily define multiple jobs without adding much boilerplate code.
 ```csharp
-Services.AddCronJob<PrintHelloWorld>(options => 
+Services.AddNCronJob(options => 
 {
-    options.WithCronExpression("0 * * * *").WithParameter("Foo")
-           .And
-           .WithCronExpression("0 0 * * *").WithParameter("Bar");
+    options.AddJob<PrintHelloWorld>(p => p
+        .WithCronExpression("0 * * * *").WithParameter("Foo")
+        .And
+        .WithCronExpression("0 0 * * *").WithParameter("Bar"));
 });
 ```
 
