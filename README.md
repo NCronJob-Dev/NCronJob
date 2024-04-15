@@ -199,7 +199,7 @@ services.AddCronJob<PrintHelloWorld>(options =>
 
 With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
 ```csharp
-services.AddNCronJob(options => 
+Services.AddNCronJob(options => 
 {
     options.AddJob<PrintHelloWorld>(j => 
     {
@@ -208,11 +208,10 @@ services.AddNCronJob(options =>
     });
 });
 ```
-```
 
-This allows to easily define multiple jobs without adding mich boilerplate code.
+This allows to easily define multiple jobs without adding much boilerplate code.
 ```csharp
-services.AddCronJob<PrintHelloWorld>(options => 
+Services.AddCronJob<PrintHelloWorld>(options => 
 {
     options.WithCronExpression("0 * * * *").WithParameter("Foo")
            .And
