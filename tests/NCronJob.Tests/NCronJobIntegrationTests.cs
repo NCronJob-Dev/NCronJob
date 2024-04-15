@@ -15,8 +15,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -30,8 +29,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -48,11 +46,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton(storage);
         ServiceCollection.AddScoped<GuidGenerator>();
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<ScopedServiceJob>(p => p
-            .WithCronExpression("* * * * *")
-            .And
-            .WithCronExpression("* * * * *"));
+        ServiceCollection.AddNCronJob(n => n.AddJob<ScopedServiceJob>(
+            p => p.WithCronExpression("* * * * *").And.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -69,8 +64,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>();
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
@@ -85,12 +79,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<ParameterJob>(p =>
-        {
-            p.WithCronExpression("* * * * *")
-                .WithParameter("Hello World");
-        });
+        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello World")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -104,8 +93,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<ParameterJob>();
+        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>());
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
 
@@ -120,11 +108,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider(TimeSpan.FromSeconds(1));
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p =>
-        {
-            p.WithCronExpression("* * * * * *", true);
-        });
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *", true)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -138,15 +122,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider(TimeSpan.FromSeconds(1));
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p =>
-        {
-            p.WithCronExpression("* * * * * *", true);
-        });
-        ServiceCollection.AddCronJob<SimpleJob>(p =>
-        {
-            p.WithCronExpression("* * * * *");
-        });
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(
+            p => p.WithCronExpression("* * * * * *", true).And.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -160,12 +137,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<LongRunningJob>(p =>
-        {
-            p.WithCronExpression("* * * * *");
-        });
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
+        ServiceCollection.AddNCronJob(n => n
+                .AddJob<LongRunningJob>(p => p.WithCronExpression("* * * * *"))
+                .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -179,8 +153,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob();
-        ServiceCollection.AddCronJob<SimpleJob>(p => p.WithCronExpression("* * * * *"));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
 

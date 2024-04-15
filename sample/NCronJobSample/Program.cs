@@ -10,16 +10,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 
 // Add NCronJob to the container.
-builder.Services.AddNCronJob();
+builder.Services.AddNCronJob(n => n
 
-// Execute the job every minute
-builder.Services.AddCronJob<PrintHelloWorldJob>(p =>
-{
-    p.WithCronExpression("* * * * *").WithParameter("Hello from NCronJob");
-});
+    // Execute the job every minute
+    .AddJob<PrintHelloWorldJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello from NCronJob"))
 
-// Register a handler that gets executed when the job is done
-builder.Services.AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>();
+    // Register a handler that gets executed when the job is done
+    .AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
+);
 
 var app = builder.Build();
 

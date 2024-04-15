@@ -79,13 +79,13 @@ public class PrintHelloWorld : IJob
 3. Register the NCronJob and the job in your `Program.cs`
 
 ```csharp
-builder.Services.AddNCronJob();
-builder.Services.AddCronJob<PrintHelloWorld>(options => 
-{
-    // Every minute and optional parameter
-    options.WithCronExpression("* * * * *")
-           .WithParameter("Hello World");
-});
+builder.Services.AddNCronJob(options =>
+    options.AddJob<PrintHelloWorld>(j => 
+    {
+        // Every minute and optional parameter
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World");
+    }));
 ```
 
 4. Run your application and see the magic happen
@@ -111,7 +111,14 @@ public class MyService
 and register it in your DI container.
 
 ```csharp
-Services.AddNotificationHandler<MyJobNotificationHandler, MyJob>();
+builder.Services.AddNCronJob(options =>
+    options.AddCronJob<PrintHelloWorld>(j => 
+    {
+        // Every minute and optional parameter
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World");
+    })
+    .AddNotificationHandler<MyJobNotificationHandler, PrintHelloWorld>());
 ```
 
 This allows to run logic after a job is done. The `JobExecutionContext` and the `Exception` (if there was one) are
@@ -151,15 +158,15 @@ public class MyJobNotificationHandler : IJobNotificationHandler<MyJob>
 If you want to schedule a job multiple times, you can do so by calling utilizing the builder:
 
 ```csharp
-AddCronJob<PrintHelloWorld>(options => 
-{
-    options.WithCronExpression("0 * * * *")
-           .WithParameter("Hello World")
-           .And
-           .WithCronExpression("45 * * * *")
-           .WithParameter("Hello World");
-});
-
+Services.AddNCronJob(options =>
+    options.AddJob<PrintHelloWorld>(j => 
+    {
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World")
+         .And
+         .WithCronExpression("0 * * * *")
+         .WithParameter("Hello World Again");
+    }));
 ```
 
 ### Log Level
@@ -179,8 +186,10 @@ The **NCronJob** scheduler can be configured to log at a specific log level.
 Version 2 of **NCronJob** brings some breaking changes to mae a better API.
 
 ### `CronExpression` moved towards builder
-In `v1` one would define as such:
+
+- In `v1` one would define as such:
 ```csharp
+services.AddNCronJob();
 services.AddCronJob<PrintHelloWorld>(options => 
 {
     options.CronExpression = "* * * * *";
@@ -188,13 +197,17 @@ services.AddCronJob<PrintHelloWorld>(options =>
 });
 ```
 
-With `v2` the `CronExpression` is moved towards the builder pattern:
+With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
 ```csharp
-services.AddCronJob<PrintHelloWorld>(options => 
+services.AddNCronJob(options => 
 {
-    options.WithCronExpression("* * * * *")
-           .WithParameter("Hello World");
+    options.AddJob<PrintHelloWorld>(j => 
+    {
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World");
+    });
 });
+```
 ```
 
 This allows to easily define multiple jobs without adding mich boilerplate code.

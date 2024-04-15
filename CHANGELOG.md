@@ -6,9 +6,15 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+With `v2` the overall API was cleaned up and made more consistent. `AddNCronJob` and `AddCronJob` are merged into one service defintion:
+
+## Added
+- The IDE can help with RegEx pattern thanks to the `StringSyntaxAttribute`.
+
 ## Changed
 - In `v1` one would define as such:
 ```csharp
+services.AddNCronJob();
 services.AddCronJob<PrintHelloWorld>(options => 
 {
     options.CronExpression = "* * * * *";
@@ -16,16 +22,19 @@ services.AddCronJob<PrintHelloWorld>(options =>
 });
 ```
 
-With `v2` the `CronExpression` is moved towards the builder pattern:
+With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
 ```csharp
-services.AddCronJob<PrintHelloWorld>(options => 
+services.AddNCronJob(options => 
 {
-    options.WithCronExpression("* * * * *")
-           .WithParameter("Hello World");
+    options.AddJob<PrintHelloWorld>(j => 
+    {
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World");
+    });
 });
 ```
 
-- Cleaned up `AddCronJob` to not accidentally build the service container
+- Cleaned up `AddNCronJob` to not accidentally build the service container
 
 ## [1.0.2] - 2024-04-11
 

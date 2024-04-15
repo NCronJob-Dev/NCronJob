@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
@@ -13,7 +15,7 @@ public sealed class JobOptionBuilder
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
     /// <param name="enableSecondPrecision">If set to <c>true</c>, the cron expression can specify second-level precision.</param>
     /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder WithCronExpression(string cronExpression, bool enableSecondPrecision = false)
+    public ParameterBuilder WithCronExpression([StringSyntax(StringSyntaxAttribute.Regex)] string cronExpression, bool enableSecondPrecision = false)
     {
         var jobOption = new JobOption
         {
