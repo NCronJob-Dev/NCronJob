@@ -6,14 +6,19 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.0.3] - 2024-04-15
+
 With `v2` the overall API was cleaned up and made more consistent. `AddNCronJob` and `AddCronJob` are merged into one service defintion:
 
 ## Added
-- The IDE can help with RegEx pattern thanks to the `StringSyntaxAttribute`.
-- Added more code documentation (xmldoc) with many examples to rely less on the README.
+
+-   The IDE can help with RegEx pattern thanks to the `StringSyntaxAttribute`.
+-   Added more code documentation (xmldoc) with many examples to rely less on the README.
 
 ## Changed
-- In `v1` one would define as such:
+
+-   In `v1` one would define as such:
+
 ```csharp
 services.AddNCronJob();
 services.AddCronJob<PrintHelloWorld>(options => 
@@ -24,6 +29,7 @@ services.AddCronJob<PrintHelloWorld>(options =>
 ```
 
 With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
+
 ```csharp
 services.AddNCronJob(options => 
 {
@@ -35,7 +41,7 @@ services.AddNCronJob(options =>
 });
 ```
 
-- Cleaned up `AddNCronJob` to not accidentally build the service container
+-   Cleaned up `AddNCronJob` to not accidentally build the service container
 
 ## [1.0.2] - 2024-04-11
 
@@ -134,7 +140,9 @@ services.AddNCronJob(options =>
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/1.0.2...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.0.3...HEAD
+
+[2.0.3]: https://github.com/linkdotnet/NCronJob/compare/1.0.2...2.0.3
 
 [1.0.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.2...1.0.2
 
