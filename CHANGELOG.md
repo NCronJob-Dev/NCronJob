@@ -10,12 +10,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 With `v2` the overall API was cleaned up and made more consistent. `AddNCronJob` and `AddCronJob` are merged into one service defintion:
 
-## Added
+### Added
 
 -   The IDE can help with RegEx pattern thanks to the `StringSyntaxAttribute`.
 -   Added more code documentation (xmldoc) with many examples to rely less on the README.
 
-## Changed
+### Changed
 
 -   In `v1` one would define as such:
 
