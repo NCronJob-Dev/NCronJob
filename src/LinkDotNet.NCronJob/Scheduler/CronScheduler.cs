@@ -42,7 +42,7 @@ internal sealed partial class CronScheduler : BackgroundService
         LogNextJobRun(entry.Type, runDate);
 
         var delay = runDate - now;
-        _ = Task.Delay(delay, timeProvider, stoppingToken)
+        Task.Delay(delay, timeProvider, stoppingToken)
             .ContinueWith(_ =>
                     RunAndRescheduleJob(entry, stoppingToken),
                 stoppingToken,
