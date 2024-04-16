@@ -183,7 +183,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
-            Task.Delay(10000, token).GetAwaiter().GetResult();
+            Task.Delay(1000, token).GetAwaiter().GetResult();
             return Task.CompletedTask;
         }
     }
