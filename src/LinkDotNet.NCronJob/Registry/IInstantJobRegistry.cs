@@ -19,6 +19,6 @@ public interface IInstantJobRegistry
     /// instantJobRegistry.RunInstantJob&lt;MyJob&gt;(new MyParameterObject { Foo = "Bar" }));
     /// </code>
     /// </example>
-    void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+    Task RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
 }

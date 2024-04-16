@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
@@ -9,17 +10,26 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
     private bool isDisposed;
+    private CancellationTokenSource? shutdown;
 
-    public JobExecutor(IServiceProvider serviceProvider, ILogger<JobExecutor> logger)
+    public JobExecutor(IServiceProvider serviceProvider,
+        ILogger<JobExecutor> logger,
+        IHostApplicationLifetime lifetime)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
+
+        lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
         Justification = "Service will be disposed in continuation task")]
-    public void RunJob(RegistryEntry run, CancellationToken stoppingToken)
+    public async Task RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
+        // bug in design, stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess
+        shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        var stopToken = shutdown.Token;
+
         if (isDisposed)
         {
             LogSkipAsDisposed();
@@ -33,32 +43,36 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
-        ExecuteJob(run, job, scope, stoppingToken);
+        await ExecuteJob(run, job, scope, stopToken);
     }
 
-    public void Dispose() => isDisposed = true;
+    public void Dispose()
+    {
+        shutdown?.Dispose();
+        isDisposed = true;
+    }
 
-    private void ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    private async Task ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
         try
         {
             LogRunningJob(run.Type);
 
-            // We don't want to await jobs explicitly because that
-            // could interfere with other job runs
-            job.RunAsync(run.Context, stoppingToken)
-                .ContinueWith(
-                    task => AfterJobCompletionTask(task.Exception),
-                    TaskScheduler.Default)
+            // Job Runs are executed in parallel by default
+            await job.RunAsync(run.Context, stoppingToken)
                 .ConfigureAwait(false);
+
+            stoppingToken.ThrowIfCancellationRequested();
+
+            await AfterJobCompletionTask(null, stoppingToken);
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
             // This part is only reached if the synchronous part of the job throws an exception
-            AfterJobCompletionTask(exc);
+            await AfterJobCompletionTask(exc, default);
         }
-
-        void AfterJobCompletionTask(Exception? exc)
+        // This needs to be async otherwise it can deadlock or try to use the disposed scope, maybe it needs to create its own serviceScope
+        async Task AfterJobCompletionTask(Exception? exc, CancellationToken ct)
         {
             if (isDisposed)
             {
@@ -72,7 +86,7 @@ internal sealed partial class JobExecutor : IDisposable
             {
                 try
                 {
-                    notificationService.HandleAsync(run.Context, exc, stoppingToken).ConfigureAwait(false);
+                    await notificationService.HandleAsync(run.Context, exc, ct).ConfigureAwait(false);
                 }
                 catch (Exception innerExc) when (innerExc is not OperationCanceledException or AggregateException)
                 {

@@ -12,8 +12,11 @@ builder.Services.AddLogging();
 // Add NCronJob to the container.
 builder.Services.AddNCronJob(n => n
 
-    // Execute the job every minute
-    .AddJob<PrintHelloWorldJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello from NCronJob"))
+    // Execute the job every 2 minutes
+    .AddJob<PrintHelloWorldJob>(p => p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
+
+    // Execute every 10 seconds
+    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/10 * * * * *", true).WithParameter("Hello from NCronJob"))
 
     // Register a handler that gets executed when the job is done
     .AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
@@ -30,9 +33,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
+app.MapPost("/trigger-instant", async (IInstantJobRegistry instantJobRegistry) =>
     {
-        instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
+        await instantJobRegistry.RunInstantJob<TestCancellationJob>("Hello from instant job!");
     })
     .WithName("TriggerInstantJob")
     .WithOpenApi();
