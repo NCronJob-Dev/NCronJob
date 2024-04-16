@@ -31,7 +31,6 @@ public partial class TestCancellationJob : IJob
                 // Simulate work by delaying a random amount of time
                 var variableMs = TimeSpan.FromMilliseconds(1000 + RandomNumberGenerator.GetInt32(2000));
                 await Task.Delay(variableMs, token);
-                //await Task.Delay(2000, token);
 
                 // Log each unit of work completion
                 LogWorkUnitCompleted(i + 1, context.Parameter);
