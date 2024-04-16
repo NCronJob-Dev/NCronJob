@@ -27,33 +27,21 @@ internal sealed partial class CronScheduler : BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        foreach (var cron in registry.GetAllCronJobs())
+        var tasks = registry.GetAllCronJobs().Select(c => ScheduleJobAsync(c, stoppingToken));
+        return Task.WhenAll(tasks);
+    }
+
+    private async Task ScheduleJobAsync(RegistryEntry entry, CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
         {
-            ScheduleJob(cron, stoppingToken);
+            var now = timeProvider.GetUtcNow().DateTime;
+            var runDate = entry.CrontabSchedule!.GetNextOccurrence(now);
+            LogNextJobRun(entry.Type, runDate);
+
+            var delay = runDate - now;
+            await Task.Delay(delay, timeProvider, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            jobExecutor.RunJob(entry, stoppingToken);
         }
-
-        return Task.CompletedTask;
-    }
-
-    private void ScheduleJob(RegistryEntry entry, CancellationToken stoppingToken)
-    {
-        var now = timeProvider.GetUtcNow().DateTime;
-        var runDate = entry.CrontabSchedule!.GetNextOccurrence(now);
-        LogNextJobRun(entry.Type, runDate);
-
-        var delay = runDate - now;
-        Task.Delay(delay, timeProvider, stoppingToken)
-            .ContinueWith(_ =>
-                    RunAndRescheduleJob(entry, stoppingToken),
-                stoppingToken,
-                TaskContinuationOptions.OnlyOnRanToCompletion,
-                TaskScheduler.Default)
-            .ConfigureAwait(false);
-    }
-
-    private void RunAndRescheduleJob(RegistryEntry entry, CancellationToken stoppingToken)
-    {
-        jobExecutor.RunJob(entry, stoppingToken);
-        ScheduleJob(entry, stoppingToken);
     }
 }
