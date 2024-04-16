@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Don't log running jobs twice. Reported by [@ryanbuening](https://github.com/ryanbuening). Fixed by [@linkdotnet](https://github.com/linkdotnet)
+
 ## [2.0.3] - 2024-04-15
 
 With `v2` the overall API was cleaned up and made more consistent. `AddNCronJob` and `AddCronJob` are merged into one service defintion:

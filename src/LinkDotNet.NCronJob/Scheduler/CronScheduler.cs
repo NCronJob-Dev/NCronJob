@@ -53,7 +53,6 @@ internal sealed partial class CronScheduler : BackgroundService
 
     private void RunAndRescheduleJob(RegistryEntry entry, CancellationToken stoppingToken)
     {
-        LogRunningJob(entry.Type);
         jobExecutor.RunJob(entry, stoppingToken);
         ScheduleJob(entry, stoppingToken);
     }
