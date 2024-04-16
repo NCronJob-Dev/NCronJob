@@ -24,7 +24,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     public Task RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob
     {
-        token.Register(() => Console.WriteLine("Cancellation requested for CronRegistry from token."));
+        token.Register(() => LogCancellationRequested(parameter));
 
         var executionContext = new JobExecutionContext(parameter);
         var run = new RegistryEntry(typeof(TJob), executionContext, null);
@@ -54,5 +54,8 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
 
     [LoggerMessage(LogLevel.Warning, "Job {JobName} cancelled by request.")]
     private partial void LogCancellationNotice(string jobName);
+
+    [LoggerMessage(LogLevel.Debug, "Cancellation requested for CronRegistry {Parameter}.")]
+    private partial void LogCancellationRequested(object? parameter);
 }
 

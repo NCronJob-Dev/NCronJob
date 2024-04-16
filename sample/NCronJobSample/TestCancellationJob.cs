@@ -1,4 +1,5 @@
 using LinkDotNet.NCronJob;
+using System.Reflection.Metadata;
 using System.Threading;
 
 namespace NCronJobSample;
@@ -11,13 +12,9 @@ public partial class TestCancellationJob : IJob
 
     public async Task RunAsync(JobExecutionContext context, CancellationToken token)
     {
-        await using var registration = token.Register(() =>
-        {
-            Console.WriteLine($"Cancellation requested for job TestCancellationJob.");
-        });
-
-
         ArgumentNullException.ThrowIfNull(context);
+
+        token.Register(() => LogCancellationRequestedInJob(context.Parameter));
 
         LogMessage(context.Parameter);
 
@@ -36,14 +33,14 @@ public partial class TestCancellationJob : IJob
                 await Task.Delay(2000, token);
 
                 // Log each unit of work completion
-                LogWorkUnitCompleted(i + 1);
+                LogWorkUnitCompleted(i + 1, context.Parameter);
             }
 
             context.Output = "Hey there!";
         }
         catch (OperationCanceledException)
         {
-            LogCancellationConfirmed();
+            LogCancellationConfirmed(context.Parameter);
         }
     }
 
@@ -53,10 +50,14 @@ public partial class TestCancellationJob : IJob
     [LoggerMessage(LogLevel.Warning, "Job cancelled by request.")]
     private partial void LogCancellationNotice();
 
-    [LoggerMessage(LogLevel.Information, "Cancellation confirmed. Clean-up complete.")]
-    private partial void LogCancellationConfirmed();
+    [LoggerMessage(LogLevel.Information, "Cancellation confirmed. Clean-up complete for {Parameter}.")]
+    private partial void LogCancellationConfirmed(object? parameter);
 
-    [LoggerMessage(LogLevel.Information, "Completed work unit {Number}/10.")]
-    private partial void LogWorkUnitCompleted(int number);
+    [LoggerMessage(LogLevel.Information, "Completed work unit {Number}/10 for {Parameter}")]
+    private partial void LogWorkUnitCompleted(int number, object? parameter);
+
+    [LoggerMessage(LogLevel.Debug, "Cancellation requested for TestCancellationJob {Parameter}.")]
+    private partial void LogCancellationRequestedInJob(object? parameter);
+
 }
 

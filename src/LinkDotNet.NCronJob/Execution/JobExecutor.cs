@@ -26,7 +26,8 @@ internal sealed partial class JobExecutor : IDisposable
         Justification = "Service will be disposed in continuation task")]
     public async Task RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
-        // bug in design, stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess
+        // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
+        // so we need to tie into the IHostApplicationLifetime
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
 

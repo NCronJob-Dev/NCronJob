@@ -1,25 +1,18 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace LinkDotNet.NCronJob;
 
-internal record ConcurrencyConfig(int MaxDegreeOfParallelism, bool AllowConcurrency);
-
-/// <summary>
-/// Represents a background service that schedules jobs based on a cron expression.
-/// </summary>
 internal sealed partial class CronScheduler : BackgroundService
 {
     private readonly JobExecutor jobExecutor;
     private readonly CronRegistry registry;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<CronScheduler> logger;
-    private readonly int maxDegreeOfParallelism;
-    private readonly bool allowConcurrency;
-    private readonly ConcurrentDictionary<DateTime, List<RegistryEntry>> nextRunTimes = new();
     private readonly SemaphoreSlim semaphore;
     private CancellationTokenSource? shutdown;
+    private readonly PriorityQueue<RegistryEntry, DateTime> jobQueue = new();
 
     public CronScheduler(
         JobExecutor jobExecutor,
@@ -33,9 +26,7 @@ internal sealed partial class CronScheduler : BackgroundService
         this.registry = registry;
         this.timeProvider = timeProvider;
         this.logger = logger;
-        this.maxDegreeOfParallelism = concurrencyConfig.MaxDegreeOfParallelism;
-        this.allowConcurrency = concurrencyConfig.AllowConcurrency;
-        this.semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
+        this.semaphore = new SemaphoreSlim(concurrencyConfig.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
@@ -44,52 +35,32 @@ internal sealed partial class CronScheduler : BackgroundService
     {
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
+        stopToken.Register(LogCancellationRequestedInJob);
 
-        stopToken.Register(() => Console.WriteLine("Cancellation requested for CronScheduler from stopToken."));
-
-        var allTasks = new List<Task>();
+        // Schedule initial jobs
+        ScheduleInitialJobs();
 
         try
         {
-            foreach (var job in registry.GetAllCronJobs())
+            while (!stopToken.IsCancellationRequested && jobQueue.Count > 0)
             {
-                var now = timeProvider.GetUtcNow().DateTime;
-                var nextRunTime = job.CrontabSchedule!.GetNextOccurrence(now);
-                nextRunTimes.AddOrUpdate(nextRunTime, [job],
-                    (key, existingList) =>
-                    {
-                        existingList.Add(job);
-                        return existingList;
-                    });
-            }
-
-            while (!stopToken.IsCancellationRequested && !nextRunTimes.IsEmpty)
-            {
-                var nextTaskTime = nextRunTimes.Keys.Min();
-                var jobsToRun = nextRunTimes[nextTaskTime];
-                nextRunTimes.TryRemove(nextTaskTime, out _);
-
-                var delay = nextTaskTime - DateTime.UtcNow;
-                if (delay > TimeSpan.Zero)
+                if (jobQueue.TryPeek(out var nextJob, out var nextRunTime))
                 {
-                    await Task.Delay(delay, timeProvider, stopToken);
-                }
-
-                stopToken.ThrowIfCancellationRequested();
-
-                foreach (var job in jobsToRun)
-                {
-                    if (stopToken.IsCancellationRequested)
+                    var delay = nextRunTime - DateTime.UtcNow;
+                    if (delay > TimeSpan.Zero)
                     {
-                        break;
+                        await Task.Delay(delay, timeProvider, stopToken);
                     }
 
+                    stopToken.ThrowIfCancellationRequested();
+
+                    jobQueue.Dequeue();
                     await semaphore.WaitAsync(stopToken);
-                    var task = Task.Run(async () =>
+                    _ = Task.Run(async () =>
                     {
                         try
                         {
-                            await ExecuteJob(job, stopToken);
+                            await ExecuteJob(nextJob, stopToken);
                         }
                         finally
                         {
@@ -97,27 +68,29 @@ internal sealed partial class CronScheduler : BackgroundService
                         }
                     }, stopToken);
 
-                    allTasks.Add(task);
+                    // Reschedule immediately after run
+                    ScheduleJob(nextJob);
                 }
-
-                // Optionally wait for all tasks to complete if concurrency is not allowed
-                if (!allowConcurrency)
-                {
-                    await Task.WhenAll(allTasks);
-                    allTasks.Clear(); // Clear all tasks after they complete
-                }
-            }
-
-            // Wait for all tasks before disposing semaphore
-            if (allTasks.Count > 0)
-            {
-                await Task.WhenAll(allTasks);
             }
         }
         catch (OperationCanceledException)
         {
-            // Cancellation requested
+            // Handle cancellation
         }
+    }
+
+    private void ScheduleInitialJobs()
+    {
+        foreach (var job in registry.GetAllCronJobs())
+        {
+            ScheduleJob(job);
+        }
+    }
+
+    private void ScheduleJob(RegistryEntry job)
+    {
+        var nextRunTime = job.CrontabSchedule!.GetNextOccurrence(DateTime.UtcNow);
+        jobQueue.Enqueue(job, nextRunTime);
     }
 
     private async Task ExecuteJob(RegistryEntry entry, CancellationToken stoppingToken)
@@ -125,14 +98,10 @@ internal sealed partial class CronScheduler : BackgroundService
         try
         {
             LogRunningJob(entry.Type);
+
             await jobExecutor.RunJob(entry, stoppingToken);   // <-- we should await all the way through so that we can catch exceptions and cancel the job if needed
 
-            if (!stoppingToken.IsCancellationRequested)
-            {
-                var nextRunTime = entry.CrontabSchedule!.GetNextOccurrence(DateTime.UtcNow);
-                nextRunTimes.AddOrUpdate(nextRunTime, [entry],
-                    (key, existingList) => { existingList.Add(entry); return existingList; });
-            }
+            LogCompletedJob(entry.Type);
         }
         catch (Exception ex)
         {
@@ -143,7 +112,6 @@ internal sealed partial class CronScheduler : BackgroundService
     public override void Dispose()
     {
         shutdown?.Dispose();
-        nextRunTimes.Clear();
         semaphore.Dispose();
         base.Dispose();
     }

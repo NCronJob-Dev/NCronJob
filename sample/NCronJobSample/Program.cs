@@ -15,8 +15,12 @@ builder.Services.AddNCronJob(n => n
     // Execute the job every 2 minutes
     .AddJob<PrintHelloWorldJob>(p => p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
 
-    // Execute every 10 seconds
-    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/10 * * * * *", true).WithParameter("Hello from NCronJob"))
+    // Execute many TestCancellationJob jobs to test cancellation support and parallel execution
+    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/10 * * * * *", true).WithParameter("Instance 1"))
+    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/9 * * * * *", true).WithParameter("Instance 2"))
+    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/11 * * * * *", true).WithParameter("Instance 3"))
+    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/8 * * * * *", true).WithParameter("Instance 4"))
+    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/10 * * * * *", true).WithParameter("Instance 5"))
 
     // Register a handler that gets executed when the job is done
     .AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
