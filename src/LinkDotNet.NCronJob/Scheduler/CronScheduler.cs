@@ -13,6 +13,7 @@ internal sealed partial class CronScheduler : BackgroundService
     private readonly SemaphoreSlim semaphore;
     private CancellationTokenSource? shutdown;
     private readonly PriorityQueue<RegistryEntry, DateTime> jobQueue = new();
+    private readonly int maxDegreeOfParallelism;
 
     public CronScheduler(
         JobExecutor jobExecutor,
@@ -26,6 +27,7 @@ internal sealed partial class CronScheduler : BackgroundService
         this.registry = registry;
         this.timeProvider = timeProvider;
         this.logger = logger;
+        this.maxDegreeOfParallelism = concurrencyConfig.MaxDegreeOfParallelism;
         this.semaphore = new SemaphoreSlim(concurrencyConfig.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
@@ -36,15 +38,18 @@ internal sealed partial class CronScheduler : BackgroundService
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
+        var runningTasks = new List<Task>();
 
-        // Schedule initial jobs
         ScheduleInitialJobs();
 
         try
         {
             while (!stopToken.IsCancellationRequested && jobQueue.Count > 0)
             {
-                if (jobQueue.TryPeek(out var nextJob, out var nextRunTime))
+                // Remove completed or canceled tasks from the list to avoid memory overflow
+                runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
+
+                if (jobQueue.TryPeek(out var nextJob, out var nextRunTime) && runningTasks.Count < maxDegreeOfParallelism)
                 {
                     var delay = nextRunTime - DateTime.UtcNow;
                     if (delay > TimeSpan.Zero)
@@ -56,7 +61,7 @@ internal sealed partial class CronScheduler : BackgroundService
 
                     jobQueue.Dequeue();
                     await semaphore.WaitAsync(stopToken);
-                    _ = Task.Run(async () =>
+                    var task = Task.Run(async () =>
                     {
                         try
                         {
@@ -68,14 +73,24 @@ internal sealed partial class CronScheduler : BackgroundService
                         }
                     }, stopToken);
 
-                    // Reschedule immediately after run
+                    runningTasks.Add(task);
                     ScheduleJob(nextJob);
                 }
+
+                // Wait for at least one task to complete if there are no available slots
+                if (runningTasks.Count >= maxDegreeOfParallelism)
+                {
+                    // This prevents starting new jobs until at least one current job finishes
+                    await Task.WhenAny(runningTasks);
+                }
             }
+
+            // Wait for all remaining tasks to complete
+            await Task.WhenAll(runningTasks);
         }
         catch (OperationCanceledException)
         {
-            // Handle cancellation
+            LogCancellationOperationInJob();
         }
     }
 

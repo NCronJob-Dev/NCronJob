@@ -1,6 +1,5 @@
 using LinkDotNet.NCronJob;
-using System.Reflection.Metadata;
-using System.Threading;
+using System.Security.Cryptography;
 
 namespace NCronJobSample;
 
@@ -21,7 +20,7 @@ public partial class TestCancellationJob : IJob
         try
         {
             // Simulate a long-running job
-            for (var i = 0; i < 20; i++) // Simulate 20 units of work
+            for (var i = 0; i < 15; i++) // Simulate 15 units of work
             {
                 if (token.IsCancellationRequested)
                 {
@@ -29,8 +28,10 @@ public partial class TestCancellationJob : IJob
                     token.ThrowIfCancellationRequested(); // Properly handle the cancellation
                 }
 
-                // Simulate work by delaying
-                await Task.Delay(2000, token);
+                // Simulate work by delaying a random amount of time
+                var variableMs = TimeSpan.FromMilliseconds(1000 + RandomNumberGenerator.GetInt32(2000));
+                await Task.Delay(variableMs, token);
+                //await Task.Delay(2000, token);
 
                 // Log each unit of work completion
                 LogWorkUnitCompleted(i + 1, context.Parameter);
@@ -53,7 +54,7 @@ public partial class TestCancellationJob : IJob
     [LoggerMessage(LogLevel.Information, "Cancellation confirmed. Clean-up complete for {Parameter}.")]
     private partial void LogCancellationConfirmed(object? parameter);
 
-    [LoggerMessage(LogLevel.Information, "Completed work unit {Number}/10 for {Parameter}")]
+    [LoggerMessage(LogLevel.Information, "Completed work unit {Number}/15 for {Parameter}")]
     private partial void LogWorkUnitCompleted(int number, object? parameter);
 
     [LoggerMessage(LogLevel.Debug, "Cancellation requested for TestCancellationJob {Parameter}.")]

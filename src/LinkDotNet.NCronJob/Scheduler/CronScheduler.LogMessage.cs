@@ -18,4 +18,7 @@ internal sealed partial class CronScheduler
 
     [LoggerMessage(LogLevel.Trace, "Cancellation requested for CronScheduler from stopToken.")]
     private partial void LogCancellationRequestedInJob();
+
+    [LoggerMessage(LogLevel.Trace, "Operation was cancelled.")]
+    private partial void LogCancellationOperationInJob();
 }
