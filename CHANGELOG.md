@@ -6,6 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.0.4] - 2024-04-16
+
+### Fixed
+
+-   Don't log running jobs twice. Reported by [@ryanbuening](https://github.com/ryanbuening). Fixed by [@linkdotnet](https://github.com/linkdotnet)
+
 ## [2.0.3] - 2024-04-15
 
 With `v2` the overall API was cleaned up and made more consistent. `AddNCronJob` and `AddCronJob` are merged into one service defintion:
@@ -140,7 +146,9 @@ services.AddNCronJob(options =>
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.0.3...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...HEAD
+
+[2.0.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.3...2.0.4
 
 [2.0.3]: https://github.com/linkdotnet/NCronJob/compare/1.0.2...2.0.3
 
