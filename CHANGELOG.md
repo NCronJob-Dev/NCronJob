@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Implementation of the scheduling. Better performance and closed some memory leaks
+
 ## [2.0.4] - 2024-04-16
 
 ### Fixed
