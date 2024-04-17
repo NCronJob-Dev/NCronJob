@@ -9,15 +9,18 @@ internal sealed partial class JobExecutor : IDisposable
 {
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
+    private readonly RetryHandler retryHandler;
     private bool isDisposed;
     private CancellationTokenSource? shutdown;
 
     public JobExecutor(IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
-        IHostApplicationLifetime lifetime)
+        IHostApplicationLifetime lifetime,
+        RetryHandler retryHandler)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
+        this.retryHandler = retryHandler;
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
@@ -59,9 +62,7 @@ internal sealed partial class JobExecutor : IDisposable
         {
             LogRunningJob(run.Type);
 
-            // Job Runs are executed in parallel by default
-            await job.RunAsync(run.Context, stoppingToken)
-                .ConfigureAwait(false);
+            await retryHandler.ExecuteAsync(async token => await job.RunAsync(run.Context, token), run, stoppingToken);
 
             stoppingToken.ThrowIfCancellationRequested();
 

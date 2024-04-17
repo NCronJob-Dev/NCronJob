@@ -11,7 +11,8 @@ public interface IInstantJobRegistry
     /// <param name="token">An optional token to cancel the job.</param>
     /// </summary>
     /// <remarks>
-    /// The contents of <paramref name="parameter" /> are not serialized and deserialized. It is the reference to the <paramref name="parameter"/>-object that gets passed in.
+    /// This is a fire-and-forget process, the Job will be run in the background. The contents of <paramref name="parameter" />
+    /// are not serialized and deserialized. It is the reference to the <paramref name="parameter"/>-object that gets passed in.
     /// </remarks>
     /// <example>
     /// Running a job with a parameter:
@@ -19,6 +20,6 @@ public interface IInstantJobRegistry
     /// instantJobRegistry.RunInstantJob&lt;MyJob&gt;(new MyParameterObject { Foo = "Bar" }));
     /// </code>
     /// </example>
-    Task RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+    void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
 }

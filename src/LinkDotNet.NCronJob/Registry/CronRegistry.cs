@@ -21,7 +21,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
 
     /// <inheritdoc />
-    public Task RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+    public void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob
     {
         token.Register(() => LogCancellationRequested(parameter));
@@ -49,7 +49,6 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
             }
         }, token);
 
-        return Task.CompletedTask;
     }
 
     [LoggerMessage(LogLevel.Warning, "Job {JobName} cancelled by request.")]

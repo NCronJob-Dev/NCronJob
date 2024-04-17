@@ -66,7 +66,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -95,7 +95,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>());
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -155,7 +155,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
