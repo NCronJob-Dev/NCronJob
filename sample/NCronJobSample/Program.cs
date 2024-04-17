@@ -13,10 +13,14 @@ builder.Services.AddLogging();
 builder.Services.AddNCronJob(n => n
 
     // Execute the job every 2 minutes
-    .AddJob<PrintHelloWorldJob>(p => p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
+    .AddJob<PrintHelloWorldJob>(
+        p => p.WithCronExpression("*/2 * * * *", timeZoneInfo: TimeZoneInfo.Local)
+        .WithParameter("Hello from NCronJob"))
 
     // Execute many TestCancellationJob jobs to test cancellation support and parallel execution
-    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/10 * * * * *", true).WithParameter("Instance 1"))
+    .AddJob<TestCancellationJob>(
+        p => p.WithCronExpression("*/10 * * * * *", true, TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"))
+            .WithParameter("Instance 1"))
     .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/9 * * * * *", true).WithParameter("Instance 2"))
     .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/11 * * * * *", true).WithParameter("Instance 3"))
     .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/8 * * * * *", true).WithParameter("Instance 4"))

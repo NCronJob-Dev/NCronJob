@@ -1,8 +1,9 @@
-using NCrontab;
+using Cronos;
 
 namespace LinkDotNet.NCronJob;
 
 internal sealed record RegistryEntry(
     Type Type,
     JobExecutionContext Context,
-    CrontabSchedule? CrontabSchedule);
+    CronExpression? CronExpression,
+    TimeZoneInfo? TimeZone);

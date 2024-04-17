@@ -1,6 +1,6 @@
+using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using NCrontab;
 
 namespace LinkDotNet.NCronJob;
 
@@ -36,7 +36,7 @@ public sealed class NCronJobOptionBuilder
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
+            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron, option.TimeZoneInfo);
             services.AddSingleton(entry);
         }
 
@@ -62,14 +62,12 @@ public sealed class NCronJobOptionBuilder
         return this;
     }
 
-    private static CrontabSchedule GetCronExpression(JobOption option)
+    private static CronExpression GetCronExpression(JobOption option)
     {
-        var cronParseOptions = new CrontabSchedule.ParseOptions
-        {
-            IncludingSeconds = option.EnableSecondPrecision
-        };
+        var cf = option.EnableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
 
-        return CrontabSchedule.TryParse(option.CronExpression, cronParseOptions)
-               ?? throw new InvalidOperationException("Invalid cron expression");
+        return CronExpression.TryParse(option.CronExpression, cf, out var cronExpression)
+            ? cronExpression
+            : throw new InvalidOperationException("Invalid cron expression");
     }
 }

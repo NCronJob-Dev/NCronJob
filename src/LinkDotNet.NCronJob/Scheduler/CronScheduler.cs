@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace LinkDotNet.NCronJob;
 
@@ -12,7 +14,7 @@ internal sealed partial class CronScheduler : BackgroundService
     private readonly ILogger<CronScheduler> logger;
     private readonly SemaphoreSlim semaphore;
     private CancellationTokenSource? shutdown;
-    private readonly PriorityQueue<RegistryEntry, DateTime> jobQueue = new();
+    private readonly PriorityQueue<RegistryEntry, DateTimeOffset> jobQueue = new();
     private readonly int maxDegreeOfParallelism;
 
     public CronScheduler(
@@ -51,10 +53,14 @@ internal sealed partial class CronScheduler : BackgroundService
 
                 if (jobQueue.TryPeek(out var nextJob, out var nextRunTime) && runningTasks.Count < maxDegreeOfParallelism)
                 {
-                    var delay = nextRunTime - DateTime.UtcNow;
+                    var delay = nextRunTime - DateTimeOffset.UtcNow;
                     if (delay > TimeSpan.Zero)
                     {
-                        await Task.Delay(delay, timeProvider, stopToken);
+                        if (!TryGetMilliseconds(delay, out var ms))
+                        {
+                            throw new InvalidOperationException("The delay is too long to be handled by Task.Delay.");
+                        }
+                        await Task.Delay(TimeSpan.FromMilliseconds(ms), timeProvider, stopToken);
                     }
 
                     stopToken.ThrowIfCancellationRequested();
@@ -94,6 +100,27 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Extracts the milliseconds from a <see cref="TimeSpan"/> value.
+    /// Makes sure the value is within the supported range for what Task.Delay can handle, which is about 49ish hours.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="milliseconds"></param>
+    /// <returns></returns>
+    private static bool TryGetMilliseconds(TimeSpan value, out uint milliseconds)
+    {
+        const UInt32 maxSupportedTimeout = 0xfffffffe;
+        var ms = (long)value.TotalMilliseconds;
+        if (ms is >= 1 and <= maxSupportedTimeout || value == Timeout.InfiniteTimeSpan)
+        {
+            milliseconds = (uint)ms;
+            return true;
+        }
+
+        milliseconds = 0;
+        return false;
+    }
+
     private void ScheduleInitialJobs()
     {
         foreach (var job in registry.GetAllCronJobs())
@@ -104,8 +131,11 @@ internal sealed partial class CronScheduler : BackgroundService
 
     private void ScheduleJob(RegistryEntry job)
     {
-        var nextRunTime = job.CrontabSchedule!.GetNextOccurrence(DateTime.UtcNow);
-        jobQueue.Enqueue(job, nextRunTime);
+        var nextRunTime = job.CronExpression!.GetNextOccurrence(DateTimeOffset.Now, job.TimeZone);
+        if (nextRunTime.HasValue)
+        {
+            jobQueue.Enqueue(job, nextRunTime.Value);
+        }
     }
 
     private async Task ExecuteJob(RegistryEntry entry, CancellationToken stoppingToken)

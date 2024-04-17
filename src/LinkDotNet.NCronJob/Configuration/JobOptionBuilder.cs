@@ -14,8 +14,9 @@ public sealed class JobOptionBuilder
     /// </summary>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
     /// <param name="enableSecondPrecision">If set to <c>true</c>, the cron expression can specify second-level precision.</param>
+    /// <param name="timeZoneInfo">Optional, provides the timezone that is used to evaluate the cron expression. Defaults to UTC.</param>
     /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder WithCronExpression(string cronExpression, bool enableSecondPrecision = false)
+    public ParameterBuilder WithCronExpression(string cronExpression, bool enableSecondPrecision = false, TimeZoneInfo? timeZoneInfo = null)
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
@@ -28,7 +29,8 @@ public sealed class JobOptionBuilder
         var jobOption = new JobOption
         {
             CronExpression = cronExpression.Trim(),
-            EnableSecondPrecision = enableSecondPrecision
+            EnableSecondPrecision = enableSecondPrecision,
+            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
 
         jobOptions.Add(jobOption);

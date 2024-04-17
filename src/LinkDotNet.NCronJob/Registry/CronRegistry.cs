@@ -15,7 +15,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     {
         this.jobExecutor = jobExecutor;
         this.logger = logger;
-        cronJobs = jobs.Where(c => c.CrontabSchedule is not null).ToFrozenSet();
+        cronJobs = jobs.Where(c => c.CronExpression is not null).ToFrozenSet();
     }
 
     public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
@@ -27,7 +27,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
         token.Register(() => LogCancellationRequested(parameter));
 
         var executionContext = new JobExecutionContext(parameter);
-        var run = new RegistryEntry(typeof(TJob), executionContext, null);
+        var run = new RegistryEntry(typeof(TJob), executionContext, null, null);
 
         var jobName = typeof(TJob).Name;
         _ = Task.Run(async () =>
