@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using LinkDotNet.NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using TimeProviderExtensions;
 
@@ -154,6 +155,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddTransient<ParameterJob>();
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
 
@@ -161,6 +163,20 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ThrowIfJobWithDependenciesIsNotRegistered()
+    {
+        ServiceCollection
+            .AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression("* * * * *")));
+        var provider = CreateServiceProvider();
+
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            using var executor = new JobExecutor(provider, NullLogger<JobExecutor>.Instance);
+            executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null), null), CancellationToken.None);
+        });
     }
 
     private sealed class GuidGenerator
@@ -201,5 +217,11 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync(context.Parameter!, token);
+    }
+
+    private sealed class JobWithDependency(ChannelWriter<object> writer, GuidGenerator guidGenerator) : IJob
+    {
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+            => await writer.WriteAsync(guidGenerator.NewGuid, token);
     }
 }
