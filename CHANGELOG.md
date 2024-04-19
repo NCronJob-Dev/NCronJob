@@ -6,10 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.0.5] - 2024-04-19
+
 ### Changed
 
-- Implementation of the scheduling. Better performance and closed some memory leaks
-- Throw exception if job cannot be resolved with dependencies from the DI container. Reported and implemented by [@skarum](https://github.com/skarum) in [#23)(https://github.com/linkdotnet/NCronJob/issues/23)
+-   Implementation of the scheduling. Better performance and closed some memory leaks
+-   Throw exception if job cannot be resolved with dependencies from the DI container. Reported and implemented by [@skarum](https://github.com/skarum) in \[#23)(<https://github.com/linkdotnet/NCronJob/issues/23>)
 
 ## [2.0.4] - 2024-04-16
 
@@ -151,7 +153,9 @@ services.AddNCronJob(options =>
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.0.5...HEAD
+
+[2.0.5]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...2.0.5
 
 [2.0.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.3...2.0.4
 
