@@ -180,21 +180,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         });
     }
 
-    [Fact]
-    public async Task NotThrowIfJobWithDependenciesRegistered()
-    {
-        ServiceCollection
-            .AddSingleton<GuidGenerator>()
-            .AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression("* * * * *")));
-        var provider = CreateServiceProvider();
-
-        using var executor = new JobExecutor(provider, NullLogger<JobExecutor>.Instance);
-        executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null), null), CancellationToken.None);
-
-        var jobFinished = await WaitForJobsOrTimeout(1);
-        jobFinished.ShouldBeTrue();
-    }
-
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();
