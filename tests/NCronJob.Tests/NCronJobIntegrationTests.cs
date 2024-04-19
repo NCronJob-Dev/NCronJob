@@ -176,7 +176,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             using var executor = new JobExecutor(provider, NullLogger<JobExecutor>.Instance);
             executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null), null), CancellationToken.None);
-
         });
     }
 
