@@ -27,11 +27,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
 
         var scope = serviceProvider.CreateScope();
-        if (scope.ServiceProvider.GetService(run.Type) is not IJob job)
-        {
-            LogJobNotRegistered(run.Type);
-            return;
-        }
+        var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
         ExecuteJob(run, job, scope, stoppingToken);
     }
