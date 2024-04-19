@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Changed
 
 - Implementation of the scheduling. Better performance and closed some memory leaks
+- Throw exception if job cannot be resolved with dependencies from the DI container
 
 ## [2.0.4] - 2024-04-16
 
