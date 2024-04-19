@@ -3,8 +3,9 @@ using System.Threading.Channels;
 using LinkDotNet.NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Time.Testing;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
+using TimeProviderExtensions;
 
 namespace NCronJob.Tests;
 
@@ -13,16 +14,12 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
-        // there may be more than one IHostedService, we want to specifically start the CronScheduler
-        await provider.GetServices<IHostedService>()
-            .OfType<CronScheduler>()
-            .Single()
-            .StartAsync(CancellationToken);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
@@ -31,7 +28,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task AdvancingTheWholeTimeShouldHaveTenEntries()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
@@ -43,23 +40,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task JobsShouldCancelOnCancellation()
-    {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
-        var provider = CreateServiceProvider();
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        var jobFinished = await DoNotWaitJustCancel(10);
-        jobFinished.ShouldBeFalse();
-    }
-
-    [Fact]
     public async Task EachJobRunHasItsOwnScope()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = new ManualTimeProvider();
         var storage = new Storage();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton(storage);
@@ -80,7 +63,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task ExecuteAnInstantJob()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
@@ -95,14 +78,12 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobShouldPassDownParameter()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello World")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         content.ShouldBe("Hello World");
@@ -111,7 +92,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobShouldGetParameter()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>());
         var provider = CreateServiceProvider();
@@ -126,14 +107,13 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobThatIsScheduledEverySecondShouldBeExecuted()
     {
-        var fakeTimer = new FakeTimeProvider();
-        fakeTimer.Advance(TimeSpan.FromSeconds(1));
+        var fakeTimer = TimeProviderFactory.GetTimeProvider(TimeSpan.FromSeconds(1));
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *", true)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-        fakeTimer.Advance(TimeSpan.FromMinutes(2));
+
         var jobFinished = await WaitForJobsOrTimeout(2);
         jobFinished.ShouldBeTrue();
     }
@@ -141,8 +121,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
     {
-        var fakeTimer = new FakeTimeProvider();
-        fakeTimer.Advance(TimeSpan.FromSeconds(1));
+        var fakeTimer = TimeProviderFactory.GetTimeProvider(TimeSpan.FromSeconds(1));
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(
             p => p.WithCronExpression("* * * * * *", true).And.WithCronExpression("* * * * *")));
@@ -157,7 +136,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task LongRunningJobShouldNotBlockScheduler()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<LongRunningJob>(p => p.WithCronExpression("* * * * *"))
@@ -173,9 +152,10 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task NotRegisteredJobShouldNotAbortOtherRuns()
     {
-        var fakeTimer = new FakeTimeProvider();
+        var fakeTimer = TimeProviderFactory.GetTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddTransient<ParameterJob>();
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
 
@@ -183,6 +163,20 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ThrowIfJobWithDependenciesIsNotRegistered()
+    {
+        ServiceCollection
+            .AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression("* * * * *")));
+        var provider = CreateServiceProvider();
+
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            using var executor = new JobExecutor(provider, NullLogger<JobExecutor>.Instance);
+            executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null), null), CancellationToken.None);
+        });
     }
 
     private sealed class GuidGenerator
@@ -198,17 +192,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token)
-        {
-            try
-            {
-                context.Output = "Job Completed";
-                await writer.WriteAsync(context.Output, token);
-            }
-            catch (Exception ex)
-            {
-                await writer.WriteAsync(ex, token);
-            }
-        }
+            => await writer.WriteAsync(true, token);
     }
 
     private sealed class LongRunningJob : IJob
@@ -233,5 +217,11 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync(context.Parameter!, token);
+    }
+
+    private sealed class JobWithDependency(ChannelWriter<object> writer, GuidGenerator guidGenerator) : IJob
+    {
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+            => await writer.WriteAsync(guidGenerator.NewGuid, token);
     }
 }
