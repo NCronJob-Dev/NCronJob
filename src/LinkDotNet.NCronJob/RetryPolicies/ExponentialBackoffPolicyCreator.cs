@@ -7,10 +7,9 @@ namespace LinkDotNet.NCronJob;
 /// <summary>
 /// A policy creator that configures an exponential back-off retry policy.
 /// </summary>
-public partial class ExponentialBackoffPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
+internal partial class ExponentialBackoffPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
 {
-#pragma warning disable CS8618
-    private ILogger<ExponentialBackoffPolicyCreator> logger;
+    private ILogger<ExponentialBackoffPolicyCreator> logger = default!;
 
     /// <inheritdoc />
     public void Initialize(IServiceProvider serviceProvider) =>

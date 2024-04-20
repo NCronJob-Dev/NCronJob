@@ -52,7 +52,7 @@ public sealed class NCronJobOptionBuilder
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
+            var entry = new RegistryEntry(typeof(T), option.Parameter, cron);
             services.AddSingleton(entry);
         }
 

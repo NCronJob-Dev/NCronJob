@@ -26,8 +26,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     {
         token.Register(() => LogCancellationRequested(parameter));
 
-        var executionContext = new JobExecutionContext(parameter);
-        var run = new RegistryEntry(typeof(TJob), executionContext, null);
+        var run = new RegistryEntry(typeof(TJob), parameter, null);
 
         var jobName = typeof(TJob).Name;
         _ = Task.Run(async () =>

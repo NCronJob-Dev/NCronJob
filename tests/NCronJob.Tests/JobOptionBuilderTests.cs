@@ -59,4 +59,25 @@ public class JobOptionBuilderTests
         options[1].EnableSecondPrecision.ShouldBeFalse();
         options[1].Parameter.ShouldBeNull();
     }
+
+    [Fact]
+    public void ShouldCreateMultipleJobsWithoutAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder.WithCronExpression("* * * * *")
+            .WithParameter("foo");
+
+        builder.WithCronExpression("0 * * * *")
+            .WithParameter("bar");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].CronExpression.ShouldBe("* * * * *");
+        options[0].EnableSecondPrecision.ShouldBeFalse();
+        options[0].Parameter.ShouldBe("foo");
+        options[1].CronExpression.ShouldBe("0 * * * *");
+        options[1].EnableSecondPrecision.ShouldBeFalse();
+        options[1].Parameter.ShouldBe("bar");
+    }
 }

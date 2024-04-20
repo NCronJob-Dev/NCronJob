@@ -40,17 +40,17 @@ internal sealed partial class RetryHandler
         this.serviceProvider = serviceProvider;
     }
 
-    public async Task ExecuteAsync(Func<CancellationToken, Task> operation, RegistryEntry entry, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(Func<CancellationToken, Task> operation, JobExecutionContext runContext, CancellationToken cancellationToken)
     {
         try
         {
-            var retryPolicyAttribute = entry.Type.GetCustomAttribute<RetryPolicyAttribute>();
+            var retryPolicyAttribute = runContext.JobType.GetCustomAttribute<RetryPolicyBaseAttribute>();
             var retryPolicy = retryPolicyAttribute?.CreatePolicy(serviceProvider) ?? Policy.NoOpAsync();
 
             // Execute the operation using the given retry policy
             await retryPolicy.ExecuteAsync(() =>
             {
-                entry.Context.Attempts++;
+                runContext.Attempts++;
                 return operation(cancellationToken);
             });
         }

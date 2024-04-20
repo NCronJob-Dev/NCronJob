@@ -7,10 +7,9 @@ namespace LinkDotNet.NCronJob;
 /// <summary>
 /// A policy creator that configures a fixed interval retry policy.
 /// </summary>
-public partial class FixedIntervalRetryPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
+internal partial class FixedIntervalRetryPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
 {
-#pragma warning disable CS8618
-    private ILogger<FixedIntervalRetryPolicyCreator> logger;
+    private ILogger<FixedIntervalRetryPolicyCreator> logger = default!;
 
     /// <inheritdoc />
     public void Initialize(IServiceProvider serviceProvider) =>

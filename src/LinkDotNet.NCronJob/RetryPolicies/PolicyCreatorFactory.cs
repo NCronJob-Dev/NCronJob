@@ -1,15 +1,21 @@
+using Polly;
+
 namespace LinkDotNet.NCronJob;
 
-internal class PolicyCreatorFactory
+internal class PolicyCreatorFactory(IServiceProvider serviceProvider)
 {
-    private readonly IServiceProvider serviceProvider;
+    public IAsyncPolicy CreatePolicy(PolicyType policyType, int retryCount, double delayFactor) =>
+        policyType switch
+        {
+            PolicyType.ExponentialBackoff => Create<ExponentialBackoffPolicyCreator>(retryCount, delayFactor),
+            PolicyType.FixedInterval => Create<FixedIntervalRetryPolicyCreator>(retryCount, delayFactor),
+            _ => throw new ArgumentException("Unsupported policy type")
+        };
 
-    public PolicyCreatorFactory(IServiceProvider serviceProvider) => this.serviceProvider = serviceProvider;
-
-    public TPolicyCreator Create<TPolicyCreator>() where TPolicyCreator : IPolicyCreator, new()
+    public IAsyncPolicy Create<TPolicyCreator>(int retryCount, double delayFactor) where TPolicyCreator : IPolicyCreator, new()
     {
         var creator = new TPolicyCreator();
         (creator as IInitializablePolicyCreator)?.Initialize(serviceProvider);
-        return creator;
+        return creator.CreatePolicy(retryCount, delayFactor);
     }
 }

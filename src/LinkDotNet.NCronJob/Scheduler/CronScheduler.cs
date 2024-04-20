@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Polly;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -14,7 +13,8 @@ internal sealed partial class CronScheduler : BackgroundService
     private readonly ILogger<CronScheduler> logger;
     private readonly SemaphoreSlim semaphore;
     private CancellationTokenSource? shutdown;
-    private readonly PriorityQueue<RegistryEntry, RegistryEntry> jobQueue = new(new JobQueueComparer());
+    private readonly PriorityQueue<RegistryEntry, (DateTime NextRunTime, int Priority)> jobQueue =
+        new(new JobQueueTupleComparer());
     private readonly int globalConcurrencyLimit;
     private readonly ConcurrentDictionary<Type, int> runningJobCounts = [];
 
@@ -52,11 +52,10 @@ internal sealed partial class CronScheduler : BackgroundService
                 // Remove completed or canceled tasks from the list to avoid memory overflow
                 runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
 
-                if (jobQueue.TryPeek(out var nextJob, out _))
+                if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
                 {
-                    // Get the next run time directly from the job's schedule
-                    var nextRunTime = nextJob.CrontabSchedule?.GetNextOccurrence(DateTime.UtcNow) ?? DateTime.MaxValue;
-                    var delay = nextRunTime - DateTime.UtcNow;
+                    var utcNow = timeProvider.GetUtcNow().DateTime;
+                    var delay = priorityTuple.NextRunTime - utcNow;
                     if (delay > TimeSpan.Zero)
                     {
                         await Task.Delay(delay, timeProvider, stopToken);
@@ -65,7 +64,7 @@ internal sealed partial class CronScheduler : BackgroundService
                     if (stopToken.IsCancellationRequested)
                         break;
 
-                    // After the delay, check again if it's still the next job to run
+                    // Recheck the queue to confirm that the next job is still the correct job to execute
                     if (jobQueue.TryPeek(out var confirmedNextJob, out _)
                         && confirmedNextJob == nextJob
                         && CanStartJob(nextJob)
@@ -118,7 +117,15 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
-    private void ScheduleJob(RegistryEntry job) => jobQueue.Enqueue(job, job);
+    private void ScheduleJob(RegistryEntry job)
+    {
+        var utcNow = timeProvider.GetUtcNow().DateTime;
+        var nextRunTime = job.CrontabSchedule?.GetNextOccurrence(utcNow) ?? DateTime.MaxValue;
+        // higher means more priority
+        var priorityValue = (int)job.Priority;
+        jobQueue.Enqueue(job, (nextRunTime, priorityValue));
+    }
+
 
     private async Task ExecuteJob(RegistryEntry entry, CancellationToken stoppingToken)
     {

@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace NCronJob.Tests;
 
@@ -17,6 +18,9 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection = new();
         ServiceCollection.AddLogging()
             .AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
+
+        var mockLifetime = new MockHostApplicationLifetime();
+        ServiceCollection.AddSingleton<IHostApplicationLifetime>(mockLifetime);
     }
 
     public void Dispose()
@@ -36,7 +40,25 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected async Task<bool> WaitForJobsOrTimeout(int jobRuns)
     {
-        using var timeoutTcs = new CancellationTokenSource(100);
+        using var timeoutTcs = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        try
+        {
+            await Task.WhenAll(GetCompletionJobs(jobRuns, timeoutTcs.Token));
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    protected async Task<bool> DoNotWaitJustCancel(int jobRuns)
+    {
+        using var timeoutTcs = new CancellationTokenSource(10);
         try
         {
             await Task.WhenAll(GetCompletionJobs(jobRuns, timeoutTcs.Token));

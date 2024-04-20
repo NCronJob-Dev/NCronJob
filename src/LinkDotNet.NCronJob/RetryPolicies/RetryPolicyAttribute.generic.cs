@@ -1,5 +1,5 @@
 using Polly;
-#pragma warning disable CA1813
+
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
@@ -27,34 +27,20 @@ namespace LinkDotNet.NCronJob;
 /// </code>
 /// Here, <c>CustomRetryPolicyCreator</c> defines how the retries are performed, and it must implement the <see cref="IPolicyCreator"/>.
 /// </example>
-[AttributeUsage(AttributeTargets.Class, Inherited = false)]
-public class RetryPolicyAttribute<TPolicyCreator> : Attribute where TPolicyCreator : IPolicyCreator, new()
+public sealed class RetryPolicyAttribute<TPolicyCreator> : RetryPolicyBaseAttribute where TPolicyCreator : IPolicyCreator, new()
 {
-    /// <summary>
-    /// The factor that determines the delay between retries
-    /// </summary>
-    public double DelayFactor { get; internal set; }
-
-    /// <summary>
-    /// Gets the number of retry attempts before giving up. The default is 3 retries.
-    /// A retry is considered an attempt to execute the operation again after a failure.
-    /// </summary>
-    /// <value>
-    /// The number of times to retry the decorated operation if it fails, before failing permanently.
-    /// </value>
-    public int RetryCount { get; internal set; }
-
-    internal IAsyncPolicy CreatePolicy(IServiceProvider serviceProvider)
+    internal override IAsyncPolicy CreatePolicy(IServiceProvider serviceProvider)
     {
         var factory = new PolicyCreatorFactory(serviceProvider);
-        var creator = factory.Create<TPolicyCreator>();
-        return creator.CreatePolicy(RetryCount, DelayFactor);
+        var policy = factory.Create<TPolicyCreator>(RetryCount, DelayFactor);
+        return policy;
     }
 
     /// <inheritdoc />
     public RetryPolicyAttribute(int retryCount = 3, double delayFactor = 2)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(retryCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(delayFactor);
         this.DelayFactor = delayFactor;
         this.RetryCount = retryCount;
     }
