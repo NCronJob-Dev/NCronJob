@@ -1,6 +1,8 @@
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Shouldly;
 
 namespace NCronJob.Tests;
 
@@ -46,11 +48,24 @@ public abstract class JobIntegrationBase : IDisposable
             await Task.WhenAll(GetCompletionJobs(jobRuns, timeoutTcs.Token));
             return true;
         }
-        catch (OperationCanceledException)
+        catch
         {
+            return false;
+        }
+    }
+
+    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, Action timeAdvancer)
+    {
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try
+        {
+            await foreach (var jobSuccessful in GetCompletionJobsAsync(jobRuns, timeAdvancer, timeoutCts.Token))
+            {
+                jobSuccessful.ShouldBe("Job Completed");
+            }
             return true;
         }
-        catch (Exception)
+        catch
         {
             return false;
         }
@@ -75,6 +90,16 @@ public abstract class JobIntegrationBase : IDisposable
         for (var i = 0; i < expectedJobCount; i++)
         {
             yield return CommunicationChannel.Reader.ReadAsync(cancellationToken).AsTask();
+        }
+    }
+
+    private async IAsyncEnumerable<object> GetCompletionJobsAsync(int expectedJobCount, Action timeAdvancer, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        for (var i = 0; i < expectedJobCount; i++)
+        {
+            timeAdvancer();
+            var jobResult = await CommunicationChannel.Reader.ReadAsync(cancellationToken);
+            yield return jobResult;
         }
     }
 }

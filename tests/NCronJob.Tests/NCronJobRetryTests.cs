@@ -24,9 +24,6 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var jobFinished = await WaitForJobsOrTimeout(1);
-        jobFinished.ShouldBeTrue();
-
         // Validate that the job was retried the correct number of times
         // Fail 3 times = 3 retries + 1 success
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
@@ -46,9 +43,6 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-
-        var jobFinished = await WaitForJobsOrTimeout(1);
-        jobFinished.ShouldBeTrue();
 
         // Validate that the job was retried the correct number of times
         // Fail 3 times = 3 retries + 1 success
@@ -81,7 +75,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     }
 
 
-    [RetryPolicy<MyCustomPolicyCreator>(3, 2)]
+    [RetryPolicy<MyCustomPolicyCreator>(3, 1)]
     private sealed class JobUsingCustomPolicy(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
