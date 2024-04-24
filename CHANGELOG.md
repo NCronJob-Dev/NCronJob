@@ -6,8 +6,6 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
-## [2.1.0] - 2024-04-23
-
 ### Added
 - **Retry Mechanism:** Improved robustness of job executions, especially in cases of transient failures. Includes exponential backoff and fixed interval strategies.
 - **Concurrency Control:** Introduced a `SupportsConcurrency` attribute to provide fine-grained control over the concurrency behavior of individual jobs. This attribute allows specifying the maximum degree of parallelism.
