@@ -25,7 +25,11 @@ public static class NCronJobExtensions
         this IServiceCollection services,
         Action<NCronJobOptionBuilder>? options = null)
     {
-        var builder = new NCronJobOptionBuilder(services);
+        // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
+        var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
+        services.AddSingleton(settings);
+
+        var builder = new NCronJobOptionBuilder(services, settings);
         options?.Invoke(builder);
 
         // temporary, need to be replaced with a proper configuration
@@ -34,6 +38,7 @@ public static class NCronJobExtensions
         services.AddHostedService<CronScheduler>();
         services.AddSingleton<CronRegistry>();
         services.AddSingleton<JobExecutor>();
+        services.AddSingleton<RetryHandler>();
         services.AddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
         services.TryAddSingleton(TimeProvider.System);
 

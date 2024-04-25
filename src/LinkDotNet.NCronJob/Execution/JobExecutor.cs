@@ -9,15 +9,18 @@ internal sealed partial class JobExecutor : IDisposable
 {
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
+    private readonly RetryHandler retryHandler;
     private bool isDisposed;
     private CancellationTokenSource? shutdown;
 
     public JobExecutor(IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
-        IHostApplicationLifetime lifetime)
+        IHostApplicationLifetime lifetime,
+        RetryHandler retryHandler)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
+        this.retryHandler = retryHandler;
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
@@ -38,13 +41,10 @@ internal sealed partial class JobExecutor : IDisposable
         }
 
         var scope = serviceProvider.CreateScope();
-        if (scope.ServiceProvider.GetService(run.Type) is not IJob job)
-        {
-            LogJobNotRegistered(run.Type);
-            return;
-        }
+        var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
-        await ExecuteJob(run, job, scope, stopToken);
+        var jobExecutionInstance = new JobExecutionContext(run.Type, run.Output);
+        await ExecuteJob(jobExecutionInstance, job, scope, stopToken);
     }
 
     public void Dispose()
@@ -53,15 +53,13 @@ internal sealed partial class JobExecutor : IDisposable
         isDisposed = true;
     }
 
-    private async Task ExecuteJob(RegistryEntry run, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
     {
         try
         {
-            LogRunningJob(run.Type);
+            LogRunningJob(job.GetType());
 
-            // Job Runs are executed in parallel by default
-            await job.RunAsync(run.Context, stoppingToken)
-                .ConfigureAwait(false);
+            await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
 
             stoppingToken.ThrowIfCancellationRequested();
 
@@ -81,13 +79,13 @@ internal sealed partial class JobExecutor : IDisposable
                 return;
             }
 
-            var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(run.Type);
+            var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobType);
 
             if (serviceScope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
             {
                 try
                 {
-                    await notificationService.HandleAsync(run.Context, exc, ct).ConfigureAwait(false);
+                    await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
                 }
                 catch (Exception innerExc) when (innerExc is not OperationCanceledException or AggregateException)
                 {

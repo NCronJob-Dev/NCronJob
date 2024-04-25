@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using static System.Net.Mime.MediaTypeNames;
+using Microsoft.VisualBasic;
+using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace LinkDotNet.NCronJob;
 
@@ -14,27 +14,29 @@ internal sealed partial class CronScheduler : BackgroundService
     private readonly ILogger<CronScheduler> logger;
     private readonly SemaphoreSlim semaphore;
     private CancellationTokenSource? shutdown;
-    private readonly PriorityQueue<RegistryEntry, DateTimeOffset> jobQueue = new();
-    private readonly int maxDegreeOfParallelism;
+    private readonly PriorityQueue<RegistryEntry, (DateTimeOffset NextRunTime, int Priority)> jobQueue =
+        new(new JobQueueTupleComparer());
+    private readonly int globalConcurrencyLimit;
+    private readonly ConcurrentDictionary<Type, int> runningJobCounts = [];
+
 
     public CronScheduler(
         JobExecutor jobExecutor,
         CronRegistry registry,
         TimeProvider timeProvider,
-        ILogger<CronScheduler> logger,
-        ConcurrencyConfig concurrencyConfig,
+        ConcurrencySettings concurrencySettings,
+        ILoggerFactory loggerFactory,
         IHostApplicationLifetime lifetime)
     {
         this.jobExecutor = jobExecutor;
         this.registry = registry;
         this.timeProvider = timeProvider;
-        this.logger = logger;
-        this.maxDegreeOfParallelism = concurrencyConfig.MaxDegreeOfParallelism;
-        this.semaphore = new SemaphoreSlim(concurrencyConfig.MaxDegreeOfParallelism);
+        this.logger = loggerFactory.CreateLogger<CronScheduler>();
+        this.globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
+        this.semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
@@ -51,9 +53,10 @@ internal sealed partial class CronScheduler : BackgroundService
                 // Remove completed or canceled tasks from the list to avoid memory overflow
                 runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
 
-                if (jobQueue.TryPeek(out var nextJob, out var nextRunTime) && runningTasks.Count < maxDegreeOfParallelism)
+                if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
                 {
-                    var delay = nextRunTime - DateTimeOffset.UtcNow;
+                    var utcNow = timeProvider.GetUtcNow();
+                    var delay = priorityTuple.NextRunTime - utcNow;
                     if (delay > TimeSpan.Zero)
                     {
                         if (!TryGetMilliseconds(delay, out var ms))
@@ -63,28 +66,39 @@ internal sealed partial class CronScheduler : BackgroundService
                         await Task.Delay(TimeSpan.FromMilliseconds(ms), timeProvider, stopToken);
                     }
 
-                    stopToken.ThrowIfCancellationRequested();
+                    if (stopToken.IsCancellationRequested)
+                        break;
 
-                    jobQueue.Dequeue();
-                    await semaphore.WaitAsync(stopToken);
-                    var task = Task.Run(async () =>
+                    // Recheck the queue to confirm that the next job is still the correct job to execute
+                    if (jobQueue.TryPeek(out var confirmedNextJob, out _)
+                        && confirmedNextJob == nextJob
+                        && CanStartJob(nextJob)
+                        && runningTasks.Count < globalConcurrencyLimit)
                     {
-                        try
-                        {
-                            await ExecuteJob(nextJob, stopToken);
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-                    }, stopToken);
+                        jobQueue.Dequeue();
+                        UpdateRunningJobCount(nextJob.Type, 1);
 
-                    runningTasks.Add(task);
-                    ScheduleJob(nextJob);
+                        await semaphore.WaitAsync(stopToken);
+                        var task = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await ExecuteJob(nextJob, stopToken);
+                            }
+                            finally
+                            {
+                                semaphore.Release();
+                                UpdateRunningJobCount(nextJob.Type, -1);  // Decrement count when job is done
+                            }
+                        }, stopToken);
+
+                        runningTasks.Add(task);
+                        ScheduleJob(nextJob); // Reschedule immediately after execution
+                    }
                 }
 
                 // Wait for at least one task to complete if there are no available slots
-                if (runningTasks.Count >= maxDegreeOfParallelism)
+                if (runningTasks.Count >= globalConcurrencyLimit)
                 {
                     // This prevents starting new jobs until at least one current job finishes
                     await Task.WhenAny(runningTasks);
@@ -131,12 +145,18 @@ internal sealed partial class CronScheduler : BackgroundService
 
     private void ScheduleJob(RegistryEntry job)
     {
-        var nextRunTime = job.CronExpression!.GetNextOccurrence(DateTimeOffset.Now, job.TimeZone);
+        var utcNow = timeProvider.GetUtcNow();
+        var nextRunTime = job.CronExpression!.GetNextOccurrence(utcNow, job.TimeZone);
+
         if (nextRunTime.HasValue)
         {
-            jobQueue.Enqueue(job, nextRunTime.Value);
+            LogNextJobRun(job.Type, nextRunTime.Value);
+            // higher means more priority
+            var priorityValue = (int)job.Priority;
+            jobQueue.Enqueue(job, (nextRunTime.Value, priorityValue));
         }
     }
+
 
     private async Task ExecuteJob(RegistryEntry entry, CancellationToken stoppingToken)
     {
@@ -144,7 +164,7 @@ internal sealed partial class CronScheduler : BackgroundService
         {
             LogRunningJob(entry.Type);
 
-            await jobExecutor.RunJob(entry, stoppingToken);   // <-- we should await all the way through so that we can catch exceptions and cancel the job if needed
+            await jobExecutor.RunJob(entry, stoppingToken);
 
             LogCompletedJob(entry.Type);
         }
@@ -153,6 +173,18 @@ internal sealed partial class CronScheduler : BackgroundService
             LogExceptionInJob(ex.Message, entry.Type);
         }
     }
+
+    private bool CanStartJob(RegistryEntry jobEntry)
+    {
+        var attribute = jobEntry.Type.GetCustomAttribute<SupportsConcurrencyAttribute>();
+        var maxAllowed = attribute?.MaxDegreeOfParallelism ?? 1; // Default to 1 if no attribute is found
+        var currentCount = runningJobCounts.GetOrAdd(jobEntry.Type, _ => 0);
+
+        return currentCount < maxAllowed;
+    }
+
+    private void UpdateRunningJobCount(Type jobType, int change) =>
+        runningJobCounts.AddOrUpdate(jobType, change, (type, existingVal) => Math.Max(0, existingVal + change));
 
     public override void Dispose()
     {

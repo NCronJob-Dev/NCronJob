@@ -12,22 +12,23 @@ builder.Services.AddLogging();
 // Add NCronJob to the container.
 builder.Services.AddNCronJob(n => n
 
+    .AddJob<PrintHelloWorldJob>(p =>
+        p.WithCronExpression("*/20 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+
     // Execute the job every 2 minutes
-    .AddJob<PrintHelloWorldJob>(
-        p => p.WithCronExpression("*/2 * * * *", timeZoneInfo: TimeZoneInfo.Local)
-        .WithParameter("Hello from NCronJob"))
-
-    // Execute many TestCancellationJob jobs to test cancellation support and parallel execution
-    .AddJob<TestCancellationJob>(
-        p => p.WithCronExpression("*/10 * * * * *", true, TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"))
-            .WithParameter("Instance 1"))
-    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/9 * * * * *", true).WithParameter("Instance 2"))
-    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/11 * * * * *", true).WithParameter("Instance 3"))
-    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/8 * * * * *", true).WithParameter("Instance 4"))
-    .AddJob<TestCancellationJob>(p => p.WithCronExpression("*/10 * * * * *", true).WithParameter("Instance 5"))
-
+    .AddJob<PrintHelloWorldJob>(p =>
+        p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
     // Register a handler that gets executed when the job is done
     .AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
+
+    // Multiple instances of the same job with different cron expressions can be supported
+    // by marking the job with [SupportsConcurrency] attribute
+    .AddJob<ConcurrentTaskExecutorJob>(p =>
+        p.WithCronExpression("*/25 * * * * *"))
+
+    // A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
+    .AddJob<TestRetryJob>(p =>
+        p.WithCronExpression("*/5 * * * * *"))
 );
 
 var app = builder.Build();
@@ -41,11 +42,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/trigger-instant", async (IInstantJobRegistry instantJobRegistry) =>
-    {
-        await instantJobRegistry.RunInstantJob<TestCancellationJob>("Hello from instant job!");
-    })
+app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
+{
+    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
+})
     .WithName("TriggerInstantJob")
+    .WithOpenApi();
+
+app.MapPost("/trigger-instant-concurrent", (IInstantJobRegistry instantJobRegistry) =>
+{
+    instantJobRegistry.RunInstantJob<ConcurrentTaskExecutorJob>();
+})
+    .WithSummary("Triggers a job that can run concurrently with other instances.")
+    .WithDescription(
+        """
+        This endpoint triggers an instance of 'TestCancellationJob' that is designed 
+        to run concurrently with other instances of the same job. Each instance operates 
+        independently, allowing parallel processing without mutual interference.
+        """)
+    .WithName("TriggerConcurrentJob")
     .WithOpenApi();
 
 app.Run();

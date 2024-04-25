@@ -21,13 +21,12 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
 
     /// <inheritdoc />
-    public Task RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+    public void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob
     {
         token.Register(() => LogCancellationRequested(parameter));
 
-        var executionContext = new JobExecutionContext(parameter);
-        var run = new RegistryEntry(typeof(TJob), executionContext, null, null);
+        var run = new RegistryEntry(typeof(TJob), parameter, null, null);
 
         var jobName = typeof(TJob).Name;
         _ = Task.Run(async () =>
@@ -49,7 +48,6 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
             }
         }, token);
 
-        return Task.CompletedTask;
     }
 
     [LoggerMessage(LogLevel.Warning, "Job {JobName} cancelled by request.")]

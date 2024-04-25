@@ -4,6 +4,8 @@ namespace LinkDotNet.NCronJob;
 
 internal sealed record RegistryEntry(
     Type Type,
-    JobExecutionContext Context,
+    object? Output,
     CronExpression? CronExpression,
-    TimeZoneInfo? TimeZone);
+    TimeZoneInfo? TimeZone,
+    int JobExecutionCount = 0,
+    JobPriority Priority = JobPriority.Normal);

@@ -2,6 +2,7 @@ using System.Threading.Channels;
 using LinkDotNet.NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -11,7 +12,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldCallNotificationHandlerWhenJobIsDone()
     {
-        var fakeTimer = TimeProviderFactory.GetTimeProvider();
+        var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *"))
@@ -29,7 +30,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldPassDownExceptionToNotificationHandler()
     {
-        var fakeTimer = TimeProviderFactory.GetTimeProvider();
+        var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<ExceptionJob>(p => p.WithCronExpression("* * * * *"))
@@ -47,7 +48,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task HandlerThatThrowsExceptionShouldNotInfluenceOtherHandlers()
     {
-        var fakeTimer = TimeProviderFactory.GetTimeProvider();
+        var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *"))
@@ -66,7 +67,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task HandlerThatThrowsExceptionInAsyncPartShouldNotInfluenceOtherHandlers()
     {
-        var fakeTimer = TimeProviderFactory.GetTimeProvider();
+        var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *"))

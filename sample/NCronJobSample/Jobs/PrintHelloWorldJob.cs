@@ -12,13 +12,14 @@ public partial class PrintHelloWorldJob : IJob
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        LogMessage(context.Parameter);
-
+        if (!string.IsNullOrEmpty(context.Parameter as string))
+            LogMessage(context.Parameter);
+        
         context.Output = "Hey there!";
-
+        
         return Task.CompletedTask;
     }
 
-    [LoggerMessage(LogLevel.Information, "Message: {Parameter}")]
+    [LoggerMessage(LogLevel.Information, "The input parameter is : {Parameter}")]
     private partial void LogMessage(object? parameter);
 }
