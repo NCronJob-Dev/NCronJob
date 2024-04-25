@@ -150,7 +150,7 @@ internal sealed partial class CronScheduler : BackgroundService
 
         if (nextRunTime.HasValue)
         {
-            LogNextJobRun(job.Type, nextRunTime.Value);
+            LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);
             // higher means more priority
             var priorityValue = (int)job.Priority;
             jobQueue.Enqueue(job, (nextRunTime.Value, priorityValue));
