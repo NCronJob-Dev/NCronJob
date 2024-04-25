@@ -14,9 +14,9 @@ public partial class PrintHelloWorldJob : IJob
 
         if (!string.IsNullOrEmpty(context.Parameter as string))
             LogMessage(context.Parameter);
-        
+
         context.Output = "Hey there!";
-        
+
         return Task.CompletedTask;
     }
 
