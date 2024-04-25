@@ -147,7 +147,7 @@ csharp_style_conditional_delegate_call = true                                   
 
 # Code block preferences
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#code-block-preferences
-csharp_prefer_braces = true                                                     # IDE0011
+csharp_prefer_braces = when_multiline                                                     # IDE0011
 
 # Unused value preferences
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#unused-value-preferences

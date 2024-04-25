@@ -4,5 +4,7 @@ namespace LinkDotNet.NCronJob;
 
 internal sealed record RegistryEntry(
     Type Type,
-    JobExecutionContext Context,
-    CrontabSchedule? CrontabSchedule);
+    object? Output,
+    CrontabSchedule? CrontabSchedule,
+    int JobExecutionCount = 0,
+    JobPriority Priority = JobPriority.Normal);

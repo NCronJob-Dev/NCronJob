@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using NCrontab;
+using System.Reflection;
+using System.Runtime;
 
 namespace LinkDotNet.NCronJob;
 
@@ -10,8 +13,13 @@ namespace LinkDotNet.NCronJob;
 public sealed class NCronJobOptionBuilder
 {
     private readonly IServiceCollection services;
+    private readonly ConcurrencySettings settings;
 
-    internal NCronJobOptionBuilder(IServiceCollection services) => this.services = services;
+    internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings)
+    {
+        this.services = services;
+        this.settings = settings;
+    }
 
     /// <summary>
     /// Adds a job to the service collection that gets executed based on the given cron expression.
@@ -33,10 +41,18 @@ public sealed class NCronJobOptionBuilder
         options?.Invoke(builder);
         var jobOptions = builder.GetJobOptions();
 
+        var concurrencyAttribute = typeof(T).GetCustomAttribute<SupportsConcurrencyAttribute>();
+        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
+        {
+            throw new InvalidOperationException($"The MaxDegreeOfParallelism for {typeof(T).Name} " +
+                                                $"({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed " +
+                                                $"the global limit ({settings.MaxDegreeOfParallelism}).");
+        }
+
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new RegistryEntry(typeof(T), new(option.Parameter), cron);
+            var entry = new RegistryEntry(typeof(T), option.Parameter, cron);
             services.AddSingleton(entry);
         }
 
