@@ -53,7 +53,7 @@ jobs:
         with:
             files: '["**/*.csproj"]'
         env:
-            RELEASE_NOTES: ${{ steps.changelog_reader.outputs.changes }}
+            RELEASE_NOTES: ${{ steps.changelog.outputs.changes }}
 
     - name: Setup dotnet
       uses: actions/setup-dotnet@v4
