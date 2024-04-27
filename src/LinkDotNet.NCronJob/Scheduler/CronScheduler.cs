@@ -58,7 +58,7 @@ internal sealed partial class CronScheduler : BackgroundService
                     var delay = priorityTuple.NextRunTime - utcNow;
                     if (delay > TimeSpan.Zero)
                     {
-                        await Task.Delay(delay, timeProvider, stopToken);
+                        await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
                     }
 
                     if (stopToken.IsCancellationRequested)
