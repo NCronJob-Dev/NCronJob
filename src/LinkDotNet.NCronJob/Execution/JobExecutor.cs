@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,15 +21,14 @@ internal sealed partial class JobExecutor : IDisposable
         this.logger = logger;
         this.retryHandler = retryHandler;
 
-        lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
+        lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
     }
 
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
-        Justification = "Service will be disposed in continuation task")]
     public async Task RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
+        shutdown?.Dispose();
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
 
@@ -40,7 +38,7 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
-        var scope = serviceProvider.CreateScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
         var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
         var jobExecutionInstance = new JobExecutionContext(run.Type, run.Output);
@@ -53,7 +51,7 @@ internal sealed partial class JobExecutor : IDisposable
         isDisposed = true;
     }
 
-    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, IServiceScope serviceScope, CancellationToken stoppingToken)
+    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, AsyncServiceScope serviceScope, CancellationToken stoppingToken)
     {
         try
         {
@@ -92,8 +90,6 @@ internal sealed partial class JobExecutor : IDisposable
                     // We don't want to throw exceptions from the notification service
                 }
             }
-
-            serviceScope.Dispose();
         }
     }
 }
