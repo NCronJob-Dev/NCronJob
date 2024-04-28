@@ -273,6 +273,7 @@ public class MyCustomPolicyCreator : IPolicyCreator
 ## Concurrency Support
 
 Concurrency support allows multiple instances of the same job type to run simultaneously, controlled by the `SupportsConcurrency` attribute. This feature is crucial for efficiently managing jobs that are capable of running in parallel without interference.
+By default jobs are not executed concurrently if the `SupportsConcurrency` attribute is not set.
 
 ### How It Works
 
