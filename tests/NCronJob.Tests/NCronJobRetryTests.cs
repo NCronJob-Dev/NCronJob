@@ -259,12 +259,9 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            while (!token.IsCancellationRequested)
-            {
-                throw new InvalidOperationException("Job Failed");
-            }
-
-            return Task.CompletedTask;
+            return !token.IsCancellationRequested
+                ? throw new InvalidOperationException("Job Failed")
+                : Task.CompletedTask;
         }
     }
 
