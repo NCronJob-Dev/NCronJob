@@ -110,27 +110,6 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
-    /// <summary>
-    /// Extracts the milliseconds from a <see cref="TimeSpan"/> value.
-    /// Makes sure the value is within the supported range for what Task.Delay can handle, which is about 49ish hours.
-    /// </summary>
-    /// <param name="value"></param>
-    /// <param name="milliseconds"></param>
-    /// <returns></returns>
-    private static bool TryGetMilliseconds(TimeSpan value, out uint milliseconds)
-    {
-        const UInt32 maxSupportedTimeout = 0xfffffffe;
-        var ms = (long)value.TotalMilliseconds;
-        if (ms is >= 1 and <= maxSupportedTimeout || value == Timeout.InfiniteTimeSpan)
-        {
-            milliseconds = (uint)ms;
-            return true;
-        }
-
-        milliseconds = 0;
-        return false;
-    }
-
     private void ScheduleInitialJobs()
     {
         foreach (var job in registry.GetAllCronJobs())

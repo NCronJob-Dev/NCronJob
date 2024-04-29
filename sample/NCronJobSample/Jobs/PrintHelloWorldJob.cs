@@ -12,8 +12,7 @@ public partial class PrintHelloWorldJob : IJob
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (!string.IsNullOrEmpty(context.Parameter as string))
-            LogMessage(context.Parameter);
+        LogMessage(context.Parameter);
 
         context.Output = "Hey there!";
 
