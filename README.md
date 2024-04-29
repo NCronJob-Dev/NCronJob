@@ -26,6 +26,33 @@ jobs:
 1. Instant jobs - just run a job right away
 2. Cron jobs - schedule a job using a cron expression
 
+- [NCronJob](#ncronjob)
+  - [Features](#features)
+  - [Not features](#not-features)
+  - [Short example](#short-example)
+  - [Triggering an instant job](#triggering-an-instant-job)
+  - [Getting notified when a job is done](#getting-notified-when-a-job-is-done)
+  - [Retry Support](#retry-support)
+    - [How It Works](#how-it-works)
+    - [Using Retry Policies](#using-retry-policies)
+      - [Example 1: Basic Retry Policy, defaults to Exponential Backoff](#example-1-basic-retry-policy-defaults-to-exponential-backoff)
+      - [Example 2: Fixed Interval](#example-2-fixed-interval)
+    - [Advanced: Custom Retry Policies](#advanced-custom-retry-policies)
+  - [Concurrency Support](#concurrency-support)
+    - [How It Works](#how-it-works-1)
+    - [Using the SupportsConcurrency Attribute](#using-the-supportsconcurrency-attribute)
+      - [Example: Concurrency in Jobs](#example-concurrency-in-jobs)
+    - [Important Considerations](#important-considerations)
+      - [Ensuring Job Idempotency](#ensuring-job-idempotency)
+      - [Resource Allocation Caution](#resource-allocation-caution)
+  - [Advanced Cases](#advanced-cases)
+    - [Scheduling multiple schedules for the same job](#scheduling-multiple-schedules-for-the-same-job)
+    - [Log Level](#log-level)
+  - [Migration from `v1` to `v2`](#migration-from-v1-to-v2)
+    - [`CronExpression` moved towards builder](#cronexpression-moved-towards-builder)
+  - [Support \& Contributing](#support--contributing)
+
+
 ## Features
 
 - [x] The ability to schedule jobs using a cron expression
@@ -151,75 +178,6 @@ public class MyJobNotificationHandler : IJobNotificationHandler<MyJob>
 }
 ```
 
-## Advanced Cases
-
-### Scheduling multiple schedules for the same job
-
-If you want to schedule a job multiple times, you can do so by calling utilizing the builder:
-
-```csharp
-Services.AddNCronJob(options =>
-    options.AddJob<PrintHelloWorld>(j => 
-    {
-        j.WithCronExpression("* * * * *")
-         .WithParameter("Hello World")
-         .And
-         .WithCronExpression("0 * * * *")
-         .WithParameter("Hello World Again");
-    }));
-```
-
-### Log Level
-
-The **NCronJob** scheduler can be configured to log at a specific log level.
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning",
-      "LinkDotNet.NCronJob": "Debug"
-```
-
-## Migration from `v1` to `v2`
-Version 2 of **NCronJob** brings some breaking changes to mae a better API.
-
-### `CronExpression` moved towards builder
-
-- In `v1` one would define as such:
-```csharp
-services.AddNCronJob();
-services.AddCronJob<PrintHelloWorld>(options => 
-{
-    options.CronExpression = "* * * * *";
-    options.Parameter = "Hello World";
-});
-```
-
-With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
-```csharp
-Services.AddNCronJob(options => 
-{
-    options.AddJob<PrintHelloWorld>(j => 
-    {
-        j.WithCronExpression("* * * * *")
-         .WithParameter("Hello World");
-    });
-});
-```
-
-This allows to easily define multiple jobs without adding much boilerplate code.
-```csharp
-Services.AddNCronJob(options => 
-{
-    options.AddJob<PrintHelloWorld>(p => p
-        .WithCronExpression("0 * * * *").WithParameter("Foo")
-        .And
-        .WithCronExpression("0 0 * * *").WithParameter("Bar"));
-});
-```
-
 ## Retry Support
 
 The new Retry support provides a robust mechanism for handling transient failures by retrying failed operations. This feature is implemented using the `RetryPolicy` attribute that can be applied to any class implementing the `IJob` interface.
@@ -315,6 +273,7 @@ public class MyCustomPolicyCreator : IPolicyCreator
 ## Concurrency Support
 
 Concurrency support allows multiple instances of the same job type to run simultaneously, controlled by the `SupportsConcurrency` attribute. This feature is crucial for efficiently managing jobs that are capable of running in parallel without interference.
+By default jobs are not executed concurrently if the `SupportsConcurrency` attribute is not set.
 
 ### How It Works
 
@@ -355,6 +314,74 @@ When using concurrency, it's essential to ensure that each job instance is idemp
 #### Resource Allocation Caution
 Jobs that are marked to support concurrency should be designed carefully to avoid contention over shared resources. This includes, but is not limited to, database connections, file handles, or any external systems. In scenarios where shared resources are unavoidable, proper synchronization mechanisms or concurrency control techniques, such as semaphores, mutexes, or transactional control, should be implemented to prevent race conditions and ensure data integrity.
 
+## Advanced Cases
+
+### Scheduling multiple schedules for the same job
+
+If you want to schedule a job multiple times, you can do so by calling utilizing the builder:
+
+```csharp
+Services.AddNCronJob(options =>
+    options.AddJob<PrintHelloWorld>(j => 
+    {
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World")
+         .And
+         .WithCronExpression("0 * * * *")
+         .WithParameter("Hello World Again");
+    }));
+```
+
+### Log Level
+
+The **NCronJob** scheduler can be configured to log at a specific log level.
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "LinkDotNet.NCronJob": "Debug"
+```
+
+## Migration from `v1` to `v2`
+Version 2 of **NCronJob** brings some breaking changes to mae a better API.
+
+### `CronExpression` moved towards builder
+
+- In `v1` one would define as such:
+```csharp
+services.AddNCronJob();
+services.AddCronJob<PrintHelloWorld>(options => 
+{
+    options.CronExpression = "* * * * *";
+    options.Parameter = "Hello World";
+});
+```
+
+With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<PrintHelloWorld>(j => 
+    {
+        j.WithCronExpression("* * * * *")
+         .WithParameter("Hello World");
+    });
+});
+```
+
+This allows to easily define multiple jobs without adding much boilerplate code.
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<PrintHelloWorld>(p => p
+        .WithCronExpression("0 * * * *").WithParameter("Foo")
+        .And
+        .WithCronExpression("0 0 * * *").WithParameter("Bar"));
+});
+```
 
 ## Support & Contributing
 

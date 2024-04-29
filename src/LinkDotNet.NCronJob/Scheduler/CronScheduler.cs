@@ -59,11 +59,7 @@ internal sealed partial class CronScheduler : BackgroundService
                     var delay = priorityTuple.NextRunTime - utcNow;
                     if (delay > TimeSpan.Zero)
                     {
-                        if (!TryGetMilliseconds(delay, out var ms))
-                        {
-                            throw new InvalidOperationException("The delay is too long to be handled by Task.Delay.");
-                        }
-                        await Task.Delay(TimeSpan.FromMilliseconds(ms), timeProvider, stopToken);
+                        await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
                     }
 
                     if (stopToken.IsCancellationRequested)

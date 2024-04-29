@@ -18,6 +18,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Fixed
 - **Test Framework Bugs:** Addressed specific bugs in the testing framework, ensuring that all tests are now passing and provide reliable results.
+- CRON jobs that are scheduled more than 50 days in the future did throw an exception.
 
 ### Contributors
 - Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/linkdotnet/NCronJob/pull/21).
