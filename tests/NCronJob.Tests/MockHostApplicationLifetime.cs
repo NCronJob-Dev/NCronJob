@@ -1,9 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace NCronJob.Tests;
 
-public class MockHostApplicationLifetime : IHostApplicationLifetime, IDisposable
+public sealed class MockHostApplicationLifetime : IHostApplicationLifetime, IDisposable
 {
     private readonly CancellationTokenSource startedCts = new();
     private readonly CancellationTokenSource stoppingCts = new();
@@ -26,10 +25,9 @@ public class MockHostApplicationLifetime : IHostApplicationLifetime, IDisposable
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!disposed)
         {
