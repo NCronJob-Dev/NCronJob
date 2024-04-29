@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
@@ -7,7 +8,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
 {
     private readonly JobExecutor jobExecutor;
     private readonly ILogger<CronRegistry> logger;
-    private readonly FrozenSet<RegistryEntry> cronJobs;
+    private readonly ImmutableArray<RegistryEntry> cronJobs;
 
     public CronRegistry(IEnumerable<RegistryEntry> jobs,
         JobExecutor jobExecutor,
@@ -15,7 +16,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     {
         this.jobExecutor = jobExecutor;
         this.logger = logger;
-        cronJobs = jobs.Where(c => c.CronExpression is not null).ToFrozenSet();
+        cronJobs = jobs.Where(c => c.CronExpression is not null).ToImmutableArray();
     }
 
     public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
