@@ -4,6 +4,11 @@ using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
 
+internal interface IRetryHandler
+{
+    Task ExecuteAsync(Func<CancellationToken, Task> operation, JobExecutionContext runContext, CancellationToken cancellationToken);
+}
+
 /// <summary>
 /// Manages retries for operations prone to transient failures using Polly's retry policies.
 /// </summary>
@@ -27,7 +32,7 @@ namespace LinkDotNet.NCronJob;
 ///
 /// </code>
 /// </example>
-internal sealed partial class RetryHandler
+internal sealed partial class RetryHandler : IRetryHandler
 {
     private readonly ILogger<RetryHandler> logger;
     private readonly IServiceProvider serviceProvider;
@@ -48,11 +53,15 @@ internal sealed partial class RetryHandler
             var retryPolicy = retryPolicyAttribute?.CreatePolicy(serviceProvider) ?? Policy.NoOpAsync();
 
             // Execute the operation using the given retry policy
-            await retryPolicy.ExecuteAsync(() =>
+            await retryPolicy.ExecuteAsync((ct) =>
             {
                 runContext.Attempts++;
-                return operation(cancellationToken);
-            });
+                return operation(ct);
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            LogCancellationOperationInJob();
         }
         catch (Exception ex)
         {
@@ -66,4 +75,7 @@ internal sealed partial class RetryHandler
 
     [LoggerMessage(LogLevel.Debug, "Attempt {RetryCount} for {JobName}")]
     private partial void LogRetryAttempt(int retryCount, string jobName);
+
+    [LoggerMessage(LogLevel.Trace, "Operation was cancelled.")]
+    private partial void LogCancellationOperationInJob();
 }

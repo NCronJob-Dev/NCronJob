@@ -35,7 +35,7 @@ public static class NCronJobExtensions
         services.AddHostedService<CronScheduler>();
         services.AddSingleton<CronRegistry>();
         services.AddSingleton<JobExecutor>();
-        services.AddSingleton<RetryHandler>();
+        services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.AddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
         services.TryAddSingleton(TimeProvider.System);
 

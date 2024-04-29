@@ -101,7 +101,7 @@ internal sealed partial class CronScheduler : BackgroundService
             }
 
             // Wait for all remaining tasks to complete
-            await Task.WhenAll(runningTasks);
+            await Task.WhenAll(runningTasks).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -133,13 +133,19 @@ internal sealed partial class CronScheduler : BackgroundService
         {
             LogRunningJob(entry.Type);
 
-            await jobExecutor.RunJob(entry, stoppingToken);
+            await jobExecutor.RunJob(entry, stoppingToken).ConfigureAwait(false);
 
             LogCompletedJob(entry.Type);
         }
         catch (Exception ex)
         {
             LogExceptionInJob(ex.Message, entry.Type);
+        }
+        finally
+        {
+            // successful or not, increment the execution count
+            // Note: need to refactor to use Interlocked.Increment to better support multi-threaded execution
+            entry.JobExecutionCount++;
         }
     }
 
