@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using System.Collections.Immutable;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +15,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     {
         this.jobExecutor = jobExecutor;
         this.logger = logger;
-        cronJobs = jobs.Where(c => c.CronExpression is not null).ToImmutableArray();
+        cronJobs = [..jobs.Where(c => c.CrontabSchedule is not null)];
     }
 
     public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
