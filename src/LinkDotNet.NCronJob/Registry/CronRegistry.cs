@@ -15,7 +15,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     {
         this.jobExecutor = jobExecutor;
         this.logger = logger;
-        cronJobs = [..jobs.Where(c => c.CrontabSchedule is not null)];
+        cronJobs = [..jobs.Where(c => c.CronExpression is not null)];
     }
 
     public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
