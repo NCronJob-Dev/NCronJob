@@ -42,39 +42,9 @@ public sealed class TimeZoneTests : JobIntegrationBase
 
         var options = builder.GetJobOptions();
 
-        // Check that the timezone is correctly assigned
         options.Single().TimeZoneInfo.ShouldBe(timeZone);
-
-        // Check that the cron expression is correctly assigned
         options.Single().CronExpression.ShouldBe(cronExpression);
     }
-
-    [Fact]
-    public async Task ShouldCorrectlyHandleDaylightSavingTimeSpringForward()
-    {
-        var fakeTimer = new FakeTimeProvider(new DateTimeOffset(2024, 3, 10, 0, 0, 0, TimeSpan.Zero)); // Start of the day on DST change
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p =>
-            p.WithCronExpression("0 2 * * *", timeZoneInfo: timeZone)));// run at 2 AM every day
-
-        var provider = CreateServiceProvider();
-        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
-        var simpleJobEntry = cronRegistryEntries.First(entry => entry.Type == typeof(SimpleJob));
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
-
-        // The test date is one minute before the spring forward, which skips from 1:59 AM to 3:00 AM
-        var testDate = new DateTime(2024, 3, 10, 1, 59, 59, DateTimeKind.Unspecified); // One minute before the spring forward
-        var baseTime = TimeZoneInfo.ConvertTimeToUtc(testDate, timeZone);
-
-        var nextRunTime = GetNextRunTime(simpleJobEntry, baseTime, timeZone);
-
-        // Check if nextRunTime correctly jumps over the missing hour
-        var expectedRunTime = new DateTime(2024, 3, 10, 7, 0, 0, DateTimeKind.Utc); // 3 AM EDT is 7 AM UTC
-        nextRunTime!.Value.ShouldBe(expectedRunTime);
-    }
-
 
     [Fact]
     public void ShouldHandleInvalidTimeZoneGracefully()
@@ -87,43 +57,66 @@ public sealed class TimeZoneTests : JobIntegrationBase
     }
 
     [Fact]
-    public void ShouldCalculateNextRunTimeBasedOnTimeZone()
+    public async Task ShouldCorrectlyHandleDaylightSavingTimeSpringForward()
     {
-        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p =>
-            p.WithCronExpression("0 12 * * *", timeZoneInfo: timeZone)));// run at 2 AM every day
+        var baseTime = new DateTimeOffset(2024, 3, 9, 23, 59, 59, TimeSpan.Zero); // Just before the spring forward
+        SetupJobWithTimeZone<SimpleJob>("0 2 * * *", "Eastern Standard Time");
+        var jobEntry = await InitializeServiceAndAdvanceTime<SimpleJob>(baseTime, TimeSpan.FromMinutes(2));
 
-        var provider = CreateServiceProvider();
-        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
-        var simpleJobEntry = cronRegistryEntries.First(entry => entry.Type == typeof(SimpleJob));
-
-        var baseTime = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Utc); // This is 6 AM EST on Jan 1, 2024
-        var expectedRunTime = new DateTime(2024, 1, 1, 17, 0, 0, DateTimeKind.Utc); // Noon EST is 5 PM UTC on Jan 1, 2024
-
-        var nextRunTime = GetNextRunTime(simpleJobEntry, baseTime, timeZone);
+        var expectedRunTime = new DateTimeOffset(2024, 3, 10, 7, 0, 0, TimeSpan.Zero); // 3 AM EDT is 7 AM UTC
+        var nextRunTime = GetNextRunTime(jobEntry, baseTime.AddMinutes(2), TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
 
         nextRunTime!.Value.ShouldBe(expectedRunTime);
     }
 
     [Fact]
-    public void ShouldHandleCrossTimezoneSchedulingCorrectly()
+    public async Task ShouldCalculateNextRunTimeBasedOnTimeZone()
     {
-        var timeZoneLA = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p =>
-            p.WithCronExpression("0 8 * * *", timeZoneInfo: timeZoneLA))); // 8 AM PST
+        var baseTime = new DateTimeOffset(2024, 1, 1, 11, 0, 0, TimeSpan.Zero); // This is 6 AM EST on Jan 1, 2024
+        SetupJobWithTimeZone<SimpleJob>("0 12 * * *", "Eastern Standard Time");
+        var jobEntry = await InitializeServiceAndAdvanceTime<SimpleJob>(baseTime, TimeSpan.FromDays(1));
 
-        var provider = CreateServiceProvider();
-        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
-        var simpleJobEntry = cronRegistryEntries.First(entry => entry.Type == typeof(SimpleJob));
-
-        var baseTime = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Utc); // This is 3 AM PST, 6 AM EST
-        var expectedRunTime = new DateTime(2024, 1, 1, 16, 0, 0, DateTimeKind.Utc); // 8 AM PST is 11 AM EST, which is 4 PM UTC
-
-        var nextRunTime = GetNextRunTime(simpleJobEntry, baseTime, timeZoneLA);
+        var expectedRunTime = new DateTimeOffset(2024, 1, 1, 17, 0, 0, TimeSpan.Zero); // Noon EST is 5 PM UTC
+        var nextRunTime = GetNextRunTime(jobEntry, baseTime, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
 
         nextRunTime!.Value.ShouldBe(expectedRunTime);
     }
 
+    [Fact]
+    public async Task ShouldHandleCrossTimezoneSchedulingCorrectly()
+    {
+        var baseTime = new DateTimeOffset(2024, 1, 1, 11, 0, 0, TimeSpan.Zero); // This is 3 AM PST, 6 AM EST
+        SetupJobWithTimeZone<SimpleJob>("0 8 * * *", "Pacific Standard Time");
+        var jobEntry = await InitializeServiceAndAdvanceTime<SimpleJob>(baseTime, TimeSpan.FromDays(1));
+
+        var expectedRunTime = new DateTimeOffset(2024, 1, 1, 16, 0, 0, TimeSpan.Zero); // 8 AM PST is 11 AM EST, which is 4 PM UTC
+        var nextRunTime = GetNextRunTime(jobEntry, baseTime, TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"));
+
+        nextRunTime!.Value.ShouldBe(expectedRunTime);
+    }
+
+    private DateTimeOffset? GetNextRunTime(RegistryEntry jobEntry, DateTimeOffset baseTime, TimeZoneInfo timeZone) =>
+        jobEntry.CronExpression!.GetNextOccurrence(baseTime, timeZone);
+
+    private void SetupJobWithTimeZone<T>(string cronExpression, string timeZoneId) where T : class, IJob
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        ServiceCollection.AddNCronJob(n => n.AddJob<T>(p => p.WithCronExpression(cronExpression, timeZoneInfo: timeZone)));
+    }
+
+    private async Task<RegistryEntry> InitializeServiceAndAdvanceTime<T>(DateTimeOffset baseTime, TimeSpan? advanceTime = null) where T : IJob
+    {
+        var fakeTimer = new FakeTimeProvider(baseTime);
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        var provider = CreateServiceProvider();
+        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        if (advanceTime.HasValue)
+        {
+            fakeTimer.Advance(advanceTime.Value);
+        }
+        return cronRegistryEntries.First(entry => entry.Type == typeof(T));
+    }
 
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
@@ -140,7 +133,4 @@ public sealed class TimeZoneTests : JobIntegrationBase
             }
         }
     }
-
-    private DateTime? GetNextRunTime(RegistryEntry jobEntry, DateTime baseTime, TimeZoneInfo timeZone) =>
-        jobEntry.CronExpression!.GetNextOccurrence(baseTime, timeZone);
 }
