@@ -22,10 +22,7 @@ public sealed class MockHostApplicationLifetime : IHostApplicationLifetime, IDis
         }
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-    }
+    public void Dispose() => Dispose(true);
 
     private void Dispose(bool disposing)
     {
