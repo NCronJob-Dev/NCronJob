@@ -7,4 +7,7 @@ internal sealed record RegistryEntry(
     object? Output,
     CrontabSchedule? CrontabSchedule,
     int JobExecutionCount = 0,
-    JobPriority Priority = JobPriority.Normal);
+    JobPriority Priority = JobPriority.Normal)
+{
+    public int JobExecutionCount { get; set; } = JobExecutionCount;
+}

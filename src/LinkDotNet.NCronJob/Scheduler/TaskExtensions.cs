@@ -6,7 +6,7 @@ namespace LinkDotNet.NCronJob;
 internal static class TaskExtensions
 {
     /// <summary>
-    /// Has the same semantics as <see cref="Task.Delay(TimeSpan, TimeProvider, CancellationToken)"/> but is save to use for long delays.
+    /// Has the same semantics as <see cref="Task.Delay(TimeSpan, TimeProvider, CancellationToken)"/> but is safe to use for long delays.
     /// </summary>
     /// <param name="targetTimeSpan">The <see cref="TimeSpan" /> to wait before completing the returned task, or <see cref="Timeout.InfiniteTimeSpan" /> to wait indefinitely.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider" /> with which to interpret <paramref name="targetTimeSpan" />.</param>

@@ -2,13 +2,39 @@ using Microsoft.Extensions.Hosting;
 
 namespace NCronJob.Tests;
 
-public class MockHostApplicationLifetime : IHostApplicationLifetime
+public sealed class MockHostApplicationLifetime : IHostApplicationLifetime, IDisposable
 {
-    public CancellationToken ApplicationStarted { get; set; } = new CancellationToken(false);
-    public CancellationToken ApplicationStopping { get; set; } = new CancellationToken(false);
-    public CancellationToken ApplicationStopped { get; set; } = new CancellationToken(false);
+    private readonly CancellationTokenSource startedCts = new();
+    private readonly CancellationTokenSource stoppingCts = new();
+    private readonly CancellationTokenSource stoppedCts = new();
+    private bool disposed;
+
+    public CancellationToken ApplicationStarted => startedCts.Token;
+    public CancellationToken ApplicationStopping => stoppingCts.Token;
+    public CancellationToken ApplicationStopped => stoppedCts.Token;
 
     public void StopApplication()
     {
+        if (!disposed)
+        {
+            stoppingCts.Cancel();
+            stoppedCts.Cancel();
+        }
+    }
+
+    public void Dispose() => Dispose(true);
+
+    private void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing)
+            {
+                startedCts.Dispose();
+                stoppingCts.Dispose();
+                stoppedCts.Dispose();
+            }
+            disposed = true;
+        }
     }
 }
