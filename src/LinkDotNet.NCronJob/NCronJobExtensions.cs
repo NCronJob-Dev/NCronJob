@@ -32,9 +32,6 @@ public static class NCronJobExtensions
         var builder = new NCronJobOptionBuilder(services, settings);
         options?.Invoke(builder);
 
-        // temporary, need to be replaced with a proper configuration
-        services.AddSingleton<ConcurrencyConfig>((sp) => new ConcurrencyConfig(3));
-
         services.AddHostedService<CronScheduler>();
         services.AddSingleton<CronRegistry>();
         services.AddSingleton<JobExecutor>();
