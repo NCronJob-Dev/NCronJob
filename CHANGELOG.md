@@ -6,22 +6,28 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.1.4] - 2024-05-01
+
 ### Added
-- **Retry Mechanism:** Improved robustness of job executions, especially in cases of transient failures. Includes exponential backoff and fixed interval strategies.
-- **Concurrency Control:** Introduced a `SupportsConcurrency` attribute to provide fine-grained control over the concurrency behavior of individual jobs. This attribute allows specifying the maximum degree of parallelism.
-- **New WaitForJobsOrTimeout:** Added an enhanced version of `WaitForJobsOrTimeout` to the Tests project that allows time advancement for each run, providing more precise control over test execution timing.
-- **Cancellation Support:** Jobs now support graceful cancellation during execution and SIGTERM.
+
+-   **Retry Mechanism:** Improved robustness of job executions, especially in cases of transient failures. Includes exponential backoff and fixed interval strategies.
+-   **Concurrency Control:** Introduced a `SupportsConcurrency` attribute to provide fine-grained control over the concurrency behavior of individual jobs. This attribute allows specifying the maximum degree of parallelism.
+-   **New WaitForJobsOrTimeout:** Added an enhanced version of `WaitForJobsOrTimeout` to the Tests project that allows time advancement for each run, providing more precise control over test execution timing.
+-   **Cancellation Support:** Jobs now support graceful cancellation during execution and SIGTERM.
 
 ### Changed
-- **Concurrency Management:** Implemented improved global concurrency handling techniques within `CronScheduler`. This change enhances flexibility and scalability in managing job executions.
-- **Async Job Executions:** Job executions are now fully async from the moment the scheduler triggers the job, ensuring better performance and resource utilization.
+
+-   **Concurrency Management:** Implemented improved global concurrency handling techniques within `CronScheduler`. This change enhances flexibility and scalability in managing job executions.
+-   **Async Job Executions:** Job executions are now fully async from the moment the scheduler triggers the job, ensuring better performance and resource utilization.
 
 ### Fixed
-- **Test Framework Bugs:** Addressed specific bugs in the testing framework, ensuring that all tests are now passing and provide reliable results.
-- CRON jobs that are scheduled more than 50 days in the future did throw an exception.
+
+-   **Test Framework Bugs:** Addressed specific bugs in the testing framework, ensuring that all tests are now passing and provide reliable results.
+-   CRON jobs that are scheduled more than 50 days in the future did throw an exception.
 
 ### Contributors
-- Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/linkdotnet/NCronJob/pull/21).
+
+-   Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/linkdotnet/NCronJob/pull/21).
 
 ## [2.0.5] - 2024-04-19
 
@@ -170,7 +176,9 @@ services.AddNCronJob(options =>
 -   Parameterized jobs - instant as well as cron jobs!
 -   Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.0.5...HEAD
+[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.1.4...HEAD
+
+[2.1.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.5...2.1.4
 
 [2.0.5]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...2.0.5
 
