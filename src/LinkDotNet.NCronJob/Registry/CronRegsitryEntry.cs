@@ -6,8 +6,11 @@ internal sealed record RegistryEntry(
     Type Type,
     object? Output,
     CrontabSchedule? CrontabSchedule,
-    int JobExecutionCount = 0,
     JobPriority Priority = JobPriority.Normal)
 {
-    public int JobExecutionCount { get; set; } = JobExecutionCount;
+    private int jobExecutionCount;
+
+    public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
+
+    public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 }

@@ -38,8 +38,14 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
+        if (!disposing)
+        {
+            return;
+        }
+
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
+        cancellationSignaled.TrySetCanceled();
         serviceProvider?.Dispose();
     }
 

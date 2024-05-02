@@ -35,8 +35,6 @@ internal sealed partial class JobExecutor : IDisposable
 
     public void CancelJobs()
     {
-        // Safely trigger the cancellation
-        // This will cancel every job that is currently running
         if (!shutdown.IsCancellationRequested)
         {
             shutdown.Cancel();
@@ -68,7 +66,7 @@ internal sealed partial class JobExecutor : IDisposable
         if (isDisposed)
             return;
 
-        shutdown?.Dispose();
+        shutdown.Dispose();
         isDisposed = true;
     }
 

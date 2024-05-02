@@ -30,14 +30,15 @@ internal sealed partial class CronScheduler : BackgroundService
         this.jobExecutor = jobExecutor;
         this.registry = registry;
         this.timeProvider = timeProvider;
-        this.logger = loggerFactory.CreateLogger<CronScheduler>();
-        this.globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
-        this.semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
+        logger = loggerFactory.CreateLogger<CronScheduler>();
+        globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
+        semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        shutdown?.Dispose();
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
@@ -143,9 +144,7 @@ internal sealed partial class CronScheduler : BackgroundService
         }
         finally
         {
-            // successful or not, increment the execution count
-            // Note: need to refactor to use Interlocked.Increment to better support multi-threaded execution
-            entry.JobExecutionCount++;
+            entry.IncrementJobExecutionCount();
         }
     }
 

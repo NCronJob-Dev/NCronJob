@@ -200,7 +200,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            using var executor = provider.CreateScope().ServiceProvider.GetRequiredService<JobExecutor>();
+            using var serviceScope = provider.CreateScope();
+            using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
             await executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null!, null), null), CancellationToken.None);
         });
     }
