@@ -3,7 +3,6 @@ using System.Threading.Channels;
 using LinkDotNet.NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
@@ -84,9 +83,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
@@ -204,6 +202,39 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
             await executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null!, null), null), CancellationToken.None);
         });
+    }
+
+    [Fact]
+    public async Task ExecuteAScheduledJob()
+    {
+        var fakeTimer = new FakeTimeProvider { AutoAdvanceAmount = TimeSpan.FromMinutes(1) };
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
+        var provider = CreateServiceProvider();
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(TimeSpan.FromMinutes(1));
+
+        await Task.Delay(10);
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task ExecuteAScheduledJobWithDateTimeOffset()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
+        var provider = CreateServiceProvider();
+        var runDate = fakeTimer.GetUtcNow().AddMinutes(1);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(runDate);
+
+        await Task.Delay(10);
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
     }
 
     private sealed class GuidGenerator

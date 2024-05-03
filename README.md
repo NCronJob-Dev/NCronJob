@@ -23,7 +23,7 @@ application and feels "native".
 So no need for setting up a database, just schedule your stuff right away! The library gives you two ways of scheduling
 jobs:
 
-1. Instant jobs - just run a job right away
+1. Instant jobs - just run a job right away (or with a small delay; or with a given date and time)
 2. Cron jobs - schedule a job using a cron expression
 
 - [NCronJob](#ncronjob)
@@ -130,6 +130,18 @@ public class MyService
 
   public void MyMethod() => jobRegistry.RunInstantJob<MyJob>("I am an optional parameter");
 }
+```
+
+You can also define a delay or a specific time when the job should be executed:
+
+```csharp
+public void TriggerJobs()
+{
+    // Run the job in 2 minutes
+    jobRegistry.RunScheduledJob<MyJob>(TimeSpan.FromMinutes(2), "I am an optional parameter");
+    
+    // Run the job at the a specific date
+    jobRegistry.RunScheduledJob<MyJob>(DateTimeOffset.Now.AddHours(2), "I am an optional parameter");
 ```
 
 ## Getting notified when a job is done

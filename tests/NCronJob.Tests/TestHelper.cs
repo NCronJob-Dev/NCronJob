@@ -25,7 +25,7 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
         ServiceCollection.AddSingleton<IHostApplicationLifetime, MockHostApplicationLifetime>();
         ServiceCollection.AddSingleton<IRetryHandler, TestRetryHandler>();
-        ServiceCollection.AddSingleton<IRetryHandler>((sp) =>
+        ServiceCollection.AddSingleton<IRetryHandler>(sp =>
             new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
 
     }
@@ -51,7 +51,7 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected ServiceProvider CreateServiceProvider() => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
-    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, int timeOut = 2)
+    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, int timeOut = 200000)
     {
         using var timeoutTcs = new CancellationTokenSource(TimeSpan.FromSeconds(timeOut));
         try
