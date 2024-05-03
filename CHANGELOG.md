@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Ability to schedule a job to run after a specific delay.
+- Ability to schedule a job to run at a specific time.
+
 ## [2.1.4] - 2024-05-01
 
 ### Added

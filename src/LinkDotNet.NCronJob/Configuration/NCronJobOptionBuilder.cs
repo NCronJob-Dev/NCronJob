@@ -1,9 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 using NCrontab;
 using System.Reflection;
-using System.Runtime;
 
 namespace LinkDotNet.NCronJob;
 

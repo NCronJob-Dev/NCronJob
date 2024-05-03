@@ -17,8 +17,10 @@ public sealed class MockHostApplicationLifetime : IHostApplicationLifetime, IDis
     {
         if (!disposed)
         {
+            startedCts.Cancel();
             stoppingCts.Cancel();
             stoppedCts.Cancel();
+            Dispose();
         }
     }
 
@@ -26,15 +28,18 @@ public sealed class MockHostApplicationLifetime : IHostApplicationLifetime, IDis
 
     private void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (disposed)
         {
-            if (disposing)
-            {
-                startedCts.Dispose();
-                stoppingCts.Dispose();
-                stoppedCts.Dispose();
-            }
-            disposed = true;
+            return;
+        }
+
+        disposed = true;
+
+        if (disposing)
+        {
+            startedCts.Dispose();
+            stoppingCts.Dispose();
+            stoppedCts.Dispose();
         }
     }
 }
