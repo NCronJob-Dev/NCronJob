@@ -1,3 +1,5 @@
+using LinkDotNet.NCronJob.Messaging;
+using LinkDotNet.NCronJob.Messaging.States;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -38,6 +40,8 @@ public static class NCronJobExtensions
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IMessageHub, MessageHub>();
+        services.TryAddSingleton<JobStateManager>();
 
         return services;
     }
