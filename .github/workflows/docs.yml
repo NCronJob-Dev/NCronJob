@@ -4,16 +4,18 @@ on:
     types: [created, published]
   workflow_dispatch:
 
+permissions:
+    contents: write
 jobs:
+    build:
+        runs-on: ubuntu-latest
 
-  build:
-    name: Deploy docs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Deploy MkDocs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions/setup-python@v5
+            - run: pip install --upgrade pip && pip install mkdocs mkdocs-gen-files
+            - run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
+            - name: Publish docs
+              run: mkdocs gh-deploy
