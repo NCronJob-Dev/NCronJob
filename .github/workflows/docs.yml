@@ -1,8 +1,9 @@
 name: Update page
 on:
-  release:
-    types: [created, published]
-  workflow_dispatch:
+    push:
+        tags:
+            - "*"
+    workflow_dispatch:
 
 permissions:
     contents: write
@@ -14,8 +15,26 @@ jobs:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-            - uses: actions/setup-python@v5
-            - run: pip install --upgrade pip && pip install mkdocs mkdocs-gen-files
-            - run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
+                  fetch-tags: true
+
+            - name: Get the latest tag
+              run: echo "version=$(git describe --tags --abbrev=0 | cut -c 2-)" >> $GITHUB_ENV
+
+            - name: Replace current version in documentation
+              uses: cschleiden/replace-tokens@master
+              with:
+                files: 'docs/getting-started.md'
+              env:
+                entries: "${{ env.entries }}"
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+
+            - name: Install mkdocs
+              run: pip install --upgrade pip && pip install mkdocs mkdocs-gen-files
+
+            - name: Setup git
+              run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
+
             - name: Publish docs
               run: mkdocs gh-deploy
