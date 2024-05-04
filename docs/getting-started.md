@@ -14,7 +14,7 @@ dotnet add package LinkDotNet.NCronJob
 Alternatively add the package reference to your `.csproj` file:
 
 ```xml
-<PackageReference Include="LinkDotNet.NCronJob" Version="2.1.4" />
+<PackageReference Include="LinkDotNet.NCronJob" Version="#{version}#" />
 ```
 
 ## 2. Create a job
