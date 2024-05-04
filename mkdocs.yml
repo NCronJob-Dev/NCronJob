@@ -1,0 +1,44 @@
+site_name: NCronJob
+site_url: https://linkdotnet.github.io/NCronJob/
+site_description: A simple and powerful job scheduler.
+docs_dir: docs
+repo_name: linkdotnet/NCronJob
+repo_url: https://github.com/linkdotnet/NCronJob
+edit_uri: edit/main/docs/
+theme:
+  name: readthedocs
+  hightlightjs: true
+  search: true
+  logo: logo_small.png
+  features:
+    - navigation.instant
+    - content.action.edit
+markdown_extensions:
+  - smarty
+  - sane_lists
+  - fenced_code
+  - meta
+  - admonition
+  - attr_list
+  - codehilite
+  - footnotes
+  - toc:
+      permalink: true
+nav:
+  - Overview:
+    - Getting Started: getting-started.md
+  - Features:
+    - Passing Parameters: features/parameters.md
+    - Registering multiple CRON expressions: features/multiple-cron-expressions.md
+    - Triggering instant jobs: features/instant-jobs.md
+  - Migration:
+    - v2 Migration Guide: migration/v2.md
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/linkdotnet/NCronJob
+
+
+copyright: 2024 <a href="https://github.com/linkdotnet">linkdotnet</a>.

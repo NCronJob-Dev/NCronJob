@@ -48,8 +48,6 @@ jobs:
   - [Advanced Cases](#advanced-cases)
     - [Scheduling multiple schedules for the same job](#scheduling-multiple-schedules-for-the-same-job)
     - [Log Level](#log-level)
-  - [Migration from `v1` to `v2`](#migration-from-v1-to-v2)
-    - [`CronExpression` moved towards builder](#cronexpression-moved-towards-builder)
   - [Support \& Contributing](#support--contributing)
 
 
@@ -355,44 +353,6 @@ The **NCronJob** scheduler can be configured to log at a specific log level.
       "Default": "Information",
       "Microsoft.AspNetCore": "Warning",
       "LinkDotNet.NCronJob": "Debug"
-```
-
-## Migration from `v1` to `v2`
-Version 2 of **NCronJob** brings some breaking changes to mae a better API.
-
-### `CronExpression` moved towards builder
-
-- In `v1` one would define as such:
-```csharp
-services.AddNCronJob();
-services.AddCronJob<PrintHelloWorld>(options => 
-{
-    options.CronExpression = "* * * * *";
-    options.Parameter = "Hello World";
-});
-```
-
-With `v2` the `CronExpression` is moved towards the builder pattern and `AddCronJob` is merged into `AddNCronJob`:
-```csharp
-Services.AddNCronJob(options => 
-{
-    options.AddJob<PrintHelloWorld>(j => 
-    {
-        j.WithCronExpression("* * * * *")
-         .WithParameter("Hello World");
-    });
-});
-```
-
-This allows to easily define multiple jobs without adding much boilerplate code.
-```csharp
-Services.AddNCronJob(options => 
-{
-    options.AddJob<PrintHelloWorld>(p => p
-        .WithCronExpression("0 * * * *").WithParameter("Foo")
-        .And
-        .WithCronExpression("0 0 * * *").WithParameter("Bar"));
-});
 ```
 
 ## Support & Contributing
