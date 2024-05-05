@@ -6,7 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.2.1] - 2024-05-05
+
 ### Added
+
 - Ability to schedule a job to run after a specific delay.
 - Ability to schedule a job to run at a specific time.
 
@@ -14,37 +17,37 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Added
 
--   **Retry Mechanism:** Improved robustness of job executions, especially in cases of transient failures. Includes exponential backoff and fixed interval strategies.
--   **Concurrency Control:** Introduced a `SupportsConcurrency` attribute to provide fine-grained control over the concurrency behavior of individual jobs. This attribute allows specifying the maximum degree of parallelism.
--   **New WaitForJobsOrTimeout:** Added an enhanced version of `WaitForJobsOrTimeout` to the Tests project that allows time advancement for each run, providing more precise control over test execution timing.
--   **Cancellation Support:** Jobs now support graceful cancellation during execution and SIGTERM.
+- **Retry Mechanism:** Improved robustness of job executions, especially in cases of transient failures. Includes exponential backoff and fixed interval strategies.
+- **Concurrency Control:** Introduced a `SupportsConcurrency` attribute to provide fine-grained control over the concurrency behavior of individual jobs. This attribute allows specifying the maximum degree of parallelism.
+- **New WaitForJobsOrTimeout:** Added an enhanced version of `WaitForJobsOrTimeout` to the Tests project that allows time advancement for each run, providing more precise control over test execution timing.
+- **Cancellation Support:** Jobs now support graceful cancellation during execution and SIGTERM.
 
 ### Changed
 
--   **Concurrency Management:** Implemented improved global concurrency handling techniques within `CronScheduler`. This change enhances flexibility and scalability in managing job executions.
--   **Async Job Executions:** Job executions are now fully async from the moment the scheduler triggers the job, ensuring better performance and resource utilization.
+- **Concurrency Management:** Implemented improved global concurrency handling techniques within `CronScheduler`. This change enhances flexibility and scalability in managing job executions.
+- **Async Job Executions:** Job executions are now fully async from the moment the scheduler triggers the job, ensuring better performance and resource utilization.
 
 ### Fixed
 
--   **Test Framework Bugs:** Addressed specific bugs in the testing framework, ensuring that all tests are now passing and provide reliable results.
--   CRON jobs that are scheduled more than 50 days in the future did throw an exception.
+- **Test Framework Bugs:** Addressed specific bugs in the testing framework, ensuring that all tests are now passing and provide reliable results.
+- CRON jobs that are scheduled more than 50 days in the future did throw an exception.
 
 ### Contributors
 
--   Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/linkdotnet/NCronJob/pull/21).
+- Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/linkdotnet/NCronJob/pull/21).
 
 ## [2.0.5] - 2024-04-19
 
 ### Changed
 
--   Implementation of the scheduling. Better performance and closed some memory leaks
--   Throw exception if job cannot be resolved with dependencies from the DI container. Reported and implemented by [@skarum](https://github.com/skarum) in [#23](https://github.com/linkdotnet/NCronJob/issues/23)
+- Implementation of the scheduling. Better performance and closed some memory leaks
+- Throw exception if job cannot be resolved with dependencies from the DI container. Reported and implemented by [@skarum](https://github.com/skarum) in [#23](https://github.com/linkdotnet/NCronJob/issues/23)
 
 ## [2.0.4] - 2024-04-16
 
 ### Fixed
 
--   Don't log running jobs twice. Reported by [@ryanbuening](https://github.com/ryanbuening). Fixed by [@linkdotnet](https://github.com/linkdotnet)
+- Don't log running jobs twice. Reported by [@ryanbuening](https://github.com/ryanbuening). Fixed by [@linkdotnet](https://github.com/linkdotnet)
 
 ## [2.0.3] - 2024-04-15
 
@@ -52,12 +55,12 @@ With `v2` the overall API was cleaned up and made more consistent. `AddNCronJob`
 
 ### Added
 
--   The IDE can help with RegEx pattern thanks to the `StringSyntaxAttribute`.
--   Added more code documentation (xmldoc) with many examples to rely less on the README.
+- The IDE can help with RegEx pattern thanks to the `StringSyntaxAttribute`.
+- Added more code documentation (xmldoc) with many examples to rely less on the README.
 
 ### Changed
 
--   In `v1` one would define as such:
+- In `v1` one would define as such:
 
 ```csharp
 services.AddNCronJob();
@@ -81,45 +84,45 @@ services.AddNCronJob(options =>
 });
 ```
 
--   Cleaned up `AddNCronJob` to not accidentally build the service container
+- Cleaned up `AddNCronJob` to not accidentally build the service container
 
 ## [1.0.2] - 2024-04-11
 
 ### Changed
 
--   Removed internal periodic timer so that instant jobs are really executed instantly and cron jobs on the correct time (rather than too late)
+- Removed internal periodic timer so that instant jobs are really executed instantly and cron jobs on the correct time (rather than too late)
 
 ### Migration
 
--   The `IsolationLevel` was completely removed as jobs are executed in their own scope anyway. It behaves like `Isolation.NewTask` by default.
--   `TimerInterval` in `NCronJobOptions` was removed as it no longer used.
+- The `IsolationLevel` was completely removed as jobs are executed in their own scope anyway. It behaves like `Isolation.NewTask` by default.
+- `TimerInterval` in `NCronJobOptions` was removed as it no longer used.
 
 ## [0.13.2] - 2024-03-29
 
 ### Changed
 
--   Smaller performance improvements
+- Smaller performance improvements
 
 ## [0.13.1] - 2024-03-25
 
 ### Changed
 
--   Check if `IsolationLevel` is in a valid range - otherwise it throws an exception
--   Small refactorings
+- Check if `IsolationLevel` is in a valid range - otherwise it throws an exception
+- Small refactorings
 
 ## [0.13.0] - 2024-03-23
 
 ### Changed
 
--   Moved `EnableSecondPrecision` from `AddNCronJob` to `AddCronJob` to allow for more granular control over the precision of the cron expression
--   When a job is not registered, a error is logged, but the execution of other jobs is not interrupted
+- Moved `EnableSecondPrecision` from `AddNCronJob` to `AddCronJob` to allow for more granular control over the precision of the cron expression
+- When a job is not registered, a error is logged, but the execution of other jobs is not interrupted
 
 ## [0.12.0] - 2024-03-22
 
 ### Changed
 
--   Breaking Change: `Run` is now called `RunAsync` to reflect the asynchronous nature of the method
--   `Run` doesn't take an optional `CancellationToken` anymore, as this is passed in anyway.
+- Breaking Change: `Run` is now called `RunAsync` to reflect the asynchronous nature of the method
+- `Run` doesn't take an optional `CancellationToken` anymore, as this is passed in anyway.
 
 ## [0.11.5] - 2024-03-22
 
@@ -127,91 +130,75 @@ services.AddNCronJob(options =>
 
 ### Added
 
--   Ability to set cron expressions with second-level precision
--   Support for `net9.0`
--   Support for Isolation Level to run jobs independent of the current scheduler
--   Notification system that allows to run a task when a job is finished
+- Ability to set cron expressions with second-level precision
+- Support for `net9.0`
+- Support for Isolation Level to run jobs independent of the current scheduler
+- Notification system that allows to run a task when a job is finished
 
 ## [0.10.1] - 2024-03-19
 
 ### Changed
 
--   Every Job-Run has its own scope
+- Every Job-Run has its own scope
 
 ## [0.10.0] - 2024-03-18
 
 ### Added
 
--   Ability to set the timer interval
+- Ability to set the timer interval
 
 ### Changed
 
--   `AddCronJob` registers as scoped service instead of transient
+- `AddCronJob` registers as scoped service instead of transient
 
 ## [0.9.3] - 2024-03-18
 
 ### Changed
 
--   `AddCronJob` registers the job as transient instead of singleton
+- `AddCronJob` registers the job as transient instead of singleton
 
 ## [0.9.2] - 2024-03-17
 
 ### Changed
 
--   Simplified much of the logic for scheduling
+- Simplified much of the logic for scheduling
 
 ### Fixed
 
--   Instant jobs weren't executed correctly
+- Instant jobs weren't executed correctly
 
 ## [0.9.1] - 2024-03-17
 
 ### Changed
 
--   Fixed some docs
+- Fixed some docs
 
 ## [0.9.0] - 2024-03-17
 
 ### Added
 
--   Initial Release of **NCronJob** with lots of features
--   The ability to schedule jobs using a cron expression
--   The ability to instantly run a job
--   Parameterized jobs - instant as well as cron jobs!
--   Integrated in ASP.NET - Access your DI container like you would in any other service
+- Initial Release of **NCronJob** with lots of features
+- The ability to schedule jobs using a cron expression
+- The ability to instantly run a job
+- Parameterized jobs - instant as well as cron jobs!
+- Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[Unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.1.4...HEAD
-
+[unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.2.1...HEAD
+[2.2.1]: https://github.com/linkdotnet/NCronJob/compare/2.1.4...2.2.1
 [2.1.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.5...2.1.4
-
 [2.0.5]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...2.0.5
-
 [2.0.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.3...2.0.4
-
 [2.0.3]: https://github.com/linkdotnet/NCronJob/compare/1.0.2...2.0.3
-
 [1.0.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.2...1.0.2
-
 [0.13.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.1...0.13.2
-
 [0.13.1]: https://github.com/linkdotnet/NCronJob/compare/0.13.0...0.13.1
-
 [0.13.0]: https://github.com/linkdotnet/NCronJob/compare/0.12.0...0.13.0
-
 [0.12.0]: https://github.com/linkdotnet/NCronJob/compare/0.11.5...0.12.0
-
 [0.11.5]: https://github.com/linkdotnet/NCronJob/compare/0.11.4...0.11.5
-
 [0.11.4]: https://github.com/linkdotnet/NCronJob/compare/0.10.1...0.11.4
-
 [0.10.1]: https://github.com/linkdotnet/NCronJob/compare/0.10.0...0.10.1
-
 [0.10.0]: https://github.com/linkdotnet/NCronJob/compare/0.9.3...0.10.0
-
 [0.9.3]: https://github.com/linkdotnet/NCronJob/compare/0.9.2...0.9.3
-
 [0.9.2]: https://github.com/linkdotnet/NCronJob/compare/0.9.1...0.9.2
-
 [0.9.1]: https://github.com/linkdotnet/NCronJob/compare/0.9.0...0.9.1
-
 [0.9.0]: https://github.com/linkdotnet/NCronJob/compare/cf7df8ffb3a740fa63ccc439336b42b890c9519c...0.9.0
