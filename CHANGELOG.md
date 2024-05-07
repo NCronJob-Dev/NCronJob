@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.3.1] - 2024-05-07
+
 ### Added
 
 - TimeZone Support implemented by [@falvarez1](https://github.com/falvarez1) in PR [#22](https://github.com/linkdotnet/NCronJob/pull/22).
@@ -187,7 +189,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.2.1...HEAD
+[unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.3.1...HEAD
+[2.3.1]: https://github.com/linkdotnet/NCronJob/compare/2.2.1...2.3.1
 [2.2.1]: https://github.com/linkdotnet/NCronJob/compare/2.1.4...2.2.1
 [2.1.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.5...2.1.4
 [2.0.5]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...2.0.5
