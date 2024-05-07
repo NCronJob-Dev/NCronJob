@@ -19,6 +19,6 @@ public partial class PrintHelloWorldJob : IJob
         return Task.CompletedTask;
     }
 
-    [LoggerMessage(LogLevel.Information, "Message: {Parameter}")]
+    [LoggerMessage(LogLevel.Information, "The input parameter is : {Parameter}")]
     private partial void LogMessage(object? parameter);
 }

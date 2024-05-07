@@ -12,10 +12,10 @@ internal class JobQueueComparer : IComparer<RegistryEntry>
             return 1;
 
         // Compare next scheduled run times
-        var nowDateTime = DateTime.UtcNow;
-        var xNextRunTime = x.CrontabSchedule?.GetNextOccurrence(nowDateTime);
-        var yNextRunTime = y.CrontabSchedule?.GetNextOccurrence(nowDateTime);
-        var timeComparison = DateTime.Compare(xNextRunTime.GetValueOrDefault(), yNextRunTime.GetValueOrDefault());
+        var nowDateTime = DateTimeOffset.UtcNow;
+        var xNextRunTime = x.CronExpression?.GetNextOccurrence(nowDateTime, x.TimeZone);
+        var yNextRunTime = y.CronExpression?.GetNextOccurrence(nowDateTime, y.TimeZone);
+        var timeComparison = DateTimeOffset.Compare(xNextRunTime.GetValueOrDefault(), yNextRunTime.GetValueOrDefault());
 
         if (timeComparison != 0)
             return timeComparison;

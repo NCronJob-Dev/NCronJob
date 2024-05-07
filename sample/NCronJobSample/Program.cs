@@ -12,6 +12,9 @@ builder.Services.AddLogging();
 // Add NCronJob to the container.
 builder.Services.AddNCronJob(n => n
 
+    .AddJob<PrintHelloWorldJob>(p =>
+        p.WithCronExpression("*/20 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+
     // Execute the job every 2 minutes
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
@@ -40,16 +43,16 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
-    {
-        instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
-    })
+{
+    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
+})
     .WithName("TriggerInstantJob")
     .WithOpenApi();
 
 app.MapPost("/trigger-instant-concurrent", (IInstantJobRegistry instantJobRegistry) =>
-    {
-        instantJobRegistry.RunInstantJob<ConcurrentTaskExecutorJob>();
-    })
+{
+    instantJobRegistry.RunInstantJob<ConcurrentTaskExecutorJob>();
+})
     .WithSummary("Triggers a job that can run concurrently with other instances.")
     .WithDescription(
         """

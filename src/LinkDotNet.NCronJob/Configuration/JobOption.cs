@@ -15,6 +15,11 @@ internal sealed class JobOption
     public string? CronExpression { get; set; }
 
     /// <summary>
+    /// The timezone that is used to evaluate the cron expression. Defaults to UTC.
+    /// </summary>
+    public TimeZoneInfo TimeZoneInfo { get; set; } = TimeZoneInfo.Utc;
+
+    /// <summary>
     /// The parameter that can be passed down to the job. This only applies to cron jobs.<br/>
     /// When an instant job is triggered a parameter can be passed down via the <see cref="IInstantJobRegistry"/> interface.
     /// </summary>

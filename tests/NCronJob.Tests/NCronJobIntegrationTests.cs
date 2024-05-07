@@ -200,7 +200,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             using var serviceScope = provider.CreateScope();
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
-            await executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null!, null), null), CancellationToken.None);
+            await executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null!, null), null, null), CancellationToken.None);
         });
     }
 

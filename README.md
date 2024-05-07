@@ -44,6 +44,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://link
 - [x] Integrated in ASP.NET - Access your DI container like you would in any other service
 - [x] Get notified when a job is done (either successfully or with an error).
 - [x] Retries - If a job fails, it will be retried.
+- [x] The job scheduler supports TimeZones. Defaults to UTC time.
 
 ## Not features
 
@@ -54,7 +55,6 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
 - [ ] Job history - There is no history of jobs that have been run.
 - [ ] Progress state - There is no way to track the progress of a job. The library will support notifying when a job is
   done, but not the progress of the job itself.
-- [ ] The job scheduler always uses UTC time. We might change that in the future.
 
 ## Short example
 

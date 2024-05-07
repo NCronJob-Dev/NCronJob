@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -13,7 +14,7 @@ internal sealed partial class CronScheduler : BackgroundService
     private readonly ILogger<CronScheduler> logger;
     private readonly SemaphoreSlim semaphore;
     private CancellationTokenSource? shutdown;
-    private readonly PriorityQueue<RegistryEntry, (DateTime NextRunTime, int Priority)> jobQueue =
+    private readonly PriorityQueue<RegistryEntry, (DateTimeOffset NextRunTime, int Priority)> jobQueue =
         new(new JobQueueTupleComparer());
     private readonly int globalConcurrencyLimit;
     private readonly ConcurrentDictionary<Type, int> runningJobCounts = [];
@@ -55,7 +56,7 @@ internal sealed partial class CronScheduler : BackgroundService
 
                 if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
                 {
-                    var utcNow = timeProvider.GetUtcNow().DateTime;
+                    var utcNow = timeProvider.GetUtcNow();
                     var delay = priorityTuple.NextRunTime - utcNow;
                     if (delay > TimeSpan.Zero)
                     {
@@ -120,11 +121,16 @@ internal sealed partial class CronScheduler : BackgroundService
 
     private void ScheduleJob(RegistryEntry job)
     {
-        var utcNow = timeProvider.GetUtcNow().DateTime;
-        var nextRunTime = job.CrontabSchedule?.GetNextOccurrence(utcNow) ?? DateTime.MaxValue;
-        // higher means more priority
-        var priorityValue = (int)job.Priority;
-        jobQueue.Enqueue(job, (nextRunTime, priorityValue));
+        var utcNow = timeProvider.GetUtcNow();
+        var nextRunTime = job.CronExpression!.GetNextOccurrence(utcNow, job.TimeZone);
+
+        if (nextRunTime.HasValue)
+        {
+            LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);
+            // higher means more priority
+            var priorityValue = (int)job.Priority;
+            jobQueue.Enqueue(job, (nextRunTime.Value, priorityValue));
+        }
     }
 
 

@@ -16,8 +16,9 @@ public sealed class JobOptionBuilder
     /// This parameter is optional. If not provided, or set to null, it auto-detects based on the number
     /// of parts in the cron expression (6 parts indicate second-level precision, otherwise minute-level precision).
     /// </param>
+    /// <param name="timeZoneInfo">Optional, provides the timezone that is used to evaluate the cron expression. Defaults to UTC.</param>
     /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder WithCronExpression(string cronExpression, bool? enableSecondPrecision = null)
+    public ParameterBuilder WithCronExpression(string cronExpression, bool? enableSecondPrecision = null, TimeZoneInfo? timeZoneInfo = null)
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
@@ -27,7 +28,8 @@ public sealed class JobOptionBuilder
         var jobOption = new JobOption
         {
             CronExpression = cronExpression,
-            EnableSecondPrecision = determinedPrecision
+            EnableSecondPrecision = determinedPrecision,
+            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
 
         jobOptions.Add(jobOption);

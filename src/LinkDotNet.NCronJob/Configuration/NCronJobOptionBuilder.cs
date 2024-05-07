@@ -1,6 +1,6 @@
+using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using NCrontab;
 using System.Reflection;
 
 namespace LinkDotNet.NCronJob;
@@ -8,12 +8,13 @@ namespace LinkDotNet.NCronJob;
 /// <summary>
 /// Represents the builder for the NCronJob options.
 /// </summary>
-public sealed class NCronJobOptionBuilder
+public sealed partial class NCronJobOptionBuilder
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
 
-    internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings)
+    internal NCronJobOptionBuilder(IServiceCollection services,
+        ConcurrencySettings settings)
     {
         this.services = services;
         this.settings = settings;
@@ -50,7 +51,7 @@ public sealed class NCronJobOptionBuilder
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new RegistryEntry(typeof(T), option.Parameter, cron);
+            var entry = new RegistryEntry(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
             services.AddSingleton(entry);
         }
 
@@ -76,14 +77,12 @@ public sealed class NCronJobOptionBuilder
         return this;
     }
 
-    private static CrontabSchedule GetCronExpression(JobOption option)
+    private static CronExpression GetCronExpression(JobOption option)
     {
-        var cronParseOptions = new CrontabSchedule.ParseOptions
-        {
-            IncludingSeconds = option.EnableSecondPrecision
-        };
+        var cf = option.EnableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
 
-        return CrontabSchedule.TryParse(option.CronExpression, cronParseOptions)
-               ?? throw new InvalidOperationException("Invalid cron expression");
+        return CronExpression.TryParse(option.CronExpression, cf, out var cronExpression)
+            ? cronExpression
+            : throw new InvalidOperationException("Invalid cron expression");
     }
 }

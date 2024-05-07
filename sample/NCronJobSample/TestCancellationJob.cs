@@ -3,13 +3,11 @@ using System.Security.Cryptography;
 
 namespace NCronJobSample;
 
-
-[SupportsConcurrency(10)]
-public partial class MultiInstanceJob : IJob
+public partial class TestCancellationJob : IJob
 {
-    private readonly ILogger<MultiInstanceJob> logger;
+    private readonly ILogger<TestCancellationJob> logger;
 
-    public MultiInstanceJob(ILogger<MultiInstanceJob> logger) => this.logger = logger;
+    public TestCancellationJob(ILogger<TestCancellationJob> logger) => this.logger = logger;
 
     public async Task RunAsync(JobExecutionContext context, CancellationToken token)
     {
@@ -38,6 +36,8 @@ public partial class MultiInstanceJob : IJob
                 // Log each unit of work completion
                 LogWorkUnitCompleted(i + 1, context.Parameter);
             }
+
+            context.Output = "Hey there!";
         }
         catch (OperationCanceledException)
         {

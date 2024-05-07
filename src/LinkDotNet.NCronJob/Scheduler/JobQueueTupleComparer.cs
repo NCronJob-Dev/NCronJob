@@ -1,11 +1,11 @@
 namespace LinkDotNet.NCronJob;
 
-internal class JobQueueTupleComparer : IComparer<(DateTime NextRunTime, int Priority)>
+internal class JobQueueTupleComparer : IComparer<(DateTimeOffset NextRunTime, int Priority)>
 {
-    public int Compare((DateTime NextRunTime, int Priority) x, (DateTime NextRunTime, int Priority) y)
+    public int Compare((DateTimeOffset NextRunTime, int Priority) x, (DateTimeOffset NextRunTime, int Priority) y)
     {
         // First, compare by DateTime
-        var timeComparison = DateTime.Compare(x.NextRunTime, y.NextRunTime);
+        var timeComparison = DateTimeOffset.Compare(x.NextRunTime, y.NextRunTime);
         if (timeComparison != 0)
             return timeComparison;
 

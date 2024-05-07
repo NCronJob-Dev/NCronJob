@@ -1,14 +1,16 @@
-using NCrontab;
+using Cronos;
 
 namespace LinkDotNet.NCronJob;
 
 internal sealed record RegistryEntry(
     Type Type,
     object? Output,
-    CrontabSchedule? CrontabSchedule,
+    CronExpression? CronExpression,
+    TimeZoneInfo? TimeZone,
+    int JobExecutionCount = 0,
     JobPriority Priority = JobPriority.Normal)
 {
-    private int jobExecutionCount;
+    private int jobExecutionCount = JobExecutionCount;
 
     public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
 
