@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- TimeZone Support implemented by [@falvarez1](https://github.com/falvarez1) in PR [#22](https://github.com/linkdotnet/NCronJob/pull/22).
+
 ## [2.2.1] - 2024-05-05
 
 ### Added
