@@ -28,6 +28,7 @@ nav:
   - Overview:
     - Getting Started: getting-started.md
   - Features:
+    - Define and Schedule Jobs: features/define-and-schedule-jobs.md
     - Passing Parameters: features/parameters.md
     - Notifications: features/notifications.md
     - Registering multiple CRON expressions: features/multiple-cron-expressions.md

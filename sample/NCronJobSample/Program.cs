@@ -56,11 +56,11 @@ app.MapPost("/trigger-instant-concurrent", (IInstantJobRegistry instantJobRegist
     .WithSummary("Triggers a job that can run concurrently with other instances.")
     .WithDescription(
         """
-        This endpoint triggers an instance of 'TestCancellationJob' that is designed 
-        to run concurrently with other instances of the same job. Each instance operates 
+        This endpoint triggers an instance of 'TestCancellationJob' that is designed
+        to run concurrently with other instances of the same job. Each instance operates
         independently, allowing parallel processing without mutual interference.
         """)
     .WithName("TriggerConcurrentJob")
     .WithOpenApi();
 
-app.Run();
+await app.RunAsync();

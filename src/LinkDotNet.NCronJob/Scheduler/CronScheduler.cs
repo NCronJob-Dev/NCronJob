@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -35,8 +34,16 @@ internal sealed partial class CronScheduler : BackgroundService
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
         semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
-        lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
+        lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
     }
+
+    public override void Dispose()
+    {
+        shutdown?.Dispose();
+        semaphore.Dispose();
+        base.Dispose();
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         shutdown?.Dispose();
@@ -51,58 +58,34 @@ internal sealed partial class CronScheduler : BackgroundService
         {
             while (!stopToken.IsCancellationRequested && jobQueue.Count > 0)
             {
-                // Remove completed or canceled tasks from the list to avoid memory overflow
                 runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
 
                 if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
                 {
-                    var utcNow = timeProvider.GetUtcNow();
-                    var delay = priorityTuple.NextRunTime - utcNow;
-                    if (delay > TimeSpan.Zero)
-                    {
-                        await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
-                    }
+                    await WaitForNextExecution(priorityTuple, stopToken);
 
                     if (stopToken.IsCancellationRequested)
                         break;
 
-                    // Recheck the queue to confirm that the next job is still the correct job to execute
-                    if (jobQueue.TryPeek(out var confirmedNextJob, out _)
-                        && confirmedNextJob == nextJob
-                        && CanStartJob(nextJob)
-                        && runningTasks.Count < globalConcurrencyLimit)
+                    if (IsJobEligableToStart(nextJob, runningTasks))
                     {
                         jobQueue.Dequeue();
                         UpdateRunningJobCount(nextJob.Type, 1);
 
                         await semaphore.WaitAsync(stopToken);
-                        var task = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                await ExecuteJob(nextJob, stopToken);
-                            }
-                            finally
-                            {
-                                semaphore.Release();
-                                UpdateRunningJobCount(nextJob.Type, -1);  // Decrement count when job is done
-                            }
-                        }, stopToken);
+                        var task = CreateExecutionTask(nextJob, stopToken);
 
                         runningTasks.Add(task);
-                        ScheduleJob(nextJob); // Reschedule immediately after execution
+                        ScheduleJob(nextJob);
                     }
                 }
 
-                // Wait for at least one task to complete if there are no available slots
                 if (runningTasks.Count >= globalConcurrencyLimit)
                 {
-                    // This prevents starting new jobs until at least one current job finishes
                     await Task.WhenAny(runningTasks);
                 }
             }
 
-            // Wait for all remaining tasks to complete
             await Task.WhenAll(runningTasks).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -133,6 +116,39 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
+    private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)
+    {
+        var utcNow = timeProvider.GetUtcNow().DateTime;
+        var delay = priorityTuple.NextRunTime - utcNow;
+        if (delay > TimeSpan.Zero)
+        {
+            await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
+        }
+    }
+
+    private Task CreateExecutionTask(RegistryEntry nextJob, CancellationToken stopToken)
+    {
+        var task = Task.Run(async () =>
+        {
+            try
+            {
+                await ExecuteJob(nextJob, stopToken);
+            }
+            finally
+            {
+                semaphore.Release();
+                UpdateRunningJobCount(nextJob.Type, -1);
+            }
+        }, stopToken);
+        return task;
+    }
+
+    private bool IsJobEligableToStart(RegistryEntry nextJob, List<Task> runningTasks)
+    {
+        var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
+        var concurrentSlotsOpen = runningTasks.Count < globalConcurrencyLimit;
+        return isSameJob && CanStartJob(nextJob) && concurrentSlotsOpen;
+    }
 
     private async Task ExecuteJob(RegistryEntry entry, CancellationToken stoppingToken)
     {
@@ -157,19 +173,12 @@ internal sealed partial class CronScheduler : BackgroundService
     private bool CanStartJob(RegistryEntry jobEntry)
     {
         var attribute = jobEntry.Type.GetCustomAttribute<SupportsConcurrencyAttribute>();
-        var maxAllowed = attribute?.MaxDegreeOfParallelism ?? 1; // Default to 1 if no attribute is found
+        var maxAllowed = attribute?.MaxDegreeOfParallelism ?? 1;
         var currentCount = runningJobCounts.GetOrAdd(jobEntry.Type, _ => 0);
 
         return currentCount < maxAllowed;
     }
 
     private void UpdateRunningJobCount(Type jobType, int change) =>
-        runningJobCounts.AddOrUpdate(jobType, change, (type, existingVal) => Math.Max(0, existingVal + change));
-
-    public override void Dispose()
-    {
-        shutdown?.Dispose();
-        semaphore.Dispose();
-        base.Dispose();
-    }
+        runningJobCounts.AddOrUpdate(jobType, change, (_, existingVal) => Math.Max(0, existingVal + change));
 }
