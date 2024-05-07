@@ -8,4 +8,11 @@ internal sealed record RegistryEntry(
     CronExpression? CronExpression,
     TimeZoneInfo? TimeZone,
     int JobExecutionCount = 0,
-    JobPriority Priority = JobPriority.Normal);
+    JobPriority Priority = JobPriority.Normal)
+{
+    private int jobExecutionCount = JobExecutionCount;
+
+    public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
+
+    public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
+}

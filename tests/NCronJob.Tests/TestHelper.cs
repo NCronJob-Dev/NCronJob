@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using LinkDotNet.NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
@@ -11,6 +12,8 @@ public abstract class JobIntegrationBase : IDisposable
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private ServiceProvider? serviceProvider;
 
+    private readonly TaskCompletionSource<bool> cancellationSignaled = new();
+    protected Task CancellationSignaled => cancellationSignaled.Task;
     protected CancellationToken CancellationToken => cancellationTokenSource.Token;
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
@@ -18,11 +21,13 @@ public abstract class JobIntegrationBase : IDisposable
     protected JobIntegrationBase()
     {
         ServiceCollection = new();
-        ServiceCollection.AddLogging()
-            .AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
+        ServiceCollection.AddLogging();
+        ServiceCollection.AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
+        ServiceCollection.AddSingleton<IHostApplicationLifetime, MockHostApplicationLifetime>();
+        ServiceCollection.AddSingleton<IRetryHandler, TestRetryHandler>();
+        ServiceCollection.AddSingleton<IRetryHandler>(sp =>
+            new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
 
-        var mockLifetime = new MockHostApplicationLifetime();
-        ServiceCollection.AddSingleton<IHostApplicationLifetime>(mockLifetime);
     }
 
     public void Dispose()
@@ -33,16 +38,22 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
+        if (!disposing)
+        {
+            return;
+        }
+
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
+        cancellationSignaled.TrySetCanceled();
         serviceProvider?.Dispose();
     }
 
     protected ServiceProvider CreateServiceProvider() => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
-    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns)
+    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, int timeOut = 200000)
     {
-        using var timeoutTcs = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        using var timeoutTcs = new CancellationTokenSource(TimeSpan.FromSeconds(timeOut));
         try
         {
             await Task.WhenAll(GetCompletionJobs(jobRuns, timeoutTcs.Token));

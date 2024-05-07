@@ -31,14 +31,15 @@ internal sealed partial class CronScheduler : BackgroundService
         this.jobExecutor = jobExecutor;
         this.registry = registry;
         this.timeProvider = timeProvider;
-        this.logger = loggerFactory.CreateLogger<CronScheduler>();
-        this.globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
-        this.semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
+        logger = loggerFactory.CreateLogger<CronScheduler>();
+        globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
+        semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => this.shutdown?.Cancel());
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        shutdown?.Dispose();
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
@@ -102,7 +103,7 @@ internal sealed partial class CronScheduler : BackgroundService
             }
 
             // Wait for all remaining tasks to complete
-            await Task.WhenAll(runningTasks);
+            await Task.WhenAll(runningTasks).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -139,13 +140,17 @@ internal sealed partial class CronScheduler : BackgroundService
         {
             LogRunningJob(entry.Type);
 
-            await jobExecutor.RunJob(entry, stoppingToken);
+            await jobExecutor.RunJob(entry, stoppingToken).ConfigureAwait(false);
 
             LogCompletedJob(entry.Type);
         }
         catch (Exception ex)
         {
             LogExceptionInJob(ex.Message, entry.Type);
+        }
+        finally
+        {
+            entry.IncrementJobExecutionCount();
         }
     }
 

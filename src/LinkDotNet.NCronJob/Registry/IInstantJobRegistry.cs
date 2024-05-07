@@ -22,4 +22,21 @@ public interface IInstantJobRegistry
     /// </example>
     void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
+
+    /// <summary>
+    /// Runs a job that will be executed after the given <paramref name="delay"/>.
+    /// </summary>
+    /// <param name="delay">The delay until the job will be executed.</param>
+    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
+    void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default);
+
+    /// <summary>
+    /// Runs a job that will be executed at <paramref name="startDate"/>.
+    /// </summary>
+    /// <param name="startDate">The starting point when the job will be executed.</param>
+    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
+    void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
+        where TJob : IJob;
 }

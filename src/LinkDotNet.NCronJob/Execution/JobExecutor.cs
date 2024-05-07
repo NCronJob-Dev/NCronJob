@@ -8,35 +8,51 @@ internal sealed partial class JobExecutor : IDisposable
 {
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
-    private readonly RetryHandler retryHandler;
-    private bool isDisposed;
-    private CancellationTokenSource? shutdown;
+    private readonly IRetryHandler retryHandler;
+    private volatile bool isDisposed;
+    private readonly CancellationTokenSource shutdown = new();
 
     public JobExecutor(IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
-        RetryHandler retryHandler)
+        IRetryHandler retryHandler)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
 
-        lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
+        lifetime.ApplicationStopping.Register(OnApplicationStopping);
+    }
+
+    private void OnApplicationStopping()
+    {
+        // First cancel all running jobs
+        CancelJobs();
+
+        // Then dispose of the cancellation token source to free resources
+        Dispose();
+    }
+
+    public void CancelJobs()
+    {
+        if (!shutdown.IsCancellationRequested)
+        {
+            shutdown.Cancel();
+        }
     }
 
     public async Task RunJob(RegistryEntry run, CancellationToken stoppingToken)
     {
-        // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
-        // so we need to tie into the IHostApplicationLifetime
-        shutdown?.Dispose();
-        shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-        var stopToken = shutdown.Token;
-
         if (isDisposed)
         {
             LogSkipAsDisposed();
             return;
         }
+
+        // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
+        // so we need to tie into the IHostApplicationLifetime
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken);
+        var stopToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
         var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
@@ -47,7 +63,10 @@ internal sealed partial class JobExecutor : IDisposable
 
     public void Dispose()
     {
-        shutdown?.Dispose();
+        if (isDisposed)
+            return;
+
+        shutdown.Dispose();
         isDisposed = true;
     }
 
