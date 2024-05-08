@@ -67,7 +67,7 @@ internal sealed partial class CronScheduler : BackgroundService
                     if (stopToken.IsCancellationRequested)
                         break;
 
-                    if (IsJobEligableToStart(nextJob, runningTasks))
+                    if (IsJobEligibleToStart(nextJob, runningTasks))
                     {
                         jobQueue.Dequeue();
                         UpdateRunningJobCount(nextJob.Type, 1);
@@ -143,7 +143,7 @@ internal sealed partial class CronScheduler : BackgroundService
         return task;
     }
 
-    private bool IsJobEligableToStart(RegistryEntry nextJob, List<Task> runningTasks)
+    private bool IsJobEligibleToStart(RegistryEntry nextJob, List<Task> runningTasks)
     {
         var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
         var concurrentSlotsOpen = runningTasks.Count < globalConcurrencyLimit;
