@@ -118,7 +118,7 @@ internal sealed partial class CronScheduler : BackgroundService
 
     private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)
     {
-        var utcNow = timeProvider.GetUtcNow().DateTime;
+        var utcNow = timeProvider.GetUtcNow();
         var delay = priorityTuple.NextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
