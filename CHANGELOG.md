@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+- Scheduler took local time instead of UTC as base. By [@falvarez1](https://github.com/falvarez1)
+
 ## [2.3.1] - 2024-05-07
 
 ### Added
