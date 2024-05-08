@@ -11,7 +11,7 @@ builder.Services.AddNCronJob(options =>
         j.WithCronExpression("* * * * *")
          .WithParameter("Hello World");
     })
-    .AddNotificationHandler<MyJobNotificationHandler, PrintHelloWorld>());
+    .AddNotificationHandler<MyJobNotificationHandler>());
 ```
 
 This allows to run logic after a job is done. The `JobExecutionContext` and the `Exception` (if there was one) are

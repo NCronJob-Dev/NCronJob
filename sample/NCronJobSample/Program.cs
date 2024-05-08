@@ -19,7 +19,7 @@ builder.Services.AddNCronJob(n => n
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
     // Register a handler that gets executed when the job is done
-    .AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
+    .AddNotificationHandler<HelloWorldJobHandler>()
 
     // Multiple instances of the same job with different cron expressions can be supported
     // by marking the job with [SupportsConcurrency] attribute

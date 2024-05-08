@@ -8,16 +8,17 @@ namespace LinkDotNet.NCronJob;
 /// <summary>
 /// Represents the builder for the NCronJob options.
 /// </summary>
-public sealed partial class NCronJobOptionBuilder
+public class NCronJobOptionBuilder
 {
-    private readonly IServiceCollection services;
-    private readonly ConcurrencySettings settings;
+    private protected readonly IServiceCollection Services;
+    private protected readonly ConcurrencySettings Settings;
 
-    internal NCronJobOptionBuilder(IServiceCollection services,
+    internal NCronJobOptionBuilder(
+        IServiceCollection services,
         ConcurrencySettings settings)
     {
-        this.services = services;
-        this.settings = settings;
+        Services = services;
+        Settings = settings;
     }
 
     /// <summary>
@@ -33,7 +34,7 @@ public sealed partial class NCronJobOptionBuilder
     /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
     /// </code>
     /// </example>
-    public NCronJobOptionBuilder AddJob<T>(Action<JobOptionBuilder>? options = null)
+    public NCronJobOptionBuilder<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
         var builder = new JobOptionBuilder();
@@ -41,40 +42,23 @@ public sealed partial class NCronJobOptionBuilder
         var jobOptions = builder.GetJobOptions();
 
         var concurrencyAttribute = typeof(T).GetCustomAttribute<SupportsConcurrencyAttribute>();
-        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
+        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > Settings.MaxDegreeOfParallelism)
         {
             throw new InvalidOperationException($"The MaxDegreeOfParallelism for {typeof(T).Name} " +
                                                 $"({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed " +
-                                                $"the global limit ({settings.MaxDegreeOfParallelism}).");
+                                                $"the global limit ({Settings.MaxDegreeOfParallelism}).");
         }
 
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
             var entry = new RegistryEntry(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
-            services.AddSingleton(entry);
+            Services.AddSingleton(entry);
         }
 
-        services.TryAddScoped<T>();
+        Services.TryAddScoped<T>();
 
-        return this;
-    }
-
-    /// <summary>
-    /// Adds a notification handler for a given <see cref="IJob"/>.
-    /// </summary>
-    /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
-    /// <typeparam name="TJob">The job type.</typeparam>
-    /// <remarks>
-    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
-    /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
-    /// </remarks>
-    public NCronJobOptionBuilder AddNotificationHandler<TJobNotificationHandler, TJob>()
-        where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
-        where TJob : class, IJob
-    {
-        services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return this;
+        return new NCronJobOptionBuilder<T>(Services, Settings);
     }
 
     private static CronExpression GetCronExpression(JobOption option)
@@ -84,5 +68,52 @@ public sealed partial class NCronJobOptionBuilder
         return CronExpression.TryParse(option.CronExpression, cf, out var cronExpression)
             ? cronExpression
             : throw new InvalidOperationException("Invalid cron expression");
+    }
+}
+
+/// <summary>
+/// Represents the builder for the NCronJob options.
+/// </summary>
+public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
+    where TJob : IJob
+{
+    internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings) : base(services, settings)
+    {
+    }
+
+    /// <summary>
+    /// Adds a notification handler for a given <see cref="IJob"/>.
+    /// </summary>
+    /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
+    /// /// <typeparam name="TJobDefinition">The job type. It will be registered scoped into the container.</typeparam>
+    /// <remarks>
+    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
+    /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
+    /// <br/>This method is deprecated and will be removed.
+    /// </remarks>
+#pragma warning disable S1133 // Used to warn users not our internal usage
+    [Obsolete("The job type can be automatically inferred. Use AddNotificationHandler<TJobNotificationHandler> instead.", error: false)]
+#pragma warning restore S1133
+    public NCronJobOptionBuilder<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
+        where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
+        where TJobDefinition : IJob
+    {
+        Services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
+        return new NCronJobOptionBuilder<TJobDefinition>(Services, Settings);
+    }
+
+    /// <summary>
+    /// Adds a notification handler for a given <see cref="IJob"/>.
+    /// </summary>
+    /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
+    /// <remarks>
+    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
+    /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
+    /// </remarks>
+    public NCronJobOptionBuilder<TJob> AddNotificationHandler<TJobNotificationHandler>()
+        where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
+    {
+        Services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return this;
     }
 }
