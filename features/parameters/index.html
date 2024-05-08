@@ -51,6 +51,8 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Passing Parameters</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#parameters-are-not-immutable">Parameters are not immutable</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../notifications/">Notifications</a>
@@ -138,6 +140,30 @@
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </code></pre></div>
+
+<h2 id="parameters-are-not-immutable">Parameters are not immutable<a class="headerlink" href="#parameters-are-not-immutable" title="Permanent link">&para;</a></h2>
+<p>Passed in parameters are not immutable by default or cloned through out the job execution. This means that if you change the parameter in the job, it will also change in the next execution. If you need to keep the parameter unchanged, you should clone it in the job.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyParameter</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Counter</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">b</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">MyJob</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(...));</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">JobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">     </span><span class="kt">var</span><span class="w"> </span><span class="n">myParam</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="n">MyParameter</span><span class="p">)</span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">;</span><span class="w"></span>
+<span class="w">     </span><span class="n">myParam</span><span class="p">.</span><span class="n">Counter</span><span class="p">++;</span><span class="w"> </span><span class="c1">// This will be incremented with each job run</span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>If <code>MyJob</code> runs twice already and is invoked a third time, <code>myParam.Counter</code> will be 2 when the function gets invoked.</p>
               
             </div>
           </div><footer>

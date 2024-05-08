@@ -109,7 +109,7 @@ and register it in your DI container.</p>
 <span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span><span class="w"></span>
 <span class="w">         </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="p">})</span><span class="w"></span>
-<span class="w">    </span><span class="p">.</span><span class="n">AddNotificationHandler</span><span class="p">&lt;</span><span class="n">MyJobNotificationHandler</span><span class="p">,</span><span class="w"> </span><span class="n">PrintHelloWorld</span><span class="p">&gt;());</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddNotificationHandler</span><span class="p">&lt;</span><span class="n">MyJobNotificationHandler</span><span class="p">&gt;());</span><span class="w"></span>
 </code></pre></div>
 
 <p>This allows to run logic after a job is done. The <code>JobExecutionContext</code> and the <code>Exception</code> (if there was one) are
