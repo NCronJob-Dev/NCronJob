@@ -7,17 +7,24 @@ namespace LinkDotNet.NCronJob;
 internal sealed partial class JobExecutor : IDisposable
 {
     private readonly IServiceProvider serviceProvider;
+    private readonly JobQueue jobQueue;
+    private readonly JobRegistry registry;
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
-    public JobExecutor(IServiceProvider serviceProvider,
+    public JobExecutor(
+        IServiceProvider serviceProvider,
+        JobQueue jobQueue,
+        JobRegistry registry,
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler)
     {
         this.serviceProvider = serviceProvider;
+        this.jobQueue = jobQueue;
+        this.registry = registry;
         this.logger = logger;
         this.retryHandler = retryHandler;
 
@@ -41,7 +48,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
     }
 
-    public async Task RunJob(RegistryEntry run, CancellationToken stoppingToken)
+    public async Task RunJob(JobDefinition run, CancellationToken stoppingToken)
     {
         if (isDisposed)
         {
@@ -51,13 +58,13 @@ internal sealed partial class JobExecutor : IDisposable
 
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
         var stopToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
         var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
-        var jobExecutionInstance = new JobExecutionContext(run.Type, run.Output);
+        var jobExecutionInstance = new JobExecutionContext(run.Type, run.Parameter) { ParentOutput = run.ParentOutput };
         await ExecuteJob(jobExecutionInstance, job, scope, stopToken);
     }
 
@@ -96,6 +103,8 @@ internal sealed partial class JobExecutor : IDisposable
                 return;
             }
 
+            InformDependentJobs(exc is null);
+
             var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobType);
 
             if (serviceScope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
@@ -108,6 +117,16 @@ internal sealed partial class JobExecutor : IDisposable
                 {
                     // We don't want to throw exceptions from the notification service
                 }
+            }
+        }
+
+        void InformDependentJobs(bool success)
+        {
+            foreach (var dependentJob in registry.GetDependencies(runContext.JobType).Where(g => g.RunOnSuccess == success))
+            {
+                var output = runContext.Output;
+                var run = new JobDefinition(dependentJob.DependentJobType, dependentJob.Parameter, output, null, null);
+                jobQueue.EnqueueForDirectExecution(run);
             }
         }
     }

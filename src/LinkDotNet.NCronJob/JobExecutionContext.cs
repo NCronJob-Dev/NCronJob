@@ -18,6 +18,11 @@ public sealed record JobExecutionContext(Type JobType, object? Parameter)
     public object? Output { get; set; }
 
     /// <summary>
+    /// The output of the principal job that triggers this job instance.
+    /// </summary>
+    public object? ParentOutput { get; set; }
+
+    /// <summary>
     /// The attempts made to execute the job for one run. Will be incremented when a retry is triggered.
     /// Retries will only occur when <see cref="RetryPolicyAttribute{T}"/> is set on the Job.
     /// </summary>

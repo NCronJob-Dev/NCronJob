@@ -36,3 +36,5 @@ internal sealed class JobOption
     /// </remarks>
     public bool EnableSecondPrecision { get; set; }
 }
+
+internal sealed record DependentJobOption(Type PrincipalJobType, Type DependentJobType, bool RunOnSuccess, object? Parameter);

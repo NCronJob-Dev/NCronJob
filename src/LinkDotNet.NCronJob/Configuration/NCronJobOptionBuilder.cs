@@ -49,10 +49,12 @@ public class NCronJobOptionBuilder
                                                 $"the global limit ({Settings.MaxDegreeOfParallelism}).");
         }
 
-        foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
+        foreach (var option in jobOptions)
         {
-            var cron = GetCronExpression(option);
-            var entry = new RegistryEntry(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
+            var cron = option.CronExpression is not null
+                ? GetCronExpression(option)
+                : null;
+            var entry = new JobDefinition(typeof(T), option.Parameter, null, cron, option.TimeZoneInfo);
             Services.AddSingleton(entry);
         }
 
@@ -75,7 +77,7 @@ public class NCronJobOptionBuilder
 /// Represents the builder for the NCronJob options.
 /// </summary>
 public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
-    where TJob : IJob
+    where TJob : class, IJob
 {
     internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings) : base(services, settings)
     {
@@ -96,7 +98,7 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
 #pragma warning restore S1133
     public NCronJobOptionBuilder<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
         where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
-        where TJobDefinition : IJob
+        where TJobDefinition : class, IJob
     {
         Services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
         return new NCronJobOptionBuilder<TJobDefinition>(Services, Settings);
@@ -116,4 +118,61 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
         Services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
         return this;
     }
+
+    /// <summary>
+    /// Adds a job that runs after the given job has finished.
+    /// </summary>
+    /// <param name="success">Configure a job that runs after the principal job has finished successfully.</param>
+    /// <param name="faulted">Configure a job that runs after the principal job has faulted. Faulted means that the parent job did throw an exception.</param>
+    /// <returns>The builder to add more jobs.</returns>
+    public NCronJobOptionBuilder<TJob> When(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
+    {
+        if (success is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>(true);
+            success(dependencyBuilder);
+            dependencyBuilder.GetDependentJobOption().ForEach(s =>
+            {
+                Services.AddSingleton(s);
+                Services.TryAddSingleton(s.DependentJobType);
+            });
+        }
+
+        if (faulted is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>(false);
+            faulted(dependencyBuilder);
+            dependencyBuilder.GetDependentJobOption().ForEach(s =>
+            {
+                Services.AddSingleton(s);
+                Services.TryAddSingleton(s.DependentJobType);
+            });
+        }
+
+        return this;
+    }
+}
+
+/// <summary>
+/// Represents the builder for the dependent jobs.
+/// </summary>
+public sealed class DependencyBuilder<TPrincipalJob>
+    where TPrincipalJob : IJob
+{
+    private readonly bool runOnSuccess;
+    private readonly List<DependentJobOption> dependentJobOptions = [];
+
+    internal DependencyBuilder(bool runOnSuccess) => this.runOnSuccess = runOnSuccess;
+
+    /// <summary>
+    /// Adds a job that runs after the principal job has finished with a given <paramref name="parameter"/>.
+    /// </summary>
+    public DependencyBuilder<TPrincipalJob> RunJob<TJob>(object? parameter = null)
+        where TJob : IJob
+    {
+        dependentJobOptions.Add(new DependentJobOption(typeof(TPrincipalJob), typeof(TJob), runOnSuccess, parameter));
+        return this;
+    }
+
+    internal List<DependentJobOption> GetDependentJobOption() => dependentJobOptions;
 }

@@ -5,23 +5,24 @@ using System.Reflection;
 
 namespace LinkDotNet.NCronJob;
 
-internal sealed partial class CronScheduler : BackgroundService
+internal sealed partial class QueueWorker : BackgroundService
 {
     private readonly JobExecutor jobExecutor;
-    private readonly CronRegistry registry;
+    private readonly JobRegistry registry;
+    private readonly JobQueue jobQueue;
     private readonly TimeProvider timeProvider;
-    private readonly ILogger<CronScheduler> logger;
+    private readonly ILogger<QueueWorker> logger;
     private readonly SemaphoreSlim semaphore;
-    private CancellationTokenSource? shutdown;
-    private readonly PriorityQueue<RegistryEntry, (DateTimeOffset NextRunTime, int Priority)> jobQueue =
-        new(new JobQueueTupleComparer());
     private readonly int globalConcurrencyLimit;
+    private readonly SemaphoreSlim queueWaiter = new(0);
     private readonly ConcurrentDictionary<Type, int> runningJobCounts = [];
+    private CancellationTokenSource? shutdown;
+    private CancellationTokenSource rescheduleTrigger = new();
 
-
-    public CronScheduler(
+    public QueueWorker(
         JobExecutor jobExecutor,
-        CronRegistry registry,
+        JobRegistry registry,
+        JobQueue jobQueue,
         TimeProvider timeProvider,
         ConcurrencySettings concurrencySettings,
         ILoggerFactory loggerFactory,
@@ -29,18 +30,23 @@ internal sealed partial class CronScheduler : BackgroundService
     {
         this.jobExecutor = jobExecutor;
         this.registry = registry;
+        this.jobQueue = jobQueue;
         this.timeProvider = timeProvider;
-        logger = loggerFactory.CreateLogger<CronScheduler>();
+        logger = loggerFactory.CreateLogger<QueueWorker>();
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
         semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
+        this.jobQueue.JobEnqueued += RescheduleJobs;
     }
 
     public override void Dispose()
     {
         shutdown?.Dispose();
         semaphore.Dispose();
+        queueWaiter.Dispose();
+        rescheduleTrigger.Dispose();
+        jobQueue.JobEnqueued -= RescheduleJobs;
         base.Dispose();
     }
 
@@ -56,9 +62,15 @@ internal sealed partial class CronScheduler : BackgroundService
 
         try
         {
-            while (!stopToken.IsCancellationRequested && jobQueue.Count > 0)
+            while (!stopToken.IsCancellationRequested)
             {
                 runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
+
+                if (jobQueue.Count == 0)
+                {
+                    await queueWaiter.WaitAsync(stopToken);
+                    continue;
+                }
 
                 if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
                 {
@@ -66,6 +78,13 @@ internal sealed partial class CronScheduler : BackgroundService
 
                     if (stopToken.IsCancellationRequested)
                         break;
+
+                    if (rescheduleTrigger.IsCancellationRequested)
+                    {
+                        rescheduleTrigger.Dispose();
+                        rescheduleTrigger = new();
+                        continue;
+                    }
 
                     if (IsJobEligibleToStart(nextJob, runningTasks))
                     {
@@ -94,6 +113,12 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
+    private void RescheduleJobs(object? sender, EventArgs e)
+    {
+        queueWaiter.Release();
+        rescheduleTrigger.Cancel();
+    }
+
     private void ScheduleInitialJobs()
     {
         foreach (var job in registry.GetAllCronJobs())
@@ -102,8 +127,13 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
-    private void ScheduleJob(RegistryEntry job)
+    private void ScheduleJob(JobDefinition job)
     {
+        if (job.CronExpression is null)
+        {
+            return;
+        }
+
         var utcNow = timeProvider.GetUtcNow();
         var nextRunTime = job.CronExpression!.GetNextOccurrence(utcNow, job.TimeZone);
 
@@ -122,11 +152,12 @@ internal sealed partial class CronScheduler : BackgroundService
         var delay = priorityTuple.NextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
-            await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
+            using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(stopToken, rescheduleTrigger.Token);
+            await TaskExtensions.LongDelaySafe(delay, timeProvider, tokenSource.Token);
         }
     }
 
-    private Task CreateExecutionTask(RegistryEntry nextJob, CancellationToken stopToken)
+    private Task CreateExecutionTask(JobDefinition nextJob, CancellationToken stopToken)
     {
         var task = Task.Run(async () =>
         {
@@ -143,14 +174,14 @@ internal sealed partial class CronScheduler : BackgroundService
         return task;
     }
 
-    private bool IsJobEligibleToStart(RegistryEntry nextJob, List<Task> runningTasks)
+    private bool IsJobEligibleToStart(JobDefinition nextJob, List<Task> runningTasks)
     {
         var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
         var concurrentSlotsOpen = runningTasks.Count < globalConcurrencyLimit;
         return isSameJob && CanStartJob(nextJob) && concurrentSlotsOpen;
     }
 
-    private async Task ExecuteJob(RegistryEntry entry, CancellationToken stoppingToken)
+    private async Task ExecuteJob(JobDefinition entry, CancellationToken stoppingToken)
     {
         try
         {
@@ -170,7 +201,7 @@ internal sealed partial class CronScheduler : BackgroundService
         }
     }
 
-    private bool CanStartJob(RegistryEntry jobEntry)
+    private bool CanStartJob(JobDefinition jobEntry)
     {
         var attribute = jobEntry.Type.GetCustomAttribute<SupportsConcurrencyAttribute>();
         var maxAllowed = attribute?.MaxDegreeOfParallelism ?? 1;

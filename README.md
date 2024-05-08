@@ -43,6 +43,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://link
 - [x] Parameterized jobs - instant as well as cron jobs!
 - [x] Integrated in ASP.NET - Access your DI container like you would in any other service
 - [x] Get notified when a job is done (either successfully or with an error).
+- [x] Define job dependenices - trigger another job if one was successful or faulted!
 - [x] Retries - If a job fails, it will be retried.
 - [x] The job scheduler supports TimeZones. Defaults to UTC time.
 

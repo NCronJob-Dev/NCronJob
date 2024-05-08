@@ -102,7 +102,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
-        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
+        var cronRegistryEntries = provider.GetServices<JobDefinition>();
         var cancelRetryingJobEntry = cronRegistryEntries.First(entry => entry.Type == typeof(CancelRetryingJob2));
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));

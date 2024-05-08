@@ -83,6 +83,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(default);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
@@ -200,7 +201,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             using var serviceScope = provider.CreateScope();
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
-            await executor.RunJob(new RegistryEntry(typeof(JobWithDependency), new JobExecutionContext(null!, null), null, null), CancellationToken.None);
+            await executor.RunJob(
+                new JobDefinition(typeof(JobWithDependency), new JobExecutionContext(null!, null), null, null, null),
+                CancellationToken.None);
         });
     }
 
@@ -211,6 +214,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(default);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(TimeSpan.FromMinutes(1));
 
@@ -228,6 +232,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         var runDate = fakeTimer.GetUtcNow().AddMinutes(1);
+        await provider.GetRequiredService<IHostedService>().StartAsync(default);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(runDate);
 
