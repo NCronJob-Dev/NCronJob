@@ -42,3 +42,29 @@ public class ReportJob : IJob
     }
 }
 ```
+
+## Parameters are not immutable
+Passed in parameters are not immutable by default or cloned through out the job execution. This means that if you change the parameter in the job, it will also change in the next execution. If you need to keep the parameter unchanged, you should clone it in the job.
+
+```csharp
+public class MyParameter
+{
+  public int Counter { get; set; }
+}
+
+Services.AddNCronJob(b =>
+{
+  b.AddJob<MyJob>(p => p.WithCronExpression(...));
+});
+
+public class MyJob : IJob
+{
+  public Task RunAsync(JobExecutionContext context, CancellationToken token)
+  {
+     var myParam = (MyParameter)context.Parameter;
+     myParam.Counter++; // This will be incremented with each job run
+  }
+}
+```
+
+If `MyJob` runs twice already and is invoked a third time, `myParam.Counter` will be 2 when the function gets invoked.
