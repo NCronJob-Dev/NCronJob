@@ -4,7 +4,7 @@ namespace LinkDotNet.NCronJob;
 /// Specifies that multiple instances of the same job type can run simultaneously.
 /// This attribute controls the maximum degree of parallelism allowed for instances of the job.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
 public sealed class SupportsConcurrencyAttribute : Attribute
 {
     /// <summary>

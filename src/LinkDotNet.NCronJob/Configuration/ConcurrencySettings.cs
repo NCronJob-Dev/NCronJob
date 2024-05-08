@@ -7,7 +7,7 @@ namespace LinkDotNet.NCronJob;
 /// This configuration is utilized to specify the maximum number of concurrent operations 
 /// that the system can execute simultaneously.
 /// </remarks>
-internal class ConcurrencySettings()
+internal class ConcurrencySettings
 {
     /// <summary>
     /// The total number of concurrent jobs that can be executed
