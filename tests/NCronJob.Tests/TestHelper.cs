@@ -27,7 +27,6 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddSingleton<IRetryHandler, TestRetryHandler>();
         ServiceCollection.AddSingleton<IRetryHandler>(sp =>
             new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
-
     }
 
     public void Dispose()

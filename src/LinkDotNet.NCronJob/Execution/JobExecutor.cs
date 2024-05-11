@@ -53,11 +53,17 @@ internal sealed partial class JobExecutor : IDisposable
         var stopToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
-        var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
-        var jobExecutionInstance = new JobExecutionContext(run.Type, run.Parameter);
-        await ExecuteJob(jobExecutionInstance, job, scope, stopToken);
+        var job = ResolveJob(scope.ServiceProvider, run);
+
+        var runContext = new JobExecutionContext(run);
+        await ExecuteJob(runContext, job, scope, stopToken);
     }
+
+    private static IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition run) =>
+        typeof(DynamicJobFactory).IsAssignableFrom(run.Type)
+            ? (IJob)scopedServiceProvider.GetRequiredKeyedService(run.Type, run.JobName)
+            : (IJob)scopedServiceProvider.GetRequiredService(run.Type);
 
     public void Dispose()
     {

@@ -38,7 +38,7 @@ public sealed class JobOptionBuilder
     }
 
 
-    private static bool DetermineAndValidatePrecision(string cronExpression, bool? enableSecondPrecision)
+    internal static bool DetermineAndValidatePrecision(string cronExpression, bool? enableSecondPrecision)
     {
         var parts = cronExpression.Split(' ');
         var precisionRequired = enableSecondPrecision ?? (parts.Length == 6);

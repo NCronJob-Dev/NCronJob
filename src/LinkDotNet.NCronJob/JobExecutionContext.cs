@@ -1,12 +1,21 @@
+
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
 /// Represents the context of a job execution.
 /// </summary>
-/// <param name="JobType">The Type that represents the Job</param>
-/// <param name="Parameter">The passed in parameters to a job.</param>
-public sealed record JobExecutionContext(Type JobType, object? Parameter)
+public sealed record JobExecutionContext
 {
+    /// <summary>
+    /// Represents the context of a job execution. Marked internal to prevent external instantiation.
+    /// </summary>
+    /// <param name="jobDefinition">The Job Definition of the Job Run</param>
+    internal JobExecutionContext(JobDefinition jobDefinition)
+    {
+        Parameter = jobDefinition.Parameter;
+        JobDefinition = jobDefinition;
+    }
+
     /// <summary>
     /// The Job Instance Identifier, generated once upon creation of the context.
     /// </summary>
@@ -22,4 +31,13 @@ public sealed record JobExecutionContext(Type JobType, object? Parameter)
     /// Retries will only occur when <see cref="RetryPolicyAttribute{T}"/> is set on the Job.
     /// </summary>
     public int Attempts { get; internal set; }
+
+    /// <summary>The Job Definition of the Job Run</summary>
+    internal JobDefinition JobDefinition { get; init; }
+
+    /// <summary>The Type that represents the Job</summary>
+    internal Type JobType => JobDefinition.Type;
+
+    /// <summary>The passed in parameters to a job.</summary>
+    public object? Parameter { get; init; }
 }

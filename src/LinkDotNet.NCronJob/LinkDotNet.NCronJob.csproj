@@ -5,6 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>LinkDotNet.NCronJob</RootNamespace>
+    <Deterministic>true</Deterministic>
 	</PropertyGroup>
 
 	<PropertyGroup Label="NuGet">
