@@ -6,6 +6,13 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Run jobs automatically when a job either succeeded or failed allowing to model a job pipeline. By [@linkdotnet](https://github.com/linkdotet).
+
+### Fixed
+- Instant jobs did ignore the concurrency attribute and global concurrency settings. 
+  Fixed by [@linkdotnet](https://github.com/linkdotet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
+
 ## [2.3.2] - 2024-05-08
 
 ### Fixed
