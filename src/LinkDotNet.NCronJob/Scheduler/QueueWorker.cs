@@ -158,14 +158,11 @@ internal sealed partial class QueueWorker : BackgroundService
             {
                 await TaskExtensions.LongDelaySafe(delay, timeProvider, tokenSource.Token);
             }
-            catch (OperationCanceledException e) when (CancellationReasonIsStoppingToken(e))
+            catch (OperationCanceledException) when (rescheduleTrigger.IsCancellationRequested)
             {
-                throw;
+                // ignore as we need to reevaluate the queue
             }
         }
-
-        bool CancellationReasonIsStoppingToken(OperationCanceledException e)
-            => e.CancellationToken == stopToken;
     }
 
     private Task CreateExecutionTask(JobDefinition nextJob, CancellationToken stopToken)
