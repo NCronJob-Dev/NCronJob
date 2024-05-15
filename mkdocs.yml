@@ -35,6 +35,7 @@ nav:
     - Triggering instant jobs: features/instant-jobs.md
     - Concurrency control: features/concurrency-control.md
     - Retry support: features/retry-support.md
+    - Model dependencies: features/model-dependencies.md
   - Migration:
     - v2 Migration Guide: migration/v2.md
   - Advanced:
