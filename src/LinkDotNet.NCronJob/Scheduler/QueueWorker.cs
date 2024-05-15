@@ -146,15 +146,26 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)
+    private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple,
+        CancellationToken stopToken)
     {
         var utcNow = timeProvider.GetUtcNow();
         var delay = priorityTuple.NextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
             using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(stopToken, rescheduleTrigger.Token);
-            await TaskExtensions.LongDelaySafe(delay, timeProvider, tokenSource.Token);
+            try
+            {
+                await TaskExtensions.LongDelaySafe(delay, timeProvider, tokenSource.Token);
+            }
+            catch (OperationCanceledException e) when (CancellationReasonIsStoppingToken(e))
+            {
+                throw;
+            }
         }
+
+        bool CancellationReasonIsStoppingToken(OperationCanceledException e)
+            => e.CancellationToken == stopToken;
     }
 
     private Task CreateExecutionTask(JobDefinition nextJob, CancellationToken stopToken)

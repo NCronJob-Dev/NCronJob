@@ -242,6 +242,23 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task WhileAwaitingJobTriggeringInstantJobShouldAnywayTriggerCronJob()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("0 * * * *")));
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
+        fakeTimer.Advance(TimeSpan.FromMilliseconds(1));
+        (await WaitForJobsOrTimeout(1)).ShouldBeTrue();
+        fakeTimer.Advance(TimeSpan.FromHours(1));
+        (await WaitForJobsOrTimeout(1)).ShouldBeTrue();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();
