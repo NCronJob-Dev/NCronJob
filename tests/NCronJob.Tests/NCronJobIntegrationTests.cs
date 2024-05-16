@@ -83,7 +83,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
@@ -214,7 +214,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(TimeSpan.FromMinutes(1));
 
@@ -232,7 +232,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         var runDate = fakeTimer.GetUtcNow().AddMinutes(1);
-        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(runDate);
 
@@ -250,7 +250,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("0 * * * *")));
         var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
         fakeTimer.Advance(TimeSpan.FromMilliseconds(1));

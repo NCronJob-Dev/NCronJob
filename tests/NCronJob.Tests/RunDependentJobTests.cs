@@ -17,7 +17,7 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .When(success: s => s.RunJob<DependentJob>("Message")));
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true);
 
@@ -34,7 +34,7 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .When(faulted: s => s.RunJob<DependentJob>("Message")));
         var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(default);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(false);
 

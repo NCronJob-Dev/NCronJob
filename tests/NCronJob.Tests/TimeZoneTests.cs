@@ -110,7 +110,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         var provider = CreateServiceProvider();
         var cronRegistryEntries = provider.GetServices<JobDefinition>();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         if (advanceTime.HasValue)
         {
             fakeTimer.Advance(advanceTime.Value);
