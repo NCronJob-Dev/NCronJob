@@ -29,10 +29,15 @@ internal sealed class JobQueue : IDisposable
     public bool TryPeek([NotNullWhen(true)]out JobDefinition? jobDefinition, out (DateTimeOffset NextRunTime, int Priority) tuple)
         => jobQueue.TryPeek(out jobDefinition, out tuple);
 
-    public void EnqueueForDirectExecution(JobDefinition job)
+    /// <summary>
+    /// Adds an entry to this instance and triggers the <see cref="JobEnqueued"/> event.
+    /// </summary>
+    /// <param name="job">The job that will be added.</param>
+    /// <param name="when">An optional <see cref="DateTimeOffset"/> object representing when the job should run. If <code>null</code> it will run immediately.</param>
+    public void EnqueueForDirectExecution(JobDefinition job, DateTimeOffset? when = null)
     {
-        var utcNow = timeProvider.GetUtcNow();
-        jobQueue.Enqueue(job, (utcNow, (int)job.Priority));
+        when ??= timeProvider.GetUtcNow();
+        jobQueue.Enqueue(job, (when.Value, (int)job.Priority));
         JobEnqueued?.Invoke(this, EventArgs.Empty);
     }
 

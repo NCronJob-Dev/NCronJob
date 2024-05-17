@@ -33,10 +33,7 @@ internal sealed partial class JobExecutor : IDisposable
 
     private void OnApplicationStopping()
     {
-        // First cancel all running jobs
         CancelJobs();
-
-        // Then dispose of the cancellation token source to free resources
         Dispose();
     }
 
