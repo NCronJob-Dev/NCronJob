@@ -262,11 +262,11 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddJob(async (ChannelWriter<object?> writer) =>
+        ServiceCollection.AddNCronJob(async (ChannelWriter<object?> writer) =>
         {
             await writer.WriteAsync(null);
         }, "* * * * *");
-        ServiceCollection.AddJob(async (ChannelWriter<object?> writer) =>
+        ServiceCollection.AddNCronJob(async (ChannelWriter<object?> writer) =>
         {
             await writer.WriteAsync(null);
         }, "* * * * *");

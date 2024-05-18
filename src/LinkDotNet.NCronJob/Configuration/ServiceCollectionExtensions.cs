@@ -52,7 +52,7 @@ public static partial class ServiceCollectionExtensions
     ///     </example>
     /// </param>
     /// <returns>The modified service collection.</returns>
-    public static IServiceCollection AddJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression)
+    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression)
     {
         services.AddNCronJob(builder =>
             builder.AddJob(jobDelegate, cronExpression)
