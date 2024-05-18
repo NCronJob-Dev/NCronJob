@@ -68,7 +68,6 @@ public class NCronJobOptionBuilder
     /// </summary>
     /// <param name="jobDelegate">The delegate that represents the job to be executed.</param>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
-    /// <returns></returns>
     public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);

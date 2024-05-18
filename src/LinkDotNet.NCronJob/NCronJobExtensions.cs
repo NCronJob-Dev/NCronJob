@@ -30,21 +30,15 @@ public static class NCronJobExtensions
         var builder = new NCronJobOptionBuilder(services, settings);
         options?.Invoke(builder);
 
-        if (services.IsServiceRegistered<JobRegistry>())
-            return services;
-
-        services.AddSingleton(settings);
+        services.TryAddSingleton(settings);
         services.AddHostedService<QueueWorker>();
-        services.AddSingleton<JobRegistry>();
-        services.AddSingleton<JobQueue>();
-        services.AddSingleton<JobExecutor>();
+        services.TryAddSingleton<JobRegistry>();
+        services.TryAddSingleton<JobQueue>();
+        services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
-        services.AddSingleton<IInstantJobRegistry, InstantJobRegistry>();
+        services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
 
         return services;
     }
-
-    private static bool IsServiceRegistered<TService>(this IServiceCollection services) =>
-        services.Any(serviceDescriptor => serviceDescriptor.ServiceType == typeof(TService));
 }

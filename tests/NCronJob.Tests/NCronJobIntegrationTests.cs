@@ -257,6 +257,28 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         (await WaitForJobsOrTimeout(1)).ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task MinimalJobApiCanBeUsedForTriggeringCronJobs()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddJob(async (ChannelWriter<object?> writer) =>
+        {
+            await writer.WriteAsync(null);
+        }, "* * * * *");
+        ServiceCollection.AddJob(async (ChannelWriter<object?> writer) =>
+        {
+            await writer.WriteAsync(null);
+        }, "* * * * *");
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(2);
+        jobFinished.ShouldBeTrue();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();

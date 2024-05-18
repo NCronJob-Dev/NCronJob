@@ -45,6 +45,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://link
 - [x] Get notified when a job is done (either successfully or with an error).
 - [x] Retries - If a job fails, it will be retried.
 - [x] The job scheduler supports TimeZones. Defaults to UTC time.
+- [x] Minimal API for Jobs - implement jobs in an oneliner
 
 ## Not features
 
@@ -57,6 +58,21 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
   done, but not the progress of the job itself.
 
 ## Short example
+
+There are two ways of defining a job.
+
+### Minimal Job API
+You can use this library in a simple one-liner:
+```csharp
+builder.Services.AddJob((ILogger<Program> logger, TimeProvider timeProvider) =>
+{
+    logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
+}, "*/5 * * * * *");
+```
+
+With this simple lambda, you can define a job that runs every 5 seconds. Pass in all dependencies, just like you would with a Minimal API.
+
+### Via the `IJob` interface
 
 1. Import the namespace (or let your IDE do the dirty work)
 
