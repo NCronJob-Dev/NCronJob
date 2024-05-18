@@ -3,18 +3,18 @@ using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
 
-internal sealed partial class CronRegistry : IInstantJobRegistry
+internal sealed partial class JobRegistry
 {
     private readonly JobExecutor jobExecutor;
     private readonly TimeProvider timeProvider;
-    private readonly ILogger<CronRegistry> logger;
-    private readonly ImmutableArray<RegistryEntry> cronJobs;
+    private readonly ILogger<JobRegistry> logger;
+    private readonly ImmutableArray<JobDefinition> cronJobs;
 
-    public CronRegistry(
-        IEnumerable<RegistryEntry> jobs,
+    public JobRegistry(
+        IEnumerable<JobDefinition> jobs,
         JobExecutor jobExecutor,
         TimeProvider timeProvider,
-        ILogger<CronRegistry> logger)
+        ILogger<JobRegistry> logger)
     {
         this.jobExecutor = jobExecutor;
         this.timeProvider = timeProvider;
@@ -22,7 +22,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
         cronJobs = [..jobs.Where(c => c.CronExpression is not null)];
     }
 
-    public IReadOnlyCollection<RegistryEntry> GetAllCronJobs() => cronJobs;
+    public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => cronJobs;
 
     /// <inheritdoc />
     public void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
@@ -33,7 +33,7 @@ internal sealed partial class CronRegistry : IInstantJobRegistry
     {
         token.Register(() => LogCancellationRequested(parameter));
 
-        var run = new RegistryEntry(typeof(TJob), parameter, null, null);
+        var run = new JobDefinition(typeof(TJob), parameter, null, null);
 
         _ = Task.Run<Task>(async () =>
         {

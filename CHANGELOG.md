@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+- Instant jobs did ignore the concurrency attribute and global concurrency settings.
+  Fixed by [@linkdotnet](https://github.com/linkdotet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
+
 ## [2.3.2] - 2024-05-08
 
 ### Fixed

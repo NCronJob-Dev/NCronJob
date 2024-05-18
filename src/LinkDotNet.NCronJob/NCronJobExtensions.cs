@@ -32,11 +32,12 @@ public static class NCronJobExtensions
         var builder = new NCronJobOptionBuilder(services, settings);
         options?.Invoke(builder);
 
-        services.AddHostedService<CronScheduler>();
-        services.AddSingleton<CronRegistry>();
+        services.AddHostedService<QueueWorker>();
+        services.AddSingleton<JobRegistry>();
+        services.AddSingleton<JobQueue>();
         services.AddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
-        services.AddSingleton<IInstantJobRegistry>(c => c.GetRequiredService<CronRegistry>());
+        services.AddSingleton<IInstantJobRegistry, InstantJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
 
         return services;

@@ -19,7 +19,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -38,7 +38,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -57,7 +57,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -79,7 +79,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
@@ -102,9 +102,9 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
-        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
+        var cronRegistryEntries = provider.GetServices<JobDefinition>();
         var cancelRetryingJobEntry = cronRegistryEntries.First(entry => entry.Type == typeof(CancelRetryingJob2));
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         jobExecutor.CancelJobs();
@@ -127,7 +127,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         var hostAppLifeTime = provider.GetRequiredService<IHostApplicationLifetime>();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
