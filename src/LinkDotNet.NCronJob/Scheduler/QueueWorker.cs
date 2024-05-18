@@ -211,8 +211,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private bool CanStartJob(JobDefinition jobEntry)
     {
-        var attribute = jobEntry.ConcurrencyPolicy ?? jobEntry.Type.GetCustomAttribute<SupportsConcurrencyAttribute>();
-        var maxAllowed = attribute?.MaxDegreeOfParallelism ?? 1;
+        var maxAllowed = jobEntry.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
         var currentCount = runningJobCounts.GetOrAdd(jobEntry.JobFullName, _ => 0);
 
         return currentCount < maxAllowed;

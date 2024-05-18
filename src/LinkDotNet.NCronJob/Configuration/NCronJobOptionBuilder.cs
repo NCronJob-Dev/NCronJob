@@ -54,8 +54,7 @@ public class NCronJobOptionBuilder
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var retryPolicy = typeof(T).GetCustomAttribute<RetryPolicyAttribute>();
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, RetryPolicy: retryPolicy);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
             Services.AddSingleton(entry);
         }
 
@@ -106,13 +105,10 @@ public class NCronJobOptionBuilder
 
         var jobName = GenerateJobName(jobDelegate);
 
-        var methodInfo = jobDelegate.Method;
-        var retryPolicy = methodInfo.GetCustomAttribute<RetryPolicyAttribute>();
-        var concurrencyPolicy = methodInfo.GetCustomAttribute<SupportsConcurrencyAttribute>();
+        var jobPolicyMetadata = new JobExecutionAttributes(jobType, jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
             JobName: jobName,
-            RetryPolicy: retryPolicy,
-            ConcurrencyPolicy: concurrencyPolicy);
+            JobPolicyMetadata: jobPolicyMetadata);
         Services.AddSingleton(entry);
 
         return jobName;
