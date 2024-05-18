@@ -95,7 +95,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
         nextRunTime!.Value.ShouldBe(expectedRunTime);
     }
 
-    private DateTimeOffset? GetNextRunTime(RegistryEntry jobEntry, DateTimeOffset baseTime, TimeZoneInfo timeZone) =>
+    private DateTimeOffset? GetNextRunTime(JobDefinition jobEntry, DateTimeOffset baseTime, TimeZoneInfo timeZone) =>
         jobEntry.CronExpression!.GetNextOccurrence(baseTime, timeZone);
 
     private void SetupJobWithTimeZone<T>(string cronExpression, string timeZoneId) where T : class, IJob
@@ -104,13 +104,13 @@ public sealed class TimeZoneTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<T>(p => p.WithCronExpression(cronExpression, timeZoneInfo: timeZone)));
     }
 
-    private async Task<RegistryEntry> InitializeServiceAndAdvanceTime<T>(DateTimeOffset baseTime, TimeSpan? advanceTime = null) where T : IJob
+    private async Task<JobDefinition> InitializeServiceAndAdvanceTime<T>(DateTimeOffset baseTime, TimeSpan? advanceTime = null) where T : IJob
     {
         var fakeTimer = new FakeTimeProvider(baseTime);
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         var provider = CreateServiceProvider();
-        var cronRegistryEntries = provider.GetServices<RegistryEntry>();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken.None);
+        var cronRegistryEntries = provider.GetServices<JobDefinition>();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         if (advanceTime.HasValue)
         {
             fakeTimer.Advance(advanceTime.Value);

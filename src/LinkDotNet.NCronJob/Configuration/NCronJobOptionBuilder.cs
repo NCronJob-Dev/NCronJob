@@ -52,7 +52,7 @@ public class NCronJobOptionBuilder
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new RegistryEntry(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
             Services.AddSingleton(entry);
         }
 

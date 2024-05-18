@@ -12,7 +12,8 @@ internal sealed partial class JobExecutor : IDisposable
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
-    public JobExecutor(IServiceProvider serviceProvider,
+    public JobExecutor(
+        IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler)
@@ -26,10 +27,7 @@ internal sealed partial class JobExecutor : IDisposable
 
     private void OnApplicationStopping()
     {
-        // First cancel all running jobs
         CancelJobs();
-
-        // Then dispose of the cancellation token source to free resources
         Dispose();
     }
 
@@ -41,7 +39,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
     }
 
-    public async Task RunJob(RegistryEntry run, CancellationToken stoppingToken)
+    public async Task RunJob(JobDefinition run, CancellationToken stoppingToken)
     {
         if (isDisposed)
         {
@@ -51,13 +49,13 @@ internal sealed partial class JobExecutor : IDisposable
 
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
         var stopToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
         var job = (IJob)scope.ServiceProvider.GetRequiredService(run.Type);
 
-        var jobExecutionInstance = new JobExecutionContext(run.Type, run.Output);
+        var jobExecutionInstance = new JobExecutionContext(run.Type, run.Parameter);
         await ExecuteJob(jobExecutionInstance, job, scope, stopToken);
     }
 

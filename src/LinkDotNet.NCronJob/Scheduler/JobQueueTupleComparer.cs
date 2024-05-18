@@ -4,7 +4,6 @@ internal class JobQueueTupleComparer : IComparer<(DateTimeOffset NextRunTime, in
 {
     public int Compare((DateTimeOffset NextRunTime, int Priority) x, (DateTimeOffset NextRunTime, int Priority) y)
     {
-        // First, compare by DateTime
         var timeComparison = DateTimeOffset.Compare(x.NextRunTime, y.NextRunTime);
         if (timeComparison != 0)
             return timeComparison;

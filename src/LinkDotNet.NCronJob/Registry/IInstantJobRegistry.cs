@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
@@ -29,7 +31,8 @@ public interface IInstantJobRegistry
     /// <param name="delay">The delay until the job will be executed.</param>
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
-    void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default);
+    void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
+        where TJob : IJob;
 
     /// <summary>
     /// Runs a job that will be executed at <paramref name="startDate"/>.
@@ -39,4 +42,46 @@ public interface IInstantJobRegistry
     /// <param name="token">An optional token to cancel the job.</param>
     void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
+}
+
+internal sealed partial class InstantJobRegistry : IInstantJobRegistry
+{
+    private readonly TimeProvider timeProvider;
+    private readonly JobQueue jobQueue;
+    private readonly ILogger<InstantJobRegistry> logger;
+
+    public InstantJobRegistry(TimeProvider timeProvider, JobQueue jobQueue,  ILogger<InstantJobRegistry> logger)
+    {
+        this.timeProvider = timeProvider;
+        this.jobQueue = jobQueue;
+        this.logger = logger;
+    }
+
+    /// <inheritdoc />
+    public void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+        where TJob : IJob => RunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
+
+    /// <inheritdoc />
+    public void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
+        where TJob : IJob
+    {
+        var utcNow = timeProvider.GetUtcNow();
+        RunScheduledJob<TJob>(utcNow + delay, parameter, token);
+    }
+
+    /// <inheritdoc />
+    public void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default) where TJob : IJob
+    {
+        token.Register(() => LogCancellationRequested(parameter));
+
+        var run = new JobDefinition(typeof(TJob), parameter, null, null) { CancellationToken = token };
+
+        jobQueue.EnqueueForDirectExecution(run, startDate);
+    }
+
+    [LoggerMessage(LogLevel.Warning, "Job {JobName} cancelled by request.")]
+    private partial void LogCancellationNotice(string jobName);
+
+    [LoggerMessage(LogLevel.Debug, "Cancellation requested for CronRegistry {Parameter}.")]
+    private partial void LogCancellationRequested(object? parameter);
 }

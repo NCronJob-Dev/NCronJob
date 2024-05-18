@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LinkDotNet.NCronJob;
 
-internal sealed partial class CronScheduler
+internal sealed partial class QueueWorker
 {
     [LoggerMessage(LogLevel.Debug, "Next run of job '{JobType}' is at {NextRun}")]
     private partial void LogNextJobRun(Type jobType, DateTimeOffset nextRun);
