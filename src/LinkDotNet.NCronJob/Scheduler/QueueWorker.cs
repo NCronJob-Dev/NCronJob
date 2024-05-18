@@ -97,6 +97,13 @@ internal sealed partial class QueueWorker : BackgroundService
                         runningTasks.Add(task);
                         ScheduleJob(nextJob);
                     }
+                    else
+                    {
+                        // Note: do not remove, this is used to reduce the CPU usage for special cases dealing
+                        // with concurrent threads, otherwise the loop will run as fast as possible when the max concurrency limit is reached
+                        // while it waits for the tasks to complete
+                        await Task.Delay(1, stopToken);
+                    }
                 }
 
                 if (runningTasks.Count >= globalConcurrencyLimit)
