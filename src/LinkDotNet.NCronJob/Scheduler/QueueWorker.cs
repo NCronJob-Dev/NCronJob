@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Reflection;
 
 namespace LinkDotNet.NCronJob;
 
