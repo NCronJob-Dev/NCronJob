@@ -5,6 +5,7 @@
         <OutputType>Exe</OutputType>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>MinimalSample</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

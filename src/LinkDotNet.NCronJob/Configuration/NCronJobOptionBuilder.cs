@@ -108,7 +108,11 @@ public class NCronJobOptionBuilder
 
         var methodInfo = jobDelegate.Method;
         var retryPolicy = methodInfo.GetCustomAttribute<RetryPolicyAttribute>();
-        var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo, JobName: jobName, RetryPolicy: retryPolicy);
+        var concurrencyPolicy = methodInfo.GetCustomAttribute<SupportsConcurrencyAttribute>();
+        var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
+            JobName: jobName,
+            RetryPolicy: retryPolicy,
+            ConcurrencyPolicy: concurrencyPolicy);
         Services.AddSingleton(entry);
 
         return jobName;
