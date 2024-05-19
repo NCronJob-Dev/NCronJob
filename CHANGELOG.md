@@ -6,6 +6,16 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- New minimal API to register jobs. By [@falvarez1](https://github.com/falvarez1)
+Jobs can be defined via a simple lambda:
+```csharp
+builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
+{
+    logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
+}, "*/5 * * * * *");
+```
+
 ### Fixed
 - Instant jobs did ignore the concurrency attribute and global concurrency settings.
   Fixed by [@linkdotnet](https://github.com/linkdotet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
