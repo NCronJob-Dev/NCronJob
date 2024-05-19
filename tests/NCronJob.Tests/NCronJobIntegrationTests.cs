@@ -201,7 +201,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             using var serviceScope = provider.CreateScope();
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
-            await executor.RunJob(new JobDefinition(typeof(JobWithDependency), new JobExecutionContext(null!, null), null, null), CancellationToken.None);
+            await executor.RunJob(new JobDefinition(typeof(JobWithDependency), null, null, null), CancellationToken.None);
         });
     }
 
@@ -255,6 +255,28 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         (await WaitForJobsOrTimeout(1)).ShouldBeTrue();
         fakeTimer.Advance(TimeSpan.FromHours(1));
         (await WaitForJobsOrTimeout(1)).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task MinimalJobApiCanBeUsedForTriggeringCronJobs()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(async (ChannelWriter<object?> writer) =>
+        {
+            await writer.WriteAsync(null);
+        }, "* * * * *");
+        ServiceCollection.AddNCronJob(async (ChannelWriter<object?> writer) =>
+        {
+            await writer.WriteAsync(null);
+        }, "* * * * *");
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(2);
+        jobFinished.ShouldBeTrue();
     }
 
     private sealed class GuidGenerator
