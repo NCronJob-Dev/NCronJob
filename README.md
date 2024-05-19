@@ -64,7 +64,7 @@ There are two ways of defining a job.
 ### Minimal Job API
 You can use this library in a simple one-liner:
 ```csharp
-builder.Services.AddJob((ILogger<Program> logger, TimeProvider timeProvider) =>
+builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
 {
     logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
 }, "*/5 * * * * *");

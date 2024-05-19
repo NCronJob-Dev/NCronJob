@@ -17,14 +17,14 @@ public static partial class ServiceCollectionExtensions
     ///     <example>
     ///         Synchronous job example:
     ///         <code>
-    ///             builder.Services.AddJob((ILogger&lt;Program&gt; logger, TimeProvider timeProvider) =&gt;
+    ///             builder.Services.AddNCronJob((ILogger&lt;Program&gt; logger, TimeProvider timeProvider) =&gt;
     ///             {
     ///                 logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
     ///             }, "*/40 * * * * *");
     ///         </code>
     ///         Asynchronous job example:
     ///         <code>
-    ///             builder.Services.AddJob(async (ILogger&lt;Program&gt; logger, TimeProvider timeProvider, CancellationToken ct) =&gt;
+    ///             builder.Services.AddNCronJob(async (ILogger&lt;Program&gt; logger, TimeProvider timeProvider, CancellationToken ct) =&gt;
     ///             {
     ///                 logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
     ///                 await Task.Delay(1000, ct);
@@ -32,7 +32,7 @@ public static partial class ServiceCollectionExtensions
     ///         </code>
     ///         Synchronous job with retry policy example:
     ///         <code>
-    ///             builder.Services.AddJob([RetryPolicy(retryCount: 4)] (JobExecutionContext context, ILogger&lt;Program&gt; logger) =&gt;
+    ///             builder.Services.AddNCronJob([RetryPolicy(retryCount: 4)] (JobExecutionContext context, ILogger&lt;Program&gt; logger) =&gt;
     ///             {
     ///                 var attemptCount = context.Attempts;
     ///                 if (attemptCount &lt;= 4)
