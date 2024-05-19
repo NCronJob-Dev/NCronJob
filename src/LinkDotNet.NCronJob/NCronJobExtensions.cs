@@ -27,17 +27,16 @@ public static class NCronJobExtensions
     {
         // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
-        services.AddSingleton(settings);
-
         var builder = new NCronJobOptionBuilder(services, settings);
         options?.Invoke(builder);
 
+        services.TryAddSingleton(settings);
         services.AddHostedService<QueueWorker>();
-        services.AddSingleton<JobRegistry>();
-        services.AddSingleton<JobQueue>();
-        services.AddSingleton<JobExecutor>();
+        services.TryAddSingleton<JobRegistry>();
+        services.TryAddSingleton<JobQueue>();
+        services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
-        services.AddSingleton<IInstantJobRegistry, InstantJobRegistry>();
+        services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
 
         return services;

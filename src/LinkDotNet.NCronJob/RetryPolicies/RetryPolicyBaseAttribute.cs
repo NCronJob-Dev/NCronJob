@@ -6,7 +6,7 @@ namespace LinkDotNet.NCronJob;
 /// Abstract base class for defining retry policy attributes, encapsulating common parameters like retry count and delay factor.
 /// Derived classes must implement the creation of specific retry policies tailored to operational needs.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Delegate, Inherited = false)]
 public abstract class RetryPolicyBaseAttribute : Attribute
 {
     /// <summary>

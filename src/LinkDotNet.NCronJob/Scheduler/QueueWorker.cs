@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Reflection;
 
 namespace LinkDotNet.NCronJob;
 
@@ -15,7 +14,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly SemaphoreSlim semaphore;
     private readonly int globalConcurrencyLimit;
     private readonly SemaphoreSlim queueWaiter = new(0);
-    private readonly ConcurrentDictionary<Type, int> runningJobCounts = [];
+    private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
     private CancellationTokenSource? shutdown;
     private CancellationTokenSource rescheduleTrigger = new();
 
@@ -89,13 +88,20 @@ internal sealed partial class QueueWorker : BackgroundService
                     if (IsJobEligibleToStart(nextJob, runningTasks))
                     {
                         jobQueue.Dequeue();
-                        UpdateRunningJobCount(nextJob.Type, 1);
+                        UpdateRunningJobCount(nextJob.JobFullName, 1);
 
                         await semaphore.WaitAsync(stopToken);
                         var task = CreateExecutionTask(nextJob, stopToken);
 
                         runningTasks.Add(task);
                         ScheduleJob(nextJob);
+                    }
+                    else
+                    {
+                        // Note: do not remove, this is used to reduce the CPU usage for special cases dealing
+                        // with concurrent threads, otherwise the loop will run as fast as possible when the max concurrency limit is reached
+                        // while it waits for the tasks to complete
+                        await Task.Delay(1, stopToken);
                     }
                 }
 
@@ -176,7 +182,7 @@ internal sealed partial class QueueWorker : BackgroundService
             finally
             {
                 semaphore.Release();
-                UpdateRunningJobCount(nextJob.Type, -1);
+                UpdateRunningJobCount(nextJob.JobFullName, -1);
             }
         }, stopToken);
         return task;
@@ -211,13 +217,12 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private bool CanStartJob(JobDefinition jobEntry)
     {
-        var attribute = jobEntry.Type.GetCustomAttribute<SupportsConcurrencyAttribute>();
-        var maxAllowed = attribute?.MaxDegreeOfParallelism ?? 1;
-        var currentCount = runningJobCounts.GetOrAdd(jobEntry.Type, _ => 0);
+        var maxAllowed = jobEntry.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
+        var currentCount = runningJobCounts.GetOrAdd(jobEntry.JobFullName, _ => 0);
 
         return currentCount < maxAllowed;
     }
 
-    private void UpdateRunningJobCount(Type jobType, int change) =>
-        runningJobCounts.AddOrUpdate(jobType, change, (_, existingVal) => Math.Max(0, existingVal + change));
+    private void UpdateRunningJobCount(string jobFullName, int change) =>
+        runningJobCounts.AddOrUpdate(jobFullName, change, (_, existingVal) => Math.Max(0, existingVal + change));
 }
