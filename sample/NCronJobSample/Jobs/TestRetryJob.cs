@@ -3,7 +3,7 @@ using LinkDotNet.NCronJob;
 namespace NCronJobSample;
 
 [RetryPolicy(retryCount: 4)]
-public class TestRetryJob(ILogger<TestRetryJob> logger, int maxFailuresBeforeSuccess = 3)
+public class TestRetryJob(ILogger<TestRetryJob> logger, int maxFailuresBeforeSuccess = 2)
     : IJob
 {
 
@@ -22,7 +22,7 @@ public class TestRetryJob(ILogger<TestRetryJob> logger, int maxFailuresBeforeSuc
             throw new InvalidOperationException("Simulated operation failure in TestRetryJob.");
         }
 
-        await Task.Delay(3000, token);
+        await Task.Delay(10000, token);
         logger.LogInformation($"TestRetryJob with instance Id {context.Id} completed successfully on attempt {attemptCount}.");
         await Task.CompletedTask;
     }

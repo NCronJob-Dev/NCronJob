@@ -9,9 +9,11 @@ internal sealed record JobDefinition(
     TimeZoneInfo? TimeZone,
     JobPriority Priority = JobPriority.Normal,
     string? JobName = null,
-    JobExecutionAttributes? JobPolicyMetadata = null)
+    JobExecutionAttributes? JobPolicyMetadata = null) : IJobDefinition
 {
     private int jobExecutionCount;
+
+    public Guid JobId { get; } = Guid.NewGuid();
 
     public CancellationToken CancellationToken { get; set; }
 
@@ -25,7 +27,7 @@ internal sealed record JobDefinition(
     public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
 
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
-    
+
     public RetryPolicyAttribute? RetryPolicy => JobPolicyMetadata?.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata?.ConcurrencyPolicy;
 }

@@ -22,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".items", ".items", "{AD5C8E
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NCronJobSample", "sample\NCronJobSample\NCronJobSample.csproj", "{A313F7A8-60BD-46C4-87C9-E71EF46B4A31}"
@@ -36,7 +37,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".workflows", ".workflows", 
 		.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinkDotNet.NCronJob.Client", "src\NCronJob.Client\LinkDotNet.NCronJob.Client\LinkDotNet.NCronJob.Client.csproj", "{46EFD9DD-616E-451C-B107-589DCB00D355}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MinimalSample", "sample\MinimalSample\MinimalSample.csproj", "{7917CC29-F264-4868-B4FA-1DB4332F442F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinkDotNet.NCronJob.Shared", "src\LinkDotNet.NCronJob.Shared\LinkDotNet.NCronJob.Shared.csproj", "{72E85AC0-41AD-4429-9FA7-48D0877C4451}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NCronJob.Dashboard", "src\NCronJob.Dashboard\NCronJob.Dashboard.csproj", "{F7781193-904A-497F-848E-CFB1D5979468}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,10 +63,22 @@ Global
 		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46EFD9DD-616E-451C-B107-589DCB00D355}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46EFD9DD-616E-451C-B107-589DCB00D355}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46EFD9DD-616E-451C-B107-589DCB00D355}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46EFD9DD-616E-451C-B107-589DCB00D355}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7917CC29-F264-4868-B4FA-1DB4332F442F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7917CC29-F264-4868-B4FA-1DB4332F442F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7917CC29-F264-4868-B4FA-1DB4332F442F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7917CC29-F264-4868-B4FA-1DB4332F442F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72E85AC0-41AD-4429-9FA7-48D0877C4451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72E85AC0-41AD-4429-9FA7-48D0877C4451}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72E85AC0-41AD-4429-9FA7-48D0877C4451}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72E85AC0-41AD-4429-9FA7-48D0877C4451}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7781193-904A-497F-848E-CFB1D5979468}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7781193-904A-497F-848E-CFB1D5979468}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7781193-904A-497F-848E-CFB1D5979468}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7781193-904A-497F-848E-CFB1D5979468}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -68,6 +87,12 @@ Global
 		{904F2F27-6F69-48F8-8FC8-20014CA41636} = {52E839FA-954F-4B06-98F4-BEEB716D0806}
 		{A313F7A8-60BD-46C4-87C9-E71EF46B4A31} = {3E4D3870-EC64-4974-8FD2-F6B19E4A2BE6}
 		{FAC0B14E-7A0A-488C-AAB2-9F8FEC503F93} = {C0DF0EA7-EE6B-4657-87F1-F380FF89FE76}
+		{46EFD9DD-616E-451C-B107-589DCB00D355} = {52E839FA-954F-4B06-98F4-BEEB716D0806}
 		{7917CC29-F264-4868-B4FA-1DB4332F442F} = {3E4D3870-EC64-4974-8FD2-F6B19E4A2BE6}
+		{72E85AC0-41AD-4429-9FA7-48D0877C4451} = {52E839FA-954F-4B06-98F4-BEEB716D0806}
+		{F7781193-904A-497F-848E-CFB1D5979468} = {52E839FA-954F-4B06-98F4-BEEB716D0806}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {03D5D17A-D562-453E-93AE-7706BAE4FE8E}
 	EndGlobalSection
 EndGlobal

@@ -1,4 +1,6 @@
 using LinkDotNet.NCronJob;
+using LinkDotNet.NCronJob.Client;
+using LinkDotNet.NCronJob.SignalR;
 using NCronJobSample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
+
+builder.Services.AddSingleton<StateChangeObserver2>();
 
 // Add NCronJob to the container.
 builder.Services.AddNCronJob(n => n
@@ -28,10 +32,15 @@ builder.Services.AddNCronJob(n => n
 
     // A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
     .AddJob<TestRetryJob>(p =>
-        p.WithCronExpression("*/5 * * * * *"))
-);
+        p.WithCronExpression("*/20 * * * * *"))
+).AddCronJobControlCenterServices(builder.Configuration);
+
+
 
 var app = builder.Build();
+
+var stateChangeObserver2 = app.Services.GetRequiredService<StateChangeObserver2>();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

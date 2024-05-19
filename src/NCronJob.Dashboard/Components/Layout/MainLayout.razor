@@ -1,0 +1,31 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Control Center</PageTitle>
+
+<ToastComponent></ToastComponent>
+
+<div class="page">
+    
+    <main class="relative min-h-screen flex flex-col bg-slate-50 before:absolute before:inset-0 before:bg-gradient-to-b before:from-indigo-200/60 before:to-transparent overflow-hidden">
+        <article class="w-full px-4 md:px-6 pt-6 pb-2">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("initFlowbite");
+        }
+    }
+}

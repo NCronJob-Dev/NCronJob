@@ -1,4 +1,4 @@
-﻿namespace LinkDotNet.NCronJob;
+namespace LinkDotNet.NCronJob;
 
 /// <summary>
 /// Represents a job that can be executed.

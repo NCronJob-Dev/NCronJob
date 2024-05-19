@@ -1,0 +1,48 @@
+@using LinkDotNet.NCronJob.Shared
+<header 
+    class="relative before:absolute before:rounded-lg before:shadow-xl before:shadow-slate-900/5 before:bg-white before:transition-all before:duration-500 before:ease-[cubic-bezier(.5,.85,.25,1.8)] @HeaderClass">
+    <div class="relative">
+        <div class="flex justify-between items-center px-2 py-2">
+            <img src="/logo_small.png" width="55" height="55" aria-label="Logo" />
+            <div class="flex-grow flex items-center justify-between px-4">
+                @TitleComponent
+            </div>
+            <div class="flex justify-end p-2">
+                <button @onclick="ToggleExpand" class="flex items-center justify-center p-2 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <svg class="@ButtonIconStyle" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <nav id="menu" role="navigation" aria-labelledby="menubutton" class="grid text-sm text-slate-600 overflow-hidden transition-all duration-500 ease-[cubic-bezier(.5,.85,.25,1.8)] @NavClass">
+            <div class="overflow-hidden before:block before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-slate-200 before:to-transparent">
+                <div class="@NavClass">
+                    @BodyContent
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+
+
+
+@code {
+    bool showPopover = false;
+    private bool expanded = true;
+
+    [Parameter]
+    public RenderFragment TitleComponent { get; set; }
+
+    [Parameter]
+    public RenderFragment BodyContent { get; set; }
+    [Parameter]
+    public ServiceAgent serviceAgent { get; set; }
+
+    private void ToggleExpand() => expanded = !expanded;
+
+    private string HeaderClass => expanded ? "mb-8 before:-inset-2 before:top-0" : "mb-6 before:inset-0";
+    private string ButtonIconStyle => expanded ? "transform rotate-180" : "transform rotate-0";
+    private string NavClass => expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 invisible";
+    private string NavClassX => expanded ? "opacity-100 visible transition-all ease-in-out duration-500" : "max-h-0 opacity-0 invisible transition-all ease-in-out duration-500 overflow-hidden";
+}

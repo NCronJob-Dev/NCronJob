@@ -1,0 +1,13 @@
+{
+    "profiles": {
+        "Jobs Control Center": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": true,
+            "applicationUrl": "http://0.0.0.0:7178",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        }
+    }
+}

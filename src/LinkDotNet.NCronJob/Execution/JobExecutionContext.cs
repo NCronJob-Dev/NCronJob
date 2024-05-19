@@ -1,10 +1,11 @@
+using LinkDotNet.NCronJob.Messaging.States;
 
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
 /// Represents the context of a job execution.
 /// </summary>
-public sealed record JobExecutionContext
+public sealed record JobExecutionContext : IJobExecutionContext
 {
     /// <summary>
     /// Represents the context of a job execution. Marked internal to prevent external instantiation.
@@ -31,13 +32,15 @@ public sealed record JobExecutionContext
     /// Retries will only occur when <see cref="RetryPolicyAttribute{T}"/> is set on the Job.
     /// </summary>
     public int Attempts { get; internal set; }
-
+    public DateTimeOffset ScheduledStartTime { get; set; }
+    public DateTimeOffset ActualStartTime { get; set; }
+    public DateTimeOffset? End { get; internal set; }
+    public TimeSpan? ExecutionTime => End?.Subtract(ActualStartTime);
+    public ExecutionState CurrentState { get; set; } = ExecutionState.NotStarted;
     /// <summary>The Job Definition of the Job Run</summary>
-    internal JobDefinition JobDefinition { get; init; }
-
+    public IJobDefinition JobDefinition { get; init; }
     /// <summary>The Type that represents the Job</summary>
-    internal Type JobType => JobDefinition.Type;
-
+    public Type JobType => JobDefinition.Type;
     /// <summary>The passed in parameters to a job.</summary>
     public object? Parameter { get; init; }
 }

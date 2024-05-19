@@ -1,0 +1,343 @@
+@page "/panel"
+@page "/"
+
+@using System.Text.Json
+@using System.Collections.Specialized
+@using System.Collections.Concurrent
+@using LinkDotNet.NCronJob.Shared
+@using NCronJob.Dashboard.Data
+@implements IDisposable
+@inject AgentManager AgentManager
+@inject NotificationService NotificationService
+@inject IJSRuntime JSRuntime
+@inject ILogger<Panel> Logger
+
+<PageTitle>Jobs Control Center</PageTitle>
+
+
+<div class="relative container mx-auto px-4 pt-8 pb-2">
+    <h1 class="text-3xl font-semibold text-gray-800 mb-6">Jobs Control Center</h1>
+
+    @if (!AgentManager.Agents.Any())
+    {
+        <div class="min-h-[15rem] flex flex-col bg-white border shadow-sm rounded-xl dark:bg-slate-900 dark:border-gray-700 dark:shadow-slate-700/[.7]">
+            <div class="flex flex-auto flex-col justify-center items-center p-4 md:p-5">
+                <svg class="w-10 h-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" x2="2" y1="12" y2="12" />
+                    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                    <line x1="6" x2="6.01" y1="16" y2="16" />
+                    <line x1="10" x2="10.01" y1="16" y2="16" />
+                </svg>
+                <p class="mt-5 text-lg text-gray-800 dark:text-gray-300">
+                    No agents are currently connected. Please start the agents to see the jobs.
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Jobs in Agents</h2>
+    }
+    @foreach (var agentId in AgentManager.Agents.ToList())
+    {
+        var serviceAgent = AgentManager.GetServiceAgentByAgentIdentifier(agentId);
+        <ExpandableHeader serviceAgent="serviceAgent">
+            <TitleComponent>
+                <div class="flex flex-col sm:flex-row justify-between">
+                    <div class="text-left">
+                        <h2 class="text-xl font-semibold text-gray-700">
+                            <span>Agent: @serviceAgent.ServiceName</span>
+                            <AgentJobLoader AgentId="@agentId"
+                                            OnReloadJobs="(() => LoadJobsForAgentAsync(agentId))"/>
+                        </h2>
+                        <span class="mr-2 inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-teal-100 text-teal-800">
+                            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-teal-400" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3"/>
+                            </svg>
+                            @serviceAgent.Environment
+                        </span>
+                        <span class="text-sm text-gray-600">Host Address: @serviceAgent.IpAddress:@serviceAgent.Port</span>
+                    </div>
+                </div>
+            </TitleComponent>
+            <BodyContent>
+                <div class="relative bg-white shadow-md rounded-lg">
+                    @if (AgentJobs.ContainsKey(agentId) && AgentJobs[agentId].Any())
+                    {
+                        <div class="p-2">
+                            <table class="relative min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Run Times <span class="block text-gray-400 font-normal">Last / Next</span>
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Execution Count</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Status / State</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cron</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach (var job in AgentJobs[agentId].ToList())
+                                    {
+                                        <JobComponent Job="job" AgentId="@agentId" OnJobClickCallback="GetJobDetails" />
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (showSkeleton)
+                        {
+                            <div class="flex flex-col gap-4 w-full pb-4">
+                                <div class="flex gap-4 items-center">
+                                    <div class="skeleton w-16 h-16 rounded-full shrink-0"></div>
+                                    <div class="flex flex-col gap-4 w-4/5">
+                                        <div class="skeleton h-16 w-3/4"></div>
+                                    </div>
+                                </div>
+                                <div class="skeleton h-4 w-2/4 mt-4"></div>
+                                <div class="skeleton h-4 w-3/4"></div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-6">No jobs loaded for this agent. Try reloading.</div>
+                        }
+                    }
+                </div>
+            </BodyContent>
+        </ExpandableHeader>
+    }
+
+@*     <div class="bg-white shadow overflow-hidden sm:rounded-lg mt-4">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Job Details
+            </h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <dl>
+                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt class="text-sm font-medium text-gray-500">
+                        Details
+                    </dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        @JobDetails
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div> *@
+
+
+</div>
+
+
+
+@code {
+    string JobDetails { get; set; } = string.Empty;
+    private ConcurrentDictionary<string, List<JobDetailsView>> AgentJobs { get; } = new();
+    private bool isLoadJobsRunning = false;
+
+    // Get total executed jobs across all Agents
+    private int TotalExecutedJobs => AgentJobs.Values
+        .SelectMany(j => j)
+        .Sum(j => j.ExecutionCount);
+
+
+    private bool showSkeleton = true;
+
+    private async Task<bool> LoadJobsForAgentAsync(string agentId)
+    {
+        // Check if the method is already running; if so, exit without queuing
+        if (isLoadJobsRunning)
+        {
+            Console.WriteLine("LoadJobsForAgentAsync: Already running, exiting...");
+            return false;
+        }
+        isLoadJobsRunning = true;
+
+        Console.WriteLine($"LoadJobsForAgentAsync: Loading jobs for agent {agentId}");
+        var hasJobs = false;
+        try
+        {
+            var agentProxy = AgentManager.GetAgentProxy(agentId);
+            var jobs = await agentProxy.GetAllJobs();
+            hasJobs = jobs.Any();
+
+            if (!AgentJobs.ContainsKey(agentId) || !AgentJobs[agentId].Any())
+            {
+                AgentJobs[agentId] = jobs.OrderBy(job => job.JobName).ToList();
+            }
+            else
+            {
+                // Otherwise, update individual properties of each job to avoid overwriting LastRunTime with null
+                foreach (var updatedJob in jobs)
+                {
+                    var existingJobIndex = AgentJobs[agentId].FindIndex(j => j.JobName == updatedJob.JobName);
+                    if (existingJobIndex >= 0)
+                    {
+                        var existingJob = AgentJobs[agentId][existingJobIndex];
+                        // Create a copy of the existing job with updated fields
+                        var jobWithUpdatedFields = existingJob with
+                            {
+                                CurrentState = updatedJob.CurrentState,
+                                ExecutionCount = updatedJob.ExecutionCount,
+                                CronExpression = updatedJob.CronExpression,
+                                LastRunTime = updatedJob.LastRunTime.HasValue &&
+                                              (!existingJob.LastRunTime.HasValue || updatedJob.LastRunTime > existingJob.LastRunTime)
+                                    ? updatedJob.LastRunTime
+                                    : existingJob.LastRunTime,
+                                NextRunTime = updatedJob.NextRunTime,
+                                CurrentRunStartTime = updatedJob.CurrentRunStartTime,
+                            };
+                        AgentJobs[agentId][existingJobIndex] = jobWithUpdatedFields;
+                    }
+                    else
+                    {
+                        // If it's a new job, add it to the list
+                        AgentJobs[agentId].Add(updatedJob);
+                    }
+                }
+            }
+
+            Logger.LogInformation($"The agent {agentId} has been refreshed.");
+
+            return jobs.Any();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"The agent {agentId} has been disconnected abruptly. {e.Message}");
+        }
+        finally
+        {
+            isLoadJobsRunning = false;
+            await InvokeAsync(StateHasChanged); // Ensure UI updates are triggered
+        }
+
+        return hasJobs;
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        AgentManager.StateChanged += AgentManager_StateChanged;
+        NotificationService.Subscribe<JobDetailsReceivedEvent>(OnBufferedJobDetailsReceivedWrapper);
+    }
+
+    private void AgentManager_StateChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add)
+        {
+            // New agents have been added
+            foreach (var newItem in e.NewItems)
+            {
+                if (newItem is string newAgentId)
+                {
+                    _ = LoadJobsForAgentAsync(newAgentId);
+                }
+            }
+        }
+        else if (e.Action == NotifyCollectionChangedAction.Remove)
+        {
+            foreach (var oldItem in e.OldItems)
+            {
+                if (oldItem is string oldAgentId)
+                {
+                    Logger.LogInformation($"The agent {oldAgentId} has been removed.");
+                }
+            }
+        }
+
+        InvokeAsync(StateHasChanged); // Ensure UI is updated
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(1000);
+            showSkeleton = false;
+            foreach (var agentId in AgentManager.Agents)
+            {
+                Console.WriteLine($"Loading jobs for agent {agentId}");
+                await LoadJobsForAgentAsync(agentId);
+                Console.WriteLine($"Loaded jobs for agent {agentId}");
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OnBufferedJobDetailsReceived(JobDetailsReceivedEvent e)
+    {
+        Logger.LogTrace("Job Details received {@JobDetails}", e.JobDetails);
+
+        if (AgentJobs.ContainsKey(e.AgentId))
+        {
+            var nextRunTime = e.JobDetails.NextRunTime;
+            var jobIndex = AgentJobs[e.AgentId].FindIndex(j => j.JobName == e.JobDetails.JobName);
+            if (jobIndex >= 0)
+            {
+                AgentJobs[e.AgentId][jobIndex] = e.JobDetails;
+            }
+            else
+            {
+                // Add new job
+                AgentJobs[e.AgentId].Add(e.JobDetails);
+                // Sort only if a new job is added
+                AgentJobs[e.AgentId] = AgentJobs[e.AgentId].OrderBy(job => job.JobName).ToList();
+            }
+
+        }
+        else
+        {
+            AgentJobs[e.AgentId] = new List<JobDetailsView> { e.JobDetails };
+        }
+
+        await InvokeAsync(StateHasChanged); // Ensure the component is refreshed
+
+        // Highlight the updated row
+        await HighlightUpdateAsync($"row-{e.JobDetails.JobName}-{e.AgentId.Substring(e.AgentId.Length - 5)}");
+    }
+
+    private async Task HighlightUpdateAsync(string elementId)
+    {
+        await JSRuntime.InvokeVoidAsync("highlightElement", elementId);
+    }
+
+    private void OnBufferedJobDetailsReceivedWrapper(JobDetailsReceivedEvent e)
+    {
+        // Call the async method and do not await it
+        var _ = OnBufferedJobDetailsReceived(e);
+    }
+
+
+    async Task GetJobDetails((string agentId, Guid jobId) e)
+    {
+        try
+        {
+            var agentProxy = AgentManager.GetAgentProxy(e.agentId);
+            var jobDetailsView = await agentProxy.GetJobDetails(e.jobId);
+            JobDetails = JsonSerializer.Serialize(jobDetailsView);
+            Logger.LogTrace("Job Details received {@JobDetails}", jobDetailsView);
+        }
+        catch (Exception ex)
+        {
+            // Log the exception details
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    public void Dispose()
+    {
+        AgentManager.StateChanged -= AgentManager_StateChanged;
+        NotificationService.Unsubscribe<JobDetailsReceivedEvent>(OnBufferedJobDetailsReceivedWrapper);
+    }
+
+}

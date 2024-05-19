@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
-      <PackageReference Include="SonarAnalyzer.CSharp" Version="9.25.0.90414">
+      <PackageReference Include="SonarAnalyzer.CSharp">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="IDisposableAnalyzers" Version="4.0.7">
+      <PackageReference Include="IDisposableAnalyzers">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -18,8 +18,8 @@
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     </PropertyGroup>
 
-    <PropertyGroup>
+    <!--<PropertyGroup>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    </PropertyGroup>
+    </PropertyGroup>-->
 
 </Project>

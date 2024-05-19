@@ -1,0 +1,31 @@
+@code {
+    [Parameter]
+    public string AgentId { get; set; }
+
+    [Parameter]
+    public Func<Task> OnReloadJobs { get; set; }
+
+    private bool _isLoading = false;
+
+    private async Task ReloadJobsAsync()
+    {
+        _isLoading = true;
+        if (OnReloadJobs != null)
+        {
+            await OnReloadJobs.Invoke();
+        }
+        await Task.Delay(1000); // Simulate a delay
+        _isLoading = false;
+    }
+}
+
+<div class="tooltip pl-2" data-tip="Load/Reload Jobs">
+    <button class="btn-xs btn-primary btn-circle @(_isLoading ? "running-icon" : "")" @onclick="ReloadJobsAsync">
+        <svg class="w-5 h-5 text-gray-100 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.7 7.7A7.1 7.1 0 0 0 5 10.8M18 4v4h-4m-7.7 8.3A7.1 7.1 0 0 0 19 13.2M6 20v-4h4"></path>
+        </svg>
+        <span class="sr-only">Load Jobs</span>
+    </button>
+</div>
+
+

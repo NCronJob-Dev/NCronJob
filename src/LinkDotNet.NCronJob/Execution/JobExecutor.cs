@@ -1,3 +1,5 @@
+using LinkDotNet.NCronJob.Messaging;
+using LinkDotNet.NCronJob.Messaging.States;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,16 +13,19 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IRetryHandler retryHandler;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
+    private readonly JobStateManager stateManager;
 
     public JobExecutor(
         IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
-        IRetryHandler retryHandler)
+        IRetryHandler retryHandler,
+        JobStateManager stateManager)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
+        this.stateManager = stateManager;
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -47,6 +52,9 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
+        var runContext = new JobExecutionContext(run);
+        await stateManager.SetState(runContext, ExecutionState.Initializing);
+
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
@@ -56,7 +64,6 @@ internal sealed partial class JobExecutor : IDisposable
 
         var job = ResolveJob(scope.ServiceProvider, run);
 
-        var runContext = new JobExecutionContext(run);
         await ExecuteJob(runContext, job, scope, stopToken);
     }
 
@@ -80,15 +87,23 @@ internal sealed partial class JobExecutor : IDisposable
         {
             LogRunningJob(job.GetType());
 
+            await stateManager.SetState(runContext, ExecutionState.Executing);
+
             await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
 
             stoppingToken.ThrowIfCancellationRequested();
 
+            await stateManager.SetState(runContext, ExecutionState.Completed);
+
             await AfterJobCompletionTask(null, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            await stateManager.SetState(runContext, ExecutionState.Completed, JobRunStatus.Cancelled);
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            // This part is only reached if the synchronous part of the job throws an exception
+            await stateManager.SetState(runContext, ExecutionState.Completed, JobRunStatus.Failed);
             await AfterJobCompletionTask(exc, default);
         }
         // This needs to be async otherwise it can deadlock or try to use the disposed scope, maybe it needs to create its own serviceScope

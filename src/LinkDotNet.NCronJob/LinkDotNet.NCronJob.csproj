@@ -58,9 +58,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
-		<PackageReference Include="Cronos" Version="0.8.4" />
-		<PackageReference Include="Polly" Version="8.3.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" />
+		<PackageReference Include="Cronos" />
+    <PackageReference Include="Polly" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\LinkDotNet.NCronJob.Shared\LinkDotNet.NCronJob.Shared.csproj" />
 	</ItemGroup>
 
 </Project>

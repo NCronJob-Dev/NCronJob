@@ -30,6 +30,7 @@ internal sealed partial class JobRegistry
 
     /// <inheritdoc />
     public void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
+        where TJob : IJob
     {
         token.Register(() => LogCancellationRequested(parameter));
 
