@@ -50,9 +50,9 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected ServiceProvider CreateServiceProvider() => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
-    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, int timeOut = 200000)
+    protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, TimeSpan? timeOut = null)
     {
-        using var timeoutTcs = new CancellationTokenSource(TimeSpan.FromSeconds(timeOut));
+        using var timeoutTcs = new CancellationTokenSource(timeOut ?? TimeSpan.FromSeconds(5));
         try
         {
             await Task.WhenAll(GetCompletionJobs(jobRuns, timeoutTcs.Token));

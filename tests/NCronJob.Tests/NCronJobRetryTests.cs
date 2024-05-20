@@ -62,7 +62,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // 1 initial + 2 retries, all 3 failed; 20 seconds timeout because retries take time
-        var jobFinished = await WaitForJobsOrTimeout(3, 20);
+        var jobFinished = await WaitForJobsOrTimeout(3, TimeSpan.FromSeconds(20));
         jobFinished.ShouldBeTrue();
 
         FailingJobRetryTwice.Success.ShouldBeFalse();
