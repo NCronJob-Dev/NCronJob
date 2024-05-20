@@ -4,14 +4,14 @@ namespace NCronJobSample;
 
 
 // This is a test for the StateChangedAsync event in JobStateManager
-public class StateChangeObserver
+internal class StateChangeObserver
 {
-    private readonly JobStateManager jobStateManager;
+    private readonly IMonitorStateCronJobs jobStateManager;
 
-    public StateChangeObserver(JobStateManager jobStateManager)
+    public StateChangeObserver(IMonitorStateCronJobs jobStateManager)
     {
         this.jobStateManager = jobStateManager;
-        this.jobStateManager.StateChangedAsync += HandleStateChangeAsync;
+        this.jobStateManager.JobStatusChanged += HandleStateChangeAsync;
     }
 
     private async Task HandleStateChangeAsync(JobStateMessage message)

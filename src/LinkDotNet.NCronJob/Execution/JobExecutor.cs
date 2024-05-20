@@ -89,14 +89,7 @@ internal sealed partial class JobExecutor : IDisposable
 
             await stateManager.SetState(runContext, ExecutionState.Executing);
 
-            await retryHandler.ExecuteAsync(async token =>
-            {
-                if (runContext.Attempts > 1)
-                {
-                    await stateManager.SetState(runContext, ExecutionState.Retrying);
-                }
-                await job.RunAsync(runContext, token);
-            }, runContext, stoppingToken);
+            await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
 
             stoppingToken.ThrowIfCancellationRequested();
 

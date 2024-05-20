@@ -2,6 +2,7 @@ using System.Reflection;
 using Polly;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using LinkDotNet.NCronJob.Messaging.States;
 
 namespace LinkDotNet.NCronJob;
 
@@ -37,28 +38,32 @@ internal sealed partial class RetryHandler : IRetryHandler
 {
     private readonly ILogger<RetryHandler> logger;
     private readonly IServiceProvider serviceProvider;
+    private readonly JobStateManager stateManager;
 
     public RetryHandler(
         ILogger<RetryHandler> logger,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        JobStateManager stateManager)
     {
         this.logger = logger;
         this.serviceProvider = serviceProvider;
+        this.stateManager = stateManager;
     }
 
     public async Task ExecuteAsync(Func<CancellationToken, Task> operation, JobExecutionContext runContext, CancellationToken cancellationToken)
     {
         try
         {
-            var jobDefinition = runContext.JobDefinition;
-            var retryPolicy = jobDefinition.RetryPolicy?.CreatePolicy(serviceProvider) ?? Policy.NoOpAsync();
+            var jobDefinition = runContext.JobDefinition as JobDefinition;
+            var retryPolicy = jobDefinition!.RetryPolicy?.CreatePolicy(serviceProvider) ?? Policy.NoOpAsync();
 
             // Execute the operation using the given retry policy
-            await retryPolicy.ExecuteAsync((ct) =>
+            await retryPolicy.ExecuteAsync(async (ct) =>
             {
                 runContext.Attempts++;
                 if (runContext.Attempts > 1)
                 {
+                    await stateManager.SetState(runContext, ExecutionState.Retrying);
                     LogRetryAttempt(runContext.Attempts, jobDefinition.JobName);
                 }
                 return operation(ct);

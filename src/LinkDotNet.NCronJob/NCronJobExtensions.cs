@@ -42,6 +42,8 @@ public static class NCronJobExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IMessageHub, MessageHub>();
         services.TryAddSingleton<JobStateManager>();
+        services.TryAddSingleton<IMonitorStateCronJobs>(sp => sp.GetRequiredService<JobStateManager>());
+        
 
         return services;
     }

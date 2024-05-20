@@ -1,61 +1,89 @@
 namespace LinkDotNet.NCronJob.Messaging.States;
+
 public enum ExecutionState
 {
     /// <summary>
-    /// Indicates the execution has not started.
+    /// Indicates that the job has not been started yet.
     /// </summary>
     NotStarted,
 
     /// <summary>
-    /// Indicates the execution is initializing.
+    /// Indicates that the job is in the process of initializing, setting up resources or preconditions before execution.
     /// </summary>
     Initializing,
 
     /// <summary>
-    /// Indicates the execution is running.
+    /// Indicates that the job is currently executing.
     /// </summary>
     Executing,
 
     /// <summary>
-    /// Indicates the execution is retrying.
+    /// Indicates that the job execution is being retried following a failure.
     /// </summary>
     Retrying,
 
     /// <summary>
-    /// Indicates the execution has completed.
+    /// Indicates that the job has completed its execution, regardless of the outcome (success or failure).
     /// </summary>
     Completed
 }
 
+
 public enum JobRunStatus
 {
+    /// <summary>
+    /// Indicates that the job execution failed.
+    /// </summary>
     Failed,
-    Completed, // this status represents a FinalState
+
+    /// <summary>
+    /// Indicates that the job completed successfully. This status represents a final state.
+    /// </summary>
+    Completed,
+
+    /// <summary>
+    /// Indicates that the job is currently in progress.
+    /// </summary>
     InProgress,
+
+    /// <summary>
+    /// Indicates that the job is queued for execution but has not started yet.
+    /// </summary>
     Enqueued,
+
+    /// <summary>
+    /// Indicates that the job execution was cancelled, typically by a user action or system condition.
+    /// </summary>
     Cancelled,
+
+    /// <summary>
+    /// Indicates that the job was skipped, possibly due to conditions that prevent its execution.
+    /// </summary>
     Skipped
 }
 
+/// <summary>
+/// Represents the final state of a job run, providing a conclusive status post-execution.
+/// </summary>
 public enum FinalState
 {
     /// <summary>
-    /// Indicates the run has not completed, so there is no <see cref="FinalState"/> yet.
+    /// Indicates that the job run has not yet completed, and no final state can be determined.
     /// </summary>
     NotComplete,
 
     /// <summary>
-    /// Indicates the run completed successfully.
+    /// Indicates that the job run completed successfully and met all its execution criteria without errors.
     /// </summary>
     Successful,
 
     /// <summary>
-    /// Indicates the run exceeded the item failure threshold and stopped running, terminating in a failed state.
+    /// Indicates that the job run failed to complete successfully. This includes scenarios where retries are enabled but the job exceeded the failure threshold.
     /// </summary>
     Failed,
 
     /// <summary>
-    /// Indicates the run was cancelled by a user and stopped running.
+    /// Indicates that the job run was cancelled before it could complete, typically due to user intervention or system shutdown.
     /// </summary>
     Cancelled
 }

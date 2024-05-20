@@ -72,7 +72,7 @@ internal sealed class MessageHub : IMessageHub
         }
     }
 
-    private class Subscription(Type type, Task processingTask, CancellationTokenSource cancellationTokenSource)
+    private sealed class Subscription(Type type, Task processingTask, CancellationTokenSource cancellationTokenSource)
     {
         public Type Type { get; } = type;
         public Task ProcessingTask { get; } = processingTask;

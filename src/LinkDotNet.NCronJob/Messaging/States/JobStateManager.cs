@@ -6,12 +6,12 @@ namespace LinkDotNet.NCronJob.Messaging.States;
 /// 
 /// </summary>
 /// <param name="messageHub"></param>
-public sealed class JobStateManager(IMessageHub messageHub)
+internal sealed class JobStateManager(IMessageHub messageHub): IMonitorStateCronJobs
 {
     /// <summary>
     /// 
     /// </summary>
-    public event Func<JobStateMessage, Task>? StateChangedAsync;
+    public event Func<JobStateMessage, Task>? JobStatusChanged;
 
     private readonly ConcurrentDictionary<Guid, ExecutionState> currentStates = new();
 
@@ -24,19 +24,35 @@ public sealed class JobStateManager(IMessageHub messageHub)
     /// <param name="status"></param>
     public async Task SetState(JobExecutionContext jobContext, ExecutionState newState, JobRunStatus? status = null)
     {
-        if (currentStates.TryGetValue(jobContext.Id, out var existingState))
+        switch (newState)
+        {
+            //TODO: Need State Machine to replace this logic
+            case ExecutionState.Executing:
+                jobContext.ActualStartTime = DateTimeOffset.Now;
+                // TODO: jobEntry needs a redesign to allow for mutating objects
+                //jobEntry = jobEntry with { JobContext = jobEntry.JobContext with { ActualStartTime = DateTimeOffset.Now } };
+                break;
+            case ExecutionState.Completed:
+                jobContext.End = DateTimeOffset.Now;
+                break;
+        }
+
+        var id = jobContext.JobDefinition.JobId;
+        if (currentStates.TryGetValue(id, out var existingState))
         {
             // If the state exists and is different, update and notify
             if (existingState != newState)
             {
-                currentStates[jobContext.Id] = newState;
+                currentStates[id] = newState;
+                jobContext.CurrentState = newState;
                 await NotifyStateChange(new JobStateMessage(jobContext, newState, status));
             }
         }
         else
         {
             // If the state does not exist, add it and notify as this is the first setting
-            currentStates[jobContext.Id] = newState;
+            currentStates[id] = newState;
+            jobContext.CurrentState = newState;
             await NotifyStateChange(new JobStateMessage(jobContext, newState, status));
         }
     }
@@ -44,9 +60,9 @@ public sealed class JobStateManager(IMessageHub messageHub)
     private async Task NotifyStateChange(JobStateMessage message)
     {
         await messageHub.PublishAsync(message);
-        if (StateChangedAsync is not null)
+        if (JobStatusChanged is not null)
         {
-            foreach (var handler in StateChangedAsync.GetInvocationList().Cast<Func<JobStateMessage, Task>>())
+            foreach (var handler in JobStatusChanged.GetInvocationList().Cast<Func<JobStateMessage, Task>>())
             {
                 try
                 {

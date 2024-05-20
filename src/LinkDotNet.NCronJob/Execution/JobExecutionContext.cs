@@ -1,3 +1,4 @@
+using LinkDotNet.NCronJob.Messaging.States;
 
 namespace LinkDotNet.NCronJob;
 
@@ -31,7 +32,11 @@ public sealed record JobExecutionContext
     /// Retries will only occur when <see cref="RetryPolicyAttribute{T}"/> is set on the Job.
     /// </summary>
     public int Attempts { get; internal set; }
-
+    public DateTimeOffset ScheduledStartTime { get; set; }
+    public DateTimeOffset ActualStartTime { get; set; }
+    public DateTimeOffset? End { get; internal set; }
+    public TimeSpan? ExecutionTime => End?.Subtract(ActualStartTime);
+    public ExecutionState CurrentState { get; set; } = ExecutionState.NotStarted;
     /// <summary>The Job Definition of the Job Run</summary>
     internal JobDefinition JobDefinition { get; init; }
 

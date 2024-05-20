@@ -3,7 +3,7 @@ namespace LinkDotNet.NCronJob.Messaging.States;
 /// <summary>
 /// 
 /// </summary>
-public sealed class JobStateMessage
+internal sealed class JobStateMessage
 {
     public JobExecutionContext JobContext { get; set; }
     public ExecutionState State { get; set; }
