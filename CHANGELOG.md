@@ -10,8 +10,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 - New minimal API to register jobs. By [@falvarez1](https://github.com/falvarez1)
 Jobs can be defined via a simple lambda:
 ```csharp
-builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
+builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider) =>
 {
+    var logger = factory.CreateLogger("My Job");
     logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
 }, "*/5 * * * * *");
 ```
