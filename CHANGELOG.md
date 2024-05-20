@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Regex Indicator for cron expressions (IDE support)
+
 ## [2.4.4] - 2024-05-20
 
 ### Added

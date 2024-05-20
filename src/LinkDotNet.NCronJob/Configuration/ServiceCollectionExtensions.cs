@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LinkDotNet.NCronJob;
@@ -5,7 +6,7 @@ namespace LinkDotNet.NCronJob;
 /// <summary>
 /// Extensions for the <see cref="IServiceCollection"/> to add cron jobs.
 /// </summary>
-public static partial class ServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Adds a job using an anonymous delegate to the service collection that gets executed based on the given cron expression.
@@ -52,14 +53,8 @@ public static partial class ServiceCollectionExtensions
     ///     </example>
     /// </param>
     /// <returns>The modified service collection.</returns>
-    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression)
-    {
-        services.AddNCronJob(builder =>
-            builder.AddJob(jobDelegate, cronExpression)
-        );
-
-        return services;
-    }
+    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, [StringSyntax(StringSyntaxAttribute.Regex)] string cronExpression)
+        => services.AddNCronJob(builder => builder.AddJob(jobDelegate, cronExpression));
 }
 
 

@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace LinkDotNet.NCronJob;
 
 /// <summary>
@@ -18,7 +20,7 @@ public sealed class JobOptionBuilder
     /// </param>
     /// <param name="timeZoneInfo">Optional, provides the timezone that is used to evaluate the cron expression. Defaults to UTC.</param>
     /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder WithCronExpression(string cronExpression, bool? enableSecondPrecision = null, TimeZoneInfo? timeZoneInfo = null)
+    public ParameterBuilder WithCronExpression([StringSyntax(StringSyntaxAttribute.Regex)]string cronExpression, bool? enableSecondPrecision = null, TimeZoneInfo? timeZoneInfo = null)
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
