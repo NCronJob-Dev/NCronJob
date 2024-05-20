@@ -50,6 +50,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#3-register-the-service-and-the-job">3. Register the service and the job</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#too-complicated">Too complicated?</a>
+    </li>
     </ul>
                   </li>
               </ul>
@@ -68,6 +70,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../features/concurrency-control/">Concurrency control</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../features/retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/minimal-api/">Minimal API</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
@@ -114,7 +118,7 @@
 </code></pre></div>
 
 <p>Alternatively add the package reference to your <code>.csproj</code> file:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">&lt;PackageReference</span> <span class="na">Include=</span><span class="s">&quot;LinkDotNet.NCronJob&quot;</span> <span class="na">Version=</span><span class="s">&quot;2.3.2&quot;</span> <span class="nt">/&gt;</span>
+<div class="codehilite"><pre><span></span><code><span class="nt">&lt;PackageReference</span> <span class="na">Include=</span><span class="s">&quot;LinkDotNet.NCronJob&quot;</span> <span class="na">Version=</span><span class="s">&quot;2.4.4&quot;</span> <span class="nt">/&gt;</span>
 </code></pre></div>
 
 <h2 id="2-create-a-job">2. Create a job<a class="headerlink" href="#2-create-a-job" title="Permanent link">&para;</a></h2>
@@ -152,6 +156,16 @@
 </code></pre></div>
 
 <p>Now your <code>PrintHelloWorld</code> job will run every minute and log &ldquo;Hello World&rdquo; to the console. And that is all!</p>
+<h2 id="too-complicated">Too complicated?<a class="headerlink" href="#too-complicated" title="Permanent link">&para;</a></h2>
+<p>We also over a &ldquo;Minimal API&rdquo; that allows you to define jobs similiar to the Minimal API for Controllers.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">((</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">Program</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="n">TimeProvider</span><span class="w"> </span><span class="n">timeProvider</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Hello World - The current date and time is {Time}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">timeProvider</span><span class="p">.</span><span class="n">GetLocalNow</span><span class="p">());</span><span class="w"></span>
+<span class="p">},</span><span class="w"> </span><span class="s">&quot;*/5 * * * * *&quot;</span><span class="p">);</span><span class="w"></span>
+</code></pre></div>
+
+<p>The job will be defined &ldquo;inline&rdquo; and is capable of resolving services from the DI container.</p>
+<p>You can read more about this in the section <a href="../features/minimal-api/">Minimal API</a>.</p>
               
             </div>
           </div><footer>
