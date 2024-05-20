@@ -1,7 +1,5 @@
-using System.Reflection;
 using Polly;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LinkDotNet.NCronJob;
 

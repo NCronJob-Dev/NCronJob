@@ -1,7 +1,6 @@
 using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
 using System.Reflection;
 using System.Text;
 
@@ -51,10 +50,12 @@ public class NCronJobOptionBuilder
                                                 $"the global limit ({Settings.MaxDegreeOfParallelism}).");
         }
 
+        var attributes = new JobExecutionAttributes(typeof(T), null);
+
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobPolicyMetadata: attributes);
             Services.AddSingleton(entry);
         }
 

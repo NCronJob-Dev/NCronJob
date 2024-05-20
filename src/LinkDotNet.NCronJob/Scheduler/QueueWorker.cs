@@ -24,14 +24,14 @@ internal sealed partial class QueueWorker : BackgroundService
         JobQueue jobQueue,
         TimeProvider timeProvider,
         ConcurrencySettings concurrencySettings,
-        ILoggerFactory loggerFactory,
+        ILogger<QueueWorker> logger,
         IHostApplicationLifetime lifetime)
     {
         this.jobExecutor = jobExecutor;
         this.registry = registry;
         this.jobQueue = jobQueue;
         this.timeProvider = timeProvider;
-        logger = loggerFactory.CreateLogger<QueueWorker>();
+        this.logger = logger;
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
         semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
