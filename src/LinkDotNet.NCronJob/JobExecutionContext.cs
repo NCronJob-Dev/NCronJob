@@ -17,6 +17,12 @@ public sealed record JobExecutionContext
     }
 
     /// <summary>
+    /// Represents the context of a job execution.
+    /// </summary>
+    public JobExecutionContext(Type jobType, object? parameter)
+        => JobDefinition = new JobDefinition(jobType, parameter, null, null);
+
+    /// <summary>
     /// The Job Instance Identifier, generated once upon creation of the context.
     /// </summary>
     public Guid Id { get; } = Guid.NewGuid();

@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Readded public constructor for `JobExeuctionContext` to make it unit testable
+
 ### Added
 
 - Regex Indicator for cron expressions (IDE support)
