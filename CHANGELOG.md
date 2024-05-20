@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Retry/Concurrency Attributes where ignored
+
 ## [2.4.5] - 2024-05-20
 
 ### Fixed
