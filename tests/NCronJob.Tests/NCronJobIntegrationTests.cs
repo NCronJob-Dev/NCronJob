@@ -278,6 +278,27 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task ConcurrentJobConfigurationShouldBeRespected()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<ShortRunningJob>(p => p
+            .WithCronExpression("* * * * *")
+            .And.WithCronExpression("* * * * *")
+            .And.WithCronExpression("* * * * *")
+            .And.WithCronExpression("* * * * *")));
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        // Wait 2 instances at the same time
+        (await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(50))).ShouldBeTrue();
+        // But not another instance
+        (await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(50))).ShouldBeFalse();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();
@@ -297,6 +318,24 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             {
                 context.Output = "Job Completed";
                 await writer.WriteAsync(context.Output, token);
+            }
+            catch (Exception ex)
+            {
+                await writer.WriteAsync(ex, token);
+            }
+        }
+    }
+
+    [SupportsConcurrency(2)]
+    private sealed class ShortRunningJob(ChannelWriter<object> writer) : IJob
+    {
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        {
+            try
+            {
+                context.Output = "Job Completed";
+                await writer.WriteAsync(context.Output, token);
+                await Task.Delay(200, token);
             }
             catch (Exception ex)
             {
