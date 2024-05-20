@@ -143,7 +143,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
     {
         var fakeTimer = new FakeTimeProvider();
-        fakeTimer.Advance(TimeSpan.FromSeconds(1));
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(
             p => p.WithCronExpression("* * * * * *", true).And.WithCronExpression("* * * * *")));
@@ -289,6 +288,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         public ConcurrentBag<Guid> Guids { get; } = [];
     }
 
+    [SupportsConcurrency(2)]
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token)
