@@ -18,7 +18,7 @@ internal class DynamicJobFactory : IJob
         this.serviceProvider = serviceProvider;
         parameters = jobAction.Method.GetParameters();
         serviceResolvers = BuildServiceResolvers();
-        
+
         invoker = BuildInvoker(jobAction);
 
         Func<IServiceProvider, object>?[] BuildServiceResolvers() =>
@@ -43,18 +43,17 @@ internal class DynamicJobFactory : IJob
             var lambda = Expression.Lambda<Func<object[], Task>>(call, param);
             return lambda.Compile();
         }
-        else if (returnType == typeof(void))
+
+        if (returnType == typeof(void))
         {
             var lambda = Expression.Lambda<Action<object[]>>(Expression.Block(call, Expression.Default(typeof(void))), param);
             var action = lambda.Compile();
             return objects => { action(objects); return Task.CompletedTask; };
         }
-        else
-        {
-            throw new InvalidOperationException("The job action must return a Task or void type.");
-        }
+
+        throw new InvalidOperationException("The job action must return a Task or void type.");
     }
-    
+
     public Task RunAsync(JobExecutionContext context, CancellationToken token)
     {
         var arguments = new object[parameters.Length];

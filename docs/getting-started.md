@@ -56,3 +56,17 @@ Services.AddNCronJob(options =>
 ```
 
 Now your `PrintHelloWorld` job will run every minute and log "Hello World" to the console. And that is all!
+
+## Too complicated?
+We also over a "Minimal API" that allows you to define jobs similiar to the Minimal API for Controllers.
+
+```csharp
+builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
+{
+    logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
+}, "*/5 * * * * *");
+```
+
+The job will be defined "inline" and is capable of resolving services from the DI container.
+
+You can read more about this in the section [Minimal API](features/minimal-api.md).

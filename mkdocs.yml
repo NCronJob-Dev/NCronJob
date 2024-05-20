@@ -35,6 +35,7 @@ nav:
     - Triggering instant jobs: features/instant-jobs.md
     - Concurrency control: features/concurrency-control.md
     - Retry support: features/retry-support.md
+    - Minimal API: features/minimal-api.md
   - Migration:
     - v2 Migration Guide: migration/v2.md
   - Advanced:
