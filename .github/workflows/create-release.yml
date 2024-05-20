@@ -95,7 +95,7 @@ jobs:
 
     - name: Create release package
       run: |
-          dotnet pack -c RELEASE -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
+          dotnet pack -c RELEASE src/LinkDotNet.NCronJob/LinkDotNet.NCronJob.csproj -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
 
     - name: Upload to nuget
       run: |
