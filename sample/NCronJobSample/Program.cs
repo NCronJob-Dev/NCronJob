@@ -1,4 +1,5 @@
 using LinkDotNet.NCronJob;
+using LinkDotNet.NCronJob.Registry;
 using NCronJobSample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +14,7 @@ builder.Services.AddLogging();
 builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/20 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+        p.WithCronExpression("*/4 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
 
     // Execute the job every 2 minutes
     .AddJob<PrintHelloWorldJob>(p =>
@@ -31,6 +32,16 @@ builder.Services.AddNCronJob(n => n
         p.WithCronExpression("*/5 * * * * *"))
 );
 
+builder.Services.AddNCronJob(
+    [SupportsConcurrency(2)]
+async (ILogger<Program> logger, CancellationToken ct) =>
+    {
+        logger.LogInformation("This is a very long running Job");
+        await Task.Delay(500000, ct);
+    }
+    , "*/6 * * * * *");
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -42,17 +53,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
-{
-    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
-})
+app.MapPostToNCronJob<PrintHelloWorldJob>("/trigger-instant", "Hello from instant job!")
     .WithName("TriggerInstantJob")
     .WithOpenApi();
 
-app.MapPost("/trigger-instant-concurrent", (IInstantJobRegistry instantJobRegistry) =>
-{
-    instantJobRegistry.RunInstantJob<ConcurrentTaskExecutorJob>();
-})
+app.MapPostToNCronJob<ConcurrentTaskExecutorJob>("/trigger-instant-concurrent")
     .WithSummary("Triggers a job that can run concurrently with other instances.")
     .WithDescription(
         """

@@ -25,7 +25,8 @@ internal sealed record JobDefinition(
     public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
 
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
-    
+
+    private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
     public RetryPolicyAttribute? RetryPolicy => JobPolicyMetadata?.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata?.ConcurrencyPolicy;
 }

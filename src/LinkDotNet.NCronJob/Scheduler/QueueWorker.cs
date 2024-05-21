@@ -6,6 +6,7 @@ namespace LinkDotNet.NCronJob;
 
 internal sealed partial class QueueWorker : BackgroundService
 {
+    private const int GRACE_PERIOD_SECONDS = 5;
     private readonly JobExecutor jobExecutor;
     private readonly JobRegistry registry;
     private readonly JobQueue jobQueue;
@@ -73,6 +74,11 @@ internal sealed partial class QueueWorker : BackgroundService
 
                 if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
                 {
+                    if (HandleJobReadyForExecution(nextJob, priorityTuple))
+                    {
+                        continue;
+                    }
+
                     await WaitForNextExecution(priorityTuple, stopToken);
 
                     if (stopToken.IsCancellationRequested)
@@ -98,7 +104,7 @@ internal sealed partial class QueueWorker : BackgroundService
                     }
                     else
                     {
-                        await Task.WhenAny(runningTasks);
+                        await Task.WhenAny(runningTasks.Concat([Task.Delay(1000, stopToken)]));
                     }
                 }
 
@@ -115,6 +121,28 @@ internal sealed partial class QueueWorker : BackgroundService
             LogCancellationOperationInJob();
         }
     }
+
+    private bool HandleJobReadyForExecution(JobDefinition nextJob, (DateTimeOffset NextRunTime, int Priority) priorityTuple)
+    {
+        var utcNow = timeProvider.GetUtcNow();
+        return (priorityTuple.NextRunTime <= utcNow || IsCurrentlyRunning(nextJob))
+               && TryHandleJobGracePeriodExceeded(utcNow, nextJob, priorityTuple.NextRunTime);
+    }
+
+    private bool TryHandleJobGracePeriodExceeded(DateTimeOffset checkTime, JobDefinition nextJob, DateTimeOffset nextRunTime)
+    {
+        if ((checkTime - nextRunTime).TotalSeconds > GRACE_PERIOD_SECONDS)
+        {
+            LogDequeuingJobBeyondGracePeriod(nextJob.JobName);
+            jobQueue.Dequeue();
+            ScheduleJob(nextJob);
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsCurrentlyRunning(JobDefinition job) => runningJobCounts.TryGetValue(job.JobFullName, out var count) && count > 0;
+
 
     private void RescheduleJobs(object? sender, EventArgs e)
     {
@@ -133,19 +161,15 @@ internal sealed partial class QueueWorker : BackgroundService
     private void ScheduleJob(JobDefinition job)
     {
         if (job.CronExpression is null)
-        {
             return;
-        }
 
         var utcNow = timeProvider.GetUtcNow();
         var nextRunTime = job.CronExpression!.GetNextOccurrence(utcNow, job.TimeZone);
 
         if (nextRunTime.HasValue)
         {
+            jobQueue.Enqueue(job, (nextRunTime.Value, (int)job.Priority));
             LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);
-            // higher means more priority
-            var priorityValue = (int)job.Priority;
-            jobQueue.Enqueue(job, (nextRunTime.Value, priorityValue));
         }
     }
 

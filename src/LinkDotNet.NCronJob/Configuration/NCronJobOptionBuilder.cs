@@ -1,4 +1,5 @@
 using Cronos;
+using LinkDotNet.NCronJob.Registry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
@@ -42,7 +43,8 @@ public class NCronJobOptionBuilder
         options?.Invoke(builder);
         var jobOptions = builder.GetJobOptions();
 
-        var concurrencyAttribute = typeof(T).GetCustomAttribute<SupportsConcurrencyAttribute>();
+        var cachedJobAttributes = JobAttributeCache.GetJobExecutionAttributes(typeof(T));
+        var concurrencyAttribute = cachedJobAttributes.ConcurrencyPolicy;
         if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > Settings.MaxDegreeOfParallelism)
         {
             throw new InvalidOperationException($"The MaxDegreeOfParallelism for {typeof(T).Name} " +
@@ -50,12 +52,10 @@ public class NCronJobOptionBuilder
                                                 $"the global limit ({Settings.MaxDegreeOfParallelism}).");
         }
 
-        var attributes = new JobExecutionAttributes(typeof(T), null);
-
         foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
         {
             var cron = GetCronExpression(option);
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobPolicyMetadata: attributes);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
             Services.AddSingleton(entry);
         }
 
@@ -105,7 +105,7 @@ public class NCronJobOptionBuilder
 
         var jobName = GenerateJobName(jobDelegate);
 
-        var jobPolicyMetadata = new JobExecutionAttributes(jobType, jobDelegate);
+        var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
             JobName: jobName,
             JobPolicyMetadata: jobPolicyMetadata);

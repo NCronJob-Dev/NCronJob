@@ -60,10 +60,22 @@ internal sealed partial class JobExecutor : IDisposable
         await ExecuteJob(runContext, job, scope, stopToken);
     }
 
-    private static IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition run) =>
-        typeof(DynamicJobFactory).IsAssignableFrom(run.Type)
-            ? (IJob)scopedServiceProvider.GetRequiredKeyedService(run.Type, run.JobName)
-            : (IJob)scopedServiceProvider.GetRequiredService(run.Type);
+    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition run)
+    {
+        if (typeof(DynamicJobFactory).IsAssignableFrom(run.Type))
+        {
+            return (IJob)scopedServiceProvider.GetRequiredKeyedService(run.Type, run.JobName);
+        }
+
+        var job = scopedServiceProvider.GetService(run.Type);
+        if (job != null)
+            return (IJob)job;
+
+        LogUnregisteredJob(run.Type);
+        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, run.Type);
+
+        return (IJob)job;
+    }
 
     public void Dispose()
     {

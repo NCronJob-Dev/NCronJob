@@ -21,4 +21,8 @@ internal sealed partial class QueueWorker
 
     [LoggerMessage(LogLevel.Trace, "Operation was cancelled.")]
     private partial void LogCancellationOperationInJob();
+
+    [LoggerMessage(LogLevel.Trace, "Dequeuing job {JobName} as it is beyond the grace period.")]
+    private partial void LogDequeuingJobBeyondGracePeriod(string jobName);
+    
 }
