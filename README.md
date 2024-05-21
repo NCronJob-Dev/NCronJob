@@ -26,7 +26,7 @@ jobs:
 1. Instant jobs - just run a job right away (or with a small delay; or with a given date and time)
 2. Cron jobs - schedule a job using a cron expression
 
-The whole documentation can be found here: [NCronJob Documentation](https://linkdotnet.github.io/NCronJob/)
+The whole documentation can be found here: [NCronJob Documentation](https://ncronjob-dev.github.io/NCronJob/)
 
 - [NCronJob](#ncronjob)
   - [Features](#features)
