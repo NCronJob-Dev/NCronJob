@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://linkdotnet.github.io/NCronJob/features/instant-jobs/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://ncronjob-dev.github.io/NCronJob/features/instant-jobs/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
     <title>Triggering instant jobs - NCronJob</title>
     <link rel="stylesheet" href="../../css/theme.css" />
@@ -65,6 +65,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#starting-a-job-at-a-specific-date-and-time">Starting a job at a specific date and time</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#priority">Priority</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../concurrency-control/">Concurrency control</a>
@@ -103,7 +105,7 @@
           <li class="breadcrumb-item">Features</li>
       <li class="breadcrumb-item active">Triggering instant jobs</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/linkdotnet/NCronJob/edit/main/docs/features/instant-jobs.md">Edit on linkdotnet/NCronJob</a>
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/features/instant-jobs.md">Edit on NCronJob-Dev/NCronJob</a>
     </li>
   </ul>
   <hr/>
@@ -180,6 +182,9 @@ So also CRON jobs can be triggered instantly.</p>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
+
+<h2 id="priority">Priority<a class="headerlink" href="#priority" title="Permanent link">&para;</a></h2>
+<p>Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).</p>
               
             </div>
           </div><footer>
@@ -192,7 +197,7 @@ So also CRON jobs can be triggered instantly.</p>
 
   <div role="contentinfo">
     <!-- Copyright etc -->
-      <p>2024 <a href="https://github.com/linkdotnet">linkdotnet</a>.</p>
+      <p>2024 <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
   </div>
 
   Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
@@ -209,7 +214,7 @@ So also CRON jobs can be triggered instantly.</p>
   <span class="rst-current-version" data-toggle="rst-current-version">
     
         <span>
-          <a href="https://github.com/linkdotnet/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> linkdotnet/NCronJob</a>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
         </span>
     
     

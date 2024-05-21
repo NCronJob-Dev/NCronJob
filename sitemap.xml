@@ -1,67 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/getting-started/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/getting-started/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/advanced/global-concurrency/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/advanced/global-concurrency/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/advanced/log-level/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/advanced/log-level/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/concurrency-control/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/concurrency-control/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/define-and-schedule-jobs/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/define-and-schedule-jobs/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/instant-jobs/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/instant-jobs/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/minimal-api/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/minimal-api/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/multiple-cron-expressions/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/multiple-cron-expressions/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/notifications/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/notifications/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/parameters/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/parameters/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/features/retry-support/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/features/retry-support/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://linkdotnet.github.io/NCronJob/migration/v2/</loc>
+         <loc>https://ncronjob-dev.github.io/NCronJob/migration/v2/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
