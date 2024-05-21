@@ -29,7 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\LinkDotNet.NCronJob\LinkDotNet.NCronJob.csproj" />
+      <ProjectReference Include="..\..\src\NCronJob\NCronJob.csproj" />
     </ItemGroup>
 
 </Project>

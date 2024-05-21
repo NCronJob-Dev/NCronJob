@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
-using TaskExtensions = LinkDotNet.NCronJob.TaskExtensions;
-
 namespace NCronJob.Tests;
 
 public class TaskExtensionsTests

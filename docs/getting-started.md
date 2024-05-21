@@ -3,18 +3,18 @@
 Using **NCronJob** is simple and easy. Just follow the steps below to get started.
 
 ## 1. Install the package
-[![NuGet](https://img.shields.io/nuget/vpre/LinkDotNet.NCronJob.svg)](https://www.nuget.org/packages/LinkDotNet.NCronJob)
+[![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 
 Install the latest stable version of the package via NuGet:
 
 ```bash
-dotnet add package LinkDotNet.NCronJob
+dotnet add package NCronJob
 ```
 
 Alternatively add the package reference to your `.csproj` file:
 
 ```xml
-<PackageReference Include="LinkDotNet.NCronJob" Version="#{version}#" />
+<PackageReference Include="NCronJob" Version="#{version}#" />
 ```
 
 ## 2. Create a job

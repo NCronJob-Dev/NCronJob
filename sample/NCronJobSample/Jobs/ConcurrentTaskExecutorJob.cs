@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using LinkDotNet.NCronJob;
+using NCronJob;
 
 namespace NCronJobSample;
 

@@ -1,4 +1,4 @@
-using LinkDotNet.NCronJob;
+using NCronJob;
 using Shouldly;
 
 namespace NCronJob.Tests;

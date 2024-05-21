@@ -7,9 +7,14 @@
   <br>
 </p>
 
-[![.NET](https://github.com/linkdotnet/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/linkdotnet/NCronJob/actions/workflows/dotnet.yml)
-[![NuGet](https://img.shields.io/nuget/dt/LinkDotNet.NCronJob.svg)](https://www.nuget.org/packages/LinkDotNet.NCronJob)
-[![NuGet](https://img.shields.io/nuget/vpre/LinkDotNet.NCronJob.svg)](https://www.nuget.org/packages/LinkDotNet.NCronJob)
+# 📣ANNOUNCEMENT📣
+The library moved from `LinkDotNet.NCronJob` to just `NCronJob`!
+Please uninstall the old package and install the new one.
+
+
+[![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
+[![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
+[![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 
 # NCronJob
 
@@ -78,7 +83,7 @@ With this simple lambda, you can define a job that runs every 5 seconds. Pass in
 1. Import the namespace (or let your IDE do the dirty work)
 
 ```csharp
-using LinkDotNet.NCronJob;
+using NCronJob;
 ```
 
 2. Create a job
@@ -134,9 +139,9 @@ public class MyService
 
 ## Support & Contributing
 
-Thanks to all [contributors](https://github.com/linkdotnet/NCronJob/graphs/contributors) and people that are creating
+Thanks to all [contributors](https://github.com/NCronJob-Dev/NCronJob/graphs/contributors) and people that are creating
 bug-reports and valuable input:
 
-<a href="https://github.com/linkdotnet/NCronJob/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=linkdotnet/NCronJob" alt="Supporters" />
+<a href="https://github.com/NCronJob-Dev/NCronJob/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=NCronJob-Dev/NCronJob" alt="Supporters" />
 </a>

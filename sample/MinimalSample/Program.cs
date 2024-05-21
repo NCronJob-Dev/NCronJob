@@ -1,4 +1,4 @@
-using LinkDotNet.NCronJob;
+using NCronJob;
 
 var builder = Host.CreateApplicationBuilder(args);
 

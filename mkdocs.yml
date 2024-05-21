@@ -1,9 +1,9 @@
 site_name: NCronJob
-site_url: https://linkdotnet.github.io/NCronJob/
+site_url: https://ncronjob-dev.github.io/NCronJob/
 site_description: A simple and powerful job scheduler.
 docs_dir: docs
-repo_name: linkdotnet/NCronJob
-repo_url: https://github.com/linkdotnet/NCronJob
+repo_name: NCronJob-Dev/NCronJob
+repo_url: https://github.com/NCronJob-Dev/NCronJob
 edit_uri: edit/main/docs/
 theme:
   name: readthedocs
@@ -47,7 +47,7 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/linkdotnet/NCronJob
+      link: https://github.com/NCronJob-Dev/NCronJob
 
 
-copyright: 2024 <a href="https://github.com/linkdotnet">linkdotnet</a>.
+copyright: 2024 <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.

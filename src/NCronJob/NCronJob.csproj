@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>NCronJob</RootNamespace>
+	</PropertyGroup>
+
+	<PropertyGroup Label="NuGet">
+		<PackageId>NCronJob</PackageId>
+		<Title>NCronJob</Title>
+		<Description>
+			A Job Scheduler sitting on top of `IHostedService` in dotnet.
+
+			Often times one finds themself between the simplicisty of the `BackgroundService`/`IHostedService` and the complexity of a full blown `Hangfire` or `Quartz` scheduler.
+			This library aims to fill that gap by providing a simple and easy to use job scheduler that can be used in any dotnet application and feels "native".
+		</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/NCronJob-Dev/NCronJob</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/NCronJob-Dev/NCronJob</PackageProjectUrl>
+		<PackageTags>job-scheduler,jobscheduler,jobs,dotnet,csharp</PackageTags>
+		<Authors>Steven Giesel</Authors>
+		<Company>Giesel Engineering</Company>
+		<Copyright>Steven Giesel</Copyright>
+		<Product>NCronJob</Product>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<PackageIcon>logo_small.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageReleaseNotes>
+			Changes in NCronJob
+
+			#{RELEASE_NOTES}#
+
+			See the full changelog at https://github.com/NCronJob-Dev/NCronJob/releases
+		</PackageReleaseNotes>
+	</PropertyGroup>
+
+	<PropertyGroup Label="Build information">
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<OutputType>Library</OutputType>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\assets\logo_small.png" Pack="true" PackagePath="" Visible="false" />
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
+		<PackageReference Include="Cronos" Version="0.8.4" />
+		<PackageReference Include="Polly" Version="8.4.0" />
+	</ItemGroup>
+
+</Project>

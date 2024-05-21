@@ -15,7 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C0DF0EA7
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample", "sample", "{3E4D3870-EC64-4974-8FD2-F6B19E4A2BE6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinkDotNet.NCronJob", "src\LinkDotNet.NCronJob\LinkDotNet.NCronJob.csproj", "{904F2F27-6F69-48F8-8FC8-20014CA41636}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NCronJob", "src\NCronJob\NCronJob.csproj", "{904F2F27-6F69-48F8-8FC8-20014CA41636}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".items", ".items", "{AD5C8EA4-4506-449F-994C-C32F2C5236DC}"
 	ProjectSection(SolutionItems) = preProject

@@ -8,5 +8,5 @@ The **NCronJob** scheduler can be configured to log at a specific log level.
     "LogLevel": {
       "Default": "Information",
       "Microsoft.AspNetCore": "Warning",
-      "LinkDotNet.NCronJob": "Debug"
+      "NCronJob": "Debug"
 ```

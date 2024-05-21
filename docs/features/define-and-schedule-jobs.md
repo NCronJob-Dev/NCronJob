@@ -32,7 +32,7 @@ public class MyCronJob : IJob
 
 ### Registering the Job
 ```csharp
-using LinkDotNet.NCronJob;
+using NCronJob;
 
 // Inside your service configuration
 Services.AddNCronJob(options => 

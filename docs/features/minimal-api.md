@@ -36,7 +36,7 @@ Of course functions can be asynchrnous in nature as well:
 ```csharp
 builder.Services.AddNCronJob(async (HttpClient httpClient) =>
 {
-    using var response = await httpClient.GetAsync("https://github.com/linkdotnet/NCronJob");
+    using var response = await httpClient.GetAsync("https://github.com/NCronJob-Dev/NCronJob");
     var content = await response.Content.ReadAsStringAsync();
 }, "*/5 * * * * *");
 ```

@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Threading.Channels;
-using LinkDotNet.NCronJob;
+using NCronJob;
 using Polly;
 
 namespace NCronJob.Tests;

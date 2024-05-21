@@ -71,8 +71,8 @@ jobs:
     - name: Set git config
       if: github.event.inputs.prerelease == 'false'
       run: |
-        git config --local user.email "linkdotnet@action.com"
-        git config --local user.name "LinkDotNet Bot"
+        git config --local user.email "ncronjob-dev@action.com"
+        git config --local user.name "ncronjob-dev Bot"
 
     - name: Commit changes and push changes
       if: github.event.inputs.prerelease == 'false'
@@ -95,7 +95,7 @@ jobs:
 
     - name: Create release package
       run: |
-          dotnet pack -c RELEASE src/LinkDotNet.NCronJob/LinkDotNet.NCronJob.csproj -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
+          dotnet pack -c RELEASE src/NCronJob/NCronJob.csproj -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
 
     - name: Upload to nuget
       run: |
