@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.4.6] - 2024-05-21
+
 ### Fixed
 
 - Retry/Concurrency Attributes where ignored
@@ -229,7 +231,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.4.5...HEAD
+[unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.4.6...HEAD
+[2.4.6]: https://github.com/linkdotnet/NCronJob/compare/2.4.5...2.4.6
 [2.4.5]: https://github.com/linkdotnet/NCronJob/compare/2.4.4...2.4.5
 [2.4.4]: https://github.com/linkdotnet/NCronJob/compare/2.3.2...2.4.4
 [2.3.2]: https://github.com/linkdotnet/NCronJob/compare/2.3.1...2.3.2
