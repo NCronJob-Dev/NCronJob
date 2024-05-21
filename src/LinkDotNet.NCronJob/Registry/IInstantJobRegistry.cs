@@ -48,12 +48,18 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 {
     private readonly TimeProvider timeProvider;
     private readonly JobQueue jobQueue;
+    private readonly JobRegistry jobRegistry;
     private readonly ILogger<InstantJobRegistry> logger;
 
-    public InstantJobRegistry(TimeProvider timeProvider, JobQueue jobQueue,  ILogger<InstantJobRegistry> logger)
+    public InstantJobRegistry(
+        TimeProvider timeProvider,
+        JobQueue jobQueue,
+        JobRegistry jobRegistry,
+        ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueue = jobQueue;
+        this.jobRegistry = jobRegistry;
         this.logger = logger;
     }
 
@@ -72,6 +78,12 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     /// <inheritdoc />
     public void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default) where TJob : IJob
     {
+        if (!jobRegistry.IsJobRegistered<TJob>())
+        {
+            LogJobNotRegistered(typeof(TJob).Name);
+            throw new InvalidOperationException($"Job {typeof(TJob).Name} is not registered.");
+        }
+
         token.Register(() => LogCancellationRequested(parameter));
 
         var run = new JobDefinition(typeof(TJob), parameter, null, null, Priority: JobPriority.High) { CancellationToken = token };
@@ -84,4 +96,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
     [LoggerMessage(LogLevel.Debug, "Cancellation requested for CronRegistry {Parameter}.")]
     private partial void LogCancellationRequested(object? parameter);
+
+    [LoggerMessage(LogLevel.Error, "Job {JobName} is not registered.")]
+    private partial void LogJobNotRegistered(string jobName);
 }

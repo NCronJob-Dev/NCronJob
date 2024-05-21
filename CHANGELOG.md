@@ -10,6 +10,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 - Instant jobs are executed with the highest priority.
 
+### Fixed
+
+- If an instant job is executed that is not registered, it will throw an exception instead of silently ignoring it.
+
 ## [2.4.6] - 2024-05-21
 
 ### Fixed

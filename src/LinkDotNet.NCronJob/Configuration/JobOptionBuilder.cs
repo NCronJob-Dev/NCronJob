@@ -55,5 +55,5 @@ public sealed class JobOptionBuilder
         return precisionRequired;
     }
 
-    internal List<JobOption> GetJobOptions() => jobOptions;
+    internal List<JobOption> GetJobOptions() => jobOptions.Count > 0 ? jobOptions : [new JobOption()];
 }

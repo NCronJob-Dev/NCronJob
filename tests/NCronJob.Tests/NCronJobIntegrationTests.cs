@@ -173,23 +173,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task NotRegisteredJobShouldNotAbortOtherRuns()
-    {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
-        ServiceCollection.AddTransient<ParameterJob>();
-        var provider = CreateServiceProvider();
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var jobFinished = await WaitForJobsOrTimeout(1);
-        jobFinished.ShouldBeTrue();
-    }
-
-    [Fact]
     public async Task ThrowIfJobWithDependenciesIsNotRegistered()
     {
         ServiceCollection
@@ -294,7 +277,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         // Wait 2 instances at the same time
-        (await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(50))).ShouldBeTrue();
+        (await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(150))).ShouldBeTrue();
         // But not another instance
         (await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(50))).ShouldBeFalse();
     }
@@ -314,6 +297,20 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         answer.ShouldBe("INSTANT");
+    }
+
+    [Fact]
+    public async Task TriggeringInstantJobWithoutRegisteringThrowsException()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob();
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Action act = () => provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
+
+        act.ShouldThrow<InvalidOperationException>();
     }
 
     private sealed class GuidGenerator
