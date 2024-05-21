@@ -11,6 +11,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://linkdotnet.github.io/NCronJob/advanced/global-concurrency/</loc>
+         <lastmod>2024-05-21</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://linkdotnet.github.io/NCronJob/advanced/log-level/</loc>
          <lastmod>2024-05-21</lastmod>
          <changefreq>daily</changefreq>

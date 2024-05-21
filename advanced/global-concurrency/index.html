@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://linkdotnet.github.io/NCronJob/advanced/log-level/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://linkdotnet.github.io/NCronJob/advanced/global-concurrency/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Controlling the log level - NCronJob</title>
+    <title>Global Concurrency - NCronJob</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Controlling the log level";
-        var mkdocs_page_input_path = "advanced/log-level.md";
-        var mkdocs_page_url = "/NCronJob/advanced/log-level/";
+        var mkdocs_page_name = "Global Concurrency";
+        var mkdocs_page_input_path = "advanced/global-concurrency.md";
+        var mkdocs_page_url = "/NCronJob/advanced/global-concurrency/";
       </script>
     
     <!--[if lt IE 9]>
@@ -75,11 +75,13 @@
               </ul>
               <p class="caption"><span class="caption-text">Advanced</span></p>
               <ul class="current">
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Controlling the log level</a>
-    <ul class="current">
-    </ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../log-level/">Controlling the log level</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../global-concurrency/">Global Concurrency</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Global Concurrency</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-maxmimum">The Maxmimum</a>
+    </li>
+    </ul>
                   </li>
               </ul>
       </div>
@@ -97,9 +99,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Advanced</li>
-      <li class="breadcrumb-item active">Controlling the log level</li>
+      <li class="breadcrumb-item active">Global Concurrency</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/linkdotnet/NCronJob/edit/main/docs/advanced/log-level.md">Edit on linkdotnet/NCronJob</a>
+          <a href="https://github.com/linkdotnet/NCronJob/edit/main/docs/advanced/global-concurrency.md">Edit on linkdotnet/NCronJob</a>
     </li>
   </ul>
   <hr/>
@@ -107,21 +109,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="controlling-the-log-level">Controlling the log-level<a class="headerlink" href="#controlling-the-log-level" title="Permanent link">&para;</a></h1>
-<p>The <strong>NCronJob</strong> scheduler can be configured to log at a specific log level.</p>
-<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nt">&quot;Logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;LogLevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="nt">&quot;Default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Information&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="nt">&quot;Microsoft.AspNetCore&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Warning&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="nt">&quot;LinkDotNet.NCronJob&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Debug&quot;</span><span class="w"></span>
+                <h1 id="global-concurrency">Global Concurrency<a class="headerlink" href="#global-concurrency" title="Permanent link">&para;</a></h1>
+<p><strong>NCronJob</strong> utilisies a priority queue with a maximum amount of entries. That is, the queue will only hold and execute a maximum amount of jobs at any given time. This is to prevent the system from being overloaded with jobs.</p>
+<h2 id="the-maxmimum">The Maxmimum<a class="headerlink" href="#the-maxmimum" title="Permanent link">&para;</a></h2>
+<p>The global maximum of concurrent jobs is calculated as:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">maxDegreeOfParallelism</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Environment</span><span class="p">.</span><span class="n">ProcessorCount</span><span class="w"> </span><span class="p">*</span><span class="w"> </span><span class="m">4</span><span class="p">;</span><span class="w"></span>
 </code></pre></div>
+
+<p>If you have a CPU with 12 Cores (like a M2 Processor), the maximum amount of concurrent jobs will be 48. A CRON job is rescheduled after it has been executed. This means that the queue will always be filled with jobs that are ready to be executed. If that queue is full, no more jobs will be added to the queue until a job has been executed.</p>
+<p>A simple example: You have only one processor (therefore maximum 4 jobs executed at the same time) and a cron job that runs every minute. The job takes six minutes to complete. 
+So after four minutes the queue is full, and no more jobs will be added to the queue. After the fifth minute, the queue is still full, and no more jobs will be added to the queue. After the sixth minute, the first job is removed from the queue, and the next job is added to the queue. Therefore it can happen that jobs are skipped and not executed.</p>
+<p>The same applies to the <code>SupportsConcurrencyAttribute</code> discussed in: <em><a href="../../features/concurrency-control/">Concurrency Control</a></em></p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../migration/v2/" class="btn btn-neutral float-left" title="v2 Migration Guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../global-concurrency/" class="btn btn-neutral float-right" title="Global Concurrency">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../log-level/" class="btn btn-neutral float-left" title="Controlling the log level"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -149,10 +152,8 @@
         </span>
     
     
-      <span><a href="../../migration/v2/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../log-level/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
-    
-      <span><a href="../global-concurrency/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
