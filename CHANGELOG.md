@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Instant jobs are executed with the highest priority.
+
 ## [2.4.6] - 2024-05-21
 
 ### Fixed

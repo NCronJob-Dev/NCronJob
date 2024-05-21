@@ -80,3 +80,6 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
     return Results.Ok();
 });
 ```
+
+## Priority
+Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).

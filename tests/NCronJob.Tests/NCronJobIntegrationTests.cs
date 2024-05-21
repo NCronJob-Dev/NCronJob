@@ -299,6 +299,23 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         (await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(50))).ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task InstantJobHasHigherPriorityThanCronJob()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("CRON")));
+        ServiceCollection.AddSingleton(_ => new ConcurrencySettings { MaxDegreeOfParallelism = 1 });
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT");
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        answer.ShouldBe("INSTANT");
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();
