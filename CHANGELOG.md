@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.5.0] - 2024-05-21
+
 ### Changed
 
 - Instant jobs are executed with the highest priority.
@@ -239,7 +241,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/linkdotnet/NCronJob/compare/2.4.6...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.5.0...HEAD
+[2.5.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.4.6...2.5.0
 [2.4.6]: https://github.com/linkdotnet/NCronJob/compare/2.4.5...2.4.6
 [2.4.5]: https://github.com/linkdotnet/NCronJob/compare/2.4.4...2.4.5
 [2.4.4]: https://github.com/linkdotnet/NCronJob/compare/2.3.2...2.4.4
