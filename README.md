@@ -9,7 +9,7 @@
 
 # 📣ANNOUNCEMENT📣
 The library moved from `LinkDotNet.NCronJob` to just `NCronJob`!
-Please uninstall the old package and install the new one.
+Please uninstall the old package and install the new one. Here more about: https://github.com/NCronJob-Dev/NCronJob/discussions/66
 
 
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
