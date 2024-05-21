@@ -1,16 +1,15 @@
 <h1 align="center">NCronJob</h1>
 
 <p align="center">
-  <img src="assets/logo_small.png" alt="logo" width="120px" height="120px"/>
+  <img src="/assets/logo_small.png" alt="logo" width="120px" height="120px"/>
   <br>
   <em>Scheduling made easy</em>
   <br>
 </p>
 
 # 📣ANNOUNCEMENT📣
-The library moved from `LinkDotNet.NCronJob` to just `NCronJob`!
-Please uninstall the old package and install the new one. Here more about: https://github.com/NCronJob-Dev/NCronJob/discussions/66
-
+The library has moved from `LinkDotNet.NCronJob` to just `NCronJob`!
+Please uninstall the old package and install the new one. Learn more about it here: https://github.com/NCronJob-Dev/NCronJob/discussions/66
 
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
@@ -18,18 +17,18 @@ Please uninstall the old package and install the new one. Here more about: https
 
 # NCronJob
 
-A Job Scheduler sitting on top of `IHostedService` in dotnet.
+A Job Scheduler sitting on top of `IHostedService` in .NET.
 
-Often times one finds themself between the simplicity of the `BackgroundService`/`IHostedService` and the complexity of
-a full-blown `Hangfire` or `Quartz` scheduler.
-This library aims to fill that gap by providing a simple and easy to use job scheduler that can be used in any dotnet
+Often, one finds themselves between the simplicity of `BackgroundService`/`IHostedService` and the complexity of
+a full-blown scheduler like `Hangfire` or `Quartz`.
+This library aims to fill that gap by providing a simple and easy-to-use job scheduler that can be used in any .NET
 application and feels "native".
 
-So no need for setting up a database, just schedule your stuff right away! The library gives you two ways of scheduling
+There's no need to set up a database—just schedule your tasks right away! The library provides two ways of scheduling
 jobs:
 
-1. Instant jobs - just run a job right away (or with a small delay; or with a given date and time)
-2. Cron jobs - schedule a job using a cron expression
+1. Instant jobs - Run a job immediately (or with a small delay, or at a specific date and time).
+2. Cron jobs - Schedule a job using a cron expression.
 
 The whole documentation can be found here: [NCronJob Documentation](https://ncronjob-dev.github.io/NCronJob/)
 
@@ -37,20 +36,22 @@ The whole documentation can be found here: [NCronJob Documentation](https://ncro
   - [Features](#features)
   - [Not features](#not-features)
   - [Short example](#short-example)
+    - [Minimal Job API](#minimal-job-api)
+    - [Via the `IJob` interface](#via-the-ijob-interface)
   - [Triggering an instant job](#triggering-an-instant-job)
-  - [Support \& Contributing](#support--contributing)
+  - [Support & Contributing](#support--contributing)
 
 
 ## Features
 
-- [x] The ability to schedule jobs using a cron expression
-- [x] The ability to instantly run a job
-- [x] Parameterized jobs - instant as well as cron jobs!
-- [x] Integrated in ASP.NET - Access your DI container like you would in any other service
+- [x] The ability to schedule jobs using a cron expression.
+- [x] The ability to instantly run a job.
+- [x] Parameterized jobs - Instant as well as cron jobs!
+- [x] Integration with ASP.NET - Access your DI container like you would in any other service.
 - [x] Get notified when a job is done (either successfully or with an error).
 - [x] Retries - If a job fails, it will be retried.
 - [x] The job scheduler supports TimeZones. Defaults to UTC time.
-- [x] Minimal API for Jobs - implement jobs in an oneliner
+- [x] Minimal API for Jobs - Implement jobs in a one-liner.
 
 ## Not features
 
@@ -59,14 +60,15 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
 
 - [ ] Job persistence - Jobs are not persisted between restarts of the application.
 - [ ] Job history - There is no history of jobs that have been run.
-- [ ] Progress state - There is no way to track the progress of a job. The library will support notifying when a job is
+- [ ] Progress state - There is no way to track the progress of a job. The library supports notifying when a job is
   done, but not the progress of the job itself.
 
 ## Short example
 
-There are two ways of defining a job.
+There are two ways to define a job.
 
 ### Minimal Job API
+
 You can use this library in a simple one-liner:
 ```csharp
 builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider) =>
@@ -120,7 +122,7 @@ builder.Services.AddNCronJob(options =>
     }));
 ```
 
-4. Run your application and see the magic happen
+4. Run your application and see the magic happen!
 
 ## Triggering an instant job
 
