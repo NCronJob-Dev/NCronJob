@@ -42,7 +42,6 @@ public class NCronJobOptionBuilder
         var builder = new JobOptionBuilder();
         options?.Invoke(builder);
         var jobOptions = builder.GetJobOptions();
-
         var concurrencyAttribute = typeof(T).GetCustomAttribute<SupportsConcurrencyAttribute>();
         if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > Settings.MaxDegreeOfParallelism)
         {
@@ -53,9 +52,11 @@ public class NCronJobOptionBuilder
 
         var attributes = new JobExecutionAttributes(typeof(T), null);
 
-        foreach (var option in jobOptions.Where(c => !string.IsNullOrEmpty(c.CronExpression)))
+        foreach (var option in jobOptions)
         {
-            var cron = GetCronExpression(option);
+            var cron = option.CronExpression is not null
+                ? GetCronExpression(option)
+                : null;
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobPolicyMetadata: attributes);
             Services.AddSingleton(entry);
         }
