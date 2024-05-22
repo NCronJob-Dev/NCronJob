@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Time.Testing;
 using NCronJob;
 using Shouldly;
 
@@ -8,7 +9,8 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateJobOptionsWithCronExpression()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         builder.WithCronExpression("* * * * *");
 
         var options = builder.GetJobOptions();
@@ -22,7 +24,8 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleJobsWithParameters()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         builder.WithCronExpression("* * * * *")
             .WithParameter("foo")
             .And
@@ -43,7 +46,8 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldAddMultipleCronJobsEvenWithoutParameters()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         builder
             .WithCronExpression("* * * * *")
             .And
@@ -63,7 +67,8 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         builder.WithCronExpression("* * * * *")
             .WithParameter("foo");
 

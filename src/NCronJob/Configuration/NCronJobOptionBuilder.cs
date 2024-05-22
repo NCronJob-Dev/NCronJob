@@ -13,13 +13,16 @@ public class NCronJobOptionBuilder
 {
     private protected readonly IServiceCollection Services;
     private protected readonly ConcurrencySettings Settings;
+    private readonly List<JobDefinition> jobs;
 
     internal NCronJobOptionBuilder(
         IServiceCollection services,
-        ConcurrencySettings settings)
+        ConcurrencySettings settings,
+        List<JobDefinition>? jobs = null)
     {
         Services = services;
         Settings = settings;
+        this.jobs = jobs ?? [];
     }
 
     /// <summary>
@@ -42,6 +45,9 @@ public class NCronJobOptionBuilder
 
         var builder = new JobOptionBuilder(TimeProvider.System);
         options?.Invoke(builder);
+        
+        Services.TryAddScoped<T>();
+
         var jobOptions = builder.GetJobOptions();
 
         foreach (var option in jobOptions)
@@ -49,13 +55,15 @@ public class NCronJobOptionBuilder
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option)
                 : null;
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo) {IsStartupJob = option.IsStartupJob};
-            Services.AddSingleton(entry);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
+            {
+                IsStartupJob = option.IsStartupJob
+            };
+            jobs.Add(entry);
         }
 
-        Services.TryAddScoped<T>();
 
-        return new NCronJobOptionBuilder<T>(Services, Settings);
+        return new NCronJobOptionBuilder<T>(Services, Settings, jobs, builder);
     }
 
     /// <summary>
@@ -153,6 +161,14 @@ public class NCronJobOptionBuilder
         var jobHash = jobNameBuilder.ToString().GenerateConsistentShortHash();
         return $"AnonymousJob_{jobHash}";
     }
+
+    internal void RegisterJobs()
+    {
+        foreach (var job in jobs)
+        {
+            Services.AddSingleton(job);
+        }
+    }
 }
 
 /// <summary>
@@ -161,8 +177,14 @@ public class NCronJobOptionBuilder
 public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
     where TJob : class, IJob
 {
-    internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings) : base(services, settings)
+    private readonly List<JobDefinition> jobs;
+    private readonly JobOptionBuilder jobOptionBuilder;
+
+    internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
+        : base(services, settings, jobs)
     {
+        this.jobs = jobs;
+        this.jobOptionBuilder = jobOptionBuilder;
     }
 
     /// <summary>
@@ -183,7 +205,7 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
         where TJobDefinition : class, IJob
     {
         Services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
-        return new NCronJobOptionBuilder<TJobDefinition>(Services, Settings);
+        return new NCronJobOptionBuilder<TJobDefinition>(Services, Settings, jobs, jobOptionBuilder);
     }
 
     /// <summary>
@@ -201,14 +223,13 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
         return this;
     }
 
+    /// <summary>
+    /// Configures the job to run once during the application startup before any other jobs.
+    /// </summary>
+    /// <returns>Returns a <see cref="NCronJobOptionBuilder{TJob}"/> that allows adding parameters to the job.</returns>
     public NCronJobOptionBuilder<TJob> RunAtStartup()
     {
-        //TODO: need to refactor the JobOptionBuilder so that it can be used here and built lazily
-        var jobOption = new JobOption
-        {
-            IsStartupJob = true
-        };
-
+        jobOptionBuilder.SetRunAtStartup();
 
         return this;
     }

@@ -9,20 +9,25 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 
-// Add NCronJob to the container.
+
 builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/20 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
 
-    .AddJob<RunAtStartJob>(p =>
-        p.RunAtStartup())
+    .AddJob<RunAtStartJob>().RunAtStartup()
 );
 
 builder.Services.AddNCronJob(options =>
 {
-    options.AddJob<RunAtStartJob>().RunAtStartup();
+    options.AddJob<RunAtStartJob>()
+        .AddNotificationHandler<RunAtStartJobHandler>()
+        .RunAtStartup();
 });
+
+
+builder.Services.AddNCronJob(b => b.AddJob<RunAtStartJob>().RunAtStartup());
+
 
 var app = builder.Build();
 

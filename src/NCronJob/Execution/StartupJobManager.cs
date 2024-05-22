@@ -9,7 +9,7 @@ internal class StartupJobManager(JobRegistry jobRegistry)
 
         var startupTasks = startupJobs.Select(job => executeJob(job, stopToken)).ToList();
 
-        if (startupTasks.Any())
+        if (startupTasks.Count > 0)
         {
             await Task.WhenAll(startupTasks);
         }

@@ -18,8 +18,8 @@
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     </PropertyGroup>
 
-    <!--<PropertyGroup>
+    <PropertyGroup>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    </PropertyGroup>-->
+    </PropertyGroup>
 
 </Project>

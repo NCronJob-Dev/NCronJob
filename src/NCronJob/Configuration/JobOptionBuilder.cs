@@ -11,6 +11,24 @@ public sealed class JobOptionBuilder
     internal JobOptionBuilder(TimeProvider timeProvider) => this.timeProvider = timeProvider;
 
     /// <summary>
+    /// The jobOptions item we need to work with will always be the first.
+    /// This is because we only support one job per builder.
+    /// </summary>
+    /// <returns></returns>
+    internal JobOptionBuilder SetRunAtStartup()
+    {
+        if (jobOptions.Count == 1)
+        {
+            // Startup Jobs should not be initialized with a cron expression.
+            if(jobOptions[0].CronExpression != null)
+                throw new InvalidOperationException("Startup jobs cannot have a cron expression.");
+            
+            jobOptions[0].IsStartupJob = true;
+        }
+        return this;
+    }
+
+    /// <summary>
     /// Adds a cron expression for the given job.
     /// </summary>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
@@ -39,23 +57,6 @@ public sealed class JobOptionBuilder
 
         return new ParameterBuilder(this, jobOption);
     }
-
-    /// <summary>
-    /// Configures the job to run once during the application startup before any other jobs.
-    /// </summary>
-    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder RunAtStartup()
-    {
-        var jobOption = new JobOption
-        {
-            IsStartupJob = true
-        };
-
-        jobOptions.Add(jobOption);
-
-        return new ParameterBuilder(this, jobOption);
-    }
-
 
     /// <summary>
     /// Configures the job to run once after a specified delay.
@@ -100,5 +101,12 @@ public sealed class JobOptionBuilder
         return precisionRequired;
     }
 
-    internal List<JobOption> GetJobOptions() => jobOptions.Count > 0 ? jobOptions : [new JobOption()];
+    internal List<JobOption> GetJobOptions()
+    {
+        if (jobOptions.Count == 0)
+        {
+            jobOptions.Add(new JobOption());
+        }
+        return jobOptions;
+    }
 }
