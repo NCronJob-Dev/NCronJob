@@ -9,6 +9,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly JobExecutor jobExecutor;
     private readonly JobRegistry registry;
     private readonly JobQueue jobQueue;
+    private readonly StartupJobManager startupJobManager;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<QueueWorker> logger;
     private readonly SemaphoreSlim semaphore;
@@ -22,6 +23,7 @@ internal sealed partial class QueueWorker : BackgroundService
         JobExecutor jobExecutor,
         JobRegistry registry,
         JobQueue jobQueue,
+        StartupJobManager startupJobManager,
         TimeProvider timeProvider,
         ConcurrencySettings concurrencySettings,
         ILogger<QueueWorker> logger,
@@ -30,6 +32,7 @@ internal sealed partial class QueueWorker : BackgroundService
         this.jobExecutor = jobExecutor;
         this.registry = registry;
         this.jobQueue = jobQueue;
+        this.startupJobManager = startupJobManager;
         this.timeProvider = timeProvider;
         this.logger = logger;
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
@@ -57,10 +60,14 @@ internal sealed partial class QueueWorker : BackgroundService
         stopToken.Register(LogCancellationRequestedInJob);
         var runningTasks = new List<Task>();
 
+        await startupJobManager.ProcessStartupJobs(CreateExecutionTask, stopToken);
+
         ScheduleInitialJobs();
 
         try
         {
+            await startupJobManager.WaitForStartupJobsCompletion();
+            
             while (!stopToken.IsCancellationRequested)
             {
                 runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);

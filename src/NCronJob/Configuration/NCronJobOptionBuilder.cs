@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -41,7 +40,7 @@ public class NCronJobOptionBuilder
     {
         ValidateConcurrencySetting(typeof(T));
 
-        var builder = new JobOptionBuilder();
+        var builder = new JobOptionBuilder(TimeProvider.System);
         options?.Invoke(builder);
         var jobOptions = builder.GetJobOptions();
 
@@ -50,7 +49,7 @@ public class NCronJobOptionBuilder
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option)
                 : null;
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo) {IsStartupJob = option.IsStartupJob};
             Services.AddSingleton(entry);
         }
 
@@ -199,6 +198,18 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
         where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
     {
         Services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return this;
+    }
+
+    public NCronJobOptionBuilder<TJob> RunAtStartup()
+    {
+        //TODO: need to refactor the JobOptionBuilder so that it can be used here and built lazily
+        var jobOption = new JobOption
+        {
+            IsStartupJob = true
+        };
+
+
         return this;
     }
 }

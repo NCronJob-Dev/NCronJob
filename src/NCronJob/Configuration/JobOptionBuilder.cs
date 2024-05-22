@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace NCronJob;
 
 /// <summary>
@@ -7,7 +5,10 @@ namespace NCronJob;
 /// </summary>
 public sealed class JobOptionBuilder
 {
+    private readonly TimeProvider timeProvider;
     private readonly List<JobOption> jobOptions = [];
+
+    internal JobOptionBuilder(TimeProvider timeProvider) => this.timeProvider = timeProvider;
 
     /// <summary>
     /// Adds a cron expression for the given job.
@@ -39,6 +40,50 @@ public sealed class JobOptionBuilder
         return new ParameterBuilder(this, jobOption);
     }
 
+    /// <summary>
+    /// Configures the job to run once during the application startup before any other jobs.
+    /// </summary>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
+    public ParameterBuilder RunAtStartup()
+    {
+        var jobOption = new JobOption
+        {
+            IsStartupJob = true
+        };
+
+        jobOptions.Add(jobOption);
+
+        return new ParameterBuilder(this, jobOption);
+    }
+
+
+    /// <summary>
+    /// Configures the job to run once after a specified delay.
+    /// </summary>
+    /// <param name="delay">The delay after which the job should be executed.</param>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
+    public ParameterBuilder RunOnce(TimeSpan delay)
+    {
+        var utcNow = timeProvider.GetUtcNow();
+        return RunOnce(utcNow + delay);
+    }
+
+    /// <summary>
+    /// Configures the job to run once at a specified date and time.
+    /// </summary>
+    /// <param name="absoluteDateTime">The exact date and time when the job should be executed.</param>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
+    public ParameterBuilder RunOnce(DateTimeOffset absoluteDateTime)
+    {
+        var jobOption = new JobOption
+        {
+            RunAt = absoluteDateTime
+        };
+
+        jobOptions.Add(jobOption);
+
+        return new ParameterBuilder(this, jobOption);
+    }
 
     internal static bool DetermineAndValidatePrecision(string cronExpression, bool? enableSecondPrecision)
     {

@@ -15,6 +15,8 @@ internal sealed record JobDefinition(
 
     public CancellationToken CancellationToken { get; set; }
 
+    public bool IsStartupJob { get; set; }
+
     public string JobName { get; } = JobName ?? Type.Name;
 
     /// <summary>

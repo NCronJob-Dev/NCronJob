@@ -1,6 +1,7 @@
 using NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Microsoft.Extensions.Time.Testing;
 
 namespace NCronJob.Tests;
 
@@ -36,35 +37,40 @@ public class NCronJobTests
     [Fact]
     public void AddingNullCronExpressionThrowsArgumentNullException()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         Should.Throw<ArgumentNullException>(() => builder.WithCronExpression(null!));
     }
 
     [Fact]
     public void AddingCronExpressionWithIncorrectSegmentCountThrowsArgumentException()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         Should.Throw<ArgumentException>(() => builder.WithCronExpression("* * *"));
     }
 
     [Fact]
     public void AddingValidCronExpressionWithMinutePrecisionDoesNotThrowException()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         Should.NotThrow(() => builder.WithCronExpression("5 * * * *"));
     }
 
     [Fact]
     public void AddingValidCronExpressionWithSecondPrecisionDoesNotThrowException()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         Should.NotThrow(() => builder.WithCronExpression("30 5 * * * *", true));
     }
 
     [Fact]
     public void AddingCronExpressionWithInvalidSecondPrecisionThrowsArgumentException()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         Should.Throw<ArgumentException>(() => builder.WithCronExpression("5 * * * *", true));
     }
 
@@ -72,7 +78,8 @@ public class NCronJobTests
     [Fact]
     public void AutoDetectSecondPrecisionWhenNotSpecified()
     {
-        var builder = new JobOptionBuilder();
+        var fakeTimer = new FakeTimeProvider();
+        var builder = new JobOptionBuilder(fakeTimer);
         builder.WithCronExpression("0 0 12 * * ?");
         var options = builder.GetJobOptions();
         options.ShouldContain(o => o.CronExpression == "0 0 12 * * ?" && o.EnableSecondPrecision);
