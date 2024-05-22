@@ -53,7 +53,7 @@ public static class ServiceCollectionExtensions
     ///     </example>
     /// </param>
     /// <returns>The modified service collection.</returns>
-    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, [StringSyntax(StringSyntaxAttribute.Regex)] string cronExpression)
+    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression)
         => services.AddNCronJob(builder => builder.AddJob(jobDelegate, cronExpression));
 }
 

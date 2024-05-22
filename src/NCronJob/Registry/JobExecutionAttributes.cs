@@ -1,4 +1,3 @@
-using NCronJob;
 using System.Reflection;
 
 namespace NCronJob;
@@ -67,16 +66,16 @@ internal sealed class JobExecutionAttributes
     }
 
     // Internal factory methods for cache usage
-    internal static JobExecutionAttributes CreateFromType(Type? jobType)
+    internal static JobExecutionAttributes CreateFromType(Type jobType)
     {
-        var retryPolicy = jobType?.GetCustomAttribute<RetryPolicyAttribute>();
-        var concurrencyPolicy = jobType?.GetCustomAttribute<SupportsConcurrencyAttribute>();
+        var retryPolicy = jobType.GetCustomAttribute<RetryPolicyAttribute>();
+        var concurrencyPolicy = jobType.GetCustomAttribute<SupportsConcurrencyAttribute>();
         return new JobExecutionAttributes(retryPolicy, concurrencyPolicy);
     }
 
-    internal static JobExecutionAttributes CreateFromMethodInfo(MethodInfo? methodInfo)
+    internal static JobExecutionAttributes CreateFromMethodInfo(MethodInfo methodInfo)
     {
-        var retryPolicy = methodInfo?.GetCustomAttribute<RetryPolicyAttribute>();
+        var retryPolicy = methodInfo.GetCustomAttribute<RetryPolicyAttribute>();
         var concurrencyPolicy = methodInfo?.GetCustomAttribute<SupportsConcurrencyAttribute>();
         return new JobExecutionAttributes(retryPolicy, concurrencyPolicy);
     }
