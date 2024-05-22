@@ -13,6 +13,9 @@ public static class NCronJobExtensions
     /// </summary>
     /// <param name="services">The service collection used to register the services.</param>
     /// <param name="options">The builder to register jobs and other settings.</param>
+    /// <param name="configureGlobalOptions">Allows configuration of global behavior across all jobs.
+    /// If multiple instances of <see cref="NCronJobExtensions.AddNCronJob"/> are called with different global settings,
+    /// only the first one will be taken into account.</param>
     /// <example>
     /// To register a job that runs once every hour with a parameter and a handler that gets notified once the job is completed:
     /// <code>
@@ -23,14 +26,15 @@ public static class NCronJobExtensions
     /// </example>
     public static IServiceCollection AddNCronJob(
         this IServiceCollection services,
-        Action<NCronJobOptionBuilder>? options = null)
+        Action<NCronJobOptionBuilder>? options = null,
+        Action<GlobalOptions>? configureGlobalOptions = null)
     {
-        // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
-        var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
-        var builder = new NCronJobOptionBuilder(services, settings);
+        var globalOptions = new GlobalOptions();
+        configureGlobalOptions?.Invoke(globalOptions);
+        var builder = new NCronJobOptionBuilder(services, globalOptions.ToConcurrencySettings());
         options?.Invoke(builder);
 
-        services.TryAddSingleton(settings);
+        services.TryAddSingleton(globalOptions.ToConcurrencySettings());
         services.AddHostedService<QueueWorker>();
         services.TryAddSingleton<JobRegistry>();
         services.TryAddSingleton<JobQueue>();

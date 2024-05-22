@@ -14,3 +14,14 @@ A simple example: You have only one processor (therefore maximum 4 jobs executed
 So after four minutes the queue is full, and no more jobs will be added to the queue. After the fifth minute, the queue is still full, and no more jobs will be added to the queue. After the sixth minute, the first job is removed from the queue, and the next job is added to the queue. Therefore it can happen that jobs are skipped and not executed.
 
 The same applies to the `SupportsConcurrencyAttribute` discussed in: *[Concurrency Control](../features/concurrency-control.md)*
+
+## Configuration
+**NCronJob** offers the ability to change the default via an optional overload:
+
+```csharp
+builder.Services.AddNCronJob(
+    builder => builder.AddJob<MyJob>(j => j.WithCronExpression("* * * * *")),
+    options => options.MaxDegreeOfParallelism = 10);
+```
+
+This will set the maximum amount of concurrent jobs to 10. Be careful with this setting, as it can lead to performance issues if set too high. In an context of a web application, you might have less threads available that can be used to work on requests.

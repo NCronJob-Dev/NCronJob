@@ -12,7 +12,6 @@ namespace NCronJob;
 /// </remarks>
 public sealed class RetryPolicyAttribute : RetryPolicyBaseAttribute
 {
-
     /// <summary>
     /// Gets the type of policy creator used to generate the retry policy.
     /// The type of policy determines how retries are performed, such as using

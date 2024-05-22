@@ -6,6 +6,14 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Ability to configure the global level of concurrency for all jobs.
+```csharp
+builder.Services.AddNCronJob(
+    jobBuilder => jobBuilder.AddJob<MyJob>(),
+    globalOptions => globalOptions.MaxDegreeOfParallelism = Environment.ProcessorCount * 4);
+```
+
 ## [2.5.0] - 2024-05-21
 
 ### Changed

@@ -76,7 +76,7 @@ internal sealed class JobExecutionAttributes
     internal static JobExecutionAttributes CreateFromMethodInfo(MethodInfo methodInfo)
     {
         var retryPolicy = methodInfo.GetCustomAttribute<RetryPolicyAttribute>();
-        var concurrencyPolicy = methodInfo?.GetCustomAttribute<SupportsConcurrencyAttribute>();
+        var concurrencyPolicy = methodInfo.GetCustomAttribute<SupportsConcurrencyAttribute>();
         return new JobExecutionAttributes(retryPolicy, concurrencyPolicy);
     }
 }

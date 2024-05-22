@@ -29,5 +29,4 @@ internal partial class ExponentialBackoffPolicyCreator : IPolicyCreator, IInitia
 
     [LoggerMessage(LogLevel.Warning, "Retry {RetryCount} due to error: {Message}. Retrying after {TimeSpan}.")]
     private partial void LogRetryAttempt(string message, TimeSpan timeSpan, int retryCount);
-
 }
