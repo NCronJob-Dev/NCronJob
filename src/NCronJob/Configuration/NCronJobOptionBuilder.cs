@@ -39,25 +39,18 @@ public class NCronJobOptionBuilder
     public NCronJobOptionBuilder<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
+        ValidateConcurrencySetting(typeof(T));
+
         var builder = new JobOptionBuilder();
         options?.Invoke(builder);
         var jobOptions = builder.GetJobOptions();
-        var concurrencyAttribute = typeof(T).GetCustomAttribute<SupportsConcurrencyAttribute>();
-        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > Settings.MaxDegreeOfParallelism)
-        {
-            throw new InvalidOperationException($"The MaxDegreeOfParallelism for {typeof(T).Name} " +
-                                                $"({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed " +
-                                                $"the global limit ({Settings.MaxDegreeOfParallelism}).");
-        }
-
-        var attributes = new JobExecutionAttributes(typeof(T), null);
 
         foreach (var option in jobOptions)
         {
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option)
                 : null;
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobPolicyMetadata: attributes);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
             Services.AddSingleton(entry);
         }
 
@@ -71,7 +64,7 @@ public class NCronJobOptionBuilder
     /// </summary>
     /// <param name="jobDelegate">The delegate that represents the job to be executed.</param>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
-    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, [StringSyntax(StringSyntaxAttribute.Regex)] string cronExpression)
+    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
@@ -94,6 +87,7 @@ public class NCronJobOptionBuilder
     private string AddJobInternal(Type jobType, Delegate jobDelegate, string cronExpression)
     {
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
+        ValidateConcurrencySetting(jobDelegate.Method);
 
         var determinedPrecision = JobOptionBuilder.DetermineAndValidatePrecision(cronExpression, null);
 
@@ -107,13 +101,30 @@ public class NCronJobOptionBuilder
 
         var jobName = GenerateJobName(jobDelegate);
 
-        var jobPolicyMetadata = new JobExecutionAttributes(jobType, jobDelegate);
+        var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
             JobName: jobName,
             JobPolicyMetadata: jobPolicyMetadata);
         Services.AddSingleton(entry);
 
         return jobName;
+    }
+    private void ValidateConcurrencySetting(object jobIdentifier)
+    {
+        var cachedJobAttributes = jobIdentifier switch
+        {
+            Type type => JobAttributeCache.GetJobExecutionAttributes(type),
+            MethodInfo methodInfo => JobAttributeCache.GetJobExecutionAttributes(methodInfo),
+            _ => throw new ArgumentException("Invalid job identifier type")
+        };
+
+        var concurrencyAttribute = cachedJobAttributes.ConcurrencyPolicy;
+        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > Settings.MaxDegreeOfParallelism)
+        {
+            var name = jobIdentifier is Type type ? type.Name : ((MethodInfo)jobIdentifier).Name;
+            throw new InvalidOperationException(
+                $"The MaxDegreeOfParallelism for {name} ({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed the global limit ({Settings.MaxDegreeOfParallelism}).");
+        }
     }
 
     internal static CronExpression GetCronExpression(JobOption option)
