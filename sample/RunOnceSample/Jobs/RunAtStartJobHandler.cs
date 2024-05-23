@@ -12,10 +12,10 @@ public partial class RunAtStartJobHandler : IJobNotificationHandler<RunAtStartJo
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        LogMessage(context.Output);
+        LogMessage();
         return Task.CompletedTask;
     }
 
-    [LoggerMessage(LogLevel.Information, "PrintHelloWorldJob is done and outputs: {Output}")]
-    private partial void LogMessage(object? output);
+    [LoggerMessage(LogLevel.Information, "RunAtStartJob is done")]
+    private partial void LogMessage();
 }
