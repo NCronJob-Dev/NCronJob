@@ -52,6 +52,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://ncro
 - [x] Retries - If a job fails, it will be retried.
 - [x] The job scheduler supports TimeZones. Defaults to UTC time.
 - [x] Minimal API for Jobs - Implement jobs in a one-liner.
+- [x] Startup jobs - Run a job when the application starts.
 
 ## Not features
 
@@ -138,6 +139,21 @@ public class MyService
   public void MyMethod() => jobRegistry.RunInstantJob<MyJob>("I am an optional parameter");
 }
 ```
+
+## Running a Job at Startup
+
+If you want a job to run when the application starts, you can configure it to run at startup using the `RunAtStartup` method. Here is an example:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MyJob>()
+           .RunAtStartup();
+});
+```
+
+In this example, the job of type 'MyJob' will be executed as soon as the application starts. This is 
+useful for tasks that need to run immediately upon application startup, such as initial data loading or cleanup tasks.
 
 ## Support & Contributing
 

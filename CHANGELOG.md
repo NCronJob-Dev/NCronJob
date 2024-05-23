@@ -6,6 +6,16 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- API signature improvements - Enhanced the job scheduling framework with new classes and interfaces to better support job lifecycle management, including startup configuration and notification handling. This includes the introduction of `StartupStage<TJob>`, `NotificationStage<TJob>`, `IJobStage`, `IStartupStage<TJob>`, and `INotificationStage<TJob>`.
+(#70) By [@falvarez1](https://github.com/falvarez1)
+
+### Added
+
+- Startup jobs - Run a job when the application starts. (#70) By [@falvarez1](https://github.com/falvarez1)
+- Sample project - Added a sample project to demonstrate Startup Jobs. (#70) By [@falvarez1](https://github.com/falvarez1)
+
 ## [2.5.0] - 2024-05-21
 
 ### Changed
