@@ -55,23 +55,6 @@ public sealed class JobOptionBuilder
         return new ParameterBuilder(this, jobOption);
     }
     
-    /// <summary>
-    /// Configures the job to run once at a specified date and time.
-    /// </summary>
-    /// <param name="absoluteDateTime">The exact date and time when the job should be executed.</param>
-    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder RunOnce(DateTimeOffset absoluteDateTime)
-    {
-        var jobOption = new JobOption
-        {
-            RunAt = absoluteDateTime
-        };
-
-        jobOptions.Add(jobOption);
-
-        return new ParameterBuilder(this, jobOption);
-    }
-
     internal static bool DetermineAndValidatePrecision(string cronExpression, bool? enableSecondPrecision)
     {
         var parts = cronExpression.Split(' ');
