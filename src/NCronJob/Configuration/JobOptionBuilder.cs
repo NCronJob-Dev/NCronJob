@@ -5,11 +5,8 @@ namespace NCronJob;
 /// </summary>
 public sealed class JobOptionBuilder
 {
-    private readonly TimeProvider timeProvider;
     private readonly List<JobOption> jobOptions = [];
-
-    internal JobOptionBuilder(TimeProvider timeProvider) => this.timeProvider = timeProvider;
-
+    
     /// <summary>
     /// The jobOptions item we need to work with will always be the first.
     /// This is because we only support one job per builder.

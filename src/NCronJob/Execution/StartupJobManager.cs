@@ -22,11 +22,11 @@ internal class StartupJobManager(JobRegistry jobRegistry)
 
 internal class AsyncManualResetEvent
 {
-    private volatile TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public Task WaitAsync() => tcs.Task;
 
-    public void Set() => tcs.TrySetResult(true);
+    public void Set() => tcs.TrySetResult();
 
     public void Reset() => tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -12,8 +12,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldAssignCorrectTimeZoneToJobOptions()
     {
-        var fakeTimer = new FakeTimeProvider();
-        var builder = new JobOptionBuilder(fakeTimer);
+        var builder = new JobOptionBuilder();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
         builder.WithCronExpression("* * * * *", timeZoneInfo: timeZone);
 
@@ -25,8 +24,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldDefaultToUtcIfTimeZoneNotSpecified()
     {
-        var fakeTimer = new FakeTimeProvider();
-        var builder = new JobOptionBuilder(fakeTimer);
+        var builder = new JobOptionBuilder();
         builder.WithCronExpression("* * * * *");
 
         var options = builder.GetJobOptions();
@@ -37,8 +35,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldAssignCorrectTimeZoneAndExpressionToJobOptions()
     {
-        var fakeTimer = new FakeTimeProvider();
-        var builder = new JobOptionBuilder(fakeTimer);
+        var builder = new JobOptionBuilder();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
         var cronExpression = "* * * * *";
         builder.WithCronExpression(cronExpression, timeZoneInfo: timeZone);
@@ -52,8 +49,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldHandleInvalidTimeZoneGracefully()
     {
-        var fakeTimer = new FakeTimeProvider();
-        var builder = new JobOptionBuilder(fakeTimer);
+        var builder = new JobOptionBuilder();
         Should.Throw<TimeZoneNotFoundException>(() =>
         {
             builder.WithCronExpression("* * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Non-Existent Time Zone"));
