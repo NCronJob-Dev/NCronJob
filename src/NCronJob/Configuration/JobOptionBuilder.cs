@@ -57,18 +57,7 @@ public sealed class JobOptionBuilder
 
         return new ParameterBuilder(this, jobOption);
     }
-
-    /// <summary>
-    /// Configures the job to run once after a specified delay.
-    /// </summary>
-    /// <param name="delay">The delay after which the job should be executed.</param>
-    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows adding parameters to the job.</returns>
-    public ParameterBuilder RunOnce(TimeSpan delay)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunOnce(utcNow + delay);
-    }
-
+    
     /// <summary>
     /// Configures the job to run once at a specified date and time.
     /// </summary>

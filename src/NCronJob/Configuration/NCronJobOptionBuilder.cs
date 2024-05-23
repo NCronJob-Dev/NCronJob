@@ -230,6 +230,14 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
     public NCronJobOptionBuilder<TJob> RunAtStartup()
     {
         jobOptionBuilder.SetRunAtStartup();
+        
+        for (var i = 0; i < jobs.Count; i++)
+        {
+            if (jobs[i].Type == typeof(TJob))
+            {
+                jobs[i] = jobs[i] with { IsStartupJob = true };
+            }
+        }
 
         return this;
     }
