@@ -6,6 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+This release has the same changes as `2.6.0` but fixes an issue in the release pipeline.
+
+### Changed
+
+- The NuGet.org "Release Notes" section will from now on be empty. It will contain a link to the releases.
+
 ## [2.6.0] - 2024-05-25
 
 ### Changed

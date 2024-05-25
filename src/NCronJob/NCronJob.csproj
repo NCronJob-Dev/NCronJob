@@ -31,8 +31,6 @@
 		<PackageReleaseNotes>
 			Changes in NCronJob
 
-			#{RELEASE_NOTES}#
-
 			See the full changelog at https://github.com/NCronJob-Dev/NCronJob/releases
 		</PackageReleaseNotes>
 	</PropertyGroup>
