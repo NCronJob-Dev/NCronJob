@@ -15,6 +15,10 @@ internal sealed record JobDefinition(
 
     public CancellationToken CancellationToken { get; set; }
 
+    public bool IsOneTimeJob=> (CronExpression is null && RunAt != null) || IsStartupJob;
+    public DateTimeOffset? RunAt { get; set; }
+    public bool IsStartupJob { get; set; }
+
     public string JobName { get; } = JobName ?? Type.Name;
 
     /// <summary>

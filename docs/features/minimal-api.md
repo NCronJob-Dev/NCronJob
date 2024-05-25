@@ -1,4 +1,5 @@
-# Minimal API
+# Minimal API
+
 The minimal job API offers another way of defining a cron job. It favors simplicity over feature richness. A job can be defined as such:
 
 ```csharp
@@ -64,7 +65,7 @@ builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] (JobExecutionContext c
 }, "0 * * * *");
 ```
 
-## Concurrency-Support
+## Concurrency-Support
 In the same way, the concurrency level can be controlled (see [**Concurrency**](concurrency-control.md)):
 
 ```csharp
@@ -73,7 +74,7 @@ builder.Services.AddNCronJob([SupportsConcurrency(2)] () => { }, "0 * * * *");
 
 Now, the job can only be executed by two instances at the same time.
 
-## Restrictions
+## Restrictions
 
 The minimal API has some restrictions over the "full approach":
 

@@ -1,4 +1,3 @@
-using NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 

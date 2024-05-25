@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -10,17 +9,20 @@ namespace NCronJob;
 /// <summary>
 /// Represents the builder for the NCronJob options.
 /// </summary>
-public class NCronJobOptionBuilder
+public class NCronJobOptionBuilder : IJobStage
 {
     private protected readonly IServiceCollection Services;
     private protected readonly ConcurrencySettings Settings;
+    private readonly List<JobDefinition> jobs;
 
     internal NCronJobOptionBuilder(
         IServiceCollection services,
-        ConcurrencySettings settings)
+        ConcurrencySettings settings,
+        List<JobDefinition>? jobs = null)
     {
         Services = services;
         Settings = settings;
+        this.jobs = jobs ?? [];
     }
 
     /// <summary>
@@ -36,13 +38,16 @@ public class NCronJobOptionBuilder
     /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
     /// </code>
     /// </example>
-    public NCronJobOptionBuilder<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
+    public IStartupStage<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
         ValidateConcurrencySetting(typeof(T));
 
         var builder = new JobOptionBuilder();
         options?.Invoke(builder);
+        
+        Services.TryAddScoped<T>();
+
         var jobOptions = builder.GetJobOptions();
 
         foreach (var option in jobOptions)
@@ -50,13 +55,16 @@ public class NCronJobOptionBuilder
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option)
                 : null;
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo);
-            Services.AddSingleton(entry);
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
+            {
+                IsStartupJob = option.IsStartupJob
+            };
+            jobs.Add(entry);
         }
 
-        Services.TryAddScoped<T>();
 
-        return new NCronJobOptionBuilder<T>(Services, Settings);
+        return new StartupStage<T>(Services, Settings, jobs, builder);
+
     }
 
     /// <summary>
@@ -154,17 +162,168 @@ public class NCronJobOptionBuilder
         var jobHash = jobNameBuilder.ToString().GenerateConsistentShortHash();
         return $"AnonymousJob_{jobHash}";
     }
+
+    internal void RegisterJobs()
+    {
+        foreach (var job in jobs)
+        {
+            Services.AddSingleton(job);
+        }
+    }
 }
 
 /// <summary>
-/// Represents the builder for the NCronJob options.
+/// Represents a stage in the job lifecycle where the job is set to run at startup.
 /// </summary>
-public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
-    where TJob : class, IJob
+/// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
+public class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 {
-    internal NCronJobOptionBuilder(IServiceCollection services, ConcurrencySettings settings) : base(services, settings)
+    private readonly IServiceCollection services;
+    private readonly ConcurrencySettings settings;
+    private readonly List<JobDefinition> jobs;
+    private readonly JobOptionBuilder jobOptionBuilder;
+
+    internal StartupStage(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
     {
+        this.services = services;
+        this.settings = settings;
+        this.jobs = jobs;
+        this.jobOptionBuilder = jobOptionBuilder;
     }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> RunAtStartup()
+    {
+        jobOptionBuilder.SetRunAtStartup();
+
+        for (var i = 0; i < jobs.Count; i++)
+        {
+            if (jobs[i].Type == typeof(TJob))
+            {
+                jobs[i] = jobs[i] with { IsStartupJob = true };
+            }
+        }
+
+        return new NotificationStage<TJob>(services, settings, jobs, jobOptionBuilder);
+    }
+
+
+    /// <inheritdoc />
+#pragma warning disable S1133 // Used to warn users not our internal usage
+    [Obsolete("The job type can be automatically inferred. Use AddNotificationHandler<TJobNotificationHandler> instead.", error: false)]
+#pragma warning restore S1133
+    public INotificationStage<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
+        where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
+        where TJobDefinition : class, IJob
+    {
+        services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
+        return new NotificationStage<TJobDefinition>(services, settings, jobs, jobOptionBuilder);
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
+    {
+        services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return new NotificationStage<TJob>(services, settings, jobs, jobOptionBuilder);
+    }
+
+    /// <inheritdoc />
+    public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob => new NCronJobOptionBuilder(services, settings, jobs).AddJob<TNewJob>(options);
+}
+
+/// <summary>
+/// Represents a stage in the job lifecycle where notifications are handled for the job.
+/// </summary>
+/// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
+public class NotificationStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+{
+    private readonly IServiceCollection services;
+    private readonly ConcurrencySettings settings;
+    private readonly List<JobDefinition> jobs;
+    private readonly JobOptionBuilder jobOptionBuilder;
+
+    internal NotificationStage(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
+    {
+        this.services = services;
+        this.settings = settings;
+        this.jobs = jobs;
+        this.jobOptionBuilder = jobOptionBuilder;
+    }
+
+    /// <inheritdoc />
+#pragma warning disable S1133 // Used to warn users not our internal usage
+    [Obsolete("The job type can be automatically inferred. Use AddNotificationHandler<TJobNotificationHandler> instead.", error: false)]
+#pragma warning restore S1133
+    public INotificationStage<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
+        where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
+        where TJobDefinition : class, IJob
+    {
+        services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
+        return new NotificationStage<TJobDefinition>(services, settings, jobs, jobOptionBuilder);
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class
+        , IJobNotificationHandler<TJob>
+    {
+        services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob =>
+        new NCronJobOptionBuilder(services, settings, jobs).AddJob<TNewJob>(options);
+}
+
+/// <summary>
+/// Defines the contract for a stage in the job lifecycle.
+/// </summary>
+public interface IJobStage
+{
+    /// <summary>
+    /// Adds a job to the service collection that gets executed based on the given cron expression.
+    /// </summary>
+    /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
+    /// <typeparam name="TJob">The job type. It will be registered scoped into the container.</typeparam>
+    /// <exception cref="ArgumentException">Throws if the cron expression is invalid.</exception>
+    /// <remarks>The cron expression is evaluated against the TimeZoneInfo of the <see cref="JobOptionBuilder"/>.</remarks>
+    /// <example>
+    /// Registering a job that runs once every hour:
+    /// <code>
+    /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
+    /// </code>
+    /// </example>
+    IStartupStage<TJob> AddJob<TJob>(Action<JobOptionBuilder>? options = null) where TJob : class, IJob;
+}
+
+/// <summary>
+/// Defines the contract for a stage in the job lifecycle where the job is set to run at startup.
+/// </summary>
+/// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
+public interface IStartupStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+{
+    /// <summary>
+    /// Configures the job to run once during the application startup before any other jobs.
+    /// </summary>
+    /// <returns>Returns a <see cref="INotificationStage{TJob}"/> that allows adding notifications of another job.</returns>
+    INotificationStage<TJob> RunAtStartup();
+}
+
+/// <summary>
+/// Defines the contract for a stage in the job lifecycle where notifications are handled for the job.
+/// </summary>
+/// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
+public interface INotificationStage<TJob> : IJobStage where TJob : class, IJob
+{
+    /// <summary>
+    /// Adds a notification handler for a given <see cref="IJob"/>.
+    /// </summary>
+    /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
+    /// <remarks>
+    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
+    /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
+    /// </remarks>
+    INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>;
 
     /// <summary>
     /// Adds a notification handler for a given <see cref="IJob"/>.
@@ -179,26 +338,7 @@ public sealed class NCronJobOptionBuilder<TJob> : NCronJobOptionBuilder
 #pragma warning disable S1133 // Used to warn users not our internal usage
     [Obsolete("The job type can be automatically inferred. Use AddNotificationHandler<TJobNotificationHandler> instead.", error: false)]
 #pragma warning restore S1133
-    public NCronJobOptionBuilder<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
+    INotificationStage<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
         where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
-        where TJobDefinition : class, IJob
-    {
-        Services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
-        return new NCronJobOptionBuilder<TJobDefinition>(Services, Settings);
-    }
-
-    /// <summary>
-    /// Adds a notification handler for a given <see cref="IJob"/>.
-    /// </summary>
-    /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
-    /// <remarks>
-    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
-    /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
-    /// </remarks>
-    public NCronJobOptionBuilder<TJob> AddNotificationHandler<TJobNotificationHandler>()
-        where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
-    {
-        Services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return this;
-    }
+        where TJobDefinition : class, IJob;
 }
