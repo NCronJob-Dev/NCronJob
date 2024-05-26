@@ -9,18 +9,14 @@ public sealed record JobExecutionContext
     /// <summary>
     /// Represents the context of a job execution. Marked internal to prevent external instantiation.
     /// </summary>
-    /// <param name="jobDefinition">The Job Definition of the Job Run</param>
-    internal JobExecutionContext(JobDefinition jobDefinition)
-    {
-        Parameter = jobDefinition.Parameter;
-        JobDefinition = jobDefinition;
-    }
+    /// <param name="jobRun">The Job Run.</param>
+    internal JobExecutionContext(JobRun jobRun) => JobRun = jobRun;
 
     /// <summary>
     /// Represents the context of a job execution.
     /// </summary>
     public JobExecutionContext(Type jobType, object? parameter)
-        => JobDefinition = new JobDefinition(jobType, parameter, null, null);
+        => JobRun = JobRun.Create(new JobDefinition(jobType, parameter, null, null));
 
     /// <summary>
     /// The Job Instance Identifier, generated once upon creation of the context.
@@ -39,11 +35,11 @@ public sealed record JobExecutionContext
     public int Attempts { get; internal set; }
 
     /// <summary>The Job Definition of the Job Run</summary>
-    internal JobDefinition JobDefinition { get; init; }
+    internal JobRun JobRun { get; init; }
 
     /// <summary>The Type that represents the Job</summary>
-    internal Type JobType => JobDefinition.Type;
+    internal Type JobType => JobRun.JobDefinition.Type;
 
     /// <summary>The passed in parameters to a job.</summary>
-    public object? Parameter { get; init; }
+    public object? Parameter => JobRun.Parameter;
 }

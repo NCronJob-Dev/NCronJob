@@ -183,7 +183,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             using var serviceScope = provider.CreateScope();
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
-            await executor.RunJob(new JobDefinition(typeof(JobWithDependency), null, null, null), CancellationToken.None);
+            var jobDefinition = new JobDefinition(typeof(JobWithDependency), null, null, null);
+            await executor.RunJob(JobRun.Create(jobDefinition), CancellationToken.None);
         });
     }
 
