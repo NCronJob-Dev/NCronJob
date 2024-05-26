@@ -29,7 +29,7 @@ internal sealed class JobOption
     /// Startup Jobs will be executed once during the application startup before any other jobs.
     /// </summary>
     public bool IsStartupJob { get; set; }
-    public DateTimeOffset? RunAt { get; set; }
+
     /// <summary>
     /// Determines whether the cron expression can specify second-level precision.
     /// </summary>
