@@ -154,9 +154,8 @@ internal sealed partial class QueueWorker : BackgroundService
         {
             LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);
             // higher means more priority
-            var priorityValue = (int)job.Priority;
             var run = JobRun.Create(job);
-            jobQueue.Enqueue(run, (nextRunTime.Value, priorityValue));
+            jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
         }
     }
 

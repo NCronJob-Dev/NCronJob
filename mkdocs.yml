@@ -38,6 +38,7 @@ nav:
     - Retry support: features/retry-support.md
     - Minimal API: features/minimal-api.md
     - Startup Jobs: features/startup-jobs.md
+    - Model dependencies: features/model-dependencies.md
   - Migration:
     - v2 Migration Guide: migration/v2.md
   - Advanced:
