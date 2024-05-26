@@ -6,12 +6,12 @@ internal sealed class JobRegistry
 {
     private readonly ImmutableArray<JobDefinition> cronJobs;
     private readonly ImmutableArray<JobDefinition> oneTimeJobs;
-    private readonly ImmutableArray<Type> allJobTypes;
+    private readonly ImmutableArray<JobDefinition> allJob;
 
     public JobRegistry(IEnumerable<JobDefinition> jobs)
     {
         var jobDefinitions = jobs as JobDefinition[] ?? jobs.ToArray();
-        allJobTypes = [..jobDefinitions.Select(j => j.Type)];
+        allJob = [..jobDefinitions];
         cronJobs = [..jobDefinitions.Where(c => c.CronExpression is not null)];
         oneTimeJobs = [..jobDefinitions.Where(c => c.IsStartupJob)];
     }
@@ -19,6 +19,8 @@ internal sealed class JobRegistry
     public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => cronJobs;
     public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => oneTimeJobs;
 
-    public bool IsJobRegistered<T>() => allJobTypes.Any(j => j == typeof(T));
+    public bool IsJobRegistered<T>() => allJob.Any(j => j.Type == typeof(T));
+
+    public JobDefinition GetJobDefinition<T>() => allJob.First(j => j.Type == typeof(T));
 }
 

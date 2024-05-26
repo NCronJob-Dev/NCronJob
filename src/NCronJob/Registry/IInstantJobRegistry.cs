@@ -86,11 +86,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
         token.Register(() => LogCancellationRequested(parameter));
 
-        var run = new JobDefinition(typeof(TJob), parameter, null, null, Priority: JobPriority.High)
-        {
-            CancellationToken = token,
-            RunAt = startDate
-        };
+        var run = JobRun.Create(jobRegistry.GetJobDefinition<TJob>(), parameter, token);
 
         jobQueue.EnqueueForDirectExecution(run, startDate);
     }

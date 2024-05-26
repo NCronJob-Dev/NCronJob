@@ -3,11 +3,11 @@ internal class StartupJobManager(JobRegistry jobRegistry)
 {
     private readonly AsyncManualResetEvent startupJobsCompleted = new();
 
-    public async Task ProcessStartupJobs(Func<JobDefinition, CancellationToken, Task> executeJob, CancellationToken stopToken)
+    public async Task ProcessStartupJobs(Func<JobRun, CancellationToken, Task> executeJob, CancellationToken stopToken)
     {
         var startupJobs = jobRegistry.GetAllOneTimeJobs();
 
-        var startupTasks = startupJobs.Select(job => executeJob(job, stopToken)).ToList();
+        var startupTasks = startupJobs.Select(definition => executeJob(JobRun.Create(definition), stopToken)).ToList();
 
         if (startupTasks.Count > 0)
         {
