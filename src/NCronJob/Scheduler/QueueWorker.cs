@@ -67,7 +67,7 @@ internal sealed partial class QueueWorker : BackgroundService
         try
         {
             await startupJobManager.WaitForStartupJobsCompletion();
-            
+
             while (!stopToken.IsCancellationRequested)
             {
                 runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
@@ -95,13 +95,13 @@ internal sealed partial class QueueWorker : BackgroundService
                     if (IsJobEligibleToStart(nextJob, runningTasks))
                     {
                         jobQueue.Dequeue();
-                        UpdateRunningJobCount(nextJob.JobFullName, 1);
+                        UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
 
                         await semaphore.WaitAsync(stopToken);
                         var task = CreateExecutionTask(nextJob, stopToken);
 
                         runningTasks.Add(task);
-                        ScheduleJob(nextJob);
+                        ScheduleJob(nextJob.JobDefinition);
                     }
                     else
                     {
@@ -155,7 +155,8 @@ internal sealed partial class QueueWorker : BackgroundService
             LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);
             // higher means more priority
             var priorityValue = (int)job.Priority;
-            jobQueue.Enqueue(job, (nextRunTime.Value, priorityValue));
+            var run = JobRun.Create(job);
+            jobQueue.Enqueue(run, (nextRunTime.Value, priorityValue));
         }
     }
 
@@ -178,7 +179,7 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private Task CreateExecutionTask(JobDefinition nextJob, CancellationToken stopToken)
+    private Task CreateExecutionTask(JobRun nextJob, CancellationToken stopToken)
     {
         var task = Task.Run(async () =>
         {
@@ -189,32 +190,33 @@ internal sealed partial class QueueWorker : BackgroundService
             finally
             {
                 semaphore.Release();
-                UpdateRunningJobCount(nextJob.JobFullName, -1);
+                UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
             }
         }, stopToken);
         return task;
     }
 
-    private bool IsJobEligibleToStart(JobDefinition nextJob, List<Task> runningTasks)
+    private bool IsJobEligibleToStart(JobRun nextJob, List<Task> runningTasks)
     {
         var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
         var concurrentSlotsOpen = runningTasks.Count < globalConcurrencyLimit;
-        return isSameJob && CanStartJob(nextJob) && concurrentSlotsOpen;
+        return isSameJob && CanStartJob(nextJob.JobDefinition) && concurrentSlotsOpen;
     }
 
-    private async Task ExecuteJob(JobDefinition entry, CancellationToken stoppingToken)
+    private async Task ExecuteJob(JobRun entry, CancellationToken stoppingToken)
     {
+        var type = entry.JobDefinition.Type;
         try
         {
-            LogRunningJob(entry.Type);
+            LogRunningJob(type);
 
             await jobExecutor.RunJob(entry, stoppingToken).ConfigureAwait(false);
 
-            LogCompletedJob(entry.Type);
+            LogCompletedJob(type);
         }
         catch (Exception ex)
         {
-            LogExceptionInJob(ex.Message, entry.Type);
+            LogExceptionInJob(ex.Message, type);
         }
         finally
         {

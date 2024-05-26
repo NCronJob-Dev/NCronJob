@@ -9,7 +9,7 @@ internal sealed class JobQueue : IDisposable
 {
     private readonly TimeProvider timeProvider;
 
-    private readonly PriorityQueue<JobDefinition, (DateTimeOffset NextRunTime, int Priority)> jobQueue =
+    private readonly PriorityQueue<JobRun, (DateTimeOffset NextRunTime, int Priority)> jobQueue =
         new(new JobQueueTupleComparer());
 
     public JobQueue(TimeProvider timeProvider) => this.timeProvider = timeProvider;
@@ -21,12 +21,12 @@ internal sealed class JobQueue : IDisposable
 
     public int Count => jobQueue.Count;
 
-    public JobDefinition Dequeue() => jobQueue.Dequeue();
+    public JobRun Dequeue() => jobQueue.Dequeue();
 
-    public void Enqueue(JobDefinition job, (DateTimeOffset NextRunTime, int Priority) tuple)
+    public void Enqueue(JobRun job, (DateTimeOffset NextRunTime, int Priority) tuple)
         => jobQueue.Enqueue(job, tuple);
 
-    public bool TryPeek([NotNullWhen(true)]out JobDefinition? jobDefinition, out (DateTimeOffset NextRunTime, int Priority) tuple)
+    public bool TryPeek([NotNullWhen(true)]out JobRun? jobDefinition, out (DateTimeOffset NextRunTime, int Priority) tuple)
         => jobQueue.TryPeek(out jobDefinition, out tuple);
 
     /// <summary>
@@ -34,10 +34,10 @@ internal sealed class JobQueue : IDisposable
     /// </summary>
     /// <param name="job">The job that will be added.</param>
     /// <param name="when">An optional <see cref="DateTimeOffset"/> object representing when the job should run. If <code>null</code> it will run immediately.</param>
-    public void EnqueueForDirectExecution(JobDefinition job, DateTimeOffset? when = null)
+    public void EnqueueForDirectExecution(JobRun job, DateTimeOffset? when = null)
     {
         when ??= timeProvider.GetUtcNow();
-        jobQueue.Enqueue(job, (when.Value, (int)job.Priority));
+        jobQueue.Enqueue(job, (when.Value, (int)job.JobDefinition.Priority));
         JobEnqueued?.Invoke(this, EventArgs.Empty);
     }
 

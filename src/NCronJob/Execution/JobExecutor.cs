@@ -9,6 +9,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
+    private readonly JobHistory jobHistory;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
@@ -16,11 +17,13 @@ internal sealed partial class JobExecutor : IDisposable
         IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
-        IRetryHandler retryHandler)
+        IRetryHandler retryHandler,
+        JobHistory jobHistory)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
+        this.jobHistory = jobHistory;
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -39,7 +42,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
     }
 
-    public async Task RunJob(JobDefinition run, CancellationToken stoppingToken)
+    public async Task RunJob(JobRun run, CancellationToken stoppingToken)
     {
         if (isDisposed)
         {
@@ -51,19 +54,21 @@ internal sealed partial class JobExecutor : IDisposable
         // so we need to tie into the IHostApplicationLifetime
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
         var stopToken = linkedCts.Token;
+        run.CancellationToken = stopToken;
 
         await using var scope = serviceProvider.CreateAsyncScope();
 
-        var job = ResolveJob(scope.ServiceProvider, run);
+        var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
 
+        jobHistory.Add(run);
         var runContext = new JobExecutionContext(run);
-        await ExecuteJob(runContext, job, scope, stopToken);
+        await ExecuteJob(runContext, job, scope);
     }
 
-    private static IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition run) =>
-        typeof(DynamicJobFactory).IsAssignableFrom(run.Type)
-            ? (IJob)scopedServiceProvider.GetRequiredKeyedService(run.Type, run.JobName)
-            : (IJob)scopedServiceProvider.GetRequiredService(run.Type);
+    private static IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition) =>
+        typeof(DynamicJobFactory).IsAssignableFrom(definition.Type)
+            ? (IJob)scopedServiceProvider.GetRequiredKeyedService(definition.Type, definition.JobName)
+            : (IJob)scopedServiceProvider.GetRequiredService(definition.Type);
 
     public void Dispose()
     {
@@ -74,8 +79,10 @@ internal sealed partial class JobExecutor : IDisposable
         isDisposed = true;
     }
 
-    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, AsyncServiceScope serviceScope, CancellationToken stoppingToken)
+    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, AsyncServiceScope serviceScope)
     {
+        var stoppingToken = runContext.JobRun.CancellationToken;
+
         try
         {
             LogRunningJob(job.GetType());
