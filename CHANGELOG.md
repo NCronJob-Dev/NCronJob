@@ -7,7 +7,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ## [Unreleased]
 
 ### Added
-- Ability to add a timezone for a "minimal job"
+- Ability to add a timezone for a "minimal job".
+- Run jobs automatically when a job either succeeded or failed allowing to model a job pipeline. By [@linkdotnet](https://github.com/linkdotnet).
 
 ### Changed
 - Replace `Microsoft.Extensions.Hosting` with `Microsoft.Extensions.Hosting.Abstractions` for better compatibility. Reported by [@chrisls121](https://github.com/chrisls121) in [#74](https://github.com/NCronJob-Dev/NCronJob/issues/74). Implemented by [@linkdotnet](https://github.com/linkdotnet).
@@ -76,7 +77,7 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
 ### Fixed
 
 - Instant jobs did ignore the concurrency attribute and global concurrency settings.
-  Fixed by [@linkdotnet](https://github.com/linkdotet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
+  Fixed by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
 
 ## [2.3.2] - 2024-05-08
 

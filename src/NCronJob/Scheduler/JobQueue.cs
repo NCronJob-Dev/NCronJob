@@ -37,7 +37,7 @@ internal sealed class JobQueue : IDisposable
     public void EnqueueForDirectExecution(JobRun job, DateTimeOffset? when = null)
     {
         when ??= timeProvider.GetUtcNow();
-        jobQueue.Enqueue(job, (when.Value, (int)job.JobDefinition.Priority));
+        jobQueue.Enqueue(job, (when.Value, (int)job.Priority));
         JobEnqueued?.Invoke(this, EventArgs.Empty);
     }
 

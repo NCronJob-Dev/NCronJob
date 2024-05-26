@@ -6,6 +6,8 @@ namespace NCronJob;
 /// </summary>
 public sealed record JobExecutionContext
 {
+    internal bool ExecuteChildren = true;
+
     /// <summary>
     /// Represents the context of a job execution. Marked internal to prevent external instantiation.
     /// </summary>
@@ -34,12 +36,31 @@ public sealed record JobExecutionContext
     /// </summary>
     public int Attempts { get; internal set; }
 
-    /// <summary>The Job Definition of the Job Run</summary>
-    internal JobRun JobRun { get; init; }
+    /// <summary>The Job Run instance.</summary>
+    internal JobRun JobRun { get; }
 
     /// <summary>The Type that represents the Job</summary>
     internal Type JobType => JobRun.JobDefinition.Type;
 
     /// <summary>The passed in parameters to a job.</summary>
     public object? Parameter => JobRun.Parameter;
+
+    /// <summary>
+    /// The correlation identifier of the job run. The <see cref="CorrelationId"/> stays the same for jobs and their dependencies.
+    /// </summary>
+    public Guid CorrelationId => JobRun.CorrelationId;
+
+    /// <summary>
+    /// The output of the parent job. Is always <c>null</c> if the job was not started due to a dependency.
+    /// </summary>
+    public object? ParentOutput => JobRun.ParentOutput;
+
+    /// <summary>
+    /// Prohibits the execution of dependent jobs.
+    /// </summary>
+    /// <remarks>
+    /// Calling <see cref="SkipChildren"/> has no effects when no dependent jobs are defined
+    /// via <see cref="INotificationStage{TJob}.ExecuteWhen"/>.
+    /// </remarks>
+    public void SkipChildren() => ExecuteChildren = false;
 }

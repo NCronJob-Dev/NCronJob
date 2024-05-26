@@ -65,6 +65,13 @@ builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] (JobExecutionContext c
 }, "0 * * * *");
 ```
 
+## Time Zone
+The time zone can be controlled as well and defaults to UTC if not specified:
+
+```csharp
+builder.Services.AddNCronJob(() => { }, "0 * * * *", TimeZoneInfo.Local);
+```
+
 ## Concurrency-Support
 In the same way, the concurrency level can be controlled (see [**Concurrency**](concurrency-control.md)):
 

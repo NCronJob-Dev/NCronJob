@@ -187,7 +187,11 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     private readonly List<JobDefinition> jobs;
     private readonly JobOptionBuilder jobOptionBuilder;
 
-    internal StartupStage(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
+    internal StartupStage(
+        IServiceCollection services,
+        ConcurrencySettings settings,
+        List<JobDefinition> jobs,
+        JobOptionBuilder jobOptionBuilder)
     {
         this.services = services;
         this.settings = settings;
@@ -208,7 +212,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
             }
         }
 
-        return new NotificationStage<TJob>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJob>(services, settings, jobs);
     }
 
 
@@ -221,14 +225,46 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
         where TJobDefinition : class, IJob
     {
         services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
-        return new NotificationStage<TJobDefinition>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJobDefinition>(services, settings, jobs);
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
     {
         services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return new NotificationStage<TJob>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJob>(services, settings, jobs);
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
+    {
+        if (success is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>();
+            success(dependencyBuilder);
+            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
+            runWhenSuccess.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                services.TryAddSingleton(s.Type);
+            });
+            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
+        }
+
+        if (faulted is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>();
+            faulted(dependencyBuilder);
+            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
+            runWhenFaulted.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                services.TryAddSingleton(s.Type);
+            });
+            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
+        }
+
+        return this;
     }
 
     /// <inheritdoc />
@@ -244,14 +280,15 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
     private readonly List<JobDefinition> jobs;
-    private readonly JobOptionBuilder jobOptionBuilder;
 
-    internal NotificationStage(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
+    internal NotificationStage(
+        IServiceCollection services,
+        ConcurrencySettings settings,
+        List<JobDefinition> jobs)
     {
         this.services = services;
         this.settings = settings;
         this.jobs = jobs;
-        this.jobOptionBuilder = jobOptionBuilder;
     }
 
     /// <inheritdoc />
@@ -263,7 +300,7 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
         where TJobDefinition : class, IJob
     {
         services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
-        return new NotificationStage<TJobDefinition>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJobDefinition>(services, settings, jobs);
     }
 
     /// <inheritdoc />
@@ -271,6 +308,39 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
         , IJobNotificationHandler<TJob>
     {
         services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return this;
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null,
+        Action<DependencyBuilder<TJob>>? faulted = null)
+    {
+        if (success is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>();
+            success(dependencyBuilder);
+            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
+            runWhenSuccess.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                services.TryAddSingleton(s.Type);
+            });
+            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
+        }
+
+        if (faulted is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>();
+            faulted(dependencyBuilder);
+            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
+            runWhenFaulted.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                services.TryAddSingleton(s.Type);
+            });
+            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
+        }
+
         return this;
     }
 
@@ -304,7 +374,8 @@ public interface IJobStage
 /// Defines the contract for a stage in the job lifecycle where the job is set to run at startup.
 /// </summary>
 /// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
-public interface IStartupStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+public interface IStartupStage<TJob> : INotificationStage<TJob>
+    where TJob : class, IJob
 {
     /// <summary>
     /// Configures the job to run once during the application startup before any other jobs.
@@ -317,7 +388,8 @@ public interface IStartupStage<TJob> : INotificationStage<TJob> where TJob : cla
 /// Defines the contract for a stage in the job lifecycle where notifications are handled for the job.
 /// </summary>
 /// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
-public interface INotificationStage<TJob> : IJobStage where TJob : class, IJob
+public interface INotificationStage<TJob> : IJobStage
+    where TJob : class, IJob
 {
     /// <summary>
     /// Adds a notification handler for a given <see cref="IJob"/>.
@@ -345,4 +417,14 @@ public interface INotificationStage<TJob> : IJobStage where TJob : class, IJob
     INotificationStage<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
         where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
         where TJobDefinition : class, IJob;
+
+    /// <summary>
+    /// Adds a job that runs after the given job has finished.
+    /// </summary>
+    /// <param name="success">Configure a job that runs after the principal job has finished successfully.</param>
+    /// <param name="faulted">Configure a job that runs after the principal job has faulted. Faulted means that the parent job did throw an exception.</param>
+    /// <returns>The builder to add more jobs.</returns>
+    INotificationStage<TJob> ExecuteWhen(
+        Action<DependencyBuilder<TJob>>? success = null,
+        Action<DependencyBuilder<TJob>>? faulted = null);
 }
