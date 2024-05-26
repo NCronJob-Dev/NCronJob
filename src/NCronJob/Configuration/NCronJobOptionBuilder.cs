@@ -45,7 +45,7 @@ public class NCronJobOptionBuilder : IJobStage
 
         var builder = new JobOptionBuilder();
         options?.Invoke(builder);
-        
+
         Services.TryAddScoped<T>();
 
         var jobOptions = builder.GetJobOptions();
@@ -176,7 +176,7 @@ public class NCronJobOptionBuilder : IJobStage
 /// Represents a stage in the job lifecycle where the job is set to run at startup.
 /// </summary>
 /// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
-public class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
+internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
@@ -235,7 +235,7 @@ public class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 /// Represents a stage in the job lifecycle where notifications are handled for the job.
 /// </summary>
 /// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
-public class NotificationStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
