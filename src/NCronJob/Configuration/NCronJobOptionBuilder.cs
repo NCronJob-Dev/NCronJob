@@ -72,11 +72,14 @@ public class NCronJobOptionBuilder : IJobStage
     /// </summary>
     /// <param name="jobDelegate">The delegate that represents the job to be executed.</param>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
-    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression)
+    /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.
+    /// If not set the default time zone is UTC.
+    /// </param>
+    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
-        var jobName = AddJobInternal(typeof(DynamicJobFactory), jobDelegate, cronExpression);
+        var jobName = AddJobInternal(typeof(DynamicJobFactory), jobDelegate, cronExpression, timeZoneInfo ?? TimeZoneInfo.Utc);
         Services.AddKeyedSingleton(typeof(DynamicJobFactory), jobName, (sp, _) =>
             new DynamicJobFactory(sp, jobDelegate));
         return this;
@@ -89,10 +92,11 @@ public class NCronJobOptionBuilder : IJobStage
     /// <param name="jobType">The type of the job to be registered.</param>
     /// <param name="jobDelegate">The delegate that represents the job's execution logic. This can be either a synchronous or asynchronous delegate.</param>
     /// <param name="cronExpression">The cron expression that specifies the schedule on which the job should be executed.</param>
+    /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.</param>
     /// <returns>The name generated for the job, which is used as the key for scoped service registration.
     /// This name is derived from the job delegate and is used to uniquely identify the job in the service collection.</returns>
     /// <exception cref="ArgumentException">Thrown if the provided <paramref name="cronExpression"/> is null or empty.</exception>
-    private string AddJobInternal(Type jobType, Delegate jobDelegate, string cronExpression)
+    private string AddJobInternal(Type jobType, Delegate jobDelegate, string cronExpression, TimeZoneInfo timeZoneInfo)
     {
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
         ValidateConcurrencySetting(jobDelegate.Method);
@@ -103,7 +107,7 @@ public class NCronJobOptionBuilder : IJobStage
         {
             CronExpression = cronExpression,
             EnableSecondPrecision = determinedPrecision,
-            TimeZoneInfo = TimeZoneInfo.Utc
+            TimeZoneInfo = timeZoneInfo
         };
         var cron = GetCronExpression(jobOption);
 
