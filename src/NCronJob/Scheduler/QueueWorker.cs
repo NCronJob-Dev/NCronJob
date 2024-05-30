@@ -6,7 +6,7 @@ namespace NCronJob;
 
 internal sealed partial class QueueWorker : BackgroundService
 {
-    private const int GRACE_PERIOD_SECONDS = 5;
+    private const int GRACE_PERIOD_SECONDS = 2;
     private readonly JobExecutor jobExecutor;
     private readonly JobRegistry registry;
     private readonly JobQueue jobQueue;
@@ -135,11 +135,9 @@ internal sealed partial class QueueWorker : BackgroundService
     private bool HandleJobReadyForExecution(JobDefinition nextJob, (DateTimeOffset NextRunTime, int Priority) priorityTuple)
     {
         var utcNow = timeProvider.GetUtcNow();
-        if (priorityTuple.NextRunTime <= utcNow && IsCurrentlyRunning(nextJob) && !CanStartJob(nextJob))
-        {
-            return TryHandleJobGracePeriodExceeded(utcNow, nextJob, priorityTuple.NextRunTime);
-        }
-        return false;
+
+        return priorityTuple.NextRunTime <= utcNow && IsCurrentlyRunning(nextJob) && !CanStartJob(nextJob) &&
+               TryHandleJobGracePeriodExceeded(utcNow, nextJob, priorityTuple.NextRunTime);
     }
 
     private bool TryHandleJobGracePeriodExceeded(DateTimeOffset checkTime, JobDefinition nextJob, DateTimeOffset nextRunTime)
