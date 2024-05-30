@@ -13,7 +13,16 @@ public static class ServiceCollectionExtensions
     /// The delegate can depend on services registered in the dependency injection container, which are resolved at runtime.
     /// </summary>
     /// <param name="services">The service collection used to register the services.</param>
-    /// <param name="jobDelegate">The delegate that represents the job to be executed. This delegate must return either void or Task.
+    /// <param name="jobDelegate">The delegate that represents the job to be executed. This delegate must return either void or Task.</param>
+    /// <param name="cronExpression">The cron expression that defines when the job should be executed.
+    ///     <example>
+    ///         Example of cron expression: "*/5 * * * * *"
+    ///         This expression schedules the job to run every 5 seconds.
+    ///     </example>
+    /// </param>
+    /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.
+    /// If not set the default time zone is UTC.
+    /// </param>
     ///     <example>
     ///         Synchronous job example:
     ///         <code>
@@ -43,17 +52,17 @@ public static class ServiceCollectionExtensions
     ///                 logger.LogInformation($"Job ran after {attemptCount} attempts");
     ///             }, "*/5 * * * * *");
     ///         </code>
+    ///         Synchronous job example with TimeZone:
+    ///         <code>
+    ///             builder.Services.AddNCronJob((ILogger&lt;Program&gt; logger, TimeProvider timeProvider) =&gt;
+    ///             {
+    ///                 logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
+    ///             }, "*/40 * * * * *", TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"));
+    ///         </code>
     ///     </example>
-    /// </param>
-    /// <param name="cronExpression">The cron expression that defines when the job should be executed.
-    ///     <example>
-    ///         Example of cron expression: "*/5 * * * * *"
-    ///         This expression schedules the job to run every 5 seconds.
-    ///     </example>
-    /// </param>
     /// <returns>The modified service collection.</returns>
-    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression)
-        => services.AddNCronJob(builder => builder.AddJob(jobDelegate, cronExpression));
+    public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
+        => services.AddNCronJob(builder => builder.AddJob(jobDelegate, cronExpression, timeZoneInfo));
 }
 
 
