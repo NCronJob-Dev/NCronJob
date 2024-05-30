@@ -13,7 +13,7 @@ builder.Services.AddLogging();
 builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/20 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+        p.WithCronExpression("* * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
 
     // Execute the job every 2 minutes
     .AddJob<PrintHelloWorldJob>(p =>

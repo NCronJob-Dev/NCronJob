@@ -2,8 +2,10 @@ using NCronJob;
 
 namespace NCronJobSample;
 
+[SupportsConcurrency(10)]
 public partial class PrintHelloWorldJob : IJob
 {
+    private static int invocationCount;
     private readonly ILogger<PrintHelloWorldJob> logger;
 
     public PrintHelloWorldJob(ILogger<PrintHelloWorldJob> logger) => this.logger = logger;
@@ -12,7 +14,7 @@ public partial class PrintHelloWorldJob : IJob
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        LogMessage(context.Parameter);
+        LogMessage(++invocationCount);
 
         context.Output = "Hey there!";
 
