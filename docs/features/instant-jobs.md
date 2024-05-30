@@ -83,3 +83,24 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 
 ## Priority
 Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).
+
+## Minimal API
+Running instant jobs can also be done with the minimal API ([Minimal API](minimal-api.md)), which allows to create an anonymous lambda, that can also contain dependencies.
+
+```csharp
+app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) => 
+{
+    var parameterDto = new ParameterDto
+    {
+        Email = dto.Email,
+        Subject = dto.Subject,
+        Body = dto.Body
+    };
+
+    jobRegistry.RunInstantJob(async (HttpClient httpClient) => 
+    {
+        await httpClient.PostAsync("https://api.example.com/send-email", new StringContent(JsonSerializer.Serialize(parameterDto)));
+    });
+    return TypedResults.Ok();
+});
+```

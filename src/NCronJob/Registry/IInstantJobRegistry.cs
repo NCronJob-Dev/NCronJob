@@ -26,6 +26,16 @@ public interface IInstantJobRegistry
         where TJob : IJob;
 
     /// <summary>
+    /// Runs an instant job, which gets directly executed.
+    /// </summary>
+    /// <remarks>
+    /// The <paramref name="jobAction"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// Also the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// </remarks>
+    /// <param name="jobAction">The delegate to execute.</param>
+    void RunInstantJob(Delegate jobAction);
+
+    /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>.
     /// </summary>
     /// <param name="delay">The delay until the job will be executed.</param>
@@ -35,6 +45,17 @@ public interface IInstantJobRegistry
         where TJob : IJob;
 
     /// <summary>
+    /// Runs a job that will be executed after the given <paramref name="delay"/>.
+    /// </summary>
+    /// <param name="jobAction">The delegate to execute.</param>
+    /// <param name="delay">The delay until the job will be executed.</param>
+    /// <remarks>
+    /// The <paramref name="jobAction"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// Also the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// </remarks>
+    void RunScheduledJob(Delegate jobAction, TimeSpan delay);
+
+    /// <summary>
     /// Runs a job that will be executed at <paramref name="startDate"/>.
     /// </summary>
     /// <param name="startDate">The starting point when the job will be executed.</param>
@@ -42,6 +63,17 @@ public interface IInstantJobRegistry
     /// <param name="token">An optional token to cancel the job.</param>
     void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
+
+    /// <summary>
+    /// Runs a job that will be executed at the given <paramref name="startDate"/>.
+    /// </summary>
+    /// <param name="jobAction">The delegate to execute.</param>
+    /// <param name="startDate">The starting point when the job will be executed.</param>
+    /// <remarks>
+    /// The <paramref name="jobAction"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// Also the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// </remarks>
+    void RunScheduledJob(Delegate jobAction, DateTimeOffset startDate);
 }
 
 internal sealed partial class InstantJobRegistry : IInstantJobRegistry
@@ -49,17 +81,20 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private readonly TimeProvider timeProvider;
     private readonly JobQueue jobQueue;
     private readonly JobRegistry jobRegistry;
+    private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly ILogger<InstantJobRegistry> logger;
 
     public InstantJobRegistry(
         TimeProvider timeProvider,
         JobQueue jobQueue,
         JobRegistry jobRegistry,
+        DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueue = jobQueue;
         this.jobRegistry = jobRegistry;
+        this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.logger = logger;
     }
 
@@ -67,12 +102,20 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     public void RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob => RunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
 
+    public void RunInstantJob(Delegate jobAction) => RunScheduledJob(jobAction, TimeSpan.Zero);
+
     /// <inheritdoc />
     public void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
         where TJob : IJob
     {
         var utcNow = timeProvider.GetUtcNow();
         RunScheduledJob<TJob>(utcNow + delay, parameter, token);
+    }
+
+    public void RunScheduledJob(Delegate jobAction, TimeSpan delay)
+    {
+        var utcNow = timeProvider.GetUtcNow();
+        RunScheduledJob(jobAction, utcNow + delay);
     }
 
     /// <inheritdoc />
@@ -87,6 +130,15 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         token.Register(() => LogCancellationRequested(parameter));
 
         var run = JobRun.Create(jobRegistry.GetJobDefinition<TJob>(), parameter, token);
+        run.Priority = JobPriority.High;
+
+        jobQueue.EnqueueForDirectExecution(run, startDate);
+    }
+
+    public void RunScheduledJob(Delegate jobAction, DateTimeOffset startDate)
+    {
+        var definition = dynamicJobFactoryRegistry.Add(jobAction);
+        var run = JobRun.Create(definition);
         run.Priority = JobPriority.High;
 
         jobQueue.EnqueueForDirectExecution(run, startDate);
