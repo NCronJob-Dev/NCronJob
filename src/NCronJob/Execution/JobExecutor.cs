@@ -10,6 +10,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
     private readonly JobQueue jobQueue;
+    private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly JobHistory jobHistory;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
@@ -20,12 +21,14 @@ internal sealed partial class JobExecutor : IDisposable
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler,
         JobQueue jobQueue,
+        DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         JobHistory jobHistory)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
         this.jobQueue = jobQueue;
+        this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.jobHistory = jobHistory;
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
@@ -67,9 +70,9 @@ internal sealed partial class JobExecutor : IDisposable
         await ExecuteJob(runContext, job, scope);
     }
 
-    private static IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition) =>
-        typeof(DynamicJobFactory).IsAssignableFrom(definition.Type)
-            ? (IJob)scopedServiceProvider.GetRequiredKeyedService(definition.Type, definition.JobName)
+    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition) =>
+        definition.Type == typeof(DynamicJobFactory)
+            ? dynamicJobFactoryRegistry.GetAndDrainJobInstance(scopedServiceProvider, definition)
             : (IJob)scopedServiceProvider.GetRequiredService(definition.Type);
 
     public void Dispose()

@@ -141,6 +141,9 @@ public class MyService
   public MyService(IInstantJobRegistry jobRegistry) => this.jobRegistry = jobRegistry;
 
   public void MyMethod() => jobRegistry.RunInstantJob<MyJob>("I am an optional parameter");
+    
+  // Alternatively, you can also run an anonymous job
+  public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
 }
 ```
 

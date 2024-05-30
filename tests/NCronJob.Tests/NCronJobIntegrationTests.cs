@@ -313,6 +313,24 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         act.ShouldThrow<InvalidOperationException>();
     }
 
+    [Fact]
+    public async Task ExecuteAnInstantJobDelegate()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob(async (ChannelWriter<object> writer) =>
+        {
+            await writer.WriteAsync("Done");
+        });
+
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();

@@ -79,25 +79,7 @@ public class NCronJobOptionBuilder : IJobStage
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
-        var jobName = AddJobInternal(typeof(DynamicJobFactory), jobDelegate, cronExpression, timeZoneInfo ?? TimeZoneInfo.Utc);
-        Services.AddKeyedSingleton(typeof(DynamicJobFactory), jobName, (sp, _) =>
-            new DynamicJobFactory(sp, jobDelegate));
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a job in the service collection with specified delegate and cron expression.
-    /// This method configures job options, validates the cron expression, and creates a registry entry for the job.
-    /// </summary>
-    /// <param name="jobType">The type of the job to be registered.</param>
-    /// <param name="jobDelegate">The delegate that represents the job's execution logic. This can be either a synchronous or asynchronous delegate.</param>
-    /// <param name="cronExpression">The cron expression that specifies the schedule on which the job should be executed.</param>
-    /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.</param>
-    /// <returns>The name generated for the job, which is used as the key for scoped service registration.
-    /// This name is derived from the job delegate and is used to uniquely identify the job in the service collection.</returns>
-    /// <exception cref="ArgumentException">Thrown if the provided <paramref name="cronExpression"/> is null or empty.</exception>
-    private string AddJobInternal(Type jobType, Delegate jobDelegate, string cronExpression, TimeZoneInfo timeZoneInfo)
-    {
+        var jobType = typeof(DynamicJobFactory);
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
         ValidateConcurrencySetting(jobDelegate.Method);
 
@@ -107,20 +89,19 @@ public class NCronJobOptionBuilder : IJobStage
         {
             CronExpression = cronExpression,
             EnableSecondPrecision = determinedPrecision,
-            TimeZoneInfo = timeZoneInfo
+            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
         var cron = GetCronExpression(jobOption);
 
-        var jobName = GenerateJobName(jobDelegate);
-
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
-            JobName: jobName,
+            JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
             JobPolicyMetadata: jobPolicyMetadata);
         Services.AddSingleton(entry);
-
-        return jobName;
+        Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));
+        return this;
     }
+
     private void ValidateConcurrencySetting(object jobIdentifier)
     {
         var cachedJobAttributes = jobIdentifier switch
@@ -146,25 +127,6 @@ public class NCronJobOptionBuilder : IJobStage
         return CronExpression.TryParse(option.CronExpression, cf, out var cronExpression)
             ? cronExpression
             : throw new InvalidOperationException("Invalid cron expression");
-    }
-
-    /// <summary>
-    /// Construct a consistent job name from the delegate's method signature and a hash of its target
-    /// </summary>
-    /// <param name="jobDelegate">The delegate to generate a name for</param>
-    /// <returns></returns>
-    internal static string GenerateJobName(Delegate jobDelegate)
-    {
-        var methodInfo = jobDelegate.GetMethodInfo();
-        var jobNameBuilder = new StringBuilder(methodInfo.DeclaringType!.FullName);
-        jobNameBuilder.Append(methodInfo.Name);
-
-        foreach (var param in methodInfo.GetParameters())
-        {
-            jobNameBuilder.Append(param.ParameterType.Name);
-        }
-        var jobHash = jobNameBuilder.ToString().GenerateConsistentShortHash();
-        return $"AnonymousJob_{jobHash}";
     }
 
     internal void RegisterJobs()
