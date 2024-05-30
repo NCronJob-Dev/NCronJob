@@ -20,7 +20,7 @@
 		<RepositoryUrl>https://github.com/NCronJob-Dev/NCronJob</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/NCronJob-Dev/NCronJob</PackageProjectUrl>
-		<PackageTags>job-scheduler,jobscheduler,jobs,dotnet,csharp</PackageTags>
+		<PackageTags>job-scheduler,jobscheduler,jobs,dotnet,csharp,fire-and-forget,recurring,cron,queue,background</PackageTags>
 		<Authors>Steven Giesel</Authors>
 		<Company>Giesel Engineering</Company>
 		<Copyright>Steven Giesel</Copyright>
@@ -30,8 +30,6 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
 			Changes in NCronJob
-
-			#{RELEASE_NOTES}#
 
 			See the full changelog at https://github.com/NCronJob-Dev/NCronJob/releases
 		</PackageReleaseNotes>
@@ -57,9 +55,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
 		<PackageReference Include="Cronos" Version="0.8.4" />
 		<PackageReference Include="Polly" Version="8.4.0" />
 	</ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0-*" />
+  </ItemGroup>
 
 </Project>

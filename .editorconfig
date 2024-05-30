@@ -10,6 +10,9 @@ insert_final_newline = true
 [*.{xml,config,*proj,nuspec,props,resx,targets,yml,tasks}]
 tab_width = 2
 
+[*.csproj]
+indent_size = 2
+
 [*.{htm,html,js,jsm,ts,tsx,css,sass,scss,less,svg,vue}]
 tab_width = 2
 

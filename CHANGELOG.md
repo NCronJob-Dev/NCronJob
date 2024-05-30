@@ -6,10 +6,26 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Ability to add a timezone for a "minimal job"
+
+### Changed
+- Replace `Microsoft.Extensions.Hosting` with `Microsoft.Extensions.Hosting.Abstractions` for better compatibility. Reported by [@chrisls121](https://github.com/chrisls121) in [#74](https://github.com/NCronJob-Dev/NCronJob/issues/74). Implemented by [@linkdotnet](https://github.com/linkdotnet).
+
+## [2.6.1] - 2024-05-25
+
+This release has the same changes as `2.6.0` but fixes an issue in the release pipeline.
+
+### Changed
+
+- The NuGet.org "Release Notes" section will from now on be empty. It will contain a link to the releases.
+
+## [2.6.0] - 2024-05-25
+
 ### Changed
 
 - API signature improvements - Enhanced the job scheduling framework with new classes and interfaces to better support job lifecycle management, including startup configuration and notification handling. This includes the introduction of `StartupStage<TJob>`, `NotificationStage<TJob>`, `IJobStage`, `IStartupStage<TJob>`, and `INotificationStage<TJob>`.
-(#70) By [@falvarez1](https://github.com/falvarez1)
+  (#70) By [@falvarez1](https://github.com/falvarez1)
 
 ### Added
 
@@ -251,7 +267,9 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.5.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...HEAD
+[2.6.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.0...2.6.1
+[2.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.5.0...2.6.0
 [2.5.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.4.6...2.5.0
 [2.4.6]: https://github.com/linkdotnet/NCronJob/compare/2.4.5...2.4.6
 [2.4.5]: https://github.com/linkdotnet/NCronJob/compare/2.4.4...2.4.5

@@ -48,13 +48,6 @@ jobs:
         version: Unreleased
         path: ./CHANGELOG.md
 
-    -   name: 🛠️ Update tokens in project files
-        uses: cschleiden/replace-tokens@v1
-        with:
-            files: '["**/*.csproj"]'
-        env:
-            RELEASE_NOTES: ${{ steps.changelog.outputs.changes }}
-
     - name: Setup dotnet
       uses: actions/setup-dotnet@v4
       with:
