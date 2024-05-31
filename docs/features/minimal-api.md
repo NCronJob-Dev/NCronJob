@@ -91,3 +91,6 @@ The minimal API has some restrictions over the "full approach":
 
 ## Minimal API for instant Jobs
 The minimal API also supports instant jobs, for this check out the [Instant Jobs](instant-jobs.md) documentation.
+
+## Minimal API for dependent jobs
+The minimal API also supports dependent jobs, for this check out the [Dependent Jobs](model-dependencies.md#minimal-api) documentation.

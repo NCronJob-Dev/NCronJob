@@ -29,14 +29,14 @@ internal class DynamicJobFactory : IJob
             ).ToArray();
     }
 
-    private static Func<object[], Task> BuildInvoker(Delegate jobAction)
+    private static Func<object[], Task> BuildInvoker(Delegate jobDelegate)
     {
-        var method = jobAction.Method;
+        var method = jobDelegate.Method;
         var returnType = method.ReturnType;
         var param = Expression.Parameter(typeof(object[]), "args");
         var args = method.GetParameters().Select((p, index) =>
             Expression.Convert(Expression.ArrayIndex(param, Expression.Constant(index)), p.ParameterType)).ToArray();
-        var call = Expression.Call(Expression.Constant(jobAction.Target), method, args);
+        var call = Expression.Call(Expression.Constant(jobDelegate.Target), method, args);
 
         if (returnType == typeof(Task))
         {

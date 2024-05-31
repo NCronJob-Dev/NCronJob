@@ -13,18 +13,25 @@ internal sealed class DynamicJobFactoryRegistry
         map = entries.ToDictionary(e => e.JobDefinition.JobFullName, v => v.DynamicJobFactoryResolver);
     }
 
-    public JobDefinition Add(Delegate jobAction)
+    public JobDefinition Add(Delegate jobDelegate)
     {
-        var jobPolicyMetadata = new JobExecutionAttributes(jobAction);
+        var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(typeof(DynamicJobFactory), null, null, null,
-            JobName: DynamicJobNameGenerator.GenerateJobName(jobAction),
+            JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
             JobPolicyMetadata: jobPolicyMetadata);
         jobRegistry.Add(entry);
-        map[entry.JobFullName] = serviceProvider => new DynamicJobFactory(serviceProvider, jobAction);
+        map[entry.JobFullName] = serviceProvider => new DynamicJobFactory(serviceProvider, jobDelegate);
 
         return entry;
     }
 
+    /// <summary>
+    /// Gets the job instance and removes it from the registry. The instance will be drained so that the Garbage Collector can collect it.
+    /// </summary>
+    /// <remarks>
+    /// This function is called for triggering instant jobs. As the time interval between executions can be long (to indefinite),
+    /// the job instance should be removed from the registry to prevent memory leaks.
+    /// </remarks>
     public IJob GetAndDrainJobInstance(IServiceProvider serviceProvider, JobDefinition jobDefinition)
     {
         var element = map[jobDefinition.JobFullName](serviceProvider);

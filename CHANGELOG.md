@@ -9,6 +9,19 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 - Ability to add a timezone for a "minimal job".
 - Run jobs automatically when a job either succeeded or failed allowing to model a job pipeline. By [@linkdotnet](https://github.com/linkdotnet).
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
+     .ExecuteWhen(
+        success: s => s.RunJob<TransformData>("Optional Parameter"),
+        faulted: s => s.RunJob<Notify>("Another Optional Parameter"));
+});
+```
+- Minimal API for instant jobs and job dependencies. By [@linkdotnet](https://github.com/linkdotnet).
+```csharp
+public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
+```
 
 ### Changed
 - Replace `Microsoft.Extensions.Hosting` with `Microsoft.Extensions.Hosting.Abstractions` for better compatibility. Reported by [@chrisls121](https://github.com/chrisls121) in [#74](https://github.com/NCronJob-Dev/NCronJob/issues/74). Implemented by [@linkdotnet](https://github.com/linkdotnet).

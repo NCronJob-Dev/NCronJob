@@ -83,6 +83,24 @@ public class RunDependentJobTests : JobIntegrationBase
         storage.Guids.Count.ShouldBe(1);
     }
 
+    [Fact]
+    public async Task WhenJobWasSuccessful_DependentAnonymousJobShouldRun()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        Func<ChannelWriter<object>, JobExecutionContext, Task> execution = async (writer, context) => await writer.WriteAsync($"Parent: {context.ParentOutput}");
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob(execution)));
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true);
+
+        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        result.ShouldBe("Parent: Success");
+    }
+
     private sealed class PrincipalJob : IJob
     {
         public Task RunAsync(JobExecutionContext context, CancellationToken token)

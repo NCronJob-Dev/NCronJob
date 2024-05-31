@@ -2,7 +2,6 @@ using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
-using System.Text;
 
 namespace NCronJob;
 
@@ -202,7 +201,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     {
         if (success is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>();
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
             success(dependencyBuilder);
             var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
             runWhenSuccess.ForEach(s =>
@@ -215,7 +214,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 
         if (faulted is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>();
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
             faulted(dependencyBuilder);
             var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
             runWhenFaulted.ForEach(s =>
@@ -279,7 +278,7 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     {
         if (success is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>();
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
             success(dependencyBuilder);
             var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
             runWhenSuccess.ForEach(s =>
@@ -292,7 +291,7 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
 
         if (faulted is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>();
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
             faulted(dependencyBuilder);
             var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
             runWhenFaulted.ForEach(s =>
