@@ -16,7 +16,7 @@ Services.AddNCronJob(options =>
 Both `success` and `faulted` are optional so that you can define only one of them if needed. `RunJob` can be chained to allow multiple jobs to run after the completion of the main job.
 
 This allows very complex job dependencies to be defined in a simple and readable way.
-![dependencies](../assets/flow.png)
+![dependencies](../assets/flow.webp)
 
 ### Passing parameters to dependent jobs
 The `RunJob` method allows optional parameters to be passed to the dependent job. 
@@ -89,5 +89,31 @@ public class JobB : IJob
 builder.Services.AddNCronJob(options => 
 {
     options.AddJob<JobA>().ExecuteWhen(success: s => s.RunJob<JobB>());
+});
+```
+
+## Minimal API
+The `ExecuteWhen` method can also be used in a [Minimal API](minimal-api.md) to define job dependencies:
+```csharp
+builder.Services.AddNCronJob(options => 
+{
+    options.AddJob<ImportDataJob>().ExecuteWhen(
+        success: s => s.RunJob(async (ITransfomerService transformerService) => await transformerService.TransformDataAsync()),
+        faulted: f => f.RunJob(async (INotificationService notificationService) => await notificationService.SendNotificationAsync()));
+});
+```
+
+### Getting the parent job's output in a Minimal API
+If you pass in a `JobExecutionContext` to the dependent job, you can access the parent job's output:
+
+```csharp
+builder.Services.AddNCronJob(options => 
+{
+    options.AddJob<ImportDataJob>().ExecuteWhen(
+        success: s => s.RunJob(async (JobExecutionContext context, ITransfomerService transformerService) => 
+        {
+            var parentOutput = (MyDataModel)context.ParentOutput;
+            await transformerService.TransformDataAsync(parentOutput);
+        }));
 });
 ```

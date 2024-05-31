@@ -176,6 +176,18 @@ builder.Services.AddNCronJob(options =>
 });
 ```
 
+You just want to trigger a service and don't want to define a whole new job? No problem! The Minimal API is available here as well:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
+     .ExecuteWhen(
+        success: s => s.RunJob(async (ITransformer transformer) => await transformer.TransformDataAsync()),
+        faulted: s => s.RunJob(async (INotificationService notifier) => await notifier.NotifyAsync())
+});
+```
+
 ## Support & Contributing
 
 Thanks to all [contributors](https://github.com/NCronJob-Dev/NCronJob/graphs/contributors) and people that are creating
