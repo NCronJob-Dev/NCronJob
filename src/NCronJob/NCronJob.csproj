@@ -5,6 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>NCronJob</RootNamespace>
+    <LangVersion>preview</LangVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Label="NuGet">

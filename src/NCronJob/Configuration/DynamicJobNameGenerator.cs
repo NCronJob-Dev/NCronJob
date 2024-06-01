@@ -10,7 +10,7 @@ internal static class DynamicJobNameGenerator
     /// </summary>
     /// <param name="jobDelegate">The delegate to generate a name for</param>
     /// <returns></returns>
-    internal static string GenerateJobName(Delegate jobDelegate)
+    public static string GenerateJobName(Delegate jobDelegate)
     {
         var methodInfo = jobDelegate.GetMethodInfo();
         var jobNameBuilder = new StringBuilder(methodInfo.DeclaringType!.FullName);
