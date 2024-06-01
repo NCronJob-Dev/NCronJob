@@ -12,8 +12,8 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly TimeProvider timeProvider;
     private readonly ILogger<QueueWorker> logger;
     private readonly int globalConcurrencyLimit;
+    private readonly JobQueueManager jobQueueManager;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores;
-    private readonly ConcurrentDictionary<string, JobQueue> jobQueues;
     private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
     private readonly ConcurrentDictionary<string, Task> workerTasks = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
@@ -29,7 +29,7 @@ internal sealed partial class QueueWorker : BackgroundService
         ConcurrencySettings concurrencySettings,
         ILogger<QueueWorker> logger,
         IHostApplicationLifetime lifetime,
-        ConcurrentDictionary<string, JobQueue> jobQueues)
+        JobQueueManager jobQueueManager)
     {
         this.jobExecutor = jobExecutor;
         this.registry = registry;
@@ -38,7 +38,7 @@ internal sealed partial class QueueWorker : BackgroundService
         this.logger = logger;
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
         semaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
-        this.jobQueues = jobQueues;
+        this.jobQueueManager = jobQueueManager;
         this.startupJobManager = startupJobManager;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
@@ -80,7 +80,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private async Task WorkerAsync(string jobType, CancellationToken cancellationToken)
     {
-        var jobQueue = jobQueues.GetOrAdd(jobType, _ => new JobQueue(timeProvider));
+        var jobQueue = jobQueueManager.GetOrAddQueue(jobType);
         var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(jobType);
         var semaphore = semaphores.GetOrAdd(jobType, _ => new SemaphoreSlim(concurrencyLimit));
         var cts = new CancellationTokenSource();
@@ -187,7 +187,7 @@ internal sealed partial class QueueWorker : BackgroundService
         if (nextRunTime.HasValue)
         {
             job.NotifyStateChange(new JobState(JobStateType.Scheduled));
-            var jobQueue = jobQueues.GetOrAdd(job.JobFullName, _ => new JobQueue(timeProvider));
+            var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(job, (nextRunTime.Value, (int)job.Priority));
         }
     }

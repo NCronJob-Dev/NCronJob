@@ -1,5 +1,6 @@
 
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCronJob;
 
@@ -25,5 +26,17 @@ internal sealed class JobQueue : ObservablePriorityQueue<JobDefinition>
     }
 }
 
-internal sealed class JobQueueSet : ConcurrentDictionary<string, JobQueue>
-{ }
+internal sealed class JobQueueManager
+{
+    private readonly TimeProvider timeProvider;
+    private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
+
+    public JobQueueManager(TimeProvider timeProvider) => this.timeProvider = timeProvider;
+
+    public JobQueue GetOrAddQueue(string jobType) => jobQueues.GetOrAdd(jobType, _ => new JobQueue(timeProvider));
+
+    public bool TryGetQueue(string jobType, [MaybeNullWhen(false)] out JobQueue jobQueue) => jobQueues.TryGetValue(jobType, out jobQueue);
+
+    public IEnumerable<string> GetAllJobTypes() => jobQueues.Keys;
+}
+

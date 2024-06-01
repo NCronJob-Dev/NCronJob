@@ -17,7 +17,7 @@ internal record JobDefinition(
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
     public DateTimeOffset? RunAt { get; set; }
     public bool Completed => States.Exists(s => IsFinalState(s.Type));
-    public bool IsExpired => Completed || (RunAt.HasValue && DateTimeOffset.UtcNow - RunAt.Value > Expiry);
+    public bool IsExpired => RunAt.HasValue && DateTimeOffset.UtcNow - RunAt.Value > Expiry;
     public bool IsStartupJob { get; set; }
     public bool IsOneTimeJob { get; set; }
 

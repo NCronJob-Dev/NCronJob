@@ -51,20 +51,20 @@ public interface IInstantJobRegistry
 internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 {
     private readonly TimeProvider timeProvider;
-    private readonly ConcurrentDictionary<string, JobQueue> jobQueues;
+    private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
     private readonly QueueWorker queueWorker;
     private readonly ILogger<InstantJobRegistry> logger;
 
     public InstantJobRegistry(
         TimeProvider timeProvider,
-        ConcurrentDictionary<string, JobQueue> jobQueues,
+        JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
         QueueWorker queueWorker,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
-        this.jobQueues = jobQueues;
+        this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
         this.queueWorker = queueWorker;
         this.logger = logger;
@@ -100,7 +100,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
             IsOneTimeJob = true
         };
 
-        var jobQueue = jobQueues.GetOrAdd(run.JobFullName, _ => new JobQueue(timeProvider));
+        var jobQueue = jobQueueManager.GetOrAddQueue(run.JobFullName);
         jobQueue.EnqueueForDirectExecution(run, startDate);
 
         if (forceExecution)
