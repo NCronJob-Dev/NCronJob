@@ -13,25 +13,19 @@ internal static class StringExtensions
         return RemoveChars(base64ShortHash, '+', '/', '=');
     }
 
-    public static string RemoveChars(this ReadOnlySpan<char> input, params char[] charsToRemove)
+    public static string RemoveChars(this ReadOnlySpan<char> input, params ReadOnlySpan<char> charsToRemove)
     {
         Span<char> buffer = stackalloc char[input.Length];
         var index = 0;
 
         foreach (var ch in input)
         {
-            var remove = false;
-            foreach (var c in charsToRemove)
-            {
-                if (ch != c) continue;
-                remove = true;
-                break;
-            }
-            if (!remove)
+            if (!charsToRemove.Contains(ch))
             {
                 buffer[index++] = ch;
             }
         }
+
         return new string(buffer[..index]);
     }
 }
