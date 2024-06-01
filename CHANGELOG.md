@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Don't depend on prerelease version in `net9.0`
+
 ## [2.7.2] - 2024-06-01
 
 ### Added
