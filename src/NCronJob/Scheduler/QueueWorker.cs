@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
 
 namespace NCronJob;
 
@@ -42,6 +43,29 @@ internal sealed partial class QueueWorker : BackgroundService
         this.startupJobManager = startupJobManager;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
+
+        this.jobQueueManager.CollectionChanged += JobQueueManager_CollectionChanged;
+    }
+    
+    private void JobQueueManager_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (JobDefinition job in e.NewItems!)
+                {
+                    logger.LogInformation("Job added to the queue: {JobType} at {ScheduledAt}", job.Type.Name, job.RunAt);
+                }
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (JobDefinition job in e.OldItems!)
+                {
+                    logger.LogInformation("Job removed from the queue: {JobType} at {ScheduledAt}", job.Type.Name, job.RunAt);
+                }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     public override void Dispose()
