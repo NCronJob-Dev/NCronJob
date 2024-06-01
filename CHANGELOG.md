@@ -6,9 +6,13 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.7.2] - 2024-06-01
+
 ### Added
+
 - Ability to add a timezone for a "minimal job".
 - Run jobs automatically when a job either succeeded or failed allowing to model a job pipeline. By [@linkdotnet](https://github.com/linkdotnet).
+
 ```csharp
 builder.Services.AddNCronJob(options =>
 {
@@ -18,12 +22,15 @@ builder.Services.AddNCronJob(options =>
         faulted: s => s.RunJob<Notify>("Another Optional Parameter"));
 });
 ```
+
 - Minimal API for instant jobs and job dependencies. By [@linkdotnet](https://github.com/linkdotnet).
+
 ```csharp
 public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
 ```
 
 ### Changed
+
 - Replace `Microsoft.Extensions.Hosting` with `Microsoft.Extensions.Hosting.Abstractions` for better compatibility. Reported by [@chrisls121](https://github.com/chrisls121) in [#74](https://github.com/NCronJob-Dev/NCronJob/issues/74). Implemented by [@linkdotnet](https://github.com/linkdotnet).
 
 ## [2.6.1] - 2024-05-25
@@ -281,7 +288,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.2...HEAD
+[2.7.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...2.7.2
 [2.6.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.0...2.6.1
 [2.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.5.0...2.6.0
 [2.5.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.4.6...2.5.0
