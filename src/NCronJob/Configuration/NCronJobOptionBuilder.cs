@@ -199,31 +199,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     /// <inheritdoc />
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
     {
-        if (success is not null)
-        {
-            var dependencyBuilder = new DependencyBuilder<TJob>(services);
-            success(dependencyBuilder);
-            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
-            runWhenSuccess.ForEach(s =>
-            {
-                services.TryAddSingleton(s);
-                services.TryAddSingleton(s.Type);
-            });
-            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
-        }
-
-        if (faulted is not null)
-        {
-            var dependencyBuilder = new DependencyBuilder<TJob>(services);
-            faulted(dependencyBuilder);
-            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
-            runWhenFaulted.ForEach(s =>
-            {
-                services.TryAddSingleton(s);
-                services.TryAddSingleton(s.Type);
-            });
-            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
-        }
+        ExecuteWhenHelper.AddRegistration(services, jobs, success, faulted);
 
         return this;
     }
@@ -276,31 +252,7 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null,
         Action<DependencyBuilder<TJob>>? faulted = null)
     {
-        if (success is not null)
-        {
-            var dependencyBuilder = new DependencyBuilder<TJob>(services);
-            success(dependencyBuilder);
-            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
-            runWhenSuccess.ForEach(s =>
-            {
-                services.TryAddSingleton(s);
-                services.TryAddSingleton(s.Type);
-            });
-            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
-        }
-
-        if (faulted is not null)
-        {
-            var dependencyBuilder = new DependencyBuilder<TJob>(services);
-            faulted(dependencyBuilder);
-            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
-            runWhenFaulted.ForEach(s =>
-            {
-                services.TryAddSingleton(s);
-                services.TryAddSingleton(s.Type);
-            });
-            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
-        }
+        ExecuteWhenHelper.AddRegistration(services, jobs, success, faulted);
 
         return this;
     }
@@ -388,4 +340,44 @@ public interface INotificationStage<TJob> : IJobStage
     INotificationStage<TJob> ExecuteWhen(
         Action<DependencyBuilder<TJob>>? success = null,
         Action<DependencyBuilder<TJob>>? faulted = null);
+}
+
+internal static class ExecuteWhenHelper
+{
+    public static void AddRegistration<TJob>(
+        IServiceCollection services,
+        List<JobDefinition> jobs,
+        Action<DependencyBuilder<TJob>>? success,
+        Action<DependencyBuilder<TJob>>? faulted)
+        where TJob : IJob
+    {
+        if (success is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
+            success(dependencyBuilder);
+            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
+            runWhenSuccess.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                if (s.Type != typeof(DynamicJobFactory))
+                {
+                    services.TryAddSingleton(s.Type);
+                }
+            });
+            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
+        }
+
+        if (faulted is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
+            faulted(dependencyBuilder);
+            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
+            runWhenFaulted.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                services.TryAddSingleton(s.Type);
+            });
+            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
+        }
+    }
 }
