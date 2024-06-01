@@ -13,22 +13,31 @@ builder.Services.AddLogging();
 builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("* * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+        p.WithCronExpression("*/5 * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
 
-    // Execute the job every 2 minutes
-    .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
-    // Register a handler that gets executed when the job is done
-    .AddNotificationHandler<HelloWorldJobHandler>()
+    //.AddJob<PrintHelloWorldJob>(p =>
+    //    p.WithCronExpression("*/4 * * * * *"))
 
-    // Multiple instances of the same job with different cron expressions can be supported
-    // by marking the job with [SupportsConcurrency] attribute
-    .AddJob<ConcurrentTaskExecutorJob>(p =>
-        p.WithCronExpression("*/25 * * * * *"))
+    //// Execute the job every 2 minutes
+    //.AddJob<DataProcessingJob>(p =>
+    //    p.WithCronExpression("*/5 * * * * *"))
 
-    // A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
-    .AddJob<TestRetryJob>(p =>
-        p.WithCronExpression("*/5 * * * * *"))
+    //.AddJob<PrintHelloWorldJob>(p =>
+    //    p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
+
+    //.AddJob<PrintHelloWorldJob>(p =>
+    //    p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
+// Register a handler that gets executed when the job is done
+//.AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
+
+//// Multiple instances of the same job with different cron expressions can be supported
+//// by marking the job with [SupportsConcurrency] attribute
+//.AddJob<ConcurrentTaskExecutorJob>(p =>
+//    p.WithCronExpression("*/25 * * * * *"))
+
+//// A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
+//.AddJob<TestRetryJob>(p =>
+//    p.WithCronExpression("*/5 * * * * *"))
 );
 
 var app = builder.Build();
@@ -44,7 +53,7 @@ app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
 {
-    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
+    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ########################################################");
 })
     .WithName("TriggerInstantJob")
     .WithOpenApi();

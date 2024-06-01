@@ -6,50 +6,55 @@ namespace NCronJob;
 
 internal sealed partial class QueueWorker : BackgroundService
 {
-    private const int GRACE_PERIOD_SECONDS = 2;
     private readonly JobExecutor jobExecutor;
     private readonly JobRegistry registry;
-    private readonly JobQueue jobQueue;
     private readonly StartupJobManager startupJobManager;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<QueueWorker> logger;
-    private readonly SemaphoreSlim semaphore;
     private readonly int globalConcurrencyLimit;
-    private readonly SemaphoreSlim queueWaiter = new(0);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores;
+    private readonly ConcurrentDictionary<string, JobQueue> jobQueues;
     private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
+    private readonly ConcurrentDictionary<string, Task> workerTasks = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
     private CancellationTokenSource? shutdown;
-    private CancellationTokenSource rescheduleTrigger = new();
+
+    private int TotalRunningJobCount => runningJobCounts.Values.Sum();
 
     public QueueWorker(
         JobExecutor jobExecutor,
         JobRegistry registry,
-        JobQueue jobQueue,
         StartupJobManager startupJobManager,
         TimeProvider timeProvider,
         ConcurrencySettings concurrencySettings,
         ILogger<QueueWorker> logger,
-        IHostApplicationLifetime lifetime)
+        IHostApplicationLifetime lifetime,
+        ConcurrentDictionary<string, JobQueue> jobQueues)
     {
         this.jobExecutor = jobExecutor;
         this.registry = registry;
-        this.jobQueue = jobQueue;
         this.startupJobManager = startupJobManager;
         this.timeProvider = timeProvider;
         this.logger = logger;
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
-        semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
+        semaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
+        this.jobQueues = jobQueues;
+        this.startupJobManager = startupJobManager;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
-        this.jobQueue.JobEnqueued += RescheduleJobs;
     }
 
     public override void Dispose()
     {
         shutdown?.Dispose();
-        semaphore.Dispose();
-        queueWaiter.Dispose();
-        rescheduleTrigger.Dispose();
-        jobQueue.JobEnqueued -= RescheduleJobs;
+        foreach (var semaphore in semaphores.Values)
+        {
+            semaphore.Dispose();
+        }
+        foreach (var cts in jobCancellationTokens.Values)
+        {
+            cts.Dispose();
+        }
         base.Dispose();
     }
 
@@ -59,105 +64,108 @@ internal sealed partial class QueueWorker : BackgroundService
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
-        var runningTasks = new List<Task>();
 
         await startupJobManager.ProcessStartupJobs(CreateExecutionTask, stopToken);
-
         ScheduleInitialJobs();
+        await startupJobManager.WaitForStartupJobsCompletion();
 
-        try
+        foreach (var jobType in registry.GetAllJobTypes())
         {
-            await startupJobManager.WaitForStartupJobsCompletion();
-            
-            while (!stopToken.IsCancellationRequested)
+            var workerTask = Task.Run(() => WorkerAsync(jobType, stopToken), stopToken);
+            workerTasks.TryAdd(jobType, workerTask);
+        }
+
+        await Task.WhenAll(workerTasks.Values).ConfigureAwait(false);
+    }
+
+    private async Task WorkerAsync(string jobType, CancellationToken cancellationToken)
+    {
+        var jobQueue = jobQueues.GetOrAdd(jobType, _ => new JobQueue(timeProvider));
+        var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(jobType);
+        var semaphore = semaphores.GetOrAdd(jobType, _ => new SemaphoreSlim(concurrencyLimit));
+        var cts = new CancellationTokenSource();
+        jobCancellationTokens[jobType] = cts;
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await semaphore.WaitAsync(cancellationToken);
+
+            if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
             {
-                runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
-
-                if (jobQueue.Count == 0)
+                try
                 {
-                    await queueWaiter.WaitAsync(stopToken);
-                    continue;
-                }
-
-                if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
-                {
-                    if (HandleJobReadyForExecution(nextJob, priorityTuple))
+                    // there must be a better way to handle this 🤔
+                    lock (jobCancellationTokens)
                     {
-                        continue;
+                        if (cts.IsCancellationRequested || cts.Token.IsCancellationRequested)
+                        {
+#pragma warning disable S3966 // Suppress the warning for redundant disposal
+                            cts.Dispose();
+#pragma warning restore S3966
+                            cts = new CancellationTokenSource();
+                            jobCancellationTokens[jobType] = cts;
+                        }
                     }
+                    using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+                    await WaitForNextExecution(priorityTuple, tokenSource.Token);
 
-                    await WaitForNextExecution(priorityTuple, stopToken);
-
-                    if (stopToken.IsCancellationRequested)
-                        break;
-
-                    if (rescheduleTrigger.IsCancellationRequested)
-                    {
-                        rescheduleTrigger.Dispose();
-                        rescheduleTrigger = new();
-                        continue;
-                    }
-
-                    if (IsJobEligibleToStart(nextJob, runningTasks))
+                    if (IsJobEligibleToStart(nextJob, jobQueue))
                     {
                         jobQueue.Dequeue();
-                        UpdateRunningJobCount(nextJob.JobFullName, 1);
-
-                        await semaphore.WaitAsync(stopToken);
-                        var task = CreateExecutionTask(nextJob, stopToken);
-
-                        runningTasks.Add(task);
-                        ScheduleJob(nextJob);
-                    }
-                    else
-                    {
-                        // Note: do not remove, this is used to reduce the CPU usage for special cases dealing
-                        // with concurrent threads, otherwise the loop will run as fast as possible when the max concurrency limit is reached
-                        // while it waits for the tasks to complete
-                        await Task.WhenAny(runningTasks.Concat([Task.Delay(1000, stopToken)]));
+                        _ = ProcessJobAsync(nextJob, semaphore, cancellationToken);
+                        if (!nextJob.IsOneTimeJob)
+                        {
+                            ScheduleJob(nextJob);
+                        }
                     }
                 }
-
-                if (runningTasks.Count >= globalConcurrencyLimit)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    await Task.WhenAny(runningTasks);
+                    LogCancellationOperationInJob();
+                    nextJob.NotifyStateChange(new JobState(JobStateType.Cancelled));
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Handle manual cancellation (instant job insertion)
                 }
             }
-
-            await Task.WhenAll(runningTasks).ConfigureAwait(false);
+            else
+            {
+                semaphore.Release();
+                await Task.Delay(100, cancellationToken); // Avoid tight loop
+            }
         }
-        catch (OperationCanceledException)
+    }
+
+    private async Task ProcessJobAsync(JobDefinition job, SemaphoreSlim semaphore, CancellationToken cancellationToken)
+    {
+        try
         {
-            LogCancellationOperationInJob();
+            if (job.IsExpired)
+            {
+                LogDequeuingExpiredJob(job.JobName);
+                job.NotifyStateChange(new JobState(JobStateType.Cancelled));
+                return;
+            }
+
+            job.NotifyStateChange(new JobState(JobStateType.Running));
+            UpdateRunningJobCount(job.JobFullName, 1);
+
+            await jobExecutor.RunJob(job, cancellationToken).ConfigureAwait(false);
+
+            job.NotifyStateChange(new JobState(JobStateType.Completed));
         }
-    }
-
-    private bool HandleJobReadyForExecution(JobDefinition nextJob, (DateTimeOffset NextRunTime, int Priority) priorityTuple)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-
-        return priorityTuple.NextRunTime <= utcNow && IsCurrentlyRunning(nextJob) && !CanStartJob(nextJob) &&
-               TryHandleJobGracePeriodExceeded(utcNow, nextJob, priorityTuple.NextRunTime);
-    }
-
-    private bool TryHandleJobGracePeriodExceeded(DateTimeOffset checkTime, JobDefinition nextJob, DateTimeOffset nextRunTime)
-    {
-        if ((checkTime - nextRunTime).TotalSeconds > GRACE_PERIOD_SECONDS)
+        catch (Exception ex)
         {
-            LogDequeuingJobBeyondGracePeriod(nextJob.JobName);
-            jobQueue.Dequeue();
-            ScheduleJob(nextJob);
-            return true;
+            job.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
+            LogExceptionInJob(ex.Message, job.Type);
         }
-        return false;
-    }
-
-    private bool IsCurrentlyRunning(JobDefinition job) => runningJobCounts.TryGetValue(job.JobFullName, out var count) && count > 0;
-
-    private void RescheduleJobs(object? sender, EventArgs e)
-    {
-        queueWaiter.Release();
-        rescheduleTrigger.Cancel();
+        finally
+        {
+            UpdateRunningJobCount(job.JobFullName, -1);
+            semaphore.Release();
+        }
     }
 
     private void ScheduleInitialJobs()
@@ -178,72 +186,45 @@ internal sealed partial class QueueWorker : BackgroundService
 
         if (nextRunTime.HasValue)
         {
+            job.NotifyStateChange(new JobState(JobStateType.Scheduled));
+            var jobQueue = jobQueues.GetOrAdd(job.JobFullName, _ => new JobQueue(timeProvider));
             jobQueue.Enqueue(job, (nextRunTime.Value, (int)job.Priority));
-            LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);
         }
     }
 
-    private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple,
-        CancellationToken stopToken)
+    private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)
     {
         var utcNow = timeProvider.GetUtcNow();
         var delay = priorityTuple.NextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
-            using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(stopToken, rescheduleTrigger.Token);
-            try
+            await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
+        }
+    }
+
+    public async Task CreateExecutionTask(JobDefinition job, CancellationToken stopToken)
+    {
+        using var semaphore = new SemaphoreSlim(1);
+        await ProcessJobAsync(job, semaphore, stopToken);
+    }
+
+    public void SignalJobQueue(string jobType)
+    {
+        if (jobCancellationTokens.TryGetValue(jobType, out var cts))
+        {
+            cts.Cancel();
+            if (!cts.IsCancellationRequested)
             {
-                await TaskExtensions.LongDelaySafe(delay, timeProvider, tokenSource.Token);
-            }
-            catch (OperationCanceledException) when (rescheduleTrigger.IsCancellationRequested)
-            {
-                // ignore as we need to reevaluate the queue
+                jobCancellationTokens[jobType] = new CancellationTokenSource();
             }
         }
     }
 
-    private Task CreateExecutionTask(JobDefinition nextJob, CancellationToken stopToken)
-    {
-        var task = Task.Run(async () =>
-        {
-            try
-            {
-                await ExecuteJob(nextJob, stopToken);
-            }
-            finally
-            {
-                semaphore.Release();
-                UpdateRunningJobCount(nextJob.JobFullName, -1);
-            }
-        }, stopToken);
-        return task;
-    }
-
-    private bool IsJobEligibleToStart(JobDefinition nextJob, List<Task> runningTasks)
+    private bool IsJobEligibleToStart(JobDefinition nextJob, ObservablePriorityQueue<JobDefinition> jobQueue)
     {
         var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
-        var concurrentSlotsOpen = runningTasks.Count < globalConcurrencyLimit;
+        var concurrentSlotsOpen = TotalRunningJobCount < globalConcurrencyLimit;
         return isSameJob && CanStartJob(nextJob) && concurrentSlotsOpen;
-    }
-
-    private async Task ExecuteJob(JobDefinition entry, CancellationToken stoppingToken)
-    {
-        try
-        {
-            LogRunningJob(entry.Type);
-
-            await jobExecutor.RunJob(entry, stoppingToken).ConfigureAwait(false);
-
-            LogCompletedJob(entry.Type);
-        }
-        catch (Exception ex)
-        {
-            LogExceptionInJob(ex.Message, entry.Type);
-        }
-        finally
-        {
-            entry.IncrementJobExecutionCount();
-        }
     }
 
     private bool CanStartJob(JobDefinition jobEntry)

@@ -57,11 +57,12 @@ public class NCronJobOptionBuilder : IJobStage
                 : null;
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
             {
-                IsStartupJob = option.IsStartupJob
+                IsStartupJob = option.IsStartupJob,
+                RunAt = cron!.GetNextOccurrence(DateTimeOffset.UtcNow, option.TimeZoneInfo)
             };
             jobs.Add(entry);
         }
-
+        
 
         return new StartupStage<T>(Services, Settings, jobs, builder);
 
@@ -116,7 +117,8 @@ public class NCronJobOptionBuilder : IJobStage
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
             JobName: jobName,
-            JobPolicyMetadata: jobPolicyMetadata);
+            JobPolicyMetadata: jobPolicyMetadata)
+            {RunAt = cron!.GetNextOccurrence(DateTimeOffset.UtcNow, jobOption.TimeZoneInfo)};
         Services.AddSingleton(entry);
 
         return jobName;
