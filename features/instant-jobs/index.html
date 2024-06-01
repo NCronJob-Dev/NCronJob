@@ -67,6 +67,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#priority">Priority</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#minimal-api">Minimal API</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../concurrency-control/">Concurrency control</a>
@@ -76,6 +78,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../minimal-api/">Minimal API</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model-dependencies/">Model dependencies</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
@@ -187,6 +191,24 @@ So also CRON jobs can be triggered instantly.</p>
 
 <h2 id="priority">Priority<a class="headerlink" href="#priority" title="Permanent link">&para;</a></h2>
 <p>Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).</p>
+<h2 id="minimal-api">Minimal API<a class="headerlink" href="#minimal-api" title="Permanent link">&para;</a></h2>
+<p>Running instant jobs can also be done with the minimal API (<a href="../minimal-api/">Minimal API</a>), which allows to create an anonymous lambda, that can also contain dependencies.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">RequestDto</span><span class="w"> </span><span class="n">dto</span><span class="p">,</span><span class="w"> </span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">parameterDto</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterDto</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Email</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dto</span><span class="p">.</span><span class="n">Email</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">Subject</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dto</span><span class="p">.</span><span class="n">Subject</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">Body</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dto</span><span class="p">.</span><span class="n">Body</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunInstantJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">HttpClient</span><span class="w"> </span><span class="n">httpClient</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="n">PostAsync</span><span class="p">(</span><span class="s">&quot;https://api.example.com/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StringContent</span><span class="p">(</span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">parameterDto</span><span class="p">)));</span><span class="w"></span>
+<span class="w">    </span><span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
               
             </div>
           </div><footer>

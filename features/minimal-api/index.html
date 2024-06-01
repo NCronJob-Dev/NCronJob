@@ -69,13 +69,21 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#retry-support">Retry-Support</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#time-zone">Time Zone</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#concurrency-support">Concurrency-Support</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#restrictions">Restrictions</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#minimal-api-for-instant-jobs">Minimal API for instant Jobs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#minimal-api-for-dependent-jobs">Minimal API for dependent jobs</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model-dependencies/">Model dependencies</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
@@ -167,6 +175,11 @@
 <span class="p">},</span><span class="w"> </span><span class="s">&quot;0 * * * *&quot;</span><span class="p">);</span><span class="w"></span>
 </code></pre></div>
 
+<h2 id="time-zone">Time Zone<a class="headerlink" href="#time-zone" title="Permanent link">&para;</a></h2>
+<p>The time zone can be controlled as well and defaults to UTC if not specified:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="s">&quot;0 * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">.</span><span class="n">Local</span><span class="p">);</span><span class="w"></span>
+</code></pre></div>
+
 <h2 id="concurrency-support">Concurrency-Support<a class="headerlink" href="#concurrency-support" title="Permanent link">&para;</a></h2>
 <p>In the same way, the concurrency level can be controlled (see <a href="../concurrency-control/"><strong>Concurrency</strong></a>):</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">([</span><span class="n">SupportsConcurrency</span><span class="p">(</span><span class="m">2</span><span class="p">)]</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="s">&quot;0 * * * *&quot;</span><span class="p">);</span><span class="w"></span>
@@ -180,6 +193,10 @@
 <li>No support for <code>IJobNotificationHandler</code></li>
 <li>No support of defining dependencies between anonymous jobs</li>
 </ul>
+<h2 id="minimal-api-for-instant-jobs">Minimal API for instant Jobs<a class="headerlink" href="#minimal-api-for-instant-jobs" title="Permanent link">&para;</a></h2>
+<p>The minimal API also supports instant jobs, for this check out the <a href="../instant-jobs/">Instant Jobs</a> documentation.</p>
+<h2 id="minimal-api-for-dependent-jobs">Minimal API for dependent jobs<a class="headerlink" href="#minimal-api-for-dependent-jobs" title="Permanent link">&para;</a></h2>
+<p>The minimal API also supports dependent jobs, for this check out the <a href="../model-dependencies/#minimal-api">Dependent Jobs</a> documentation.</p>
               
             </div>
           </div><footer>
