@@ -7,9 +7,6 @@
   <br>
 </p>
 
-# 📣ANNOUNCEMENT📣
-The library has moved from `LinkDotNet.NCronJob` to just `NCronJob`!
-Please uninstall the old package and install the new one. Learn more about it here: https://github.com/NCronJob-Dev/NCronJob/discussions/66
 
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
@@ -32,7 +29,6 @@ jobs:
 
 The whole documentation can be found here: [NCronJob Documentation](https://ncronjob-dev.github.io/NCronJob/)
 
-- [📣ANNOUNCEMENT📣](#announcement)
 - [NCronJob](#ncronjob)
   - [Features](#features)
   - [Not features](#not-features)
