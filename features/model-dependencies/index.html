@@ -89,6 +89,8 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#getting-the-parent-jobs-output-in-a-minimal-api">Getting the parent job&rsquo;s output in a Minimal API</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#defining-dependencies-for-minimal-jobs">Defining dependencies for minimal Jobs</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -233,6 +235,14 @@
 <span class="w">        </span><span class="p">}));</span><span class="w"></span>
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
+
+<h3 id="defining-dependencies-for-minimal-jobs">Defining dependencies for minimal Jobs<a class="headerlink" href="#defining-dependencies-for-minimal-jobs" title="Permanent link">&para;</a></h3>
+<p>To define that a job should be executed afterward, you can use the <code>AddJob</code> overload like this:</p>
+<p>```csharp
+builder.Services.AddNCronJob(options =&gt; {
+    options.AddJob(async (IMyService myService) =&gt; await myService.Run())
+        .ExecuteWhen(success: b =&gt; b.RunJob(() =&gt; Console.Write(&ldquo;Run when successful&rdquo;)));
+});</p>
               
             </div>
           </div><footer>
