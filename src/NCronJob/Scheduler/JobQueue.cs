@@ -53,8 +53,8 @@ internal sealed class JobQueue : IDisposable
     /// </summary>
     public void RemoveAllCron()
     {
-        var cronJobs = jobQueue.UnorderedItems.Where(s => s.Element.JobDefinition.CronExpression is not null).ToArray();
+        var nonCronJobs = jobQueue.UnorderedItems.Where(s => s.Element.JobDefinition.CronExpression is null).ToArray();
         jobQueue.Clear();
-        jobQueue.EnqueueRange(cronJobs);
+        jobQueue.EnqueueRange(nonCronJobs);
     }
 }

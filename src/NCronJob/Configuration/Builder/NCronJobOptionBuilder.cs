@@ -54,13 +54,12 @@ public class NCronJobOptionBuilder : IJobStage
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option)
                 : null;
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobName: option.Name)
             {
                 IsStartupJob = option.IsStartupJob
             };
             jobs.Add(entry);
         }
-
 
         return new StartupStage<T>(Services, Settings, jobs, builder);
     }
@@ -73,7 +72,8 @@ public class NCronJobOptionBuilder : IJobStage
     /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.
     /// If not set the default time zone is UTC.
     /// </param>
-    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
+    /// <param name="jobName">Sets the job name that can be used to identify and maniuplate the job later on.</param>
+    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null, string? jobName = null)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
@@ -93,7 +93,7 @@ public class NCronJobOptionBuilder : IJobStage
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
-            JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
+            JobName: jobName ?? DynamicJobNameGenerator.GenerateJobName(jobDelegate),
             JobPolicyMetadata: jobPolicyMetadata);
         Services.AddSingleton(entry);
         Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));
