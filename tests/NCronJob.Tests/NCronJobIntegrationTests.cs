@@ -331,6 +331,23 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task AnonymousJobsCanBeExecutedMultipleTimes()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        await WaitForJobsOrTimeout(1);
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();

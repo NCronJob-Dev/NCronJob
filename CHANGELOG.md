@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+- Anonymous jobs don't execute multiple times
+
 ## [2.7.3] - 2024-06-01
 
 ### Changed
