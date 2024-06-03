@@ -63,7 +63,6 @@ public class NCronJobOptionBuilder : IJobStage
 
 
         return new StartupStage<T>(Services, Settings, jobs, builder);
-
     }
 
     /// <summary>
