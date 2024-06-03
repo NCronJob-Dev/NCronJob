@@ -44,6 +44,7 @@ nav:
   - Advanced:
     - Controlling the log level: advanced/log-level.md
     - Global Concurrency: advanced/global-concurrency.md
+    - Dynamic Job Control: advanced/dynamic-job-control.md
 
 extra:
   generator: false
