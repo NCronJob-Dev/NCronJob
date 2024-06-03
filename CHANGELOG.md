@@ -6,7 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.7.4] - 2024-06-03
+
 ### Fixed
+
 - Anonymous jobs don't execute multiple times
 
 ## [2.7.3] - 2024-06-01
@@ -297,7 +300,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.3...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.4...HEAD
+[2.7.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.3...2.7.4
 [2.7.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.2...2.7.3
 [2.7.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...2.7.2
 [2.6.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.0...2.6.1
