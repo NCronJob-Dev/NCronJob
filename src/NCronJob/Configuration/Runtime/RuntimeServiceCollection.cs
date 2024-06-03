@@ -7,4 +7,7 @@ internal sealed class RuntimeServiceCollection : List<ServiceDescriptor>, IServi
 {
     public ImmutableArray<JobDefinition> GetJobDefinitions()
         => [..this.Select(s => s.ImplementationInstance).OfType<JobDefinition>()];
+
+    public ImmutableArray<DynamicJobRegistration> GetDynamicJobFactoryRegistries()
+        => [..this.Select(s => s.ImplementationInstance).OfType<DynamicJobRegistration>()];
 }

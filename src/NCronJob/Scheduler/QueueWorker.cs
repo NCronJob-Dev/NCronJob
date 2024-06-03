@@ -39,7 +39,7 @@ internal sealed partial class QueueWorker : BackgroundService
         semaphore = new SemaphoreSlim(concurrencySettings.MaxDegreeOfParallelism);
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
-        this.jobQueue.JobEnqueued += RescheduleJobs;
+        this.jobQueue.JobQueueChanged += RescheduleAllJobs;
     }
 
     public override void Dispose()
@@ -48,7 +48,7 @@ internal sealed partial class QueueWorker : BackgroundService
         semaphore.Dispose();
         queueWaiter.Dispose();
         rescheduleTrigger.Dispose();
-        jobQueue.JobEnqueued -= RescheduleJobs;
+        jobQueue.JobQueueChanged -= RescheduleAllJobs;
         base.Dispose();
     }
 
@@ -62,7 +62,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
         await startupJobManager.ProcessStartupJobs(CreateExecutionTask, stopToken);
 
-        ScheduleInitialJobs();
+        ScheduleCronJobs();
 
         try
         {
@@ -126,13 +126,15 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private void RescheduleJobs(object? sender, EventArgs e)
+    private void RescheduleAllJobs(object? sender, EventArgs e)
     {
+        jobQueue.RemoveAllCron();
+        ScheduleCronJobs();
         queueWaiter.Release();
         rescheduleTrigger.Cancel();
     }
 
-    private void ScheduleInitialJobs()
+    private void ScheduleCronJobs()
     {
         foreach (var job in registry.GetAllCronJobs())
         {

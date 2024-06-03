@@ -17,7 +17,7 @@ internal sealed class JobQueue : IDisposable
     /// <summary>
     /// This will be triggered when the job queue has changes and therefore upcoming runs need reevaluation.
     /// </summary>
-    public event EventHandler? JobEnqueued;
+    public event EventHandler? JobQueueChanged;
 
     public int Count => jobQueue.Count;
 
@@ -30,7 +30,7 @@ internal sealed class JobQueue : IDisposable
         => jobQueue.TryPeek(out jobDefinition, out tuple);
 
     /// <summary>
-    /// Adds an entry to this instance and triggers the <see cref="JobEnqueued"/> event.
+    /// Adds an entry to this instance and triggers the <see cref="JobQueueChanged"/> event.
     /// </summary>
     /// <param name="job">The job that will be added.</param>
     /// <param name="when">An optional <see cref="DateTimeOffset"/> object representing when the job should run. If <code>null</code> it will run immediately.</param>
@@ -38,8 +38,23 @@ internal sealed class JobQueue : IDisposable
     {
         when ??= timeProvider.GetUtcNow();
         jobQueue.Enqueue(job, (when.Value, (int)job.Priority));
-        JobEnqueued?.Invoke(this, EventArgs.Empty);
+        JobQueueChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Dispose() => JobEnqueued = null;
+    /// <summary>
+    /// Signals that the internal job queue has changes and a new evaluation is needed.
+    /// </summary>
+    public void ReevaluateQueue() => JobQueueChanged?.Invoke(this, EventArgs.Empty);
+
+    public void Dispose() => JobQueueChanged = null;
+
+    /// <summary>
+    /// Removes all CRON jobs from the queue.
+    /// </summary>
+    public void RemoveAllCron()
+    {
+        var cronJobs = jobQueue.UnorderedItems.Where(s => s.Element.JobDefinition.CronExpression is not null).ToArray();
+        jobQueue.Clear();
+        jobQueue.EnqueueRange(cronJobs);
+    }
 }

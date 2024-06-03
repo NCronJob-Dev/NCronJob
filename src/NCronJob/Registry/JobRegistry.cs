@@ -4,7 +4,7 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
-    private readonly ImmutableArray<JobDefinition> cronJobs;
+    private readonly List<JobDefinition> cronJobs;
     private readonly ImmutableArray<JobDefinition> oneTimeJobs;
     private readonly List<JobDefinition> allJob;
 
@@ -28,6 +28,10 @@ internal sealed class JobRegistry
         if (!allJob.Exists(j => j.JobFullName == jobDefinition.JobFullName))
         {
             allJob.Add(jobDefinition);
+            if (jobDefinition.CronExpression is not null)
+            {
+                cronJobs.Add(jobDefinition);
+            }
         }
     }
 }

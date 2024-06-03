@@ -25,6 +25,12 @@ internal sealed class DynamicJobFactoryRegistry
         return entry;
     }
 
+    public void Add(DynamicJobRegistration entry)
+    {
+        jobRegistry.Add(entry.JobDefinition);
+        map[entry.JobDefinition.JobFullName] = entry.DynamicJobFactoryResolver;
+    }
+
     /// <summary>
     /// Gets the job instance.
     /// </summary>
