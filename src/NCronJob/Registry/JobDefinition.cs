@@ -7,21 +7,18 @@ internal record JobDefinition(
     object? Parameter,
     CronExpression? CronExpression,
     TimeZoneInfo? TimeZone,
-    JobPriority Priority = JobPriority.Normal,
     string? JobName = null,
     JobExecutionAttributes? JobPolicyMetadata = null)
 {
-    private int jobExecutionCount;
-    public CancellationToken CancellationToken { get; set; }
 
-    public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
-    public DateTimeOffset? RunAt { get; set; }
     public bool Completed => States.Exists(s => IsFinalState(s.Type));
-    public bool IsExpired => RunAt.HasValue && DateTimeOffset.UtcNow - RunAt.Value > Expiry;
     public bool IsStartupJob { get; set; }
-    public bool IsOneTimeJob { get; set; }
 
     public string JobName { get; } = JobName ?? Type.Name;
+
+    public List<JobDefinition> RunWhenSuccess { get; set; } = [];
+
+    public List<JobDefinition> RunWhenFaulted { get; set; } = [];
 
     /// <summary>
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
@@ -29,10 +26,6 @@ internal record JobDefinition(
     public string JobFullName => JobName == Type.Name
         ? Type.FullName ?? JobName
         : $"{typeof(DynamicJobFactory).Namespace}.{JobName}";
-
-    public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
-
-    public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
     public RetryPolicyAttribute? RetryPolicy => JobPolicyMetadata?.RetryPolicy;

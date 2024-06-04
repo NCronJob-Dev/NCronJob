@@ -2,7 +2,6 @@ using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
-using System.Text;
 
 namespace NCronJob;
 
@@ -58,11 +57,10 @@ public class NCronJobOptionBuilder : IJobStage
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
             {
                 IsStartupJob = option.IsStartupJob,
-                RunAt = cron!.GetNextOccurrence(DateTimeOffset.UtcNow, option.TimeZoneInfo)
             };
             jobs.Add(entry);
         }
-        
+
 
         return new StartupStage<T>(Services, Settings, jobs, builder);
 
@@ -80,25 +78,7 @@ public class NCronJobOptionBuilder : IJobStage
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
-        var jobName = AddJobInternal(typeof(DynamicJobFactory), jobDelegate, cronExpression, timeZoneInfo ?? TimeZoneInfo.Utc);
-        Services.AddKeyedSingleton(typeof(DynamicJobFactory), jobName, (sp, _) =>
-            new DynamicJobFactory(sp, jobDelegate));
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a job in the service collection with specified delegate and cron expression.
-    /// This method configures job options, validates the cron expression, and creates a registry entry for the job.
-    /// </summary>
-    /// <param name="jobType">The type of the job to be registered.</param>
-    /// <param name="jobDelegate">The delegate that represents the job's execution logic. This can be either a synchronous or asynchronous delegate.</param>
-    /// <param name="cronExpression">The cron expression that specifies the schedule on which the job should be executed.</param>
-    /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.</param>
-    /// <returns>The name generated for the job, which is used as the key for scoped service registration.
-    /// This name is derived from the job delegate and is used to uniquely identify the job in the service collection.</returns>
-    /// <exception cref="ArgumentException">Thrown if the provided <paramref name="cronExpression"/> is null or empty.</exception>
-    private string AddJobInternal(Type jobType, Delegate jobDelegate, string cronExpression, TimeZoneInfo timeZoneInfo)
-    {
+        var jobType = typeof(DynamicJobFactory);
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
         ValidateConcurrencySetting(jobDelegate.Method);
 
@@ -108,21 +88,19 @@ public class NCronJobOptionBuilder : IJobStage
         {
             CronExpression = cronExpression,
             EnableSecondPrecision = determinedPrecision,
-            TimeZoneInfo = timeZoneInfo
+            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
         var cron = GetCronExpression(jobOption);
 
-        var jobName = GenerateJobName(jobDelegate);
-
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
-            JobName: jobName,
-            JobPolicyMetadata: jobPolicyMetadata)
-            {RunAt = cron!.GetNextOccurrence(DateTimeOffset.UtcNow, jobOption.TimeZoneInfo)};
+            JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
+            JobPolicyMetadata: jobPolicyMetadata);
         Services.AddSingleton(entry);
-
-        return jobName;
+        Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));
+        return this;
     }
+
     private void ValidateConcurrencySetting(object jobIdentifier)
     {
         var cachedJobAttributes = jobIdentifier switch
@@ -150,25 +128,6 @@ public class NCronJobOptionBuilder : IJobStage
             : throw new InvalidOperationException("Invalid cron expression");
     }
 
-    /// <summary>
-    /// Construct a consistent job name from the delegate's method signature and a hash of its target
-    /// </summary>
-    /// <param name="jobDelegate">The delegate to generate a name for</param>
-    /// <returns></returns>
-    internal static string GenerateJobName(Delegate jobDelegate)
-    {
-        var methodInfo = jobDelegate.GetMethodInfo();
-        var jobNameBuilder = new StringBuilder(methodInfo.DeclaringType!.FullName);
-        jobNameBuilder.Append(methodInfo.Name);
-
-        foreach (var param in methodInfo.GetParameters())
-        {
-            jobNameBuilder.Append(param.ParameterType.Name);
-        }
-        var jobHash = jobNameBuilder.ToString().GenerateConsistentShortHash();
-        return $"AnonymousJob_{jobHash}";
-    }
-
     internal void RegisterJobs()
     {
         foreach (var job in jobs)
@@ -189,7 +148,11 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     private readonly List<JobDefinition> jobs;
     private readonly JobOptionBuilder jobOptionBuilder;
 
-    internal StartupStage(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
+    internal StartupStage(
+        IServiceCollection services,
+        ConcurrencySettings settings,
+        List<JobDefinition> jobs,
+        JobOptionBuilder jobOptionBuilder)
     {
         this.services = services;
         this.settings = settings;
@@ -210,7 +173,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
             }
         }
 
-        return new NotificationStage<TJob>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJob>(services, settings, jobs);
     }
 
 
@@ -223,14 +186,22 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
         where TJobDefinition : class, IJob
     {
         services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
-        return new NotificationStage<TJobDefinition>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJobDefinition>(services, settings, jobs);
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
     {
         services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return new NotificationStage<TJob>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJob>(services, settings, jobs);
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
+    {
+        ExecuteWhenHelper.AddRegistration(services, jobs, success, faulted);
+
+        return this;
     }
 
     /// <inheritdoc />
@@ -246,14 +217,15 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
     private readonly List<JobDefinition> jobs;
-    private readonly JobOptionBuilder jobOptionBuilder;
 
-    internal NotificationStage(IServiceCollection services, ConcurrencySettings settings, List<JobDefinition> jobs, JobOptionBuilder jobOptionBuilder)
+    internal NotificationStage(
+        IServiceCollection services,
+        ConcurrencySettings settings,
+        List<JobDefinition> jobs)
     {
         this.services = services;
         this.settings = settings;
         this.jobs = jobs;
-        this.jobOptionBuilder = jobOptionBuilder;
     }
 
     /// <inheritdoc />
@@ -265,7 +237,7 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
         where TJobDefinition : class, IJob
     {
         services.TryAddScoped<IJobNotificationHandler<TJobDefinition>, TJobNotificationHandler>();
-        return new NotificationStage<TJobDefinition>(services, settings, jobs, jobOptionBuilder);
+        return new NotificationStage<TJobDefinition>(services, settings, jobs);
     }
 
     /// <inheritdoc />
@@ -273,6 +245,15 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
         , IJobNotificationHandler<TJob>
     {
         services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return this;
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null,
+        Action<DependencyBuilder<TJob>>? faulted = null)
+    {
+        ExecuteWhenHelper.AddRegistration(services, jobs, success, faulted);
+
         return this;
     }
 
@@ -306,7 +287,8 @@ public interface IJobStage
 /// Defines the contract for a stage in the job lifecycle where the job is set to run at startup.
 /// </summary>
 /// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
-public interface IStartupStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+public interface IStartupStage<TJob> : INotificationStage<TJob>
+    where TJob : class, IJob
 {
     /// <summary>
     /// Configures the job to run once during the application startup before any other jobs.
@@ -319,7 +301,8 @@ public interface IStartupStage<TJob> : INotificationStage<TJob> where TJob : cla
 /// Defines the contract for a stage in the job lifecycle where notifications are handled for the job.
 /// </summary>
 /// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
-public interface INotificationStage<TJob> : IJobStage where TJob : class, IJob
+public interface INotificationStage<TJob> : IJobStage
+    where TJob : class, IJob
 {
     /// <summary>
     /// Adds a notification handler for a given <see cref="IJob"/>.
@@ -347,4 +330,54 @@ public interface INotificationStage<TJob> : IJobStage where TJob : class, IJob
     INotificationStage<TJobDefinition> AddNotificationHandler<TJobNotificationHandler, TJobDefinition>()
         where TJobNotificationHandler : class, IJobNotificationHandler<TJobDefinition>
         where TJobDefinition : class, IJob;
+
+    /// <summary>
+    /// Adds a job that runs after the given job has finished.
+    /// </summary>
+    /// <param name="success">Configure a job that runs after the principal job has finished successfully.</param>
+    /// <param name="faulted">Configure a job that runs after the principal job has faulted. Faulted means that the parent job did throw an exception.</param>
+    /// <returns>The builder to add more jobs.</returns>
+    INotificationStage<TJob> ExecuteWhen(
+        Action<DependencyBuilder<TJob>>? success = null,
+        Action<DependencyBuilder<TJob>>? faulted = null);
+}
+
+internal static class ExecuteWhenHelper
+{
+    public static void AddRegistration<TJob>(
+        IServiceCollection services,
+        List<JobDefinition> jobs,
+        Action<DependencyBuilder<TJob>>? success,
+        Action<DependencyBuilder<TJob>>? faulted)
+        where TJob : IJob
+    {
+        if (success is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
+            success(dependencyBuilder);
+            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
+            runWhenSuccess.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                if (s.Type != typeof(DynamicJobFactory))
+                {
+                    services.TryAddSingleton(s.Type);
+                }
+            });
+            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
+        }
+
+        if (faulted is not null)
+        {
+            var dependencyBuilder = new DependencyBuilder<TJob>(services);
+            faulted(dependencyBuilder);
+            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
+            runWhenFaulted.ForEach(s =>
+            {
+                services.TryAddSingleton(s);
+                services.TryAddSingleton(s.Type);
+            });
+            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
+        }
+    }
 }

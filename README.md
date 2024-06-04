@@ -7,9 +7,6 @@
   <br>
 </p>
 
-# 📣ANNOUNCEMENT📣
-The library has moved from `LinkDotNet.NCronJob` to just `NCronJob`!
-Please uninstall the old package and install the new one. Learn more about it here: https://github.com/NCronJob-Dev/NCronJob/discussions/66
 
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
@@ -19,7 +16,7 @@ Please uninstall the old package and install the new one. Learn more about it he
 
 A Job Scheduler sitting on top of `IHostedService` in .NET.
 
-Often, one finds themselves between the simplicity of `BackgroundService`/`IHostedService` and the complexity of
+Often, one finds oneself between the simplicity of `BackgroundService`/`IHostedService` and the complexity of
 a full-blown scheduler like `Hangfire` or `Quartz`.
 This library aims to fill that gap by providing a simple and easy-to-use job scheduler that can be used in any .NET
 application and feels "native".
@@ -39,7 +36,9 @@ The whole documentation can be found here: [NCronJob Documentation](https://ncro
     - [Minimal Job API](#minimal-job-api)
     - [Via the `IJob` interface](#via-the-ijob-interface)
   - [Triggering an instant job](#triggering-an-instant-job)
-  - [Support & Contributing](#support--contributing)
+  - [Running a Job at Startup](#running-a-job-at-startup)
+  - [Defining Job Dependencies](#defining-job-dependencies)
+  - [Support \& Contributing](#support--contributing)
 
 
 ## Features
@@ -53,6 +52,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://ncro
 - [x] The job scheduler supports TimeZones. Defaults to UTC time.
 - [x] Minimal API for Jobs - Implement jobs in a one-liner.
 - [x] Startup jobs - Run a job when the application starts.
+- [x] Define job dependencies - trigger another job if one was successful or faulted!
 
 ## Not features
 
@@ -137,6 +137,9 @@ public class MyService
   public MyService(IInstantJobRegistry jobRegistry) => this.jobRegistry = jobRegistry;
 
   public void MyMethod() => jobRegistry.RunInstantJob<MyJob>("I am an optional parameter");
+    
+  // Alternatively, you can also run an anonymous job
+  public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
 }
 ```
 
@@ -152,8 +155,34 @@ builder.Services.AddNCronJob(options =>
 });
 ```
 
-In this example, the job of type 'MyJob' will be executed as soon as the application starts. This is 
+In this example, the job of type 'MyJob' will be executed as soon as the application starts. This is
 useful for tasks that need to run immediately upon application startup, such as initial data loading or cleanup tasks.
+
+## Defining Job Dependencies
+
+First you need to import data and then transform it? Well, but how do you make sure that the data is imported before you transform it? Sure, you could just give a delay, but what if the import takes longer than expected? This is where job dependencies come in handy!
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
+     .ExecuteWhen(
+        success: s => s.RunJob<TransformData>("Optional Parameter"),
+        faulted: s => s.RunJob<Notify>("Another Optional Parameter"));
+});
+```
+
+You just want to trigger a service and don't want to define a whole new job? No problem! The Minimal API is available here as well:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
+     .ExecuteWhen(
+        success: s => s.RunJob(async (ITransformer transformer) => await transformer.TransformDataAsync()),
+        faulted: s => s.RunJob(async (INotificationService notifier) => await notifier.NotifyAsync())
+});
+```
 
 ## Support & Contributing
 

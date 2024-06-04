@@ -6,10 +6,37 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
-### Added
-- Ability to add a timezone for a "minimal job"
+## [2.7.3] - 2024-06-01
 
 ### Changed
+
+- Don't depend on prerelease version in `net9.0`
+
+## [2.7.2] - 2024-06-01
+
+### Added
+
+- Ability to add a timezone for a "minimal job".
+- Run jobs automatically when a job either succeeded or failed allowing to model a job pipeline. By [@linkdotnet](https://github.com/linkdotnet).
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
+     .ExecuteWhen(
+        success: s => s.RunJob<TransformData>("Optional Parameter"),
+        faulted: s => s.RunJob<Notify>("Another Optional Parameter"));
+});
+```
+
+- Minimal API for instant jobs and job dependencies. By [@linkdotnet](https://github.com/linkdotnet).
+
+```csharp
+public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
+```
+
+### Changed
+
 - Replace `Microsoft.Extensions.Hosting` with `Microsoft.Extensions.Hosting.Abstractions` for better compatibility. Reported by [@chrisls121](https://github.com/chrisls121) in [#74](https://github.com/NCronJob-Dev/NCronJob/issues/74). Implemented by [@linkdotnet](https://github.com/linkdotnet).
 
 ## [2.6.1] - 2024-05-25
@@ -76,7 +103,7 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
 ### Fixed
 
 - Instant jobs did ignore the concurrency attribute and global concurrency settings.
-  Fixed by [@linkdotnet](https://github.com/linkdotet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
+  Fixed by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
 
 ## [2.3.2] - 2024-05-08
 
@@ -267,7 +294,9 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.3...HEAD
+[2.7.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.2...2.7.3
+[2.7.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...2.7.2
 [2.6.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.0...2.6.1
 [2.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.5.0...2.6.0
 [2.5.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.4.6...2.5.0

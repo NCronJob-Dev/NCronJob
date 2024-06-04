@@ -9,6 +9,9 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
+    private readonly JobQueue jobQueue;
+    private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
+    private readonly JobHistory jobHistory;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
@@ -16,11 +19,17 @@ internal sealed partial class JobExecutor : IDisposable
         IServiceProvider serviceProvider,
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
-        IRetryHandler retryHandler)
+        IRetryHandler retryHandler,
+        JobQueue jobQueue,
+        DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
+        JobHistory jobHistory)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
+        this.jobQueue = jobQueue;
+        this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
+        this.jobHistory = jobHistory;
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -39,7 +48,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
     }
 
-    public async Task RunJob(JobDefinition run, CancellationToken stoppingToken)
+    public async Task RunJob(JobRun run, CancellationToken stoppingToken)
     {
         if (isDisposed)
         {
@@ -50,20 +59,21 @@ internal sealed partial class JobExecutor : IDisposable
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
-        var stopToken = linkedCts.Token;
+        run.CancellationToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
 
-        var job = ResolveJob(scope.ServiceProvider, run);
+        var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
 
+        jobHistory.Add(run);
         var runContext = new JobExecutionContext(run);
-        await ExecuteJob(runContext, job, scope, stopToken);
+        await ExecuteJob(runContext, job, scope);
     }
 
-    private static IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition run) =>
-        typeof(DynamicJobFactory).IsAssignableFrom(run.Type)
-            ? (IJob)scopedServiceProvider.GetRequiredKeyedService(run.Type, run.JobName)
-            : (IJob)scopedServiceProvider.GetRequiredService(run.Type);
+    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition) =>
+        definition.Type == typeof(DynamicJobFactory)
+            ? dynamicJobFactoryRegistry.GetAndDrainJobInstance(scopedServiceProvider, definition)
+            : (IJob)scopedServiceProvider.GetRequiredService(definition.Type);
 
     public void Dispose()
     {
@@ -74,11 +84,13 @@ internal sealed partial class JobExecutor : IDisposable
         isDisposed = true;
     }
 
-    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, AsyncServiceScope serviceScope, CancellationToken stoppingToken)
+    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, AsyncServiceScope serviceScope)
     {
+        var stoppingToken = runContext.JobRun.CancellationToken;
+
         try
         {
-            LogRunningJob(job.GetType());
+            LogRunningJob(job.GetType(), runContext.CorrelationId);
 
             await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
 
@@ -113,6 +125,29 @@ internal sealed partial class JobExecutor : IDisposable
                     // We don't want to throw exceptions from the notification service
                 }
             }
+
+            InformDependentJobs(runContext, exc is null);
+        }
+    }
+
+    public void InformDependentJobs(JobExecutionContext context, bool success)
+    {
+        if (!context.ExecuteChildren)
+        {
+            return;
+        }
+
+        var jobRun = context.JobRun;
+        var dependencies = success
+            ? jobRun.JobDefinition.RunWhenSuccess
+            : jobRun.JobDefinition.RunWhenFaulted;
+
+        foreach (var dependentJob in dependencies)
+        {
+            var newRun = JobRun.Create(dependentJob, dependentJob.Parameter, jobRun.CancellationToken);
+            newRun.CorrelationId = jobRun.CorrelationId;
+            newRun.ParentOutput = context.Output;
+            jobQueue.EnqueueForDirectExecution(newRun);
         }
     }
 }

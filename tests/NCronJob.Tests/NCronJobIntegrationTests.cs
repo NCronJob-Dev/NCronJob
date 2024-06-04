@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using NCronJob;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Time.Testing;
@@ -183,7 +182,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             using var serviceScope = provider.CreateScope();
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
-            await executor.RunJob(new JobDefinition(typeof(JobWithDependency), null, null, null), CancellationToken.None);
+            var jobDefinition = new JobDefinition(typeof(JobWithDependency), null, null, null);
+            await executor.RunJob(JobRun.Create(jobDefinition), CancellationToken.None);
         });
     }
 
@@ -311,6 +311,24 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         Action act = () => provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
         act.ShouldThrow<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task ExecuteAnInstantJobDelegate()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob(async (ChannelWriter<object> writer) =>
+        {
+            await writer.WriteAsync("Done");
+        });
+
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
     }
 
     private sealed class GuidGenerator

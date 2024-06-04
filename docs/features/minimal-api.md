@@ -65,6 +65,13 @@ builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] (JobExecutionContext c
 }, "0 * * * *");
 ```
 
+## Time Zone
+The time zone can be controlled as well and defaults to UTC if not specified:
+
+```csharp
+builder.Services.AddNCronJob(() => { }, "0 * * * *", TimeZoneInfo.Local);
+```
+
 ## Concurrency-Support
 In the same way, the concurrency level can be controlled (see [**Concurrency**](concurrency-control.md)):
 
@@ -81,3 +88,9 @@ The minimal API has some restrictions over the "full approach":
  * Some errors can only be detected at runtime (for example if the job does not return `void` or `Task`).
  * No support for `IJobNotificationHandler`
  * No support of defining dependencies between anonymous jobs
+
+## Minimal API for instant Jobs
+The minimal API also supports instant jobs, for this check out the [Instant Jobs](instant-jobs.md) documentation.
+
+## Minimal API for dependent jobs
+The minimal API also supports dependent jobs, for this check out the [Dependent Jobs](model-dependencies.md#minimal-api) documentation.

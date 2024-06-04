@@ -52,19 +52,22 @@ internal sealed partial class QueueWorker : BackgroundService
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                foreach (JobDefinition job in e.NewItems!)
+                foreach (JobRun job in e.NewItems!)
                 {
-                    logger.LogInformation("Job added to the queue: {JobType} at {ScheduledAt}", job.Type.Name, job.RunAt);
+                    LogJobAddedToQueue(job.JobDefinition.Type.Name, job.RunAt);
                 }
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (JobDefinition job in e.OldItems!)
+                foreach (JobRun job in e.OldItems!)
                 {
-                    logger.LogInformation("Job removed from the queue: {JobType} at {ScheduledAt}", job.Type.Name, job.RunAt);
+                    LogJobRemovedFromQueue(job.JobDefinition.Type.Name, job.RunAt);
                 }
                 break;
+            case NotifyCollectionChangedAction.Replace:
+            case NotifyCollectionChangedAction.Move:
+            case NotifyCollectionChangedAction.Reset:
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(e), e.Action, "Unexpected collection change action in JobQueueManager_CollectionChanged");
         }
     }
 
@@ -139,14 +142,14 @@ internal sealed partial class QueueWorker : BackgroundService
                         _ = ProcessJobAsync(nextJob, semaphore, cancellationToken);
                         if (!nextJob.IsOneTimeJob)
                         {
-                            ScheduleJob(nextJob);
+                            ScheduleJob(nextJob.JobDefinition);
                         }
                     }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     LogCancellationOperationInJob();
-                    nextJob.NotifyStateChange(new JobState(JobStateType.Cancelled));
+                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
                     break;
                 }
                 catch (OperationCanceledException)
@@ -162,32 +165,32 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private async Task ProcessJobAsync(JobDefinition job, SemaphoreSlim semaphore, CancellationToken cancellationToken)
+    private async Task ProcessJobAsync(JobRun jobRun, SemaphoreSlim semaphore, CancellationToken cancellationToken)
     {
         try
         {
-            if (job.IsExpired)
+            if (jobRun.IsExpired)
             {
-                LogDequeuingExpiredJob(job.JobName);
-                job.NotifyStateChange(new JobState(JobStateType.Cancelled));
+                LogDequeuingExpiredJob(jobRun.JobDefinition.JobName);
+                jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
                 return;
             }
 
-            job.NotifyStateChange(new JobState(JobStateType.Running));
-            UpdateRunningJobCount(job.JobFullName, 1);
+            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Running));
+            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, 1);
 
-            await jobExecutor.RunJob(job, cancellationToken).ConfigureAwait(false);
+            await jobExecutor.RunJob(jobRun, cancellationToken).ConfigureAwait(false);
 
-            job.NotifyStateChange(new JobState(JobStateType.Completed));
+            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Completed));
         }
         catch (Exception ex)
         {
-            job.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
-            LogExceptionInJob(ex.Message, job.Type);
+            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
+            LogExceptionInJob(ex.Message, jobRun.JobDefinition.Type);
         }
         finally
         {
-            UpdateRunningJobCount(job.JobFullName, -1);
+            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, -1);
             semaphore.Release();
         }
     }
@@ -210,9 +213,12 @@ internal sealed partial class QueueWorker : BackgroundService
 
         if (nextRunTime.HasValue)
         {
+            LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
             job.NotifyStateChange(new JobState(JobStateType.Scheduled));
+            var run = JobRun.Create(job);
+            run.RunAt = nextRunTime;
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
-            jobQueue.Enqueue(job, (nextRunTime.Value, (int)job.Priority));
+            jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
         }
     }
 
@@ -226,10 +232,10 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    public async Task CreateExecutionTask(JobDefinition job, CancellationToken stopToken)
+    public async Task CreateExecutionTask(JobRun jobRun, CancellationToken stopToken)
     {
         using var semaphore = new SemaphoreSlim(1);
-        await ProcessJobAsync(job, semaphore, stopToken);
+        await ProcessJobAsync(jobRun, semaphore, stopToken);
     }
 
     public void SignalJobQueue(string jobType)
@@ -244,11 +250,11 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private bool IsJobEligibleToStart(JobDefinition nextJob, ObservablePriorityQueue<JobDefinition> jobQueue)
+    private bool IsJobEligibleToStart(JobRun nextJob, ObservablePriorityQueue<JobRun> jobQueue)
     {
         var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
         var concurrentSlotsOpen = TotalRunningJobCount < globalConcurrencyLimit;
-        return isSameJob && CanStartJob(nextJob) && concurrentSlotsOpen;
+        return isSameJob && CanStartJob(nextJob.JobDefinition) && concurrentSlotsOpen;
     }
 
     private bool CanStartJob(JobDefinition jobEntry)
