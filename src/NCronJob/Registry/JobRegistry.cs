@@ -22,9 +22,8 @@ internal sealed class JobRegistry
 
     public bool IsJobRegistered<T>() => allJob.Exists(j => j.Type == typeof(T));
 
-    public JobDefinition GetJobDefinition(string jobName)
-        => allJob.Find(j => j.JobName == jobName)
-            ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+    public JobDefinition? FindJobDefinition(string jobName)
+        => allJob.Find(j => j.JobName == jobName);
 
     public JobDefinition GetJobDefinitionForInstantJob<T>()
     {

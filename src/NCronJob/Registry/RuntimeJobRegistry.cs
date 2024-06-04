@@ -35,6 +35,15 @@ public interface IRuntimeJobRegistry
     /// <param name="timeZoneInfo">An optional timezone to use for the cron expression.If not provided, UTC is used.</param>
     /// <remarks>If the given job is not found, an exception is thrown.</remarks>
     void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null);
+
+    /// <summary>
+    /// Retrieves the schedule of a given job by its name. If the job is not found, the out parameters are set to null.
+    /// </summary>
+    /// <param name="jobName">The given job name.</param>
+    /// <param name="cronExpression">The associated cron expression. If the job has none, or couldn't be found this will be <c>null</c>.</param>
+    /// <param name="timeZoneInfo">The associated time zone. If the job has none, or couldn't be found this will be <c>null</c>.</param>
+    /// <returns></returns>
+    bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo);
 }
 
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
@@ -95,7 +104,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(cronExpression);
 
         var precisionRequired = JobOptionBuilder.DetermineAndValidatePrecision(cronExpression, null);
-        var job = jobRegistry.GetJobDefinition(jobName);
+        var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
         var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression, precisionRequired);
 
@@ -103,5 +112,22 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
 
         jobQueue.ReevaluateQueue();
+    }
+
+    public bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo)
+    {
+        cronExpression = null;
+        timeZoneInfo = null;
+
+        var job = jobRegistry.FindJobDefinition(jobName);
+        if (job is null)
+        {
+            return false;
+        }
+
+        cronExpression = job.CronExpression?.ToString();
+        timeZoneInfo = job.TimeZone;
+
+        return true;
     }
 }
