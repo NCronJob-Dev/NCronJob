@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Allow dynamically adding, removing jobs, updating the schedule or parameter and getting the schedule for a given job.
+  Done by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#83](https://github.com/linkdotnet/NCronJob/issues/83)
+
 ## [2.7.4] - 2024-06-03
 
 ### Fixed

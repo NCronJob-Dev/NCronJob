@@ -1,7 +1,7 @@
 # Dynamic Job Control
 **NCronJob** allows you to dynmically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.
 
-## Defining job names
+## Defining job names
 The core idea is to define an unique job name for each job that might be mutated during runtime. The job name is an optional parameter:
 
 ```csharp
@@ -30,7 +30,7 @@ app.MapPost("/add-job", (IRuntimeJobRegistry registry) =>
 
 The outer `AddJob` accepts a builder just like `builder.Services.AddNCronJob` does. The inner `AddJob` is the one that actually adds the job to the scheduler and does behave exactly the same.
 
-## Removing jobs
+## Removing jobs
 There are two ways to remove a job from the scheduler. By name or by type. To remove a job by name:
 
 ```csharp
@@ -88,7 +88,7 @@ app.MapPut("/update-job", (IRuntimeJobRegistry registry) =>
 
 Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the "old" parameter will be cancelled and rescheduled with the new parameter.
 
-## Retrieving a job schedule by name
+## Retrieving a job schedule by name
 To retrieve the schedule of a job by name, use the `TryGetSchedule` method:
 
 ```csharp

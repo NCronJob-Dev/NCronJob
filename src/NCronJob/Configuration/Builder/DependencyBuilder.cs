@@ -24,7 +24,7 @@ public sealed class DependencyBuilder<TPrincipalJob>
     public DependencyBuilder<TPrincipalJob> RunJob<TJob>(object? parameter = null, string? jobName = null)
         where TJob : IJob
     {
-        dependentJobOptions.Add(new JobDefinition(typeof(TJob), parameter, null, null, jobName));
+        dependentJobOptions.Add(new JobDefinition(typeof(TJob), parameter, null, null) { CustomName = jobName });
         return this;
     }
 
@@ -39,8 +39,11 @@ public sealed class DependencyBuilder<TPrincipalJob>
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(typeof(DynamicJobFactory), null, null, null,
-            JobName: jobName ?? DynamicJobNameGenerator.GenerateJobName(jobDelegate),
-            JobPolicyMetadata: jobPolicyMetadata);
+            JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
+            JobPolicyMetadata: jobPolicyMetadata)
+        {
+            CustomName = jobName
+        };
         dependentJobOptions.Add(entry);
         services.AddSingleton(entry);
         services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));

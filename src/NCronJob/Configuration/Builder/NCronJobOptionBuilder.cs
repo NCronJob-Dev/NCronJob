@@ -54,9 +54,10 @@ public class NCronJobOptionBuilder : IJobStage
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option.CronExpression, option.EnableSecondPrecision)
                 : null;
-            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobName: option.Name)
+            var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
             {
-                IsStartupJob = option.IsStartupJob
+                IsStartupJob = option.IsStartupJob,
+                CustomName = option.Name,
             };
             jobs.Add(entry);
         }
@@ -93,8 +94,8 @@ public class NCronJobOptionBuilder : IJobStage
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
-            JobName: jobName ?? DynamicJobNameGenerator.GenerateJobName(jobDelegate),
-            JobPolicyMetadata: jobPolicyMetadata);
+            JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
+            JobPolicyMetadata: jobPolicyMetadata) { CustomName = jobName };
         Services.AddSingleton(entry);
         Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));
         return this;

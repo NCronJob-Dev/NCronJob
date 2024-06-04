@@ -14,6 +14,8 @@ internal sealed record JobDefinition(
 
     public string JobName { get; } = JobName ?? Type.Name;
 
+    public string? CustomName { get; set; }
+
     public CronExpression? CronExpression { get; set; } = CronExpression;
 
     public object? Parameter { get; set; } = Parameter;

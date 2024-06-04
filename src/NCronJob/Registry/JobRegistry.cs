@@ -23,7 +23,7 @@ internal sealed class JobRegistry
     public bool IsJobRegistered<T>() => allJob.Exists(j => j.Type == typeof(T));
 
     public JobDefinition? FindJobDefinition(string jobName)
-        => allJob.Find(j => j.JobName == jobName);
+        => allJob.Find(j => j.CustomName == jobName);
 
     public JobDefinition GetJobDefinitionForInstantJob<T>()
     {
@@ -52,7 +52,7 @@ internal sealed class JobRegistry
         }
     }
 
-    public void RemoveByName(string jobName) => Remove(allJob.Find(j => j.JobName == jobName));
+    public void RemoveByName(string jobName) => Remove(allJob.Find(j => j.CustomName == jobName));
 
     public void RemoveByType(Type type) => Remove(allJob.Find(j => j.Type == type));
 

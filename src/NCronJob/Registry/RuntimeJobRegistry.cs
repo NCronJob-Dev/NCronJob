@@ -56,7 +56,7 @@ public interface IRuntimeJobRegistry
     /// <param name="jobName">The given job name.</param>
     /// <param name="cronExpression">The associated cron expression. If the job has none, or couldn't be found this will be <c>null</c>.</param>
     /// <param name="timeZoneInfo">The associated time zone. If the job has none, or couldn't be found this will be <c>null</c>.</param>
-    /// <returns></returns>
+    /// <returns>Returns <c>true</c> if the job was found, otherwise <c>false</c>.</returns>
     bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo);
 }
 
