@@ -33,8 +33,22 @@ public interface IRuntimeJobRegistry
     /// <param name="jobName">The name of the job.</param>
     /// <param name="cronExpression">The new cron expression for the job.</param>
     /// <param name="timeZoneInfo">An optional timezone to use for the cron expression.If not provided, UTC is used.</param>
-    /// <remarks>If the given job is not found, an exception is thrown.</remarks>
+    /// <remarks>
+    /// If the given job is not found, an exception is thrown.
+    /// Furthermore, all current planned executions of that job are canceled and rescheduled with the new cron expression.
+    /// </remarks>
     void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null);
+
+    /// <summary>
+    /// Updates the parameter of a given job by its name.
+    /// </summary>
+    /// <param name="jobName">The name of the job.</param>
+    /// <param name="parameter">The new parameter that will be passed into the job.</param>
+    /// <remarks>
+    /// If the given job is not found, an exception is thrown.
+    /// Furthermore, all current planned executions of that job are canceled and rescheduled with the new parameter.
+    /// </remarks>
+    void UpdateParameter(string jobName, object? parameter);
 
     /// <summary>
     /// Retrieves the schedule of a given job by its name. If the job is not found, the out parameters are set to null.
@@ -46,6 +60,7 @@ public interface IRuntimeJobRegistry
     bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo);
 }
 
+/// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
     private readonly JobRegistry jobRegistry;
@@ -65,6 +80,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         this.concurrencySettings = concurrencySettings;
     }
 
+    /// <inheritdoc />
     public void AddJob(Action<NCronJobOptionBuilder> jobBuilder)
     {
         var runtimeCollection = new RuntimeServiceCollection();
@@ -84,20 +100,24 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         jobQueue.ReevaluateQueue();
     }
 
+    /// <inheritdoc />
     public void RemoveJob(string jobName)
     {
         jobRegistry.RemoveByName(jobName);
         jobQueue.ReevaluateQueue();
     }
 
+    /// <inheritdoc />
     public void RemoveJob<TJob>() where TJob : IJob => RemoveJob(typeof(TJob));
 
+    /// <inheritdoc />
     public void RemoveJob(Type type)
     {
         jobRegistry.RemoveByType(type);
         jobQueue.ReevaluateQueue();
     }
 
+    /// <inheritdoc />
     public void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
     {
         ArgumentNullException.ThrowIfNull(jobName);
@@ -114,6 +134,19 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         jobQueue.ReevaluateQueue();
     }
 
+    /// <inheritdoc />
+    public void UpdateParameter(string jobName, object? parameter)
+    {
+        ArgumentNullException.ThrowIfNull(jobName);
+
+        var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+
+        job.Parameter = parameter;
+
+        jobQueue.ReevaluateQueue();
+    }
+
+    /// <inheritdoc />
     public bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo)
     {
         cronExpression = null;

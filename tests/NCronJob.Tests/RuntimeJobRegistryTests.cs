@@ -144,8 +144,28 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         timeZoneInfo.ShouldBeNull();
     }
 
+    [Fact]
+    public async Task UpdatingParameterHasImmediateEffect()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
+            .WithCronExpression("* * * * *")
+            .WithParameter("foo")
+            .WithName("JobName")));
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        registry.UpdateParameter("JobName", "Bar");
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        content.ShouldBe("Bar");
+    }
+
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token) => await writer.WriteAsync(true, token);
+        public async Task RunAsync(JobExecutionContext context, CancellationToken token) => await writer.WriteAsync(context.Parameter ?? string.Empty, token);
     }
 }

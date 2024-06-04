@@ -16,6 +16,8 @@ internal sealed record JobDefinition(
 
     public CronExpression? CronExpression { get; set; } = CronExpression;
 
+    public object? Parameter { get; set; } = Parameter;
+
     public TimeZoneInfo? TimeZone { get; set; } = TimeZone;
 
     public List<JobDefinition> RunWhenSuccess { get; set; } = [];
