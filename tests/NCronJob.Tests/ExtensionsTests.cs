@@ -81,7 +81,6 @@ public class NCronJobTests
         options.ShouldContain(o => o.CronExpression == "0 1 * * *" && !o.EnableSecondPrecision);
     }
 
-
     private sealed class FakeJob : IJob
     {
         public Task RunAsync(JobExecutionContext context, CancellationToken token)

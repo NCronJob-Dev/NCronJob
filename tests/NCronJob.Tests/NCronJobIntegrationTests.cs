@@ -348,6 +348,31 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
+    public void AddingJobsWithTheSameCustomNameLeadsToException()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob(() => { }, "* * * * *", jobName: "Job1")
+                .AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        var provider = CreateServiceProvider();
+
+        Action act = () => provider.GetRequiredService<JobRegistry>();
+
+        act.ShouldThrow<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void AddJobsDynamicallyWhenNameIsDuplicatedLeadsToException()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        var provider = CreateServiceProvider();
+        var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var act = () => runtimeRegistry.AddJob(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+
+        act.ShouldThrow<InvalidOperationException>();
+    }
+
     private sealed class GuidGenerator
     {
         public Guid NewGuid { get; } = Guid.NewGuid();

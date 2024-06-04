@@ -14,6 +14,8 @@ internal sealed class JobRegistry
         allJob = [..jobDefinitions];
         cronJobs = [..jobDefinitions.Where(c => c.CronExpression is not null)];
         oneTimeJobs = [..jobDefinitions.Where(c => c.IsStartupJob)];
+
+        AssertNoDuplicateJobNames();
     }
 
     public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => cronJobs;
@@ -45,6 +47,8 @@ internal sealed class JobRegistry
             return;
         }
 
+        AssertNoDuplicateJobNames(jobDefinition.CustomName);
+
         allJob.Add(jobDefinition);
         if (jobDefinition.CronExpression is not null)
         {
@@ -67,6 +71,21 @@ internal sealed class JobRegistry
         if (jobDefinition.CronExpression is not null)
         {
             cronJobs.Remove(jobDefinition);
+        }
+    }
+
+    private void AssertNoDuplicateJobNames(string? additionalJobName = null)
+    {
+        var duplicateJobName = allJob
+            .Select(c => c.CustomName)
+            .Concat([additionalJobName])
+            .Where(s => s is not null)
+            .GroupBy(s => s)
+            .FirstOrDefault(g => g.Count() > 1);
+
+        if (duplicateJobName is not null)
+        {
+            throw new InvalidOperationException($"Duplicate job names found: {string.Join(", ", duplicateJobName)}");
         }
     }
 }
