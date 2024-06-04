@@ -26,6 +26,25 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task MultipleDynamicallyAddedJobsAreExecuted()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob();
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        registry.AddJob(s => s
+            .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *")
+            .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(2);
+        jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task CanRemoveJobByName()
     {
         var fakeTimer = new FakeTimeProvider();
