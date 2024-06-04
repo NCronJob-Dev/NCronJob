@@ -46,7 +46,29 @@ That will remove one job from the scheduler that has the name `MyName`. In contr
 ```csharp
 app.MapDelete("/remove-job", (IJobRegistry registry) => 
 {
-    registry.RemoveJob<SampleJob>();
+    registry.RemoveJob<SampleJob>(); // Alternatively RemoveJob(typeof(SampleJob))
+    return TypedResults.Ok();
+});
+```
+
+## Updating the job schedule
+Updating the job schedule is done via the `UpdateSchedule` method. This method accepts a job name, a new CRON expression and optionally the time zone:
+
+```csharp
+app.MapPut("/update-job", (IJobRegistry registry) => 
+{
+    registry.UpdateSchedule("MyName", "* * * * *", TimeZoneInfo.Utc);
+    return TypedResults.Ok();
+});
+```
+
+### Disabling a job
+To disable a CRON job, you can set the cron expression to the 31st of February. This will effectively disable the job:
+
+```csharp
+app.MapPut("/disable-job", (IJobRegistry registry) => 
+{
+    registry.UpdateSchedule("MyName", "0 0 31 2 *", TimeZoneInfo.Utc);
     return TypedResults.Ok();
 });
 ```

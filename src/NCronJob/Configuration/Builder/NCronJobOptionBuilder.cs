@@ -52,7 +52,7 @@ public class NCronJobOptionBuilder : IJobStage
         foreach (var option in jobOptions)
         {
             var cron = option.CronExpression is not null
-                ? GetCronExpression(option)
+                ? GetCronExpression(option.CronExpression, option.EnableSecondPrecision)
                 : null;
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo, JobName: option.Name)
             {
@@ -76,9 +76,9 @@ public class NCronJobOptionBuilder : IJobStage
     public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null, string? jobName = null)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
+        ArgumentException.ThrowIfNullOrEmpty(cronExpression);
 
         var jobType = typeof(DynamicJobFactory);
-        ArgumentException.ThrowIfNullOrEmpty(cronExpression);
         ValidateConcurrencySetting(jobDelegate.Method);
 
         var determinedPrecision = JobOptionBuilder.DetermineAndValidatePrecision(cronExpression, null);
@@ -89,7 +89,7 @@ public class NCronJobOptionBuilder : IJobStage
             EnableSecondPrecision = determinedPrecision,
             TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
-        var cron = GetCronExpression(jobOption);
+        var cron = GetCronExpression(jobOption.CronExpression, jobOption.EnableSecondPrecision);
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
@@ -118,11 +118,11 @@ public class NCronJobOptionBuilder : IJobStage
         }
     }
 
-    internal static CronExpression GetCronExpression(JobOption option)
+    internal static CronExpression GetCronExpression(string expression, bool enableSecondPrecision)
     {
-        var cf = option.EnableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
+        var cf = enableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
 
-        return CronExpression.TryParse(option.CronExpression, cf, out var cronExpression)
+        return CronExpression.TryParse(expression, cf, out var cronExpression)
             ? cronExpression
             : throw new InvalidOperationException("Invalid cron expression");
     }

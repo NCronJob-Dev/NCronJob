@@ -14,6 +14,10 @@ internal sealed record JobDefinition(
 
     public string JobName { get; } = JobName ?? Type.Name;
 
+    public CronExpression? CronExpression { get; set; } = CronExpression;
+
+    public TimeZoneInfo? TimeZone { get; set; } = TimeZone;
+
     public List<JobDefinition> RunWhenSuccess { get; set; } = [];
 
     public List<JobDefinition> RunWhenFaulted { get; set; } = [];

@@ -26,6 +26,15 @@ public interface IRuntimeJobRegistry
     /// Removes all jobs of the given type.
     /// </summary>
     void RemoveJob(Type type);
+
+    /// <summary>
+    /// Updates the schedule of a given job by its name.
+    /// </summary>
+    /// <param name="jobName">The name of the job.</param>
+    /// <param name="cronExpression">The new cron expression for the job.</param>
+    /// <param name="timeZoneInfo">An optional timezone to use for the cron expression.If not provided, UTC is used.</param>
+    /// <remarks>If the given job is not found, an exception is thrown.</remarks>
+    void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null);
 }
 
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
@@ -77,6 +86,22 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     public void RemoveJob(Type type)
     {
         jobRegistry.RemoveByType(type);
+        jobQueue.ReevaluateQueue();
+    }
+
+    public void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
+    {
+        ArgumentNullException.ThrowIfNull(jobName);
+        ArgumentNullException.ThrowIfNull(cronExpression);
+
+        var precisionRequired = JobOptionBuilder.DetermineAndValidatePrecision(cronExpression, null);
+        var job = jobRegistry.GetJobDefinition(jobName);
+
+        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression, precisionRequired);
+
+        job.CronExpression = cron;
+        job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
+
         jobQueue.ReevaluateQueue();
     }
 }
