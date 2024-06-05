@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 
 namespace NCronJob;
 
+#pragma warning disable CA2008
 internal sealed partial class QueueWorker : BackgroundService
 {
     private readonly JobQueueManager jobQueueManager;
@@ -15,6 +16,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly ILogger<QueueWorker> logger;
     private CancellationTokenSource? shutdown;
     private readonly ConcurrentDictionary<string, Task> workerTasks = new();
+    private readonly TaskFactory taskFactory;
 
     public QueueWorker(
         JobQueueManager jobQueueManager,
@@ -37,6 +39,8 @@ internal sealed partial class QueueWorker : BackgroundService
         // Subscribe to CollectionChanged and QueueAdded events
         this.jobQueueManager.CollectionChanged += JobQueueManager_CollectionChanged;
         this.jobQueueManager.QueueAdded += OnQueueAdded;
+
+        taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
     public override void Dispose()
@@ -75,7 +79,7 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         if (!workerTasks.ContainsKey(jobType))
         {
-            var workerTask = Task.Run(() => jobWorker.WorkerAsync(jobType, stopToken), stopToken);
+            var workerTask = taskFactory.StartNew(() => jobWorker.WorkerAsync(jobType, stopToken), stopToken);
             workerTasks.TryAdd(jobType, workerTask);
         }
     }

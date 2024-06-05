@@ -19,6 +19,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <NoWarn>S2696</NoWarn>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 

@@ -1,15 +1,20 @@
 using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
+
+#pragma warning disable CA2008
 internal sealed partial class JobProcessor
 {
     private readonly JobExecutor jobExecutor;
     private readonly ILogger<JobProcessor> logger;
+    private readonly TaskFactory taskFactory;
 
     public JobProcessor(JobExecutor jobExecutor, ILogger<JobProcessor> logger)
     {
         this.jobExecutor = jobExecutor;
         this.logger = logger;
+        
+        taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
     public async Task ProcessJobAsync(JobRun jobRun, SemaphoreSlim semaphore, CancellationToken cancellationToken)
@@ -25,7 +30,9 @@ internal sealed partial class JobProcessor
 
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Running));
 
-            await jobExecutor.RunJob(jobRun, cancellationToken).ConfigureAwait(false);
+            await taskFactory.StartNew(() => jobExecutor.RunJob(jobRun, cancellationToken), cancellationToken)
+                .Unwrap()
+                .ConfigureAwait(false);
 
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Completed));
         }

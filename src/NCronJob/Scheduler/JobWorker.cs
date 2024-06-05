@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace NCronJob;
@@ -11,7 +10,9 @@ internal sealed class JobWorker
     private readonly int globalConcurrencyLimit;
     private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
     private int TotalRunningJobCount => runningJobCounts.Values.Sum();
+    private readonly TaskFactory taskFactory;
 
+#pragma warning disable CA2008
     public JobWorker(
         JobQueueManager jobQueueManager,
         JobProcessor jobProcessor,
@@ -24,6 +25,8 @@ internal sealed class JobWorker
         this.registry = registry;
         this.timeProvider = timeProvider;
         this.globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
+
+        taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
     public async Task WorkerAsync(string jobType, CancellationToken cancellationToken)
@@ -48,7 +51,10 @@ internal sealed class JobWorker
                     {
                         jobQueue.Dequeue();
                         UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
-                        _ = jobProcessor.ProcessJobAsync(nextJob, semaphore, cancellationToken).ContinueWith(task =>
+
+                        _ = taskFactory.StartNew(async () => await jobProcessor.ProcessJobAsync(nextJob, semaphore, cancellationToken), cancellationToken)
+                            .Unwrap()
+                        .ContinueWith(task =>
                         {
                             UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
 
@@ -62,7 +68,9 @@ internal sealed class JobWorker
                                 nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
                             }
 
-                        }, cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
+                        }, cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current)
+                            .ConfigureAwait(false);
+
                         if (!nextJob.IsOneTimeJob)
                         {
                             ScheduleJob(nextJob.JobDefinition);
@@ -76,7 +84,7 @@ internal sealed class JobWorker
                 }
                 catch (OperationCanceledException)
                 {
-                    // Handle manual cancellation (instant job insertion)
+                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
                 }
             }
             else
@@ -93,7 +101,7 @@ internal sealed class JobWorker
         var delay = priorityTuple.NextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
-            await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken);
+            await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken).ConfigureAwait(false);
         }
     }
 
@@ -125,7 +133,7 @@ internal sealed class JobWorker
 
         if (nextRunTime.HasValue)
         {
-        //    LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
+            //    LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
             var run = JobRun.Create(job);
             run.RunAt = nextRunTime;
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);

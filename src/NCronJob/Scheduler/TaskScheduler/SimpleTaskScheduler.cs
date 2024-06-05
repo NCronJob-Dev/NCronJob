@@ -2,7 +2,10 @@ using System.Collections.Concurrent;
 
 namespace NCronJob;
 
-internal class NCronJobTaskScheduler : TaskScheduler
+/// <summary>
+/// Simple, high-performance scheduling: Use when tasks are independent, short-lived, and can be executed immediately without complex scheduling requirements.
+/// </summary>
+internal class SimpleTaskScheduler : TaskScheduler
 {
     private readonly ConcurrentQueue<Task> tasks = new();
 

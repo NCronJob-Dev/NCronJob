@@ -53,23 +53,18 @@ app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
 {
-    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ########################################################");
+    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ###################### Queued, not forced ######################");
 })
     .WithName("TriggerInstantJob")
     .WithOpenApi();
 
-app.MapPost("/trigger-instant-concurrent", (IInstantJobRegistry instantJobRegistry) =>
+app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry) =>
 {
-    instantJobRegistry.RunInstantJob<ConcurrentTaskExecutorJob>();
+    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ######################## May the Force be with you ######################",
+        forceExecution: true);
 })
-    .WithSummary("Triggers a job that can run concurrently with other instances.")
-    .WithDescription(
-        """
-        This endpoint triggers an instance of 'TestCancellationJob' that is designed
-        to run concurrently with other instances of the same job. Each instance operates
-        independently, allowing parallel processing without mutual interference.
-        """)
-    .WithName("TriggerConcurrentJob")
+    .WithSummary("Triggers a job regardless of concurrency setting for that Job Type")
+    .WithName("ForceTriggerInstantJob")
     .WithOpenApi();
 
 await app.RunAsync();
