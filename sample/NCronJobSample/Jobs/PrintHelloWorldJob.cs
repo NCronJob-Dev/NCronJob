@@ -16,7 +16,7 @@ public partial class PrintHelloWorldJob : IJob
 
         LogMessage($"{++invocationCount}  {context.Parameter}");
 
-        await Task.Delay(200000, token);
+        await Task.Delay(20000, token);
     }
 
     [LoggerMessage(LogLevel.Information, "Scheduled email job done with count {Parameter}.")]

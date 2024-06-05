@@ -69,11 +69,21 @@ internal sealed partial class JobExecutor : IDisposable
         var runContext = new JobExecutionContext(run);
         await ExecuteJob(runContext, job, scope);
     }
+    
+    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
+    {
+        if (definition.Type == typeof(DynamicJobFactory))
+            return dynamicJobFactoryRegistry.GetAndDrainJobInstance(scopedServiceProvider, definition);
 
-    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition) =>
-        definition.Type == typeof(DynamicJobFactory)
-            ? dynamicJobFactoryRegistry.GetAndDrainJobInstance(scopedServiceProvider, definition)
-            : (IJob)scopedServiceProvider.GetRequiredService(definition.Type);
+        var job = scopedServiceProvider.GetService(definition.Type);
+        if (job != null)
+            return (IJob)job;
+
+        LogUnregisteredJob(definition.Type);
+        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
+
+        return (IJob)job;
+    }
 
     public void Dispose()
     {

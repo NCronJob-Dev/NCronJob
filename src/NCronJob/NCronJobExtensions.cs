@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Collections.Concurrent;
 
 namespace NCronJob;
 
@@ -41,6 +40,8 @@ public static class NCronJobExtensions
         services.TryAddSingleton<JobHistory>();
         services.TryAddSingleton<JobQueue>();
         services.TryAddSingleton<JobQueueManager>();
+        services.TryAddSingleton<JobWorker>();
+        services.TryAddTransient<JobProcessor>();
         services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();

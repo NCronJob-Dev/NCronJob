@@ -31,4 +31,7 @@ internal sealed partial class QueueWorker
     [LoggerMessage(LogLevel.Trace, "Job removed from the queue: {JobName} scheduled for {ScheduledFor}")]
     private partial void LogJobRemovedFromQueue(string jobName, DateTimeOffset? scheduledFor);
 
+    [LoggerMessage(LogLevel.Trace, "New Job Queue added for new job type {JobTypeName}")]
+    private partial void LogNewQueueAdded(string jobTypeName);
+
 }

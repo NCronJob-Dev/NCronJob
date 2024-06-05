@@ -1,5 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 
 namespace NCronJob;
 
@@ -128,20 +128,22 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     /// <inheritdoc />
     public void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default) where TJob : IJob
     {
+        var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
+
         if (!jobRegistry.IsJobRegistered<TJob>())
         {
             LogJobNotRegistered(typeof(TJob).Name);
-            throw new InvalidOperationException($"Job {typeof(TJob).Name} is not registered.");
+            jobRegistry.Add(newJobDefinition);
         }
 
         token.Register(() => LogCancellationRequested(parameter));
-        
-        var definition = jobRegistry.GetJobDefinition<TJob>();
 
-        var run = JobRun.Create(definition, parameter, token);
+        var run = JobRun.Create(newJobDefinition, parameter, token);
         run.Priority = JobPriority.High;
         run.RunAt = startDate;
         run.IsOneTimeJob = true;
+
+        jobQueueManager.TryGetQueue(run.JobDefinition.JobFullName, out var testJobQueue);
 
         var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
         jobQueue.EnqueueForDirectExecution(run, startDate);
@@ -149,7 +151,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         if (forceExecution)
             _ = queueWorker.CreateExecutionTask(run, token);
         else
-            queueWorker.SignalJobQueue(run.JobDefinition.JobFullName);
+            jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
     }
 
     public void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate)
@@ -170,6 +172,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     [LoggerMessage(LogLevel.Debug, "Cancellation requested for CronRegistry {Parameter}.")]
     private partial void LogCancellationRequested(object? parameter);
 
-    [LoggerMessage(LogLevel.Error, "Job {JobName} is not registered.")]
+    [LoggerMessage(LogLevel.Warning, "Job {JobName} is not registered, will create new registration.")]
     private partial void LogJobNotRegistered(string jobName);
 }
