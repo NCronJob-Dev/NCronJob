@@ -16,7 +16,7 @@ internal class JobRun
 
     public DateTimeOffset? RunAt { get; set; }
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
-    public bool IsExpired => RunAt.HasValue && DateTimeOffset.UtcNow - RunAt.Value > Expiry;
+    public bool IsExpired(TimeProvider timeProvider) => RunAt.HasValue && timeProvider.GetUtcNow() - RunAt.Value > Expiry;
 
     public bool IsOneTimeJob { get; set; }
 

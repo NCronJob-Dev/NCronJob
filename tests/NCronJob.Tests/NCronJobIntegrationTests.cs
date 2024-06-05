@@ -285,6 +285,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobHasHigherPriorityThanCronJob()
     {
+        // NOTE: this was actually not working previously. If the MaxDegreeOfParallelism = 1 and the timer started
+        // before the instant job then the Job would have already run
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("CRON")));
@@ -293,14 +295,14 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT");
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT", false);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         answer.ShouldBe("INSTANT");
     }
 
     [Fact]
-    public async Task TriggeringInstantJobWithoutRegisteringThrowsException()
+    public async Task TriggeringInstantJobWithoutRegisteringContinuesToWork()
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
@@ -310,7 +312,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         Action act = () => provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
-        act.ShouldThrow<InvalidOperationException>();
+        act.ShouldNotThrow();
     }
 
     [Fact]

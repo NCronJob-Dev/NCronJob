@@ -6,12 +6,17 @@ namespace NCronJob;
 internal sealed partial class JobProcessor
 {
     private readonly JobExecutor jobExecutor;
+    private readonly TimeProvider timeProvider;
     private readonly ILogger<JobProcessor> logger;
     private readonly TaskFactory taskFactory;
 
-    public JobProcessor(JobExecutor jobExecutor, ILogger<JobProcessor> logger)
+    public JobProcessor(
+        JobExecutor jobExecutor,
+        TimeProvider timeProvider,
+        ILogger<JobProcessor> logger)
     {
         this.jobExecutor = jobExecutor;
+        this.timeProvider = timeProvider;
         this.logger = logger;
         
         taskFactory = TaskFactoryProvider.GetTaskFactory();
@@ -21,7 +26,7 @@ internal sealed partial class JobProcessor
     {
         try
         {
-            if (jobRun.IsExpired)
+            if (jobRun.IsExpired(timeProvider))
             {
                 LogDequeuingExpiredJob(jobRun.JobDefinition.JobName);
                 jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Expired));

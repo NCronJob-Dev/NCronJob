@@ -38,8 +38,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
         // Subscribe to CollectionChanged and QueueAdded events
         this.jobQueueManager.CollectionChanged += JobQueueManager_CollectionChanged;
-        this.jobQueueManager.QueueAdded += OnQueueAdded;
-
+        
         taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
@@ -63,6 +62,7 @@ internal sealed partial class QueueWorker : BackgroundService
         await startupJobManager.WaitForStartupJobsCompletion();
 
         CreateWorkerQueues(stopToken);
+        jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
 
         await Task.WhenAll(workerTasks.Values).ConfigureAwait(false);
     }
