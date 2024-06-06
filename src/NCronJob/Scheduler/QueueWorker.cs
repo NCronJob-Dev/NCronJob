@@ -10,18 +10,15 @@ internal sealed partial class QueueWorker : BackgroundService
 {
     private readonly JobQueueManager jobQueueManager;
     private readonly JobWorker jobWorker;
-    private readonly JobProcessor jobProcessor;
     private readonly JobRegistry registry;
     private readonly StartupJobManager startupJobManager;
     private readonly ILogger<QueueWorker> logger;
     private CancellationTokenSource? shutdown;
     private readonly ConcurrentDictionary<string, Task> workerTasks = new();
-    private readonly TaskFactory taskFactory;
 
     public QueueWorker(
         JobQueueManager jobQueueManager,
         JobWorker jobWorker,
-        JobProcessor jobProcessor,
         JobRegistry registry,
         StartupJobManager startupJobManager,
         ILogger<QueueWorker> logger,
@@ -29,7 +26,6 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         this.jobQueueManager = jobQueueManager;
         this.jobWorker = jobWorker;
-        this.jobProcessor = jobProcessor;
         this.registry = registry;
         this.startupJobManager = startupJobManager;
         this.logger = logger;
@@ -38,8 +34,6 @@ internal sealed partial class QueueWorker : BackgroundService
 
         // Subscribe to CollectionChanged and QueueAdded events
         this.jobQueueManager.CollectionChanged += JobQueueManager_CollectionChanged;
-        
-        taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
     public override void Dispose()
@@ -57,9 +51,9 @@ internal sealed partial class QueueWorker : BackgroundService
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
 
-        await startupJobManager.ProcessStartupJobs(CreateExecutionTask, stopToken);
+        await startupJobManager.ProcessStartupJobs(stopToken).ConfigureAwait(false);
         ScheduleInitialJobs();
-        await startupJobManager.WaitForStartupJobsCompletion();
+        await startupJobManager.WaitForStartupJobsCompletion().ConfigureAwait(false);
 
         CreateWorkerQueues(stopToken);
         jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
@@ -79,16 +73,11 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         if (!workerTasks.ContainsKey(jobType))
         {
-            var workerTask = taskFactory.StartNew(() => jobWorker.WorkerAsync(jobType, stopToken), stopToken);
+            var workerTask = jobWorker.WorkerAsync(jobType, stopToken);
             workerTasks.TryAdd(jobType, workerTask);
         }
     }
 
-    public async Task CreateExecutionTask(JobRun job, CancellationToken stopToken)
-    {
-        using var semaphore = new SemaphoreSlim(1);
-        await jobProcessor.ProcessJobAsync(job, semaphore, stopToken);
-    }
 
     private void ScheduleInitialJobs()
     {

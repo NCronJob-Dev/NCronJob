@@ -1,12 +1,14 @@
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace NCronJob;
-internal sealed class JobWorker
+internal sealed partial class JobWorker
 {
     private readonly JobQueueManager jobQueueManager;
     private readonly JobProcessor jobProcessor;
     private readonly JobRegistry registry;
     private readonly TimeProvider timeProvider;
+    private readonly ILogger<JobWorker> logger;
     private readonly int globalConcurrencyLimit;
     private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
     private int TotalRunningJobCount => runningJobCounts.Values.Sum();
@@ -18,12 +20,14 @@ internal sealed class JobWorker
         JobProcessor jobProcessor,
         JobRegistry registry,
         TimeProvider timeProvider,
-        ConcurrencySettings concurrencySettings)
+        ConcurrencySettings concurrencySettings,
+        ILogger<JobWorker> logger)
     {
         this.jobQueueManager = jobQueueManager;
         this.jobProcessor = jobProcessor;
         this.registry = registry;
         this.timeProvider = timeProvider;
+        this.logger = logger;
         this.globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
 
         taskFactory = TaskFactoryProvider.GetTaskFactory();
@@ -34,27 +38,30 @@ internal sealed class JobWorker
         var jobQueue = jobQueueManager.GetOrAddQueue(jobType);
         var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(jobType);
         var semaphore = jobQueueManager.GetOrAddSemaphore(jobType, concurrencyLimit);
+        var runningTasks = new List<Task>();
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            await semaphore.WaitAsync(cancellationToken);
+            runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
 
             if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
             {
+                await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
                     var cts = jobQueueManager.GetOrAddCancellationTokenSource(jobType);
                     using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
-                    await WaitForNextExecution(priorityTuple, linkedCts.Token);
+                    await WaitForNextExecution(priorityTuple, linkedCts.Token).ConfigureAwait(false);
 
                     if (IsJobEligibleToStart(nextJob, jobQueue))
                     {
                         jobQueue.Dequeue();
                         UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
 
-                        _ = taskFactory.StartNew(async () => await jobProcessor.ProcessJobAsync(nextJob, semaphore, cancellationToken), cancellationToken)
-                            .Unwrap()
-                        .ContinueWith(task =>
+                        var jobTask = taskFactory.StartNew(async () =>
+                        {
+                            await jobProcessor.ProcessJobAsync(nextJob, cancellationToken).ConfigureAwait(false);
+                        }, cancellationToken).Unwrap().ContinueWith(task =>
                         {
                             UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
 
@@ -68,31 +75,46 @@ internal sealed class JobWorker
                                 nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
                             }
 
-                        }, cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current)
-                            .ConfigureAwait(false);
+                        }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
+
+                        runningTasks.Add(jobTask);
 
                         if (!nextJob.IsOneTimeJob)
                         {
                             ScheduleJob(nextJob.JobDefinition);
                         }
                     }
+                    else
+                    {
+                        // Avoid tight loop when there's no job queued
+                        await Task.WhenAny(runningTasks.Concat([Task.Delay(100, cancellationToken)])).ConfigureAwait(false);
+                    }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
-                    break;
                 }
                 catch (OperationCanceledException)
                 {
                     nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
                 }
+                catch (Exception ex)
+                {
+                    LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
+                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
             }
             else
             {
-                semaphore.Release();
-                await Task.Delay(100, cancellationToken); // Avoid tight loop
+                await Task.Delay(100, cancellationToken).ConfigureAwait(false); // Avoid tight loop when there's no job queued
             }
         }
+
+        await Task.WhenAll(runningTasks).ConfigureAwait(false);
     }
 
     private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)
@@ -133,7 +155,7 @@ internal sealed class JobWorker
 
         if (nextRunTime.HasValue)
         {
-            //    LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
+            LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
             var run = JobRun.Create(job);
             run.RunAt = nextRunTime;
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);

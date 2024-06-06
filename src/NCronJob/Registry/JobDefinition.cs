@@ -71,9 +71,6 @@ internal record JobDefinition(
 
     private static bool IsFinalState(JobStateType stateType) =>
         stateType is JobStateType.Completed or JobStateType.Cancelled or JobStateType.Failed or JobStateType.Crashed;
-
-    public static JobDefinition CreateNewFrom(JobDefinition jobDefinition) =>
-        new(jobDefinition.Type, jobDefinition.Parameter, null, jobDefinition.TimeZone, jobDefinition.JobName);
 }
 
 

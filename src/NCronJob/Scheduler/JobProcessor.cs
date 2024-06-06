@@ -8,7 +8,6 @@ internal sealed partial class JobProcessor
     private readonly JobExecutor jobExecutor;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<JobProcessor> logger;
-    private readonly TaskFactory taskFactory;
 
     public JobProcessor(
         JobExecutor jobExecutor,
@@ -18,11 +17,9 @@ internal sealed partial class JobProcessor
         this.jobExecutor = jobExecutor;
         this.timeProvider = timeProvider;
         this.logger = logger;
-        
-        taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
-    public async Task ProcessJobAsync(JobRun jobRun, SemaphoreSlim semaphore, CancellationToken cancellationToken)
+    public async Task ProcessJobAsync(JobRun jobRun, CancellationToken cancellationToken)
     {
         try
         {
@@ -35,19 +32,13 @@ internal sealed partial class JobProcessor
 
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Running));
 
-            await taskFactory.StartNew(() => jobExecutor.RunJob(jobRun, cancellationToken), cancellationToken)
-                .Unwrap()
-                .ConfigureAwait(false);
+            await jobExecutor.RunJob(jobRun, cancellationToken).ConfigureAwait(false);
 
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Completed));
         }
         catch (Exception ex)
         {
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
-        }
-        finally
-        {
-            semaphore.Release();
         }
     }
 

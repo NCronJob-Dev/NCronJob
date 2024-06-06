@@ -86,7 +86,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
-    private readonly QueueWorker queueWorker;
+    private readonly JobProcessor jobProcessor;
     private readonly ILogger<InstantJobRegistry> logger;
 
     public InstantJobRegistry(
@@ -94,14 +94,14 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
-        QueueWorker queueWorker,
+        JobProcessor jobProcessor,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
-        this.queueWorker = queueWorker;
+        this.jobProcessor = jobProcessor;
         this.logger = logger;
     }
 
@@ -149,7 +149,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         jobQueue.EnqueueForDirectExecution(run, startDate);
 
         if (forceExecution)
-            _ = queueWorker.CreateExecutionTask(run, token);
+            _ = jobProcessor.ProcessJobAsync(run, token);
         else
             jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
     }
