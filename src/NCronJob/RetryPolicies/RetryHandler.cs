@@ -64,7 +64,8 @@ internal sealed partial class RetryHandler : IRetryHandler
         }
         catch (OperationCanceledException)
         {
-            LogCancellationOperationInJob();
+            var jobName = runContext.JobRun.JobDefinition.JobName;
+            LogCancellationOperationInJob(jobName);
         }
         catch (Exception ex)
         {
@@ -79,6 +80,6 @@ internal sealed partial class RetryHandler : IRetryHandler
     [LoggerMessage(LogLevel.Debug, "Attempt {RetryCount} for {JobName}")]
     private partial void LogRetryAttempt(int retryCount, string jobName);
 
-    [LoggerMessage(LogLevel.Trace, "Operation was cancelled.")]
-    private partial void LogCancellationOperationInJob();
+    [LoggerMessage(LogLevel.Trace, "Operation was cancelled for {JobName}.")]
+    private partial void LogCancellationOperationInJob(string jobName);
 }

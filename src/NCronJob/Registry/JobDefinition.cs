@@ -72,29 +72,3 @@ internal record JobDefinition(
     private static bool IsFinalState(JobStateType stateType) =>
         stateType is JobStateType.Completed or JobStateType.Cancelled or JobStateType.Failed or JobStateType.Crashed;
 }
-
-
-internal enum JobStateType
-{
-    Scheduled,
-    Running,
-    Completed,
-    Failed,
-    Cancelled,
-    Expired,
-    Crashed
-}
-
-internal class JobState
-{
-    public JobStateType Type { get; private set; }
-    public DateTime Timestamp { get; private set; }
-    public string Message { get; private set; }
-
-    public JobState(JobStateType type, string message = "")
-    {
-        Type = type;
-        Timestamp = DateTime.UtcNow;
-        Message = message;
-    }
-}

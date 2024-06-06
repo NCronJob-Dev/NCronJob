@@ -36,6 +36,10 @@ internal sealed partial class JobProcessor
 
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Completed));
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
+        }
         catch (Exception ex)
         {
             jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
