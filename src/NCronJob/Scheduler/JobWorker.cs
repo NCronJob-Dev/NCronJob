@@ -44,77 +44,82 @@ internal sealed partial class JobWorker
         {
             runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
 
-            if (jobQueue.TryPeek(out var nextJob, out var priorityTuple))
+            if (jobQueue.TryPeek(out var nextJob, out var priorityTuple) && IsJobEligibleToStart(nextJob, jobQueue))
             {
                 await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                try
-                {
-                    var cts = jobQueueManager.GetOrAddCancellationTokenSource(jobType);
-                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
-                    await WaitForNextExecution(priorityTuple, linkedCts.Token).ConfigureAwait(false);
-
-                    if (IsJobEligibleToStart(nextJob, jobQueue))
-                    {
-                        jobQueue.Dequeue();
-                        UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
-
-                        var jobTask = taskFactory.StartNew(async () =>
-                        {
-                            await jobProcessor.ProcessJobAsync(nextJob, cancellationToken).ConfigureAwait(false);
-                        }, cancellationToken).Unwrap().ContinueWith(task =>
-                        {
-                            UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
-
-                            if (task.IsFaulted)
-                            {
-                                nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
-                            }
-
-                            if (task.IsCanceled)
-                            {
-                                nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
-                            }
-
-                        }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-
-                        runningTasks.Add(jobTask);
-
-                        if (!nextJob.IsOneTimeJob)
-                        {
-                            ScheduleJob(nextJob.JobDefinition);
-                        }
-                    }
-                    else
-                    {
-                        // Avoid tight loop when there's no job queued
-                        await Task.WhenAny(runningTasks.Concat([Task.Delay(100, cancellationToken)])).ConfigureAwait(false);
-                    }
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
-                }
-                catch (OperationCanceledException)
-                {
-                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
-                }
-                catch (Exception ex)
-                {
-                    LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
-                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
+                await DispatchJobForProcessing(nextJob, priorityTuple, jobType, cancellationToken, semaphore, runningTasks).ConfigureAwait(false);
             }
             else
             {
-                await Task.Delay(100, cancellationToken).ConfigureAwait(false); // Avoid tight loop when there's no job queued
+                // Avoid tight loop when there's no job queued
+                await Task.WhenAny(runningTasks.Concat([Task.Delay(100, cancellationToken)])).ConfigureAwait(false);
             }
         }
 
         await Task.WhenAll(runningTasks).ConfigureAwait(false);
+    }
+
+    private async Task DispatchJobForProcessing(
+    JobRun nextJob,
+    (DateTimeOffset NextRunTime, int Priority) priorityTuple,
+    string jobType,
+    CancellationToken cancellationToken,
+    SemaphoreSlim semaphore,
+    List<Task> runningTasks)
+    {
+        try
+        {
+            var cts = jobQueueManager.GetOrAddCancellationTokenSource(jobType);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+
+            await WaitForNextExecution(priorityTuple, linkedCts.Token).ConfigureAwait(false);
+
+            jobQueueManager.GetOrAddQueue(jobType).Dequeue();
+            UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
+
+            var jobTask = taskFactory.StartNew(async () =>
+            {
+                await jobProcessor.ProcessJobAsync(nextJob, cancellationToken).ConfigureAwait(false);
+            }, cancellationToken).Unwrap().ContinueWith(task =>
+            {
+                UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
+
+                if (task.IsFaulted)
+                {
+                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
+                }
+
+                if (task.IsCanceled)
+                {
+                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
+                }
+
+            }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
+
+            runningTasks.Add(jobTask);
+
+            if (!nextJob.IsOneTimeJob)
+            {
+                ScheduleJob(nextJob.JobDefinition);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
+        }
+        catch (OperationCanceledException)
+        {
+            nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
+        }
+        catch (Exception ex)
+        {
+            LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
+            nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
     private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)

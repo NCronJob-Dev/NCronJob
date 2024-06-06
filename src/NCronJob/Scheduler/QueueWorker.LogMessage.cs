@@ -25,10 +25,10 @@ internal sealed partial class QueueWorker
     [LoggerMessage(LogLevel.Trace, "Dequeuing job {JobName} because it has exceeded the expiration period.")]
     private partial void LogDequeuingExpiredJob(string jobName);
 
-    [LoggerMessage(LogLevel.Trace, "Job added to the queue: {JobName} at {ScheduledAt}")]
+    [LoggerMessage(LogLevel.Trace, "Job enqueued: {JobName} at {ScheduledAt}")]
     private partial void LogJobAddedToQueue(string jobName, DateTimeOffset? scheduledAt);
 
-    [LoggerMessage(LogLevel.Trace, "Job removed from the queue: {JobName} scheduled for {ScheduledFor}")]
+    [LoggerMessage(LogLevel.Trace, "Job dequeued: {JobName} scheduled for {ScheduledFor}")]
     private partial void LogJobRemovedFromQueue(string jobName, DateTimeOffset? scheduledFor);
 
     [LoggerMessage(LogLevel.Trace, "New Job Queue added for new job type {JobTypeName}")]

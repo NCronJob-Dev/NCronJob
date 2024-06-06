@@ -2,7 +2,7 @@ using NCronJob;
 
 namespace NCronJobSample;
 
-[SupportsConcurrency(4)]
+[SupportsConcurrency(2)]
 public partial class PrintHelloWorldJob : IJob
 {
     private static int invocationCount;
@@ -14,7 +14,7 @@ public partial class PrintHelloWorldJob : IJob
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        LogMessage($"{++invocationCount}  {context.Parameter}");
+        LogMessage($"{++invocationCount} \n {context.Parameter}");
 
         await Task.Delay(20000, token);
     }

@@ -27,17 +27,17 @@ builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
-// Register a handler that gets executed when the job is done
-//.AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
+    // Register a handler that gets executed when the job is done
+    //.AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
 
-// Multiple instances of the same job with different cron expressions can be supported
-// by marking the job with [SupportsConcurrency] attribute
-.AddJob<ConcurrentTaskExecutorJob>(p =>
-    p.WithCronExpression("*/25 * * * * *"))
+    // Multiple instances of the same job with different cron expressions can be supported
+    // by marking the job with [SupportsConcurrency] attribute
+    .AddJob<ConcurrentTaskExecutorJob>(p =>
+        p.WithCronExpression("*/25 * * * * *"))
 
-// A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
-.AddJob<TestRetryJob>(p =>
-    p.WithCronExpression("*/5 * * * * *"))
+    // A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
+    .AddJob<TestRetryJob>(p =>
+        p.WithCronExpression("*/5 * * * * *"))
 );
 
 var app = builder.Build();
