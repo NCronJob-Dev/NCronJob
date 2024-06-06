@@ -1,3 +1,5 @@
+using Cronos;
+
 namespace NCronJob;
 
 /// <summary>
@@ -64,6 +66,26 @@ public interface IRuntimeJobRegistry
     /// </summary>
     /// <returns></returns>
     IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs();
+
+    /// <summary>
+    /// This will enable a job that was previously disabled.
+    /// </summary>
+    /// <param name="jobName">The unique job name that identifies this job.</param>
+    /// <remarks>
+    /// If the job is already enabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void EnableJob(string jobName);
+
+    /// <summary>
+    /// This will disable a job that was previously enabled.
+    /// </summary>
+    /// <param name="jobName">The unique job name that identifies this job.</param>
+    /// <remarks>
+    /// If the job is already disabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void DisableJob(string jobName);
 }
 
 /// <summary>
@@ -179,6 +201,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         return true;
     }
 
+    /// <inheritdoc />
     public IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs()
         => jobRegistry
             .GetAllCronJobs()
@@ -189,4 +212,29 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
                 s.TimeZone!))
             .ToArray();
 
+    /// <inheritdoc />
+    public void EnableJob(string jobName)
+    {
+        var job = jobRegistry.FindJobDefinition(jobName)
+                  ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+
+        if (job.CronExpression is not null)
+        {
+            job.CronExpression = CronExpression.Parse(job.CronExpressionString);
+            jobQueue.ReevaluateQueue();
+        }
+    }
+
+    /// <inheritdoc />
+    public void DisableJob(string jobName)
+    {
+        var job = jobRegistry.FindJobDefinition(jobName)
+                  ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+
+        if (job.CronExpression is not null)
+        {
+            job.CronExpression = CronExpression.Parse("* * 31 2 *");
+            jobQueue.ReevaluateQueue();
+        }
+    }
 }

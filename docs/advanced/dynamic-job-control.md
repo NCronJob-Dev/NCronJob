@@ -85,3 +85,26 @@ var found = registry.TryGetSchedule("MyName", out string? cronExpression, out Ti
 ```
 
 The cron expression and time zone can be `null` even if the job was found. This indicates that the job has no schedule (like dependent jobs).
+
+## Disabling and enabling jobs
+To disable a job, use the `DisableJob` method:
+
+```csharp
+app.MapPut("/disable-job", (IRuntimeJobRegistry registry) => 
+{
+    registry.DisableJob("MyName");
+    return TypedResults.Ok();
+});
+```
+
+If a job is disabled, it will not be scheduled anymore. Any planned job will be cancelled and the job will be removed from the scheduler.
+
+To enable a job, use the `EnableJob` method:
+
+```csharp
+app.MapPut("/enable-job", (IRuntimeJobRegistry registry) => 
+{
+    registry.EnableJob("MyName");
+    return TypedResults.Ok();
+});
+```
