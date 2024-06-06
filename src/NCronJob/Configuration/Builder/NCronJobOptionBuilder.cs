@@ -58,6 +58,7 @@ public class NCronJobOptionBuilder : IJobStage
             {
                 IsStartupJob = option.IsStartupJob,
                 CustomName = option.Name,
+                CronExpressionString = option.CronExpression
             };
             jobs.Add(entry);
         }

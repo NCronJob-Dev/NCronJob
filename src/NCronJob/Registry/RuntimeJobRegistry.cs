@@ -158,7 +158,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             return false;
         }
 
-        cronExpression = job.CronExpression?.ToString();
+        cronExpression = job.CronExpressionString;
         timeZoneInfo = job.TimeZone;
 
         return true;

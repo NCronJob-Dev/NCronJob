@@ -18,6 +18,8 @@ internal sealed record JobDefinition(
 
     public CronExpression? CronExpression { get; set; } = CronExpression;
 
+    public string? CronExpressionString { get; set; }
+
     public object? Parameter { get; set; } = Parameter;
 
     public TimeZoneInfo? TimeZone { get; set; } = TimeZone;

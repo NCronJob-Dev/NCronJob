@@ -114,7 +114,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * 31 2 *").WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("*/2 * * * *").WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -122,7 +122,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var successful = registry.TryGetSchedule("JobName", out var cronExpression, out var timeZoneInfo);
 
         successful.ShouldBeTrue();
-        cronExpression.ShouldBe("* * 31 2 *");
+        cronExpression.ShouldBe("*/2 * * * *");
         timeZoneInfo.ShouldBe(TimeZoneInfo.Utc);
     }
 
