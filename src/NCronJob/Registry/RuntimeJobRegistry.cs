@@ -58,7 +58,22 @@ public interface IRuntimeJobRegistry
     /// <param name="timeZoneInfo">The associated time zone. If the job has none, or couldn't be found this will be <c>null</c>.</param>
     /// <returns>Returns <c>true</c> if the job was found, otherwise <c>false</c>.</returns>
     bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo);
+
+    /// <summary>
+    /// Returns a list of all recurring jobs.
+    /// </summary>
+    /// <returns></returns>
+    IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs();
 }
+
+/// <summary>
+/// Represents a recurring job schedule.
+/// </summary>
+/// <param name="JobType">The associated job type or <c>null</c> if the job is an anonymous job.</param>
+/// <param name="JobName">The job name given by the user.</param>
+/// <param name="CronExpression">The cron expression that defines when the job should be executed.</param>
+/// <param name="TimeZone">The timezone that is used to evaluate the cron expression.</param>
+public sealed record RecurringJobSchedule(Type? JobType, string? JobName, string CronExpression, TimeZoneInfo TimeZone);
 
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
@@ -163,4 +178,15 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
         return true;
     }
+
+    public IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs()
+        => jobRegistry
+            .GetAllCronJobs()
+            .Select(s => new RecurringJobSchedule(
+                s.Type == typeof(DynamicJobFactory) ? null : s.Type,
+                s.CustomName,
+                s.CronExpressionString!,
+                s.TimeZone!))
+            .ToArray();
+
 }

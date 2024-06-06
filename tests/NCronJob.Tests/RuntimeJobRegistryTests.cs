@@ -183,6 +183,32 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         content.ShouldBe("Bar");
     }
 
+    [Fact]
+    public void ShouldRetrieveAllSchedules()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
+            .WithCronExpression("*/2 * * * *", timeZoneInfo: timeZone)
+            .WithName("JobName")));
+        var provider = CreateServiceProvider();
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+        registry.AddJob(s => s.AddJob(() => { }, "* * * * *", jobName: "JobName2"));
+
+        var allSchedules = registry.GetAllRecurringJobs();
+
+        allSchedules.Count.ShouldBe(2);
+        allSchedules.ShouldContain(s => s.JobName == "JobName"
+                                        && s.CronExpression == "*/2 * * * *"
+                                        && s.JobType == typeof(SimpleJob)
+                                        && s.TimeZone == timeZone);
+        allSchedules.ShouldContain(s => s.JobName == "JobName2"
+                                        && s.CronExpression == "* * * * *"
+                                        && s.TimeZone == TimeZoneInfo.Utc
+                                        && s.JobType == null);
+    }
+
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(JobExecutionContext context, CancellationToken token) => await writer.WriteAsync(context.Parameter ?? string.Empty, token);

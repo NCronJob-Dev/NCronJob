@@ -96,7 +96,11 @@ public class NCronJobOptionBuilder : IJobStage
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
             JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
-            JobPolicyMetadata: jobPolicyMetadata) { CustomName = jobName };
+            JobPolicyMetadata: jobPolicyMetadata)
+        {
+            CustomName = jobName,
+            CronExpressionString = jobOption.CronExpression
+        };
         Services.AddSingleton(entry);
         Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));
         return this;
