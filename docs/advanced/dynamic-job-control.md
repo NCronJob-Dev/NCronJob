@@ -64,17 +64,6 @@ app.MapPut("/update-job", (IRuntimeJobRegistry registry) =>
 
 Updating a schedule will lead to the job being rescheduled with the new CRON expression. Any planned job with the "old" schedule will be cancelled and rescheduled with the new schedule.
 
-### Disabling a job
-To disable a CRON job, you can set the cron expression to the 31st of February. This will effectively disable the job:
-
-```csharp
-app.MapPut("/disable-job", (IRuntimeJobRegistry registry) => 
-{
-    registry.UpdateSchedule("MyName", "0 0 31 2 *", TimeZoneInfo.Utc);
-    return TypedResults.Ok();
-});
-```
-
 ## Updating the parameter
 Updating the parameter of a job is done via the `UpdateParameter` method. This method accepts a job name and a new parameter:
 
