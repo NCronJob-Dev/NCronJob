@@ -26,23 +26,24 @@ internal sealed partial class JobProcessor
             if (jobRun.IsExpired(timeProvider))
             {
                 LogDequeuingExpiredJob(jobRun.JobDefinition.JobName);
-                jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Expired));
+                jobRun.NotifyStateChange(JobStateType.Expired);
                 return;
             }
 
-            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Running));
+            jobRun.NotifyStateChange(JobStateType.Running);
 
             await jobExecutor.RunJob(jobRun, cancellationToken).ConfigureAwait(false);
 
-            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Completed));
+            jobRun.NotifyStateChange(JobStateType.Completed);
+            jobRun.IncrementJobExecutionCount();
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested || oce.CancellationToken.IsCancellationRequested)
         {
-            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
+            jobRun.NotifyStateChange(JobStateType.Cancelled);
         }
         catch (Exception ex)
         {
-            jobRun.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
+            jobRun.NotifyStateChange(JobStateType.Failed, ex.Message);
         }
     }
 

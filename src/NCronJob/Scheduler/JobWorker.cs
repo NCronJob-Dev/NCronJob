@@ -71,6 +71,7 @@ internal sealed partial class JobWorker
         {
             var cts = jobQueueManager.GetOrAddCancellationTokenSource(jobType);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+            var linkedToken = linkedCts.Token;
 
             await WaitForNextExecution(priorityTuple, linkedCts.Token).ConfigureAwait(false);
 
@@ -79,19 +80,19 @@ internal sealed partial class JobWorker
 
             var jobTask = taskFactory.StartNew(async () =>
             {
-                await jobProcessor.ProcessJobAsync(nextJob, cancellationToken).ConfigureAwait(false);
+                await jobProcessor.ProcessJobAsync(nextJob, linkedToken).ConfigureAwait(false);
             }, cancellationToken).Unwrap().ContinueWith(task =>
             {
                 UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
 
                 if (task.IsFaulted)
                 {
-                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
+                    nextJob.NotifyStateChange(JobStateType.Failed);
                 }
 
                 if (task.IsCanceled)
                 {
-                    nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
+                    nextJob.NotifyStateChange(JobStateType.Cancelled);
                 }
 
             }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
@@ -105,16 +106,16 @@ internal sealed partial class JobWorker
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Cancelled));
+            nextJob.NotifyStateChange(JobStateType.Cancelled);
         }
         catch (OperationCanceledException)
         {
-            nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed));
+            nextJob.NotifyStateChange(JobStateType.Failed);
         }
         catch (Exception ex)
         {
             LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
-            nextJob.JobDefinition.NotifyStateChange(new JobState(JobStateType.Failed, ex.Message));
+            nextJob.NotifyStateChange(JobStateType.Failed, ex.Message);
         }
         finally
         {
@@ -165,7 +166,7 @@ internal sealed partial class JobWorker
             run.RunAt = nextRunTime;
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
-            job.NotifyStateChange(new JobState(JobStateType.Scheduled));
+            run.NotifyStateChange(JobStateType.Scheduled);
         }
     }
 }
