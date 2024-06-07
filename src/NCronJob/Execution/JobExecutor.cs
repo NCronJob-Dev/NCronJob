@@ -106,6 +106,8 @@ internal sealed partial class JobExecutor : IDisposable
 
             stoppingToken.ThrowIfCancellationRequested();
 
+            runContext.JobRun.NotifyStateChange(JobStateType.Completing);
+
             await AfterJobCompletionTask(null, stoppingToken);
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)

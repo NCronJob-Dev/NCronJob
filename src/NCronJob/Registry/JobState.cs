@@ -9,7 +9,7 @@ internal class JobState
     public JobState(JobStateType type, string message = "")
     {
         Type = type;
-        Timestamp = DateTime.UtcNow;
+        Timestamp = DateTimeOffset.Now.LocalDateTime;
         Message = message;
     }
 }
@@ -19,6 +19,7 @@ internal enum JobStateType
     Scheduled,
     Running,
     Retrying,
+    Completing,
     Completed,
     Failed,
     Cancelled,
