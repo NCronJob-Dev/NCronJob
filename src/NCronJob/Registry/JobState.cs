@@ -1,27 +1,28 @@
 namespace NCronJob;
 
-internal class JobState
+internal readonly struct JobState
 {
-    public JobStateType Type { get; private set; }
-    public DateTime Timestamp { get; private set; }
-    public string Message { get; private set; }
+    public JobStateType Type { get; }
+    public DateTimeOffset? Timestamp { get; }
+    public string Message { get; }
 
     public JobState(JobStateType type, string message = "")
     {
         Type = type;
-        Timestamp = DateTimeOffset.Now.LocalDateTime;
+        Timestamp = type != JobStateType.NotStarted ? DateTimeOffset.Now : null;
         Message = message;
     }
 }
 
 internal enum JobStateType
 {
+    NotStarted = 0,
     Scheduled,
     Running,
     Retrying,
     Completing,
     Completed,
-    Failed,
+    Faulted,
     Cancelled,
     Expired,
     Crashed

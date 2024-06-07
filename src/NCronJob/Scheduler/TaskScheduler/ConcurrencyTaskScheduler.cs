@@ -15,12 +15,16 @@ internal class ConcurrencyTaskScheduler : TaskScheduler
     private readonly int maxDegreeOfParallelism;
     private int delegatesQueuedOrRunning;
 
+    public sealed override int MaximumConcurrencyLevel => maxDegreeOfParallelism;
+    
     public ConcurrencyTaskScheduler(int maxDegreeOfParallelism)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, 1);
 
         this.maxDegreeOfParallelism = maxDegreeOfParallelism;
     }
+
+    protected sealed override IEnumerable<Task> GetScheduledTasks() => [.. tasks];
 
     protected sealed override void QueueTask(Task task)
     {
@@ -63,7 +67,5 @@ internal class ConcurrencyTaskScheduler : TaskScheduler
 
     protected sealed override bool TryDequeue(Task task) => tasks.TryDequeue(out _);
 
-    public sealed override int MaximumConcurrencyLevel => maxDegreeOfParallelism;
-
-    protected sealed override IEnumerable<Task> GetScheduledTasks() => [..tasks];
+    
 }

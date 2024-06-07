@@ -38,14 +38,14 @@ internal class JobRun
 
     private JobRun Initialize()
     {
-        this.OnStateChanged += (jr, state) =>
+        OnStateChanged += (jr, state) =>
         {
             switch (state.Type)
             {
                 case JobStateType.Completed:
                     jr.JobDefinition.OnCompletion?.Invoke(jr.JobDefinition);
                     break;
-                case JobStateType.Failed:
+                case JobStateType.Faulted:
                     jr.JobDefinition.OnFailure?.Invoke(jr.JobDefinition);
                     break;
                 case JobStateType.Running:
@@ -57,6 +57,7 @@ internal class JobRun
                 case JobStateType.Expired:
                 case JobStateType.Crashed:
                 case JobStateType.Completing:
+                case JobStateType.NotStarted:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
@@ -67,7 +68,7 @@ internal class JobRun
 
     // State change logic
     public bool Completed => States.Exists(s => IsFinalState(s.Type));
-    public JobState CurrentState => States.LastOrDefault() ?? new JobState(JobStateType.Scheduled);
+    public JobState CurrentState => States.LastOrDefault();
     public List<JobState> States { get; } = [];
     public event Action<JobRun, JobState>? OnStateChanged;
 
@@ -87,5 +88,5 @@ internal class JobRun
     }
 
     private static bool IsFinalState(JobStateType stateType) =>
-        stateType is JobStateType.Completed or JobStateType.Cancelled or JobStateType.Failed or JobStateType.Crashed;
+        stateType is JobStateType.Completed or JobStateType.Cancelled or JobStateType.Faulted or JobStateType.Crashed;
 }

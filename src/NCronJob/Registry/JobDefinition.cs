@@ -2,7 +2,7 @@ using Cronos;
 
 namespace NCronJob;
 
-internal record JobDefinition(
+internal sealed record JobDefinition(
     Type Type,
     object? Parameter,
     CronExpression? CronExpression,

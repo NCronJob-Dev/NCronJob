@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace NCronJob;
+
 internal sealed partial class JobWorker
 {
     private readonly JobQueueManager jobQueueManager;
@@ -52,7 +53,7 @@ internal sealed partial class JobWorker
             else
             {
                 // Avoid tight loop when there's no job queued
-                await Task.WhenAny(runningTasks.Concat([Task.Delay(100, cancellationToken)])).ConfigureAwait(false);
+                await Task.WhenAny(runningTasks.Concat([Task.Delay(500, cancellationToken)])).ConfigureAwait(false);
             }
         }
 
@@ -91,7 +92,7 @@ internal sealed partial class JobWorker
 
                 if (task.IsFaulted)
                 {
-                    nextJob.NotifyStateChange(JobStateType.Failed);
+                    nextJob.NotifyStateChange(JobStateType.Faulted);
                 }
 
                 if (task.IsCanceled)
@@ -114,12 +115,12 @@ internal sealed partial class JobWorker
         }
         catch (OperationCanceledException)
         {
-            nextJob.NotifyStateChange(JobStateType.Failed);
+            nextJob.NotifyStateChange(JobStateType.Faulted);
         }
         catch (Exception ex)
         {
             LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
-            nextJob.NotifyStateChange(JobStateType.Failed, ex.Message);
+            nextJob.NotifyStateChange(JobStateType.Faulted, ex.Message);
         }
         finally
         {

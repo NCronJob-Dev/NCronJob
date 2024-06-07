@@ -16,6 +16,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private CancellationTokenSource? shutdown;
     private readonly ConcurrentDictionary<string, Task> workerTasks = new();
     private readonly ConcurrentDictionary<string, bool> addingWorkerTasks = new();
+    private volatile bool isDisposed;
 
     public QueueWorker(
         JobQueueManager jobQueueManager,
@@ -39,10 +40,14 @@ internal sealed partial class QueueWorker : BackgroundService
 
     public override void Dispose()
     {
+        if (isDisposed)
+            return;
+
         shutdown?.Dispose();
         this.jobQueueManager.CollectionChanged -= JobQueueManager_CollectionChanged;
         this.jobQueueManager.QueueAdded -= OnQueueAdded;
         base.Dispose();
+        isDisposed = true;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,14 +57,25 @@ internal sealed partial class QueueWorker : BackgroundService
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
 
-        await startupJobManager.ProcessStartupJobs(stopToken).ConfigureAwait(false);
-        ScheduleInitialJobs();
-        await startupJobManager.WaitForStartupJobsCompletion().ConfigureAwait(false);
+        try
+        {
+            await startupJobManager.ProcessStartupJobs(stopToken).ConfigureAwait(false);
+            ScheduleInitialJobs();
+            await startupJobManager.WaitForStartupJobsCompletion().ConfigureAwait(false);
 
-        CreateWorkerQueues(stopToken);
-        jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
+            CreateWorkerQueues(stopToken);
+            jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
 
-        await Task.WhenAll(workerTasks.Values).ConfigureAwait(false);
+            await Task.WhenAll(workerTasks.Values).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            LogQueueWorkerShuttingDown();
+        }
+        catch (Exception ex)
+        {
+            LogQueueWorkerError(ex);
+        }
     }
 
     private void CreateWorkerQueues(CancellationToken stopToken)
@@ -75,9 +91,21 @@ internal sealed partial class QueueWorker : BackgroundService
         if (!workerTasks.ContainsKey(jobType) && !addingWorkerTasks.GetOrAdd(jobType, _ => false))
         {
             addingWorkerTasks[jobType] = true;
-            var workerTask = jobWorker.WorkerAsync(jobType, stopToken);
-            workerTasks.TryAdd(jobType, workerTask);
-            workerTask.ContinueWith(_ => addingWorkerTasks.TryUpdate(jobType, false, true), stopToken);
+            try
+            {
+                var workerTask = Task.Run(() => jobWorker.WorkerAsync(jobType, stopToken), stopToken);
+                workerTasks.TryAdd(jobType, workerTask);
+
+                workerTask.ContinueWith(_ =>
+                {
+                    addingWorkerTasks.TryUpdate(jobType, false, true);
+                }, stopToken);
+            }
+            catch (Exception ex)
+            {
+                LogQueueWorkerCreationError(jobType, ex);
+                addingWorkerTasks[jobType] = false;
+            }
         }
     }
 
@@ -95,6 +123,45 @@ internal sealed partial class QueueWorker : BackgroundService
         LogNewQueueAdded(jobType);
     }
 
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (shutdown != null)
+        {
+            await shutdown.CancelAsync();
+        }
+
+        while (workerTasks.IsEmpty)
+        {
+            var currentTasks = workerTasks.ToList();
+
+            foreach (var kvp in currentTasks)
+            {
+                var jobType = kvp.Key;
+                var task = kvp.Value;
+
+                if ((task.IsCanceled || task.IsFaulted || task.IsCompleted) && workerTasks.TryRemove(jobType, out _))
+                {
+                    if (task.IsCanceled)
+                        LogJobQueueCancelled(jobType);
+                    else if (task.IsFaulted)
+                        LogJobQueueFaulted(jobType);
+                    else if (task.IsCompleted)
+                        LogJobQueueCompleted(jobType);
+                }
+            }
+
+            if (workerTasks.IsEmpty)
+            {
+                LogQueueWorkerStopping();
+                await base.StopAsync(cancellationToken);
+                break;
+            }
+
+            LogQueueWorkerDraining();
+            await Task.Delay(500, cancellationToken);
+        }
+    }
+
     private void JobQueueManager_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
@@ -102,13 +169,13 @@ internal sealed partial class QueueWorker : BackgroundService
             case NotifyCollectionChangedAction.Add:
                 foreach (JobRun job in e.NewItems!)
                 {
-                    LogJobAddedToQueue(job.JobDefinition.Type.Name, job.RunAt);
+                    LogJobAddedToQueue(job.JobDefinition.Type.Name, job.RunAt?.LocalDateTime);
                 }
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (JobRun job in e.OldItems!)
                 {
-                    LogJobRemovedFromQueue(job.JobDefinition.Type.Name, job.RunAt);
+                    LogJobRemovedFromQueue(job.JobDefinition.Type.Name, job.RunAt?.LocalDateTime);
                 }
                 break;
             case NotifyCollectionChangedAction.Replace:

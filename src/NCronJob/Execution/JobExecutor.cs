@@ -112,7 +112,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            // This part is only reached if the synchronous part of the job throws an exception
+            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc.Message);
             await AfterJobCompletionTask(exc, default);
         }
         // This needs to be async otherwise it can deadlock or try to use the disposed scope, maybe it needs to create its own serviceScope
@@ -159,6 +159,7 @@ internal sealed partial class JobExecutor : IDisposable
             var newRun = JobRun.Create(dependentJob, dependentJob.Parameter, jobRun.CancellationToken);
             newRun.CorrelationId = jobRun.CorrelationId;
             newRun.ParentOutput = context.Output;
+            newRun.IsOneTimeJob = true;
             var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(newRun);
         }

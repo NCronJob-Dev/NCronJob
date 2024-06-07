@@ -4,34 +4,39 @@ namespace NCronJob;
 
 internal sealed partial class QueueWorker
 {
-    [LoggerMessage(LogLevel.Debug, "Next run of job '{JobType}' is at {NextRun}")]
-    private partial void LogNextJobRun(Type jobType, DateTimeOffset nextRun);
+    [LoggerMessage(LogLevel.Trace, "QueueWorker is shutting down.")]
+    private partial void LogQueueWorkerShuttingDown();
 
-    [LoggerMessage(LogLevel.Debug, "Running job '{JobType}'.")]
-    private partial void LogRunningJob(Type jobType);
+    [LoggerMessage(LogLevel.Error, "An error occurred during QueueWorker.ExecuteAsync.")]
+    private partial void LogQueueWorkerError(Exception ex);
 
-    [LoggerMessage(LogLevel.Debug, "Job completed successfully: '{JobType}'.")]
-    private partial void LogCompletedJob(Type jobType);
+    [LoggerMessage(LogLevel.Error, "An error occurred while creating a Queue Worker for job type {JobType}.")]
+    private partial void LogQueueWorkerCreationError(string jobType, Exception ex);
 
-    [LoggerMessage(LogLevel.Warning, "Exception occurred in job {JobType}: {Message}")]
-    private partial void LogExceptionInJob(string message, Type jobType);
+    [LoggerMessage(LogLevel.Information, "New queue added for job type {JobType}.")]
+    private partial void LogNewQueueAdded(string jobType);
 
-    [LoggerMessage(LogLevel.Trace, "Cancellation requested for CronScheduler from stopToken.")]
+    [LoggerMessage(LogLevel.Trace, "Job Queue Worker Cancelled {JobType}")]
+    private partial void LogJobQueueCancelled(string jobType);
+
+    [LoggerMessage(LogLevel.Trace, "Job Queue Worker Faulted {JobType}")]
+    private partial void LogJobQueueFaulted(string jobType);
+
+    [LoggerMessage(LogLevel.Trace, "Job Queue Worker Completed {JobType}")]
+    private partial void LogJobQueueCompleted(string jobType);
+
+    [LoggerMessage(LogLevel.Information, "QueueWorker Service is stopping.")]
+    private partial void LogQueueWorkerStopping();
+
+    [LoggerMessage(LogLevel.Information, "QueueWorker is draining. Waiting for tasks to complete.")]
+    private partial void LogQueueWorkerDraining();
+
+    [LoggerMessage(LogLevel.Trace, "Cancellation requested in job")]
     private partial void LogCancellationRequestedInJob();
 
-    [LoggerMessage(LogLevel.Trace, "Operation was cancelled.")]
-    private partial void LogCancellationOperationInJob();
+    [LoggerMessage(LogLevel.Information, "Job added to queue: {JobType} at {RunAt}")]
+    private partial void LogJobAddedToQueue(string jobType, DateTime? runAt);
 
-    [LoggerMessage(LogLevel.Trace, "Dequeuing job {JobName} because it has exceeded the expiration period.")]
-    private partial void LogDequeuingExpiredJob(string jobName);
-
-    [LoggerMessage(LogLevel.Trace, "Job enqueued: {JobName} at {ScheduledAt}")]
-    private partial void LogJobAddedToQueue(string jobName, DateTimeOffset? scheduledAt);
-
-    [LoggerMessage(LogLevel.Trace, "Job dequeued: {JobName} scheduled for {ScheduledFor}")]
-    private partial void LogJobRemovedFromQueue(string jobName, DateTimeOffset? scheduledFor);
-
-    [LoggerMessage(LogLevel.Trace, "New Job Queue added for new job type {JobTypeName}")]
-    private partial void LogNewQueueAdded(string jobTypeName);
-
+    [LoggerMessage(LogLevel.Information, "Job removed from queue: {JobType} at {RunAt}")]
+    private partial void LogJobRemovedFromQueue(string jobType, DateTime? runAt);
 }

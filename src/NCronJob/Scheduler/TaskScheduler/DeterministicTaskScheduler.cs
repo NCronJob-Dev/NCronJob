@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace NCronJob;
 
 /// <summary>
@@ -5,24 +7,14 @@ namespace NCronJob;
 /// </summary>
 internal class DeterministicTaskScheduler : TaskScheduler
 {
-    private readonly LinkedList<Task> tasks = [];
-    private readonly object @lock = new();
+    private readonly ConcurrentQueue<Task> tasks = new();
 
-    protected override IEnumerable<Task> GetScheduledTasks()
-    {
-        lock (@lock)
-        {
-            return [..tasks];
-        }
-    }
+    protected override IEnumerable<Task> GetScheduledTasks() => [.. tasks];
 
     protected override void QueueTask(Task task)
     {
-        lock (@lock)
-        {
-            tasks.AddLast(task);
-            ThreadPool.UnsafeQueueUserWorkItem(_ => TryExecuteTask(task), null);
-        }
+        tasks.Enqueue(task);
+        ThreadPool.UnsafeQueueUserWorkItem(_ => TryExecuteTask(task), null);
     }
 
     protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
@@ -37,9 +29,7 @@ internal class DeterministicTaskScheduler : TaskScheduler
 
     protected override bool TryDequeue(Task task)
     {
-        lock (@lock)
-        {
-            return tasks.Remove(task);
-        }
+        tasks.TryDequeue(out var dequeuedTask);
+        return dequeuedTask == task;
     }
 }
