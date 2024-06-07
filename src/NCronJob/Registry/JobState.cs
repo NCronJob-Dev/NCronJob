@@ -18,6 +18,7 @@ internal enum JobStateType
 {
     Scheduled,
     Running,
+    Retrying,
     Completed,
     Failed,
     Cancelled,

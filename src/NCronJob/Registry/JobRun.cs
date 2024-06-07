@@ -51,12 +51,10 @@ internal class JobRun
                 case JobStateType.Running:
                     jr.JobDefinition.OnRunning?.Invoke(jr.JobDefinition);
                     break;
+                case JobStateType.Retrying:
                 case JobStateType.Scheduled:
-                    break;
                 case JobStateType.Cancelled:
-                    break;
                 case JobStateType.Expired:
-                    break;
                 case JobStateType.Crashed:
                     break;
                 default:

@@ -57,6 +57,7 @@ internal sealed partial class RetryHandler : IRetryHandler
                 runContext.Attempts++;
                 if (runContext.Attempts > 1)
                 {
+                    runContext.JobRun.NotifyStateChange(JobStateType.Retrying);
                     LogRetryAttempt(runContext.Attempts, jobDefinition.JobName);
                 }
                 return operation(ct);

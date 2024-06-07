@@ -35,7 +35,6 @@ internal sealed partial class JobProcessor
             await jobExecutor.RunJob(jobRun, cancellationToken).ConfigureAwait(false);
 
             jobRun.NotifyStateChange(JobStateType.Completed);
-            jobRun.IncrementJobExecutionCount();
         }
         catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested || oce.CancellationToken.IsCancellationRequested)
         {
@@ -44,6 +43,10 @@ internal sealed partial class JobProcessor
         catch (Exception ex)
         {
             jobRun.NotifyStateChange(JobStateType.Failed, ex.Message);
+        }
+        finally
+        {
+            jobRun.IncrementJobExecutionCount();
         }
     }
 
