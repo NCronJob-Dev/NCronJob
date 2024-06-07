@@ -22,6 +22,8 @@ internal sealed class JobRegistry
 
     public bool IsJobRegistered<T>() => allJobs.Exists(j => j.Type == typeof(T));
 
+    public JobDefinition GetJobDefinition<T>() => allJobs.First(j => j.Type == typeof(T));
+
     public void Add(JobDefinition jobDefinition)
     {
         if (!allJobs.Exists(j => j.JobFullName == jobDefinition.JobFullName))

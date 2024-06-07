@@ -126,32 +126,43 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     }
 
     /// <inheritdoc />
-    public void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default) where TJob : IJob
+    public void RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
+        where TJob : IJob
     {
-        var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
-
-        if (!jobRegistry.IsJobRegistered<TJob>())
+        using (logger.BeginScope("Triggering RunScheduledJob:"))
         {
-            LogJobNotRegistered(typeof(TJob).Name);
-            jobRegistry.Add(newJobDefinition);
+            var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
+            
+            if (!jobRegistry.IsJobRegistered<TJob>())
+            {
+                LogJobNotRegistered(typeof(TJob).Name);
+                jobRegistry.Add(newJobDefinition);
+            }
+
+            var oldJobDefinition = jobRegistry.GetJobDefinition<TJob>();
+            // copy the elements from the old list to the new list
+            newJobDefinition.RunWhenSuccess = [..oldJobDefinition.RunWhenSuccess];
+            newJobDefinition.RunWhenFaulted = [..oldJobDefinition.RunWhenFaulted];
+
+            token.Register(() => LogCancellationRequested(parameter));
+
+            var run = JobRun.Create(newJobDefinition, parameter, token);
+            run.Priority = JobPriority.High;
+            run.RunAt = startDate;
+            run.IsOneTimeJob = true;
+
+            var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
+
+            if (forceExecution)
+            {
+                _ = jobProcessor.ProcessJobAsync(run, token);
+            }
+            else
+            {
+                jobQueue.EnqueueForDirectExecution(run, startDate);
+                jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
+            }
         }
-
-        token.Register(() => LogCancellationRequested(parameter));
-
-        var run = JobRun.Create(newJobDefinition, parameter, token);
-        run.Priority = JobPriority.High;
-        run.RunAt = startDate;
-        run.IsOneTimeJob = true;
-
-        jobQueueManager.TryGetQueue(run.JobDefinition.JobFullName, out var testJobQueue);
-
-        var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-        jobQueue.EnqueueForDirectExecution(run, startDate);
-
-        if (forceExecution)
-            _ = jobProcessor.ProcessJobAsync(run, token);
-        else
-            jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
     }
 
     public void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate)

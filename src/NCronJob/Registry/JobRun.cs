@@ -1,4 +1,4 @@
-using NCronJob;
+namespace NCronJob;
 
 internal class JobRun
 {

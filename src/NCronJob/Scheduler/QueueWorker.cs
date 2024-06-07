@@ -15,6 +15,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly ILogger<QueueWorker> logger;
     private CancellationTokenSource? shutdown;
     private readonly ConcurrentDictionary<string, Task> workerTasks = new();
+    private readonly ConcurrentDictionary<string, bool> addingWorkerTasks = new();
 
     public QueueWorker(
         JobQueueManager jobQueueManager,
@@ -71,13 +72,14 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void AddWorkerTask(string jobType, CancellationToken stopToken)
     {
-        if (!workerTasks.ContainsKey(jobType))
+        if (!workerTasks.ContainsKey(jobType) && !addingWorkerTasks.GetOrAdd(jobType, _ => false))
         {
+            addingWorkerTasks[jobType] = true;
             var workerTask = jobWorker.WorkerAsync(jobType, stopToken);
             workerTasks.TryAdd(jobType, workerTask);
+            workerTask.ContinueWith(_ => addingWorkerTasks.TryUpdate(jobType, false, true), stopToken);
         }
     }
-
 
     private void ScheduleInitialJobs()
     {

@@ -19,13 +19,19 @@ internal sealed class JobQueueManager : IDisposable
 
     public JobQueue GetOrAddQueue(string jobType)
     {
+        var isCreating = false;
         var jobQueue = jobQueues.GetOrAdd(jobType, jt =>
         {
+            isCreating = true;
             var queue = new JobQueue(timeProvider);
             queue.CollectionChanged += JobQueue_CollectionChanged;
-            QueueAdded?.Invoke(jt);
             return queue;
         });
+
+        if (isCreating)
+        {
+            QueueAdded?.Invoke(jobType);
+        }
 
         return jobQueue;
     }

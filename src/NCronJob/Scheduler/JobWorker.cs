@@ -28,7 +28,7 @@ internal sealed partial class JobWorker
         this.registry = registry;
         this.timeProvider = timeProvider;
         this.logger = logger;
-        this.globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
+        globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
 
         taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
@@ -47,7 +47,7 @@ internal sealed partial class JobWorker
             if (jobQueue.TryPeek(out var nextJob, out var priorityTuple) && IsJobEligibleToStart(nextJob, jobQueue))
             {
                 await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                await DispatchJobForProcessing(nextJob, priorityTuple, jobType, cancellationToken, semaphore, runningTasks).ConfigureAwait(false);
+                await DispatchJobForProcessing(nextJob, priorityTuple, jobType, semaphore, runningTasks, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -63,9 +63,9 @@ internal sealed partial class JobWorker
     JobRun nextJob,
     (DateTimeOffset NextRunTime, int Priority) priorityTuple,
     string jobType,
-    CancellationToken cancellationToken,
     SemaphoreSlim semaphore,
-    List<Task> runningTasks)
+    List<Task> runningTasks,
+    CancellationToken cancellationToken)
     {
         try
         {
@@ -75,7 +75,11 @@ internal sealed partial class JobWorker
 
             await WaitForNextExecution(priorityTuple, linkedCts.Token).ConfigureAwait(false);
 
-            jobQueueManager.GetOrAddQueue(jobType).Dequeue();
+            if(jobQueueManager.TryGetQueue(jobType, out var jobQueue))
+               jobQueue.Dequeue();
+            else
+                throw new InvalidOperationException($"Job queue not found for {jobType}");
+
             UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
 
             var jobTask = taskFactory.StartNew(async () =>

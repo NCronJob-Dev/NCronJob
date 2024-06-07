@@ -9,7 +9,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
-    private readonly JobQueue jobQueue;
+    private readonly JobQueueManager jobQueueManager;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly JobHistory jobHistory;
     private volatile bool isDisposed;
@@ -20,14 +20,14 @@ internal sealed partial class JobExecutor : IDisposable
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler,
-        JobQueue jobQueue,
+        JobQueueManager jobQueueManager,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         JobHistory jobHistory)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
-        this.jobQueue = jobQueue;
+        this.jobQueueManager = jobQueueManager;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.jobHistory = jobHistory;
 
@@ -157,6 +157,7 @@ internal sealed partial class JobExecutor : IDisposable
             var newRun = JobRun.Create(dependentJob, dependentJob.Parameter, jobRun.CancellationToken);
             newRun.CorrelationId = jobRun.CorrelationId;
             newRun.ParentOutput = context.Output;
+            var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(newRun);
         }
     }
