@@ -11,7 +11,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IRetryHandler retryHandler;
     private readonly JobQueueManager jobQueueManager;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
-    private readonly JobHistory jobHistory;
+    private readonly IJobHistory jobHistory;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
@@ -22,7 +22,7 @@ internal sealed partial class JobExecutor : IDisposable
         IRetryHandler retryHandler,
         JobQueueManager jobQueueManager,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
-        JobHistory jobHistory)
+        IJobHistory jobHistory)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;

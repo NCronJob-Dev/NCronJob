@@ -38,7 +38,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(false, forceExecution: true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(5000));
+        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
         result.ShouldBe("Me: Message Parent: Failed");
     }
