@@ -93,7 +93,7 @@ internal sealed partial class QueueWorker : BackgroundService
             addingWorkerTasks[jobType] = true;
             try
             {
-                var workerTask = Task.Run(() => jobWorker.WorkerAsync(jobType, stopToken), stopToken);
+                var workerTask = jobWorker.WorkerAsync(jobType, stopToken);
                 workerTasks.TryAdd(jobType, workerTask);
 
                 workerTask.ContinueWith(_ =>
