@@ -44,7 +44,7 @@ internal sealed class JobRegistry
     {
         if (allJob.Exists(j => j.JobFullName == jobDefinition.JobFullName))
         {
-            return;
+            Remove(jobDefinition);
         }
 
         AssertNoDuplicateJobNames(jobDefinition.CustomName);
