@@ -210,6 +210,25 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public void AddingJobDuringRuntimeIsRetrieved()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+        ServiceCollection.AddNCronJob();
+        var provider = CreateServiceProvider();
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+        registry.AddJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
+
+        var allSchedules = registry.GetAllRecurringJobs();
+
+        allSchedules.Count.ShouldBe(1);
+        allSchedules.ShouldContain(s => s.JobName == "JobName"
+                                        && s.CronExpression == "* * * * *"
+                                        && s.TimeZone == TimeZoneInfo.Utc
+                                        && s.JobType == typeof(SimpleJob));
+    }
+
+    [Fact]
     public async Task ShouldDisableJob()
     {
         var fakeTimer = new FakeTimeProvider();

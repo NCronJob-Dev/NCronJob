@@ -123,6 +123,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var runtimeCollection = new RuntimeServiceCollection();
         var builder = new NCronJobOptionBuilder(runtimeCollection, concurrencySettings);
         jobBuilder(builder);
+        builder.RegisterJobs();
 
         foreach (var jobDefinition in runtimeCollection.GetJobDefinitions())
         {
