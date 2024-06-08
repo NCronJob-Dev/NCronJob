@@ -88,6 +88,19 @@ internal sealed class JobQueueManager : IDisposable
             jobQueue.CollectionChanged -= JobQueue_CollectionChanged;
         }
 
+        foreach (var semaphore in semaphores.Values)
+        {
+            semaphore.Dispose();
+        }
+
+        foreach (var cts in jobCancellationTokens.Values)
+        {
+            cts.Dispose();
+        }
+        jobQueues.Clear();
+        semaphores.Clear();
+        jobCancellationTokens.Clear();
+
         disposed = true;
     }
 }
