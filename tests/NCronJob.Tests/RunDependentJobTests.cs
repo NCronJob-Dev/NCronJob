@@ -21,8 +21,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true, forceExecution: true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Me: Message Parent: Success");
     }
 
@@ -38,8 +37,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(false, forceExecution: true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Me: Message Parent: Failed");
     }
 
@@ -56,7 +54,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(forceExecution: true);
 
-        await CommunicationChannel.Reader.ReadAsync();
+        await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(2);
         storage.Guids.Distinct().Count().ShouldBe(1);
@@ -75,9 +73,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        await CommunicationChannel.Reader.ReadAsync(tcs.Token);
-        await Task.Delay(150, tcs.Token);
+        await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(1);
     }
@@ -95,8 +91,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true, forceExecution: true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Parent: Success");
     }
 
