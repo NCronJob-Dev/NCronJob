@@ -46,7 +46,7 @@ internal class JobRun
                     jr.JobDefinition.OnCompletion?.Invoke(jr.JobDefinition);
                     break;
                 case JobStateType.Faulted:
-                    jr.JobDefinition.OnFailure?.Invoke(jr.JobDefinition);
+                    jr.JobDefinition.OnFailure?.Invoke(jr.JobDefinition, state.Message);
                     break;
                 case JobStateType.Running:
                     jr.JobDefinition.OnRunning?.Invoke(jr.JobDefinition);

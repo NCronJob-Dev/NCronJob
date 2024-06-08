@@ -109,13 +109,9 @@ internal sealed partial class JobWorker
                 ScheduleJob(nextJob.JobDefinition);
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested || oce.CancellationToken.IsCancellationRequested)
         {
             nextJob.NotifyStateChange(JobStateType.Cancelled);
-        }
-        catch (OperationCanceledException)
-        {
-            nextJob.NotifyStateChange(JobStateType.Faulted);
         }
         catch (Exception ex)
         {

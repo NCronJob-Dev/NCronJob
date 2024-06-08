@@ -32,6 +32,6 @@ internal sealed record JobDefinition(
 
     // Hooks for specific state changes
     public Action<JobDefinition>? OnCompletion { get; set; }
-    public Action<JobDefinition>? OnFailure { get; set; }
+    public Action<JobDefinition, string?>? OnFailure { get; set; }
     public Action<JobDefinition>? OnRunning { get; set; }
 }
