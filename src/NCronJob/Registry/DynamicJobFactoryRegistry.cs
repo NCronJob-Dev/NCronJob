@@ -26,16 +26,8 @@ internal sealed class DynamicJobFactoryRegistry
     }
 
     /// <summary>
-    /// Gets the job instance and removes it from the registry. The instance will be drained so that the Garbage Collector can collect it.
+    /// Gets the job instance.
     /// </summary>
-    /// <remarks>
-    /// This function is called for triggering instant jobs. As the time interval between executions can be long (to indefinite),
-    /// the job instance should be removed from the registry to prevent memory leaks.
-    /// </remarks>
-    public IJob GetAndDrainJobInstance(IServiceProvider serviceProvider, JobDefinition jobDefinition)
-    {
-        var element = map[jobDefinition.JobFullName](serviceProvider);
-        map.Remove(jobDefinition.JobFullName);
-        return element;
-    }
+    public IJob GetJobInstance(IServiceProvider serviceProvider, JobDefinition jobDefinition) 
+        => map[jobDefinition.JobFullName](serviceProvider);
 }

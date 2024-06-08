@@ -73,7 +73,7 @@ internal sealed partial class JobExecutor : IDisposable
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
     {
         if (definition.Type == typeof(DynamicJobFactory))
-            return dynamicJobFactoryRegistry.GetAndDrainJobInstance(scopedServiceProvider, definition);
+            return dynamicJobFactoryRegistry.GetJobInstance(scopedServiceProvider, definition);
 
         var job = scopedServiceProvider.GetService(definition.Type);
         if (job != null)

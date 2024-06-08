@@ -117,3 +117,12 @@ builder.Services.AddNCronJob(options =>
         }));
 });
 ```
+
+### Defining dependencies for minimal Jobs
+To define that a job should be executed afterward, you can use the `AddJob` overload like this:
+
+```csharp
+builder.Services.AddNCronJob(options => {
+    options.AddJob(async (IMyService myService) => await myService.Run())
+        .ExecuteWhen(success: b => b.RunJob(() => Console.Write("Run when successful")));
+});

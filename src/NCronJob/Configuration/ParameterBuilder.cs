@@ -23,7 +23,7 @@ public sealed class ParameterBuilder
     /// When an instant job is triggered a parameter can be passed down via the <see cref="IInstantJobRegistry"/> interface.
     /// </summary>
     /// <param name="parameter">The parameter to add that will be passed to the cron job.</param>
-    /// <returns>Returns a <see cref="JobOptionBuilder"/> that allows adding more options (like additional cron definitions) to the job.</returns>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows further configuration.</returns>
     /// <remarks>
     /// Calling this method multiple times on the same cron expression, will overwrite the last set value.
     /// Therefore:
