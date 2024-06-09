@@ -27,7 +27,7 @@ jobs:
 1. Instant jobs - Run a job immediately (or with a small delay, or at a specific date and time).
 2. Cron jobs - Schedule a job using a cron expression.
 
-The whole documentation can be found here: [NCronJob Documentation](https://ncronjob-dev.github.io/NCronJob/)
+The whole documentation can be found here: [NCronJob Documentation](https://docs.ncronjob.dev/)
 
 - [NCronJob](#ncronjob)
   - [Features](#features)

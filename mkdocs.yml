@@ -1,5 +1,5 @@
 site_name: NCronJob
-site_url: https://ncronjob-dev.github.io/NCronJob/
+site_url: https://docs.ncronjob.dev/
 site_description: A simple and powerful job scheduler.
 docs_dir: docs
 repo_name: NCronJob-Dev/NCronJob
