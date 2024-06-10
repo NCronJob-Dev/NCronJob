@@ -27,7 +27,7 @@ jobs:
 1. Instant jobs - Run a job immediately (or with a small delay, or at a specific date and time).
 2. Cron jobs - Schedule a job using a cron expression.
 
-The whole documentation can be found here: [NCronJob Documentation](https://ncronjob-dev.github.io/NCronJob/)
+The whole documentation can be found here: [NCronJob Documentation](https://docs.ncronjob.dev/)
 
 - [NCronJob](#ncronjob)
   - [Features](#features)
@@ -186,9 +186,15 @@ builder.Services.AddNCronJob(options =>
 
 ## Support & Contributing
 
-Thanks to all [contributors](https://github.com/NCronJob-Dev/NCronJob/graphs/contributors) and people that are creating
-bug-reports and valuable input:
+Thanks to all [contributors](https://github.com/NCronJob-Dev/NCronJob/graphs/contributors) and people who are creating
+bug reports and valuable input:
 
 <a href="https://github.com/NCronJob-Dev/NCronJob/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=NCronJob-Dev/NCronJob" alt="Supporters" />
 </a>
+
+If you have any questions or suggestions, feel free to open a new issue or pull request.
+Do you want to contribute? Great! We have a predefined codespace for you to get started right away! With that you don't need any local setup and can start right away!
+Either coding or updating the documentation - everything is set and done for you!
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NCronJob-Dev/NCronJob?quickstart=1)
