@@ -73,6 +73,7 @@ internal sealed class JobQueueManager : IDisposable
             if (jobCancellationTokens.TryGetValue(jobType, out var cts))
             {
                 cts.Cancel();
+                Task.Delay(10).Wait();
                 jobCancellationTokens[jobType] = new CancellationTokenSource();
             }
         }

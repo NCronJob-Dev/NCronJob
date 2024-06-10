@@ -190,7 +190,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task ExecuteAScheduledJob()
     {
-        var fakeTimer = new FakeTimeProvider { AutoAdvanceAmount = TimeSpan.FromMinutes(1) };
+        var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
@@ -198,7 +198,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(TimeSpan.FromMinutes(1));
 
-        await Task.Delay(10);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
@@ -285,8 +284,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobHasHigherPriorityThanCronJob()
     {
-        // NOTE: this was actually not working previously. If the MaxDegreeOfParallelism = 1 and the timer started
-        // before the instant job then the Job would have already run
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("CRON")));
@@ -297,6 +294,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT", false);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        
         var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         answer.ShouldBe("INSTANT");
     }
@@ -344,9 +342,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         await WaitForJobsOrTimeout(1);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
-
-        var jobFinished = await WaitForJobsOrTimeout(1);
+        void AdvanceTime() => fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1, AdvanceTime);
         jobFinished.ShouldBeTrue();
     }
 
@@ -368,6 +365,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             try
             {
                 context.Output = "Job Completed";
+                await Task.Delay(10, token);
                 await writer.WriteAsync(context.Output, token);
             }
             catch (Exception ex)

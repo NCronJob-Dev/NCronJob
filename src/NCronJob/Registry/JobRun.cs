@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace NCronJob;
 
 internal class JobRun
@@ -11,6 +13,12 @@ internal class JobRun
     public Guid CorrelationId { get; set; } = Guid.NewGuid();
     public CancellationToken CancellationToken { get; set; }
     public DateTimeOffset? RunAt { get; set; }
+
+    /// <summary>
+    /// At the moment of processing, if the difference between the current time and the scheduled time exceeds the
+    /// expiration period (grace period), the job is considered expired and should not be processed. Because the job is not processed,
+    /// but it has been dequeued then essentially the job is dropped.
+    /// </summary>
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
     public bool IsExpired(TimeProvider timeProvider) => RunAt.HasValue && timeProvider.GetUtcNow() - RunAt.Value > Expiry;
     public bool IsOneTimeJob { get; set; }

@@ -68,6 +68,8 @@ internal sealed partial class JobWorker
     List<Task> runningTasks,
     CancellationToken cancellationToken)
     {
+        var shouldReleaseSemaphore = true;
+
         try
         {
             var cts = jobQueueManager.GetOrAddCancellationTokenSource(jobType);
@@ -100,6 +102,7 @@ internal sealed partial class JobWorker
                     nextJob.NotifyStateChange(JobStateType.Cancelled);
                 }
 
+                semaphore.Release();
             }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
 
             runningTasks.Add(jobTask);
@@ -108,6 +111,7 @@ internal sealed partial class JobWorker
             {
                 ScheduleJob(nextJob.JobDefinition);
             }
+            shouldReleaseSemaphore = false;
         }
         catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested || oce.CancellationToken.IsCancellationRequested)
         {
@@ -120,7 +124,10 @@ internal sealed partial class JobWorker
         }
         finally
         {
-            semaphore.Release();
+            if (shouldReleaseSemaphore)
+            {
+                semaphore.Release();
+            }
         }
     }
 

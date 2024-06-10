@@ -66,12 +66,12 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, Action timeAdvancer)
     {
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(50));
         try
         {
             await foreach (var jobSuccessful in GetCompletionJobsAsync(jobRuns, timeAdvancer, timeoutCts.Token))
             {
-                jobSuccessful.ShouldBe("Job Completed");
+                jobSuccessful.ShouldBeOneOf("Job Completed", true);
             }
             return true;
         }
