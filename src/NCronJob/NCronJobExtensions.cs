@@ -33,8 +33,7 @@ public static class NCronJobExtensions
         builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
 
         services.TryAddSingleton(settings);
-        services.TryAddSingleton<QueueWorker>();
-        services.AddHostedService(provider => provider.GetRequiredService<QueueWorker>());
+        services.AddHostedService<QueueWorker>();
         services.TryAddSingleton<JobRegistry>();
         services.TryAddSingleton<DynamicJobFactoryRegistry>();
         services.TryAddSingleton<IJobHistory, NoOpJobHistory>();

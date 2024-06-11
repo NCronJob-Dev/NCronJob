@@ -34,7 +34,8 @@ public interface IInstantJobRegistry
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     /// <param name="jobDelegate">The delegate to execute.</param>
-    void RunInstantJob(Delegate jobDelegate);
+    /// <param name="token">An optional token to cancel the job.</param>
+    void RunInstantJob(Delegate jobDelegate, CancellationToken token = default);
 
     /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>.
@@ -59,22 +60,58 @@ public interface IInstantJobRegistry
     /// </summary>
     /// <param name="jobDelegate">The delegate to execute.</param>
     /// <param name="delay">The delay until the job will be executed.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
     /// <remarks>
     /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
-    /// Also the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
-    void RunScheduledJob(Delegate jobDelegate, TimeSpan delay);
+    void RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default);
 
     /// <summary>
     /// Runs a job that will be executed at the given <paramref name="startDate"/>.
     /// </summary>
     /// <param name="jobDelegate">The delegate to execute.</param>
     /// <param name="startDate">The starting point when the job will be executed.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
     /// <remarks>
     /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
-    void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate);
+    void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
+
+    /// <summary>
+    /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.
+    /// </summary>
+    /// <param name="jobDelegate">The delegate to execute.</param>
+    /// <param name="delay">The delay until the job will be executed.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
+    /// <remarks>
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// </remarks>
+    void ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default);
+
+    /// <summary>
+    /// Runs a job that will be executed at the given <paramref name="startDate"/>. The job will not be queued into the JobQueue, but executed directly.
+    /// </summary>
+    /// <param name="jobDelegate">The delegate to execute.</param>
+    /// <param name="startDate">The starting point when the job will be executed.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
+    /// <remarks>
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// </remarks>
+    void ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
+
+    /// <summary>
+    /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.
+    /// The concurrency settings will be ignored.
+    /// </summary>
+    /// <param name="delay">The delay until the job will be executed.</param>
+    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
+    /// <param name="token">An optional token to cancel the job.</param>
+    void ForceRunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
+        where TJob : IJob;
 
     /// <summary>
     /// Runs an instant job to the registry, which will be executed even if the job is not registered and the concurrency is exceeded.
@@ -95,14 +132,16 @@ public interface IInstantJobRegistry
         where TJob : IJob;
 
     /// <summary>
-    /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.
-    /// The concurrency settings will be ignored.
+    /// Runs an instant job, which gets directly executed. The job will not be queued into the JobQueue, but executed directly.
     /// </summary>
-    /// <param name="delay">The delay until the job will be executed.</param>
-    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
+    /// <remarks>
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
+    /// </remarks>
+    /// <param name="jobDelegate">The delegate to execute.</param>
     /// <param name="token">An optional token to cancel the job.</param>
-    void ForceRunInstantJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
-        where TJob : IJob;
+    void ForceRunInstantJob(Delegate jobDelegate, CancellationToken token = default);
+
 }
 
 internal sealed partial class InstantJobRegistry : IInstantJobRegistry
@@ -135,7 +174,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         where TJob : IJob => RunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
 
     /// <inheritdoc />
-    public void RunInstantJob(Delegate jobDelegate) => RunScheduledJob(jobDelegate, TimeSpan.Zero);
+    public void RunInstantJob(Delegate jobDelegate, CancellationToken token = default) => RunScheduledJob(jobDelegate, TimeSpan.Zero, token);
 
     /// <inheritdoc />
     public void RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
@@ -151,37 +190,65 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         RunJob<TJob>(startDate, parameter, false, token);
 
     /// <inheritdoc />
-    public void RunScheduledJob(Delegate jobDelegate, TimeSpan delay)
+    public void RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default)
     {
         var utcNow = timeProvider.GetUtcNow();
-        RunScheduledJob(jobDelegate, utcNow + delay);
+        RunScheduledJob(jobDelegate, utcNow + delay, token);
     }
 
     /// <inheritdoc />
-    public void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate)
+    public void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
+        RunDelegateJob(jobDelegate, startDate, false, token);
+
+    /// <inheritdoc />
+    public void ForceRunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
+        where TJob : IJob
+    {
+        var utcNow = timeProvider.GetUtcNow();
+        RunJob<TJob>(utcNow + delay, parameter, true, token);
+    }
+
+    /// <inheritdoc />
+    public void ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default)
+    {
+        var utcNow = timeProvider.GetUtcNow();
+        ForceRunScheduledJob(jobDelegate, utcNow + delay, token);
+    }
+
+    /// <inheritdoc />
+    public void ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
+        RunDelegateJob(jobDelegate, startDate, true, token);
+    
+    /// <inheritdoc />
+    public void ForceRunInstantJob(Delegate jobDelegate, CancellationToken token = default) =>
+        ForceRunScheduledJob(jobDelegate, TimeSpan.Zero, token);
+
+    /// <inheritdoc />
+    public void ForceRunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
+        where TJob : IJob => ForceRunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
+    
+    private void RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {
         var definition = dynamicJobFactoryRegistry.Add(jobDelegate);
         var run = JobRun.Create(definition);
         run.Priority = JobPriority.High;
         run.RunAt = startDate;
         run.IsOneTimeJob = true;
+        run.CancellationToken = token;
 
         var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-        jobQueue.EnqueueForDirectExecution(run, startDate);
+
+        if (forceExecution)
+        {
+            _ = jobProcessor.ProcessJobAsync(run, token);
+        }
+        else
+        {
+            jobQueue.EnqueueForDirectExecution(run, startDate);
+            jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
+        }
     }
 
-    /// <inheritdoc />
-    public void ForceRunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
-        where TJob : IJob => ForceRunInstantJob<TJob>(TimeSpan.Zero, parameter, token);
-    
-    /// <inheritdoc />
-    public void ForceRunInstantJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
-        where TJob : IJob
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        RunJob<TJob>(utcNow + delay, parameter, true,token);
-    }
-    
     private void RunJob<TJob>(DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
         where TJob : IJob
     {
@@ -206,6 +273,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
             run.Priority = JobPriority.High;
             run.RunAt = startDate;
             run.IsOneTimeJob = true;
+            run.CancellationToken = token;
 
             var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
 
