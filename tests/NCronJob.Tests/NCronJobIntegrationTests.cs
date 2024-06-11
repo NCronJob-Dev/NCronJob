@@ -336,7 +336,14 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob(n => n.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        async Task WriteTrueAsync(ChannelWriter<object> writer, CancellationToken ct)
+        {
+            await Task.Delay(10, ct);
+            await writer.WriteAsync(true, ct);
+        }
+
+        Delegate jobDelegate = new Func<ChannelWriter<object>, CancellationToken, Task>(WriteTrueAsync);
+        ServiceCollection.AddNCronJob(n => n.AddJob(jobDelegate, "* * * * *"));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));

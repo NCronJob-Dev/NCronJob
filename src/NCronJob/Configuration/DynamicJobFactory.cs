@@ -36,7 +36,8 @@ internal class DynamicJobFactory : IJob
         var param = Expression.Parameter(typeof(object[]), "args");
         var args = method.GetParameters().Select((p, index) =>
             Expression.Convert(Expression.ArrayIndex(param, Expression.Constant(index)), p.ParameterType)).ToArray();
-        var call = Expression.Call(Expression.Constant(jobDelegate.Target), method, args);
+        var instance = method.IsStatic ? null : Expression.Constant(jobDelegate.Target);
+        var call = Expression.Call(instance, method, args);
 
         if (returnType == typeof(Task))
         {
