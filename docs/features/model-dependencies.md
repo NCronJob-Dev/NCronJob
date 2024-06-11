@@ -126,3 +126,4 @@ builder.Services.AddNCronJob(options => {
     options.AddJob(async (IMyService myService) => await myService.Run())
         .ExecuteWhen(success: b => b.RunJob(() => Console.Write("Run when successful")));
 });
+```
