@@ -19,7 +19,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true, forceExecution: true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
 
         var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Me: Message Parent: Success");
@@ -35,7 +35,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(false, forceExecution: true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false);
 
         var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Me: Message Parent: Failed");
@@ -52,7 +52,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(forceExecution: true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>();
 
         await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
@@ -89,7 +89,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true, forceExecution: true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
 
         var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Parent: Success");

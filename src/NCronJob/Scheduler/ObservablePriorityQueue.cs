@@ -8,9 +8,6 @@ internal class ObservablePriorityQueue<TElement> : ObservablePriorityQueue<TElem
 {
     public ObservablePriorityQueue(IComparer<(DateTimeOffset NextRunTime, int Priority)> comparer) : base(comparer)
     { }
-
-    public void Enqueue([DisallowNull] TElement jobWrapper) =>
-        Enqueue(jobWrapper, (jobWrapper.RunAt ?? DateTimeOffset.UtcNow, (int)jobWrapper.Priority));
 }
 
 internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TElement>, INotifyCollectionChanged where TPriority : IComparable<TPriority>

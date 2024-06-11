@@ -292,7 +292,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT", false);
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT");
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         
         var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
@@ -336,14 +336,12 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        async Task WriteTrueAsync(ChannelWriter<object> writer, CancellationToken ct)
+        
+        ServiceCollection.AddNCronJob(n => n.AddJob(async (ChannelWriter<object> writer, CancellationToken ct) =>
         {
             await Task.Delay(10, ct);
             await writer.WriteAsync(true, ct);
-        }
-
-        Delegate jobDelegate = new Func<ChannelWriter<object>, CancellationToken, Task>(WriteTrueAsync);
-        ServiceCollection.AddNCronJob(n => n.AddJob(jobDelegate, "* * * * *"));
+        }, "* * * * *"));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
@@ -352,6 +350,33 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         void AdvanceTime() => fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1, AdvanceTime);
         jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task StaticAnonymousJobsCanBeExecutedMultipleTimes()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+
+        ServiceCollection.AddNCronJob(n => n.AddJob(JobMethods.WriteTrueStaticAsync, "* * * * *"));
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        await WaitForJobsOrTimeout(1);
+
+        void AdvanceTime() => fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1, AdvanceTime);
+        jobFinished.ShouldBeTrue();
+    }
+
+    private static class JobMethods
+    {
+        public static async Task WriteTrueStaticAsync(ChannelWriter<object> writer, CancellationToken ct)
+        {
+            await Task.Delay(10, ct);
+            await writer.WriteAsync(true, ct);
+        }
     }
 
     private sealed class GuidGenerator

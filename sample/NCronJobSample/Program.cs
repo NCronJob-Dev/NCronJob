@@ -20,15 +20,14 @@ builder.Services.AddNCronJob(n => n
 
     // Execute the job every 2 minutes
     .AddJob<DataProcessingJob>(p =>
-        p.WithCronExpression("*/5 * * * * *"))
+        p.WithCronExpression("*/2 * * * *"))
 
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
 
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
-    // Register a handler that gets executed when the job is done
-    //.AddNotificationHandler<HelloWorldJobHandler, PrintHelloWorldJob>()
+    .AddNotificationHandler<HelloWorldJobHandler>()
 
     // Multiple instances of the same job with different cron expressions can be supported
     // by marking the job with [SupportsConcurrency] attribute
@@ -60,8 +59,7 @@ app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
 
 app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry) =>
 {
-    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ######################## May the Force be with you ######################",
-        forceExecution: true);
+    instantJobRegistry.ForceRunInstantJob<PrintHelloWorldJob>("Hello from instant job! ######################## May the Force be with you ######################");
 })
     .WithSummary("Triggers a job regardless of concurrency setting for that Job Type")
     .WithName("ForceTriggerInstantJob")
