@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://ncronjob-dev.github.io/NCronJob/features/model-dependencies/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/features/model-dependencies/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
     <title>Model dependencies - NCronJob</title>
     <link rel="stylesheet" href="../../css/theme.css" />
@@ -14,7 +14,7 @@
         // Current page data
         var mkdocs_page_name = "Model dependencies";
         var mkdocs_page_input_path = "features/model-dependencies.md";
-        var mkdocs_page_url = "/NCronJob/features/model-dependencies/";
+        var mkdocs_page_url = "/features/model-dependencies/";
       </script>
     
     <!--[if lt IE 9]>
@@ -238,11 +238,11 @@
 
 <h3 id="defining-dependencies-for-minimal-jobs">Defining dependencies for minimal Jobs<a class="headerlink" href="#defining-dependencies-for-minimal-jobs" title="Permanent link">&para;</a></h3>
 <p>To define that a job should be executed afterward, you can use the <code>AddJob</code> overload like this:</p>
-<p>```csharp
-builder.Services.AddNCronJob(options =&gt; {
-    options.AddJob(async (IMyService myService) =&gt; await myService.Run())
-        .ExecuteWhen(success: b =&gt; b.RunJob(() =&gt; Console.Write(&ldquo;Run when successful&rdquo;)));
-});</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IMyService</span><span class="w"> </span><span class="n">myService</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">myService</span><span class="p">.</span><span class="n">Run</span><span class="p">())</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Run when successful&quot;</span><span class="p">)));</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
               
             </div>
           </div><footer>
