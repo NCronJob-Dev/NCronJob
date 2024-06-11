@@ -1,10 +1,11 @@
-using System.Diagnostics;
 
 namespace NCronJob;
 
 internal class JobRun
 {
     private int jobExecutionCount;
+
+    private JobRun() => Initialize();
 
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
 
@@ -28,24 +29,23 @@ internal class JobRun
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     public static JobRun Create(JobDefinition jobDefinition) =>
-        new JobRun
+        new()
         {
             JobRunId = Guid.NewGuid(),
             JobDefinition = jobDefinition,
             Parameter = jobDefinition.Parameter
-        }.Initialize();
+        };
 
     public static JobRun Create(JobDefinition jobDefinition, object? parameter, CancellationToken token) =>
-        new JobRun
+        new()
         {
             JobRunId = Guid.NewGuid(),
             JobDefinition = jobDefinition,
             Parameter = parameter,
             CancellationToken = token
-        }.Initialize();
+        };
 
-    private JobRun Initialize()
-    {
+    private void Initialize() =>
         OnStateChanged += (jr, state) =>
         {
             switch (state.Type)
@@ -71,8 +71,6 @@ internal class JobRun
                     throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
             }
         };
-        return this;
-    }
 
     // State change logic
     public bool Completed => States.Exists(s => IsFinalState(s.Type));
