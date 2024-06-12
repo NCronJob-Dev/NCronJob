@@ -58,7 +58,7 @@ public class NCronJobOptionBuilder : IJobStage
             {
                 IsStartupJob = option.IsStartupJob,
                 CustomName = option.Name,
-                CronExpressionString = option.CronExpression
+                UserDefinedCronExpression = option.CronExpression
             };
             jobs.Add(entry);
         }
@@ -99,7 +99,7 @@ public class NCronJobOptionBuilder : IJobStage
             JobPolicyMetadata: jobPolicyMetadata)
         {
             CustomName = jobName,
-            CronExpressionString = jobOption.CronExpression
+            UserDefinedCronExpression = jobOption.CronExpression
         };
         Services.AddSingleton(entry);
         Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));

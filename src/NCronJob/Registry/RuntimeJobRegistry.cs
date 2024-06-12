@@ -196,7 +196,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             return false;
         }
 
-        cronExpression = job.CronExpressionString;
+        cronExpression = job.UserDefinedCronExpression;
         timeZoneInfo = job.TimeZone;
 
         return true;
@@ -209,7 +209,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             .Select(s => new RecurringJobSchedule(
                 s.Type == typeof(DynamicJobFactory) ? null : s.Type,
                 s.CustomName,
-                s.CronExpressionString!,
+                s.UserDefinedCronExpression!,
                 s.TimeZone!))
             .ToArray();
 
@@ -221,7 +221,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
         if (job.CronExpression is not null)
         {
-            job.CronExpression = CronExpression.Parse(job.CronExpressionString);
+            job.CronExpression = CronExpression.Parse(job.UserDefinedCronExpression);
             jobQueue.ReevaluateQueue();
         }
     }

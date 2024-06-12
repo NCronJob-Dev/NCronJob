@@ -27,7 +27,7 @@ internal sealed class JobRegistry
     public JobDefinition? FindJobDefinition(string jobName)
         => allJob.Find(j => j.CustomName == jobName);
 
-    public JobDefinition GetJobDefinitionForInstantJob<T>()
+    public JobDefinition GetOrAddJobDefinitionForInstantJob<T>()
     {
         var definition = allJob.First(j => j.Type == typeof(T));
         if (definition.CronExpression is not null)

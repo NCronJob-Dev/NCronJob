@@ -17,6 +17,10 @@ The same applies to Minimal API:
 builder.Services.AddNCronJob(b => b.AddJob(() => {}, "* * * * *", "MyName));
 ```
 
+### Job Names
+
+Every recurring job (CRON job) can have a unique job name that identifies the job. Job names have to be unique across all jobs that were given a name. If a job is added without a name, it will not be possible to remove or update the job at runtime by name.
+
 ## Adding jobs
 To add a job at runtime, leverage the `IRuntimeJobRegistry` interface:
 
