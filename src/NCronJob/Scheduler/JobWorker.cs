@@ -34,11 +34,11 @@ internal sealed partial class JobWorker
         taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
-    public async Task WorkerAsync(string jobType, CancellationToken cancellationToken)
+    public async Task WorkerAsync(string queueName, CancellationToken cancellationToken)
     {
-        var jobQueue = jobQueueManager.GetOrAddQueue(jobType);
-        var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(jobType);
-        var semaphore = jobQueueManager.GetOrAddSemaphore(jobType, concurrencyLimit);
+        var jobQueue = jobQueueManager.GetOrAddQueue(queueName);
+        var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(queueName);
+        var semaphore = jobQueueManager.GetOrAddSemaphore(queueName, concurrencyLimit);
         var runningTasks = new List<Task>();
 
         while (!cancellationToken.IsCancellationRequested)
@@ -48,7 +48,8 @@ internal sealed partial class JobWorker
             if (jobQueue.TryPeek(out var nextJob, out var priorityTuple) && IsJobEligibleToStart(nextJob, jobQueue))
             {
                 await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                await DispatchJobForProcessing(nextJob, priorityTuple, jobType, semaphore, runningTasks, cancellationToken).ConfigureAwait(false);
+                await DispatchJobForProcessing(nextJob, priorityTuple.NextRunTime, queueName, semaphore, runningTasks, cancellationToken)
+                    .ConfigureAwait(false);
             }
             else
             {
@@ -60,10 +61,34 @@ internal sealed partial class JobWorker
         await Task.WhenAll(runningTasks).ConfigureAwait(false);
     }
 
+    public async Task InvokeJobWithSchedule(JobRun jobRun, CancellationToken cancellationToken)
+    {
+        jobRun.NotifyStateChange(JobStateType.Scheduled);
+        await WaitForNextExecution(jobRun.RunAt ?? DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
+        await taskFactory.StartNew(async () =>
+        {
+            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, 1);
+            await jobProcessor.ProcessJobAsync(jobRun, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken).Unwrap().ContinueWith(task =>
+        {
+            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, -1);
+
+            if (task.IsFaulted)
+            {
+                jobRun.NotifyStateChange(JobStateType.Faulted);
+            }
+
+            if (task.IsCanceled)
+            {
+                jobRun.NotifyStateChange(JobStateType.Cancelled);
+            }
+        }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
+    }
+
     private async Task DispatchJobForProcessing(
     JobRun nextJob,
-    (DateTimeOffset NextRunTime, int Priority) priorityTuple,
-    string jobType,
+    DateTimeOffset nextRunTime,
+    string queueName,
     SemaphoreSlim semaphore,
     List<Task> runningTasks,
     CancellationToken cancellationToken)
@@ -72,16 +97,16 @@ internal sealed partial class JobWorker
 
         try
         {
-            var cts = jobQueueManager.GetOrAddCancellationTokenSource(jobType);
+            var cts = jobQueueManager.GetOrAddCancellationTokenSource(queueName);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
             var linkedToken = linkedCts.Token;
 
-            await WaitForNextExecution(priorityTuple, linkedCts.Token).ConfigureAwait(false);
+            await WaitForNextExecution(nextRunTime, linkedCts.Token).ConfigureAwait(false);
 
-            if(jobQueueManager.TryGetQueue(jobType, out var jobQueue))
+            if(jobQueueManager.TryGetQueue(queueName, out var jobQueue))
                jobQueue.Dequeue();
             else
-                throw new InvalidOperationException($"Job queue not found for {jobType}");
+                throw new InvalidOperationException($"Job queue not found for {queueName}");
 
             UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
 
@@ -131,10 +156,10 @@ internal sealed partial class JobWorker
         }
     }
 
-    private async Task WaitForNextExecution((DateTimeOffset NextRunTime, int Priority) priorityTuple, CancellationToken stopToken)
+    private async Task WaitForNextExecution(DateTimeOffset nextRunTime, CancellationToken stopToken)
     {
         var utcNow = timeProvider.GetUtcNow();
-        var delay = priorityTuple.NextRunTime - utcNow;
+        var delay = nextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
             await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken).ConfigureAwait(false);

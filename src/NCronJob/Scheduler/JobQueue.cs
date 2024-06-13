@@ -6,7 +6,7 @@ namespace NCronJob;
 internal sealed class JobQueue : ObservablePriorityQueue<JobRun>
 {
     private readonly TimeProvider timeProvider;
-
+    public required string Name { get; set; }
     public JobQueue(TimeProvider timeProvider) : base(new JobQueueTupleComparer()) =>
         this.timeProvider = timeProvider;
     

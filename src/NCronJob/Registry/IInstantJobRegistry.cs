@@ -150,7 +150,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
-    private readonly JobProcessor jobProcessor;
+    private readonly JobWorker jobWorker;
     private readonly ILogger<InstantJobRegistry> logger;
 
     public InstantJobRegistry(
@@ -158,14 +158,14 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
-        JobProcessor jobProcessor,
+        JobWorker jobWorker,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
-        this.jobProcessor = jobProcessor;
+        this.jobWorker = jobWorker;
         this.logger = logger;
     }
 
@@ -235,15 +235,14 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         run.RunAt = startDate;
         run.IsOneTimeJob = true;
         run.CancellationToken = token;
-
-        var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-
+        
         if (forceExecution)
         {
-            _ = jobProcessor.ProcessJobAsync(run, token);
+            _ = jobWorker.InvokeJobWithSchedule(run, token);
         }
         else
         {
+            var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(run, startDate);
             jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
         }
@@ -275,14 +274,13 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
             run.IsOneTimeJob = true;
             run.CancellationToken = token;
 
-            var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-
             if (forceExecution)
             {
-                _ = jobProcessor.ProcessJobAsync(run, token);
+                _ = jobWorker.InvokeJobWithSchedule(run, token);
             }
             else
             {
+                var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
                 jobQueue.EnqueueForDirectExecution(run, startDate);
                 jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
             }

@@ -80,31 +80,31 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void CreateWorkerQueues(CancellationToken stopToken)
     {
-        foreach (var jobType in jobQueueManager.GetAllJobTypes())
+        foreach (var jobQueueName in jobQueueManager.GetAllJobQueueNames())
         {
-            AddWorkerTask(jobType, stopToken);
+            AddWorkerTask(jobQueueName, stopToken);
         }
     }
 
-    private void AddWorkerTask(string jobType, CancellationToken stopToken)
+    private void AddWorkerTask(string jobQueueName, CancellationToken stopToken)
     {
-        if (!workerTasks.ContainsKey(jobType) && !addingWorkerTasks.GetOrAdd(jobType, _ => false))
+        if (!workerTasks.ContainsKey(jobQueueName) && !addingWorkerTasks.GetOrAdd(jobQueueName, _ => false))
         {
-            addingWorkerTasks[jobType] = true;
+            addingWorkerTasks[jobQueueName] = true;
             try
             {
-                var workerTask = jobWorker.WorkerAsync(jobType, stopToken);
-                workerTasks.TryAdd(jobType, workerTask);
+                var workerTask = jobWorker.WorkerAsync(jobQueueName, stopToken);
+                workerTasks.TryAdd(jobQueueName, workerTask);
 
                 workerTask.ContinueWith(_ =>
                 {
-                    addingWorkerTasks.TryUpdate(jobType, false, true);
+                    addingWorkerTasks.TryUpdate(jobQueueName, false, true);
                 }, stopToken);
             }
             catch (Exception ex)
             {
-                LogQueueWorkerCreationError(jobType, ex);
-                addingWorkerTasks[jobType] = false;
+                LogQueueWorkerCreationError(jobQueueName, ex);
+                addingWorkerTasks[jobQueueName] = false;
             }
         }
     }

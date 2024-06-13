@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using NCronJob;
 using NCronJobSample;
 
@@ -57,9 +58,10 @@ app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
     .WithName("TriggerInstantJob")
     .WithOpenApi();
 
-app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry) =>
+app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry, int timeDelayInSeconds = 0) =>
 {
-    instantJobRegistry.ForceRunInstantJob<PrintHelloWorldJob>("Hello from instant job! ######################## May the Force be with you ######################");
+    instantJobRegistry.ForceRunScheduledJob<PrintHelloWorldJob>(TimeSpan.FromSeconds(timeDelayInSeconds),
+        "Hello from instant job! ######################## May the Force be with you ######################");
 })
     .WithSummary("Triggers a job regardless of concurrency setting for that Job Type")
     .WithName("ForceTriggerInstantJob")
