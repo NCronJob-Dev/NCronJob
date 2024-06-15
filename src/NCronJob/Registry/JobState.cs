@@ -17,6 +17,8 @@ internal readonly struct JobState
     }
 
     private string DebuggerDisplay => $"Type = {Type}, Timestamp = {Timestamp}";
+
+    public static implicit operator JobStateType(JobState jobState) => jobState.Type;
 }
 
 internal enum JobStateType

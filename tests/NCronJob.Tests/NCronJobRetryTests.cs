@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,7 +15,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(3));
+        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
@@ -23,9 +24,9 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // Validate that the job was retried the correct number of times
-        // Fail 3 times = 3 retries + 1 success
+        // Total = 2 retries + 1 success
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        attempts.ShouldBe(4);
+        attempts.ShouldBe(3);
     }
 
     [Fact]
@@ -101,18 +102,44 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
-        var cronRegistryEntries = provider.GetServices<JobDefinition>();
-        var cancelRetryingJobEntry = cronRegistryEntries.First(entry => entry.Type == typeof(CancelRetryingJob2));
+        var jobQueueManager = provider.GetRequiredService<JobQueueManager>();
+        var jobQueue = jobQueueManager.GetOrAddQueue(typeof(CancelRetryingJob2).FullName!);
+
+        JobRun? nextJob = null;
+        var tcs = new TaskCompletionSource<JobStateType>();
+
+        jobQueue.CollectionChanged += (sender, args) =>
+        {
+            if (args.Action == NotifyCollectionChangedAction.Add && nextJob == null)
+            {
+                nextJob = args.NewItems?.OfType<JobRun>().FirstOrDefault();
+                nextJob!.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
+                nextJob!.JobExecutionCount.ShouldBe(0);
+                nextJob!.OnStateChanged += (s, e) =>
+                {
+                    if (e == JobStateType.Cancelled)
+                    {
+                        tcs.SetResult(e);
+                    }
+                };
+            }
+        };
+
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-
+        
+        while (nextJob!.CurrentState != JobStateType.Retrying)
+        {
+            await Task.Delay(1);
+        }
+        // wait until we're in retrying state before cancelling
         jobExecutor.CancelJobs();
 
-        var cancellationHandled = await Task.WhenAny(CancellationSignaled, Task.Delay(100));
-        cancellationHandled.ShouldBe(CancellationSignaled);
-
-        var jobRun = provider.GetRequiredService<IJobHistory>().GetAll().Single(s => s.JobDefinition == cancelRetryingJobEntry);
-        jobRun.JobExecutionCount.ShouldBe(1);
+        var cancellationHandled = await Task.WhenAny(tcs.Task, Task.Delay(1000));
+        cancellationHandled.ShouldBe(tcs.Task);
+        await Task.Delay(10);
+        nextJob!.CurrentState.Type.ShouldBe(JobStateType.Cancelled);
+        nextJob!.JobExecutionCount.ShouldBe(1);
     }
 
     [Fact]
@@ -143,7 +170,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
     private sealed record MaxFailuresWrapper(int MaxFailuresBeforeSuccess = 3);
 
-    [RetryPolicy(retryCount: 4, PolicyType.FixedInterval)]
+    [RetryPolicy(retryCount: 3, PolicyType.FixedInterval)]
     private sealed class FailingJob(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
@@ -229,15 +256,13 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         }
     }
 
-    [RetryPolicy(retryCount: 4, PolicyType.FixedInterval)]
+    [RetryPolicy(retryCount: 2, PolicyType.FixedInterval)]
     private sealed class CancelRetryingJob2 : IJob
     {
         public Task RunAsync(JobExecutionContext context, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            return !token.IsCancellationRequested
-                ? throw new InvalidOperationException("Job Failed")
-                : Task.CompletedTask;
+            throw new InvalidOperationException("Job Failed");
         }
     }
 
