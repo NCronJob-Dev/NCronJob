@@ -10,6 +10,7 @@ internal sealed record JobDefinition(
     string? JobName = null,
     JobExecutionAttributes? JobPolicyMetadata = null)
 {
+    
     public bool IsStartupJob { get; set; }
 
     public string JobName { get; } = JobName ?? Type.Name;
@@ -28,4 +29,9 @@ internal sealed record JobDefinition(
     private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
     public RetryPolicyAttribute? RetryPolicy => JobPolicyMetadata?.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata?.ConcurrencyPolicy;
+
+    // Hooks for specific state changes
+    public Action<JobDefinition>? OnCompletion { get; set; }
+    public Action<JobDefinition, string?>? OnFailure { get; set; }
+    public Action<JobDefinition>? OnRunning { get; set; }
 }

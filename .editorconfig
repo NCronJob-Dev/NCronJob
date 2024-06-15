@@ -407,6 +407,7 @@ dotnet_diagnostic.S1118.severity = none        # Add a 'protected' constructor o
 dotnet_diagnostic.S1135.severity = suggestion # https://github.com/atc-net/atc-coding-rules/blob/main/documentation/CodeAnalyzersRules/SonarAnalyzerCSharp/S1135.md
 dotnet_diagnostic.S2583.severity = suggestion # Change this condition so that it does not always evaluate to 'False'.
 dotnet_diagnostic.S3875.severity = none       # Remove this overload of 'operator =='.
+dotnet_diagnostic.S1133.severity = suggestion
 
 ##########################################
 # Custom - Code Analyzers Rules

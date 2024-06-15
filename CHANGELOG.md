@@ -6,6 +6,22 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+This release includes improvements to the way Jobs are scheduled included in PR [#85](https://github.com/NCronJob-Dev/NCronJob/pull/85) 
+implemented by [@falvarez1](https://github.com/falvarez1)
+
+- Improved scheduling accuracy by preventing jobs of different types from competing for the same queue.
+- Long-running jobs of one type no longer affect other types, improving overall job scheduling and execution.
+- Added notifications for job states and event hooks to enhance observability.
+- Introduced queue notifications for better monitoring.
+- Improved maintainability and concurrency handling.
+
+### Fixed
+
+- Closes [#65](https://github.com/linkdotnet/NCronJob/issues/65)
+- Fixes [#34](https://github.com/linkdotnet/NCronJob/issues/34)
+
 ## [2.7.4] - 2024-06-03
 
 ### Fixed
@@ -58,12 +74,12 @@ This release has the same changes as `2.6.0` but fixes an issue in the release p
 ### Changed
 
 - API signature improvements - Enhanced the job scheduling framework with new classes and interfaces to better support job lifecycle management, including startup configuration and notification handling. This includes the introduction of `StartupStage<TJob>`, `NotificationStage<TJob>`, `IJobStage`, `IStartupStage<TJob>`, and `INotificationStage<TJob>`.
-  (#70) By [@falvarez1](https://github.com/falvarez1)
+  [#70](https://github.com/linkdotnet/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
 
 ### Added
 
-- Startup jobs - Run a job when the application starts. (#70) By [@falvarez1](https://github.com/falvarez1)
-- Sample project - Added a sample project to demonstrate Startup Jobs. (#70) By [@falvarez1](https://github.com/falvarez1)
+- Startup jobs - Run a job when the application starts. [#70](https://github.com/linkdotnet/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
+- Sample project - Added a sample project to demonstrate Startup Jobs. [#70](https://github.com/linkdotnet/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
 
 ## [2.5.0] - 2024-05-21
 

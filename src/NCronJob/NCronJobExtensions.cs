@@ -36,8 +36,10 @@ public static class NCronJobExtensions
         services.AddHostedService<QueueWorker>();
         services.TryAddSingleton<JobRegistry>();
         services.TryAddSingleton<DynamicJobFactoryRegistry>();
-        services.TryAddSingleton<JobHistory>();
-        services.TryAddSingleton<JobQueue>();
+        services.TryAddSingleton<IJobHistory, NoOpJobHistory>();
+        services.TryAddSingleton<JobQueueManager>();
+        services.TryAddSingleton<JobWorker>();
+        services.TryAddSingleton<JobProcessor>();
         services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();

@@ -4,30 +4,40 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
-    private readonly ImmutableArray<JobDefinition> cronJobs;
-    private readonly ImmutableArray<JobDefinition> oneTimeJobs;
-    private readonly List<JobDefinition> allJob;
+    private readonly List<JobDefinition> allJobs;
+    private ImmutableArray<JobDefinition> cronJobs;
+    private ImmutableArray<JobDefinition> oneTimeJobs;
+    private ImmutableArray<string> allJobTypeNames;
 
     public JobRegistry(IEnumerable<JobDefinition> jobs)
     {
         var jobDefinitions = jobs as JobDefinition[] ?? jobs.ToArray();
-        allJob = [..jobDefinitions];
-        cronJobs = [..jobDefinitions.Where(c => c.CronExpression is not null)];
-        oneTimeJobs = [..jobDefinitions.Where(c => c.IsStartupJob)];
+        allJobs = [..jobDefinitions];
+        RefreshImmutableArrays();
     }
 
     public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => cronJobs;
     public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => oneTimeJobs;
+    public IReadOnlyCollection<string> GetAllJobTypes() => allJobTypeNames;
 
-    public bool IsJobRegistered<T>() => allJob.Exists(j => j.Type == typeof(T));
+    public bool IsJobRegistered<T>() => allJobs.Exists(j => j.Type == typeof(T));
 
-    public JobDefinition GetJobDefinition<T>() => allJob.First(j => j.Type == typeof(T));
+    public JobDefinition GetJobDefinition<T>() => allJobs.First(j => j.Type == typeof(T));
 
     public void Add(JobDefinition jobDefinition)
     {
-        if (!allJob.Exists(j => j.JobFullName == jobDefinition.JobFullName))
+        if (!allJobs.Exists(j => j.JobFullName == jobDefinition.JobFullName))
         {
-            allJob.Add(jobDefinition);
+            allJobs.Add(jobDefinition);
+            RefreshImmutableArrays();
         }
+    }
+    public int GetJobTypeConcurrencyLimit(string jobTypeName) => allJobs.Find(j => j.JobFullName == jobTypeName)?.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
+
+    private void RefreshImmutableArrays()
+    {
+        allJobTypeNames = [.. allJobs.Select(j => j.JobFullName).Distinct()];
+        cronJobs = [.. allJobs.Where(c => c.CronExpression is not null)];
+        oneTimeJobs = [.. allJobs.Where(c => c.IsStartupJob)];
     }
 }

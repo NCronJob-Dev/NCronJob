@@ -9,9 +9,9 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
-    private readonly JobQueue jobQueue;
+    private readonly JobQueueManager jobQueueManager;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
-    private readonly JobHistory jobHistory;
+    private readonly IJobHistory jobHistory;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
@@ -20,14 +20,14 @@ internal sealed partial class JobExecutor : IDisposable
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler,
-        JobQueue jobQueue,
+        JobQueueManager jobQueueManager,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
-        JobHistory jobHistory)
+        IJobHistory jobHistory)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
-        this.jobQueue = jobQueue;
+        this.jobQueueManager = jobQueueManager;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.jobHistory = jobHistory;
 
@@ -69,11 +69,21 @@ internal sealed partial class JobExecutor : IDisposable
         var runContext = new JobExecutionContext(run);
         await ExecuteJob(runContext, job, scope);
     }
+    
+    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
+    {
+        if (definition.Type == typeof(DynamicJobFactory))
+            return dynamicJobFactoryRegistry.GetJobInstance(scopedServiceProvider, definition);
 
-    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition) =>
-        definition.Type == typeof(DynamicJobFactory)
-            ? dynamicJobFactoryRegistry.GetJobInstance(scopedServiceProvider, definition)
-            : (IJob)scopedServiceProvider.GetRequiredService(definition.Type);
+        var job = scopedServiceProvider.GetService(definition.Type);
+        if (job != null)
+            return (IJob)job;
+
+        LogUnregisteredJob(definition.Type);
+        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
+
+        return (IJob)job;
+    }
 
     public void Dispose()
     {
@@ -90,17 +100,20 @@ internal sealed partial class JobExecutor : IDisposable
 
         try
         {
+            runContext.JobRun.NotifyStateChange(JobStateType.Running);
             LogRunningJob(job.GetType(), runContext.CorrelationId);
 
             await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
 
             stoppingToken.ThrowIfCancellationRequested();
 
+            runContext.JobRun.NotifyStateChange(JobStateType.Completing);
+
             await AfterJobCompletionTask(null, stoppingToken);
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            // This part is only reached if the synchronous part of the job throws an exception
+            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc.Message);
             await AfterJobCompletionTask(exc, default);
         }
         // This needs to be async otherwise it can deadlock or try to use the disposed scope, maybe it needs to create its own serviceScope
@@ -142,11 +155,16 @@ internal sealed partial class JobExecutor : IDisposable
             ? jobRun.JobDefinition.RunWhenSuccess
             : jobRun.JobDefinition.RunWhenFaulted;
 
+        if (dependencies.Count > 0)
+            jobRun.NotifyStateChange(JobStateType.WaitingForDependency);
+
         foreach (var dependentJob in dependencies)
         {
             var newRun = JobRun.Create(dependentJob, dependentJob.Parameter, jobRun.CancellationToken);
             newRun.CorrelationId = jobRun.CorrelationId;
             newRun.ParentOutput = context.Output;
+            newRun.IsOneTimeJob = true;
+            var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(newRun);
         }
     }

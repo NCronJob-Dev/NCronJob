@@ -108,12 +108,10 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
         jobExecutor.CancelJobs();
 
-        var cancellationHandled = await Task.WhenAny(CancellationSignaled, Task.Delay(1000));
+        var cancellationHandled = await Task.WhenAny(CancellationSignaled, Task.Delay(100));
         cancellationHandled.ShouldBe(CancellationSignaled);
-        // If the test runs alone it will always pass and there is apparently no need for Task.Delay(200)
-        // But if, for example JobShouldHonorApplicationCancellationDuringRetry runs before this one, it will fail and the Task.Delay(200) fixes it
-        await Task.Delay(200);
-        var jobRun = provider.GetRequiredService<JobHistory>().GetAll().Single(s => s.JobDefinition == cancelRetryingJobEntry);
+
+        var jobRun = provider.GetRequiredService<IJobHistory>().GetAll().Single(s => s.JobDefinition == cancelRetryingJobEntry);
         jobRun.JobExecutionCount.ShouldBe(1);
     }
 
@@ -145,7 +143,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
     private sealed record MaxFailuresWrapper(int MaxFailuresBeforeSuccess = 3);
 
-    [RetryPolicy(retryCount: 4, PolicyType.ExponentialBackoff)]
+    [RetryPolicy(retryCount: 4, PolicyType.FixedInterval)]
     private sealed class FailingJob(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {

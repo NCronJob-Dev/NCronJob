@@ -56,7 +56,7 @@ public class NCronJobOptionBuilder : IJobStage
                 : null;
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
             {
-                IsStartupJob = option.IsStartupJob
+                IsStartupJob = option.IsStartupJob,
             };
             jobs.Add(entry);
         }

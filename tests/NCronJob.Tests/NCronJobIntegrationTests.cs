@@ -190,7 +190,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task ExecuteAScheduledJob()
     {
-        var fakeTimer = new FakeTimeProvider { AutoAdvanceAmount = TimeSpan.FromMinutes(1) };
+        var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
@@ -198,7 +198,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(TimeSpan.FromMinutes(1));
 
-        await Task.Delay(10);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
@@ -295,12 +294,13 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT");
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        
         var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         answer.ShouldBe("INSTANT");
     }
 
     [Fact]
-    public async Task TriggeringInstantJobWithoutRegisteringThrowsException()
+    public async Task TriggeringInstantJobWithoutRegisteringContinuesToWork()
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
@@ -310,7 +310,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         Action act = () => provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
 
-        act.ShouldThrow<InvalidOperationException>();
+        act.ShouldNotThrow();
     }
 
     [Fact]
@@ -336,16 +336,47 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        ServiceCollection.AddNCronJob(n => n.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        
+        ServiceCollection.AddNCronJob(n => n.AddJob(async (ChannelWriter<object> writer, CancellationToken ct) =>
+        {
+            await Task.Delay(10, ct);
+            await writer.WriteAsync(true, ct);
+        }, "* * * * *"));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
         await WaitForJobsOrTimeout(1);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
-
-        var jobFinished = await WaitForJobsOrTimeout(1);
+        void AdvanceTime() => fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1, AdvanceTime);
         jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task StaticAnonymousJobsCanBeExecutedMultipleTimes()
+    {
+        var fakeTimer = new FakeTimeProvider();
+        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
+
+        ServiceCollection.AddNCronJob(n => n.AddJob(JobMethods.WriteTrueStaticAsync, "* * * * *"));
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        await WaitForJobsOrTimeout(1);
+
+        void AdvanceTime() => fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1, AdvanceTime);
+        jobFinished.ShouldBeTrue();
+    }
+
+    private static class JobMethods
+    {
+        public static async Task WriteTrueStaticAsync(ChannelWriter<object> writer, CancellationToken ct)
+        {
+            await Task.Delay(10, ct);
+            await writer.WriteAsync(true, ct);
+        }
     }
 
     private sealed class GuidGenerator
@@ -366,6 +397,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             try
             {
                 context.Output = "Job Completed";
+                await Task.Delay(10, token);
                 await writer.WriteAsync(context.Output, token);
             }
             catch (Exception ex)

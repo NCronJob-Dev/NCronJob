@@ -19,10 +19,9 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Me: Message Parent: Success");
     }
 
@@ -36,10 +35,9 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(false);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Me: Message Parent: Failed");
     }
 
@@ -54,10 +52,9 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>();
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>();
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        await CommunicationChannel.Reader.ReadAsync(tcs.Token);
+        await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(2);
         storage.Guids.Distinct().Count().ShouldBe(1);
@@ -76,9 +73,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        await CommunicationChannel.Reader.ReadAsync(tcs.Token);
-        await Task.Delay(150, tcs.Token);
+        await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(1);
     }
@@ -94,10 +89,9 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalJob>(true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
 
-        using var tcs = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        var result = await CommunicationChannel.Reader.ReadAsync(tcs.Token) as string;
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
         result.ShouldBe("Parent: Success");
     }
 

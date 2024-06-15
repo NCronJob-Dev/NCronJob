@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using NCronJob;
 using NCronJobSample;
 
@@ -13,12 +14,20 @@ builder.Services.AddLogging();
 builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/20 * * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+        p.WithCronExpression("*/5 * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+
+    .AddJob<PrintHelloWorldJob>(p =>
+        p.WithCronExpression("*/4 * * * * *"))
 
     // Execute the job every 2 minutes
+    .AddJob<DataProcessingJob>(p =>
+        p.WithCronExpression("*/2 * * * *"))
+
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/2 * * * *").WithParameter("Hello from NCronJob"))
-    // Register a handler that gets executed when the job is done
+        p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
+
+    .AddJob<PrintHelloWorldJob>(p =>
+        p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
     .AddNotificationHandler<HelloWorldJobHandler>()
 
     // Multiple instances of the same job with different cron expressions can be supported
@@ -44,23 +53,18 @@ app.UseHttpsRedirection();
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
 {
-    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job!");
+    instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ###################### Queued, not forced ######################");
 })
     .WithName("TriggerInstantJob")
     .WithOpenApi();
 
-app.MapPost("/trigger-instant-concurrent", (IInstantJobRegistry instantJobRegistry) =>
+app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry, int timeDelayInSeconds = 0) =>
 {
-    instantJobRegistry.RunInstantJob<ConcurrentTaskExecutorJob>();
+    instantJobRegistry.ForceRunScheduledJob<PrintHelloWorldJob>(TimeSpan.FromSeconds(timeDelayInSeconds),
+        "Hello from instant job! ######################## May the Force be with you ######################");
 })
-    .WithSummary("Triggers a job that can run concurrently with other instances.")
-    .WithDescription(
-        """
-        This endpoint triggers an instance of 'TestCancellationJob' that is designed
-        to run concurrently with other instances of the same job. Each instance operates
-        independently, allowing parallel processing without mutual interference.
-        """)
-    .WithName("TriggerConcurrentJob")
+    .WithSummary("Triggers a job regardless of concurrency setting for that Job Type")
+    .WithName("ForceTriggerInstantJob")
     .WithOpenApi();
 
 await app.RunAsync();
