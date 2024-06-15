@@ -65,33 +65,16 @@ internal sealed partial class JobWorker
     {
         jobRun.NotifyStateChange(JobStateType.Scheduled);
         await WaitForNextExecution(jobRun.RunAt ?? DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
-        await taskFactory.StartNew(async () =>
-        {
-            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, 1);
-            await jobProcessor.ProcessJobAsync(jobRun, cancellationToken).ConfigureAwait(false);
-        }, cancellationToken).Unwrap().ContinueWith(task =>
-        {
-            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, -1);
-
-            if (task.IsFaulted)
-            {
-                jobRun.NotifyStateChange(JobStateType.Faulted);
-            }
-
-            if (task.IsCanceled)
-            {
-                jobRun.NotifyStateChange(JobStateType.Cancelled);
-            }
-        }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
+        await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task DispatchJobForProcessing(
-    JobRun nextJob,
-    DateTimeOffset nextRunTime,
-    string queueName,
-    SemaphoreSlim semaphore,
-    List<Task> runningTasks,
-    CancellationToken cancellationToken)
+        JobRun nextJob,
+        DateTimeOffset nextRunTime,
+        string queueName,
+        SemaphoreSlim semaphore,
+        List<Task> runningTasks,
+        CancellationToken cancellationToken)
     {
         var shouldReleaseSemaphore = true;
 
@@ -103,32 +86,13 @@ internal sealed partial class JobWorker
 
             await WaitForNextExecution(nextRunTime, linkedCts.Token).ConfigureAwait(false);
 
-            if(jobQueueManager.TryGetQueue(queueName, out var jobQueue))
-               jobQueue.Dequeue();
+            if (jobQueueManager.TryGetQueue(queueName, out var jobQueue))
+                jobQueue.Dequeue();
             else
                 throw new InvalidOperationException($"Job queue not found for {queueName}");
 
-            UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, 1);
-
-            var jobTask = taskFactory.StartNew(async () =>
-            {
-                await jobProcessor.ProcessJobAsync(nextJob, linkedToken).ConfigureAwait(false);
-            }, cancellationToken).Unwrap().ContinueWith(task =>
-            {
-                UpdateRunningJobCount(nextJob.JobDefinition.JobFullName, -1);
-
-                if (task.IsFaulted)
-                {
-                    nextJob.NotifyStateChange(JobStateType.Faulted);
-                }
-
-                if (task.IsCanceled)
-                {
-                    nextJob.NotifyStateChange(JobStateType.Cancelled);
-                }
-
-                semaphore.Release();
-            }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
+            var jobTask = StartJobProcessingAsync(nextJob, linkedToken).ContinueWith(_ =>
+                semaphore.Release(), cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
 
             runningTasks.Add(jobTask);
 
@@ -155,6 +119,31 @@ internal sealed partial class JobWorker
             }
         }
     }
+
+    private async Task StartJobProcessingAsync(JobRun jobRun, CancellationToken cancellationToken) =>
+        await taskFactory.StartNew(async () =>
+        {
+            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, 1);
+            try
+            {
+                await jobProcessor.ProcessJobAsync(jobRun, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, -1);
+            }
+        }, cancellationToken).Unwrap().ContinueWith(task =>
+        {
+            if (task.IsFaulted)
+            {
+                jobRun.NotifyStateChange(JobStateType.Faulted);
+            }
+
+            if (task.IsCanceled)
+            {
+                jobRun.NotifyStateChange(JobStateType.Cancelled);
+            }
+        }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
 
     private async Task WaitForNextExecution(DateTimeOffset nextRunTime, CancellationToken stopToken)
     {

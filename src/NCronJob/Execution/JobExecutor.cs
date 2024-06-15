@@ -100,6 +100,7 @@ internal sealed partial class JobExecutor : IDisposable
 
         try
         {
+            runContext.JobRun.NotifyStateChange(JobStateType.Running);
             LogRunningJob(job.GetType(), runContext.CorrelationId);
 
             await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
@@ -153,6 +154,9 @@ internal sealed partial class JobExecutor : IDisposable
         var dependencies = success
             ? jobRun.JobDefinition.RunWhenSuccess
             : jobRun.JobDefinition.RunWhenFaulted;
+
+        if (dependencies.Count > 0)
+            jobRun.NotifyStateChange(JobStateType.WaitingForDependency);
 
         foreach (var dependentJob in dependencies)
         {

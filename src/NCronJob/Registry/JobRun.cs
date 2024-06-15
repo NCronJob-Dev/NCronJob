@@ -45,7 +45,8 @@ internal class JobRun
             CancellationToken = token
         };
 
-    private void Initialize() =>
+    private void Initialize()
+    {
         OnStateChanged += (jr, state) =>
         {
             switch (state.Type)
@@ -65,15 +66,19 @@ internal class JobRun
                 case JobStateType.Expired:
                 case JobStateType.Crashed:
                 case JobStateType.Completing:
+                case JobStateType.Initializing:
+                case JobStateType.WaitingForDependency:
                 case JobStateType.NotStarted:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
             }
         };
+        AddState(new JobState(JobStateType.NotStarted));
+    }
 
     // State change logic
-    public bool Completed => States.Exists(s => IsFinalState(s.Type));
+    public bool IsCompleted => States.Exists(s => IsFinalState(s.Type));
     public JobState CurrentState => States.LastOrDefault();
     public List<JobState> States { get; } = [];
     public event Action<JobRun, JobState>? OnStateChanged;

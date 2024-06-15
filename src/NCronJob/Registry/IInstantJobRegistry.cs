@@ -272,7 +272,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
             run.Priority = JobPriority.High;
             run.RunAt = startDate;
             run.IsOneTimeJob = true;
-            run.CancellationToken = token;
 
             if (forceExecution)
             {

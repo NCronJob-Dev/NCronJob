@@ -30,7 +30,7 @@ internal sealed partial class JobProcessor
                 return;
             }
 
-            jobRun.NotifyStateChange(JobStateType.Running);
+            jobRun.NotifyStateChange(JobStateType.Initializing);
 
             await jobExecutor.RunJob(jobRun, cancellationToken).ConfigureAwait(false);
 
