@@ -21,6 +21,10 @@ internal sealed class TestRetryHandler(
             await retryPolicy.ExecuteAsync((ct) =>
             {
                 runContext.Attempts++;
+                if (runContext.Attempts > 1)
+                {
+                    runContext.JobRun.NotifyStateChange(JobStateType.Retrying);
+                }
                 return operation(ct);
             }, cancellationToken).ConfigureAwait(false);
         }
