@@ -30,14 +30,15 @@ public sealed class DependencyBuilder<TPrincipalJob>
     /// Adds an anonymous delegate job that runs after the principal job has finished.
     /// </summary>
     /// <param name="jobDelegate">The delegate that represents the job to be executed. This delegate must return either void or Task.</param>
-    public DependencyBuilder<TPrincipalJob> RunJob(Delegate jobDelegate)
+    /// <param name="jobName">Sets the job name that can be used to identify and manipulate the job later on.</param>
+    public DependencyBuilder<TPrincipalJob> RunJob(Delegate jobDelegate, string? jobName = null)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(typeof(DynamicJobFactory), null, null, null,
             JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
-            JobPolicyMetadata: jobPolicyMetadata);
+            JobPolicyMetadata: jobPolicyMetadata) { CustomName = jobName };
         dependentJobOptions.Add(entry);
         services.AddSingleton(entry);
         services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));

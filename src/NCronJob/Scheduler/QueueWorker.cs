@@ -5,7 +5,6 @@ using System.Collections.Specialized;
 
 namespace NCronJob;
 
-#pragma warning disable CA2008
 internal sealed partial class QueueWorker : BackgroundService
 {
     private readonly JobQueueManager jobQueueManager;
@@ -34,8 +33,44 @@ internal sealed partial class QueueWorker : BackgroundService
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
 
-        // Subscribe to CollectionChanged and QueueAdded events
-        this.jobQueueManager.CollectionChanged += JobQueueManager_CollectionChanged;
+        this.jobQueueManager.CollectionChanged += HandleUpdate;
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (shutdown != null)
+        {
+            await shutdown.CancelAsync();
+        }
+
+        while (workerTasks.IsEmpty)
+        {
+            var currentTasks = workerTasks.ToList();
+
+            foreach (var (jobType, task) in currentTasks)
+            {
+                var taskEnded = task.IsCanceled || task.IsFaulted || task.IsCompleted;
+                if (taskEnded && workerTasks.TryRemove(jobType, out _))
+                {
+                    if (task.IsCanceled)
+                        LogJobQueueCancelled(jobType);
+                    else if (task.IsFaulted)
+                        LogJobQueueFaulted(jobType);
+                    else if (task.IsCompleted)
+                        LogJobQueueCompleted(jobType);
+                }
+            }
+
+            if (workerTasks.IsEmpty)
+            {
+                LogQueueWorkerStopping();
+                await base.StopAsync(cancellationToken);
+                break;
+            }
+
+            LogQueueWorkerDraining();
+            await Task.Delay(500, cancellationToken);
+        }
     }
 
     public override void Dispose()
@@ -44,8 +79,8 @@ internal sealed partial class QueueWorker : BackgroundService
             return;
 
         shutdown?.Dispose();
-        this.jobQueueManager.CollectionChanged -= JobQueueManager_CollectionChanged;
-        this.jobQueueManager.QueueAdded -= OnQueueAdded;
+        jobQueueManager.CollectionChanged -= HandleUpdate;
+        jobQueueManager.QueueAdded -= OnQueueAdded;
         base.Dispose();
         isDisposed = true;
     }
@@ -99,7 +134,7 @@ internal sealed partial class QueueWorker : BackgroundService
                 workerTask.ContinueWith(_ =>
                 {
                     addingWorkerTasks.TryUpdate(jobQueueName, false, true);
-                }, stopToken);
+                }, stopToken, TaskContinuationOptions.None, TaskScheduler.Default);
             }
             catch (Exception ex)
             {
@@ -123,46 +158,7 @@ internal sealed partial class QueueWorker : BackgroundService
         LogNewQueueAdded(jobType);
     }
 
-    public override async Task StopAsync(CancellationToken cancellationToken)
-    {
-        if (shutdown != null)
-        {
-            await shutdown.CancelAsync();
-        }
-
-        while (workerTasks.IsEmpty)
-        {
-            var currentTasks = workerTasks.ToList();
-
-            foreach (var kvp in currentTasks)
-            {
-                var jobType = kvp.Key;
-                var task = kvp.Value;
-
-                if ((task.IsCanceled || task.IsFaulted || task.IsCompleted) && workerTasks.TryRemove(jobType, out _))
-                {
-                    if (task.IsCanceled)
-                        LogJobQueueCancelled(jobType);
-                    else if (task.IsFaulted)
-                        LogJobQueueFaulted(jobType);
-                    else if (task.IsCompleted)
-                        LogJobQueueCompleted(jobType);
-                }
-            }
-
-            if (workerTasks.IsEmpty)
-            {
-                LogQueueWorkerStopping();
-                await base.StopAsync(cancellationToken);
-                break;
-            }
-
-            LogQueueWorkerDraining();
-            await Task.Delay(500, cancellationToken);
-        }
-    }
-
-    private void JobQueueManager_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void HandleUpdate(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
         {
@@ -182,7 +178,7 @@ internal sealed partial class QueueWorker : BackgroundService
             case NotifyCollectionChangedAction.Move:
             case NotifyCollectionChangedAction.Reset:
             default:
-                throw new ArgumentOutOfRangeException(nameof(e), e.Action, "Unexpected collection change action in JobQueueManager_CollectionChanged");
+                throw new ArgumentOutOfRangeException(nameof(e), e.Action, $"Unexpected collection change action in {nameof(HandleUpdate)}");
         }
     }
 }

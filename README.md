@@ -53,6 +53,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://docs
 - [x] Minimal API for Jobs - Implement jobs in a one-liner.
 - [x] Startup jobs - Run a job when the application starts.
 - [x] Define job dependencies - trigger another job if one was successful or faulted!
+- [x] Add, remove, and update jobs at runtime.
 
 ## Not features
 

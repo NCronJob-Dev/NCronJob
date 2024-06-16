@@ -52,11 +52,13 @@ public class NCronJobOptionBuilder : IJobStage
         foreach (var option in jobOptions)
         {
             var cron = option.CronExpression is not null
-                ? GetCronExpression(option)
+                ? GetCronExpression(option.CronExpression, option.EnableSecondPrecision)
                 : null;
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
             {
                 IsStartupJob = option.IsStartupJob,
+                CustomName = option.Name,
+                UserDefinedCronExpression = option.CronExpression
             };
             jobs.Add(entry);
         }
@@ -74,7 +76,12 @@ public class NCronJobOptionBuilder : IJobStage
     /// <param name="timeZoneInfo">The time zone information that the cron expression should be evaluated against.
     /// If not set the default time zone is UTC.
     /// </param>
-    public NCronJobOptionBuilder AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
+    /// <param name="jobName">Sets the job name that can be used to identify and manipulate the job later on.</param>
+    public NCronJobOptionBuilder AddJob(
+        Delegate jobDelegate,
+        string cronExpression,
+        TimeZoneInfo? timeZoneInfo = null,
+        string? jobName = null)
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
@@ -90,12 +97,12 @@ public class NCronJobOptionBuilder : IJobStage
             EnableSecondPrecision = determinedPrecision,
             TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
-        var cron = GetCronExpression(jobOption);
+        var cron = GetCronExpression(jobOption.CronExpression, jobOption.EnableSecondPrecision);
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
             JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
-            JobPolicyMetadata: jobPolicyMetadata);
+            JobPolicyMetadata: jobPolicyMetadata) { CustomName = jobName, UserDefinedCronExpression = cronExpression };
         Services.AddSingleton(entry);
         Services.AddSingleton(new DynamicJobRegistration(entry, sp => new DynamicJobFactory(sp, jobDelegate)));
         return this;
@@ -119,11 +126,11 @@ public class NCronJobOptionBuilder : IJobStage
         }
     }
 
-    internal static CronExpression GetCronExpression(JobOption option)
+    internal static CronExpression GetCronExpression(string expression, bool enableSecondPrecision)
     {
-        var cf = option.EnableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
+        var cf = enableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
 
-        return CronExpression.TryParse(option.CronExpression, cf, out var cronExpression)
+        return CronExpression.TryParse(expression, cf, out var cronExpression)
             ? cronExpression
             : throw new InvalidOperationException("Invalid cron expression");
     }

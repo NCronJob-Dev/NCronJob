@@ -1,4 +1,5 @@
 namespace NCronJob;
+
 internal class StartupJobManager(JobRegistry jobRegistry, JobProcessor jobProcessor)
 {
     private readonly AsyncManualResetEvent startupJobsCompleted = new();
@@ -24,12 +25,10 @@ internal class StartupJobManager(JobRegistry jobRegistry, JobProcessor jobProces
 
 internal class AsyncManualResetEvent
 {
-    private TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public Task WaitAsync() => tcs.Task;
 
     public void Set() => tcs.TrySetResult();
-
-    public void Reset() => tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 }
 

@@ -23,8 +23,8 @@ internal sealed class JobQueueManager : IDisposable
         var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
         {
             isCreating = true;
-            var queue = new JobQueue(timeProvider) {Name = jt};
-            queue.CollectionChanged += JobQueue_CollectionChanged;
+            var queue = new JobQueue(timeProvider, jt);
+            queue.CollectionChanged += CallCollectionChanged;
             return queue;
         });
 
@@ -36,7 +36,14 @@ internal sealed class JobQueueManager : IDisposable
         return jobQueue;
     }
 
-    private void JobQueue_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => CollectionChanged?.Invoke(sender, e);
+    public void RemoveQueue(string queueName)
+    {
+        if (jobQueues.TryRemove(queueName, out var jobQueue))
+        {
+            jobQueue.Clear();
+            jobQueue.CollectionChanged -= CallCollectionChanged;
+        }
+    }
 
     public bool TryGetQueue(string queueName, [MaybeNullWhen(false)] out JobQueue jobQueue) => jobQueues.TryGetValue(queueName, out jobQueue);
 
@@ -73,12 +80,12 @@ internal sealed class JobQueueManager : IDisposable
             if (jobCancellationTokens.TryGetValue(queueName, out var cts))
             {
                 cts.Cancel();
-                Task.Delay(10).Wait();
+                Task.Delay(10).GetAwaiter().GetResult();
                 jobCancellationTokens[queueName] = new CancellationTokenSource();
             }
         }
     }
-    
+
     public int Count(string queueName) => jobQueues.TryGetValue(queueName, out var jobQueue) ? jobQueue.Count : 0;
 
     public void Dispose()
@@ -88,7 +95,7 @@ internal sealed class JobQueueManager : IDisposable
 
         foreach (var jobQueue in jobQueues.Values)
         {
-            jobQueue.CollectionChanged -= JobQueue_CollectionChanged;
+            jobQueue.CollectionChanged -= CallCollectionChanged;
         }
 
         foreach (var semaphore in semaphores.Values)
@@ -100,10 +107,14 @@ internal sealed class JobQueueManager : IDisposable
         {
             cts.Dispose();
         }
+
         jobQueues.Clear();
         semaphores.Clear();
         jobCancellationTokens.Clear();
 
         disposed = true;
     }
+
+    private void CallCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => CollectionChanged?.Invoke(sender, e);
 }

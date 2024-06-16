@@ -294,7 +294,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("INSTANT");
         fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        
+
         var answer = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         answer.ShouldBe("INSTANT");
     }
@@ -336,7 +336,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         var fakeTimer = new FakeTimeProvider();
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
-        
+
         ServiceCollection.AddNCronJob(n => n.AddJob(async (ChannelWriter<object> writer, CancellationToken ct) =>
         {
             await Task.Delay(10, ct);
@@ -368,6 +368,31 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         void AdvanceTime() => fakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1, AdvanceTime);
         jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void AddingJobsWithTheSameCustomNameLeadsToException()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob(() => { }, "* * * * *", jobName: "Job1")
+                .AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        var provider = CreateServiceProvider();
+
+        Action act = () => provider.GetRequiredService<JobRegistry>();
+
+        act.ShouldThrow<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void AddJobsDynamicallyWhenNameIsDuplicatedLeadsToException()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        var provider = CreateServiceProvider();
+        var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var act = () => runtimeRegistry.AddJob(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+
+        act.ShouldThrow<InvalidOperationException>();
     }
 
     private static class JobMethods

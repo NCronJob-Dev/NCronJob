@@ -86,10 +86,12 @@ internal sealed partial class JobWorker
 
             await WaitForNextExecution(nextRunTime, linkedCts.Token).ConfigureAwait(false);
 
-            if (jobQueueManager.TryGetQueue(queueName, out var jobQueue))
-                jobQueue.Dequeue();
-            else
+            if (!jobQueueManager.TryGetQueue(queueName, out var jobQueue))
+            {
                 throw new InvalidOperationException($"Job queue not found for {queueName}");
+            }
+
+            jobQueue.Dequeue();
 
             var jobTask = StartJobProcessingAsync(nextJob, linkedToken).ContinueWith(_ =>
                 semaphore.Release(), cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
@@ -100,6 +102,7 @@ internal sealed partial class JobWorker
             {
                 ScheduleJob(nextJob.JobDefinition);
             }
+
             shouldReleaseSemaphore = false;
         }
         catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested || oce.CancellationToken.IsCancellationRequested)
@@ -179,7 +182,7 @@ internal sealed partial class JobWorker
             return;
 
         var utcNow = timeProvider.GetUtcNow();
-        var nextRunTime = job.CronExpression!.GetNextOccurrence(utcNow, job.TimeZone);
+        var nextRunTime = job.CronExpression.GetNextOccurrence(utcNow, job.TimeZone);
 
         if (nextRunTime.HasValue)
         {
@@ -190,5 +193,49 @@ internal sealed partial class JobWorker
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
             run.NotifyStateChange(JobStateType.Scheduled);
         }
+    }
+
+    public void RemoveJobByName(string jobName)
+    {
+        RemoveJobRunsByName(jobName);
+        registry.RemoveByName(jobName);
+    }
+
+    public void RemoveJobType(Type type)
+    {
+        var fullName = registry.FindJobDefinition(type)?.JobFullName;
+        if (fullName is null)
+        {
+            return;
+        }
+
+        registry.RemoveByType(type);
+        jobQueueManager.RemoveQueue(fullName);
+    }
+
+    public void RescheduleJobByName(JobDefinition jobDefinition)
+    {
+        ArgumentNullException.ThrowIfNull(jobDefinition);
+        ArgumentNullException.ThrowIfNull(jobDefinition.CustomName);
+
+        RemoveJobRunsByName(jobDefinition.CustomName);
+        ScheduleJob(jobDefinition);
+        jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
+    }
+
+    private void RemoveJobRunsByName(string jobName)
+    {
+        var jobType = registry.FindJobDefinition(jobName);
+        if (jobType is null)
+        {
+            return;
+        }
+
+        if (!jobQueueManager.TryGetQueue(jobType.JobFullName, out var jobQueue))
+        {
+            return;
+        }
+
+        jobQueue.RemoveByName(jobName);
     }
 }
