@@ -41,4 +41,16 @@ public sealed class ParameterBuilder
         jobOption.Parameter = parameter;
         return this;
     }
+
+    /// <summary>
+    /// Sets the job name. This can be used to identify the job.
+    /// </summary>
+    /// <param name="jobName">The job name associated with this job.</param>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows further configuration.</returns>
+    /// <remarks>The job name should be unique over all job instances.</remarks>
+    public ParameterBuilder WithName(string jobName)
+    {
+        jobOption.Name = jobName;
+        return this;
+    }
 }

@@ -40,4 +40,9 @@ internal sealed class JobOption
     /// that are scheduled to run very frequently.
     /// </remarks>
     public bool EnableSecondPrecision { get; set; }
+
+    /// <summary>
+    /// The job name given by the user, which can be used to identify the job.
+    /// </summary>
+    public string? Name { get; set; }
 }

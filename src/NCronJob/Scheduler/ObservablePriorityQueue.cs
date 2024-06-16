@@ -10,7 +10,8 @@ internal class ObservablePriorityQueue<TElement> : ObservablePriorityQueue<TElem
     { }
 }
 
-internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TElement>, INotifyCollectionChanged where TPriority : IComparable<TPriority>
+internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TElement>, INotifyCollectionChanged
+    where TPriority : IComparable<TPriority>
 {
     protected readonly PriorityQueue<TElement, TPriority> PriorityQueue;
 #if NET8_0
@@ -37,7 +38,7 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
             PriorityQueue.Enqueue(element, priority);
         }
 
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, element));
+        InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, element));
     }
 
     public TElement Dequeue()
@@ -52,26 +53,9 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
             element = PriorityQueue.Dequeue();
         }
 
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, element));
+        InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, element));
 
         return element;
-    }
-
-    public bool TryDequeue([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
-    {
-        bool result;
-
-        lock (@lock)
-        {
-            result = PriorityQueue.TryDequeue(out element, out priority);
-        }
-
-        if (result)
-        {
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, element));
-        }
-
-        return result;
     }
 
     public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
@@ -88,8 +72,6 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
         {
             PriorityQueue.Clear();
         }
-
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }
 
     public int Count
@@ -101,12 +83,6 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
                 return PriorityQueue.Count;
             }
         }
-    }
-
-    private void OnCollectionChanged(NotifyCollectionChangedEventArgs args)
-    {
-        var handler = Interlocked.CompareExchange(ref CollectionChanged, null, null);
-        handler?.Invoke(this, args);
     }
 
     public IEnumerator<TElement> GetEnumerator()
@@ -122,4 +98,33 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    protected void InformCollectionChanged(NotifyCollectionChangedEventArgs args)
+    {
+        var handler = Interlocked.CompareExchange(ref CollectionChanged, null, null);
+        handler?.Invoke(this, args);
+    }
+
+    protected void RemoveByPredicate(Func<TElement, bool> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        lock (@lock)
+        {
+            // A unique job name can only lead to one entry in the queue
+            var elementToRemove = this.FirstOrDefault(predicate);
+            if (elementToRemove is null)
+                return;
+
+#if NET9_0_OR_GREATER
+            PriorityQueue.Remove(elementToRemove, out _, out _);
+#else
+            var allElementsExceptDeleted = PriorityQueue.UnorderedItems.Where(e => !ReferenceEquals(e.Element, elementToRemove)).ToList();
+            PriorityQueue.Clear();
+            PriorityQueue.EnqueueRange(allElementsExceptDeleted);
+#endif
+
+            InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, elementToRemove));
+        }
+    }
 }
