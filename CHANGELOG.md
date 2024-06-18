@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Instantiating `JobExecutionContext` is not obsolete to prevent build errors.
+
 ## [2.8.1] - 2024-06-18
 
 ### Changed

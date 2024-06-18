@@ -17,7 +17,6 @@ public sealed record JobExecutionContext
     /// <summary>
     /// Represents the context of a job execution.
     /// </summary>
-    [Obsolete("It is not recommended to instantiate a JobExecutionContext. This will be removed in future versions to prevent external instantiation.", false)]
     public JobExecutionContext(Type jobType, object? parameter)
         => JobRun = JobRun.Create(new JobDefinition(jobType, parameter, null, null));
 
