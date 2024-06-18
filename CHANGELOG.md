@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Identical Job Definitions will not lead to multiple instances of the job running concurrently. By [@linkdotnet](https://github.com/linkdotnet).
+
 ## [2.8.2] - 2024-06-18
 
 ### Changed

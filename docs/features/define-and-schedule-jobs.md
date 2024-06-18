@@ -60,6 +60,24 @@ Services.AddNCronJob(options =>
 });
 ```
 
+!!! info
+    
+    Defining multiple identifical schedules for the same job will not lead to multiple instances of the job running concurrently. NCronJob will ensure that only one instance of the job is running at any given time. One can define different custom names for each schedule to differentiate between them.
+
+The following example illustrates how to define multiple schedules that are identical and will only lead to one instance of the job running at any given time:
+
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<MyCronJob>(j => 
+    {
+        j.WithCronExpression("0 20 * * *")
+         .And
+         .WithCronExpression("0 20 * * *");
+    });
+});
+```
+
 ## Scheduling Jobs With Time Zones
 The library offers you the ability to schedule jobs using time zones.
 
