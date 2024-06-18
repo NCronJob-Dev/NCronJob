@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.8.1] - 2024-06-18
+
 ### Changed
 
 - Removed preview feature as users had to opt-in to use it.
@@ -327,7 +329,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.1...HEAD
+[2.8.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.0...2.8.1
 [2.8.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.4...2.8.0
 [2.7.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.3...2.7.4
 [2.7.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.2...2.7.3
