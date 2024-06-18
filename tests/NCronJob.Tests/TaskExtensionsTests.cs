@@ -11,7 +11,7 @@ public class TaskExtensionsTests
         // Arrange
         SynchronizationContext.SetSynchronizationContext(null); // Otherwise, the test will deadlock
         var maxDelayTimeSpan = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
-        var timeProvider = new FakeTimeProvider { AutoAdvanceAmount = maxDelayTimeSpan };
+        var timeProvider = new FakeTimeProvider();
         var targetTimeSpan = TimeSpan.FromDays(100);
         var token = new CancellationToken();
 

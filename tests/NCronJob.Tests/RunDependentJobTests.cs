@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -12,8 +11,6 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasSuccessful_DependentJobShouldRun()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("Message")));
         var provider = CreateServiceProvider();
@@ -28,8 +25,6 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasFailed_DependentJobShouldRun()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("Message")));
         var provider = CreateServiceProvider();
@@ -44,8 +39,6 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task CorrelationIdIsSharedByJobsAndTheirDependencies()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton(new Storage());
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
@@ -63,8 +56,6 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task SkipChildrenShouldPreventDependentJobsFromRunning()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton(new Storage());
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
@@ -81,8 +72,6 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasSuccessful_DependentAnonymousJobShouldRun()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         Func<ChannelWriter<object>, JobExecutionContext, Task> execution = async (writer, context) => await writer.WriteAsync($"Parent: {context.ParentOutput}");
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob(execution)));

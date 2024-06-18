@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -16,6 +17,7 @@ public abstract class JobIntegrationBase : IDisposable
     protected CancellationToken CancellationToken => cancellationTokenSource.Token;
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
+    protected FakeTimeProvider FakeTimer { get; } = new();
 
     protected JobIntegrationBase()
     {
@@ -27,6 +29,7 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddSingleton<IRetryHandler>(sp =>
             new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
         ServiceCollection.AddSingleton<IJobHistory, JobHistory>();
+        ServiceCollection.AddSingleton<TimeProvider>(FakeTimer);
     }
 
     public void Dispose()

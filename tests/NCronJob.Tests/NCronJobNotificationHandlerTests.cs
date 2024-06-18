@@ -1,7 +1,6 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -11,8 +10,6 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldCallNotificationHandlerWhenJobIsDone()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *"))
                 .AddNotificationHandler<SimpleJobHandler>()
@@ -21,7 +18,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         message.ShouldBe("Foo");
     }
@@ -29,8 +26,6 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldPassDownExceptionToNotificationHandler()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<ExceptionJob>(p => p.WithCronExpression("* * * * *"))
                 .AddNotificationHandler<ExceptionHandler>()
@@ -39,7 +34,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         message.ShouldBeOfType<InvalidOperationException>();
     }
@@ -47,8 +42,6 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task HandlerThatThrowsExceptionShouldNotInfluenceOtherHandlers()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *"))
                 .AddNotificationHandler<SimpleJobHandler>()
@@ -60,7 +53,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         message.ShouldBe("Foo");
     }
@@ -68,8 +61,6 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
     [Fact]
     public async Task HandlerThatThrowsExceptionInAsyncPartShouldNotInfluenceOtherHandlers()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n
                 .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *"))
                 .AddNotificationHandler<SimpleJobHandler>()
@@ -80,7 +71,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         message.ShouldBe("Foo");
     }

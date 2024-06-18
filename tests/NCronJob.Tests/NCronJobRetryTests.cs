@@ -2,7 +2,6 @@ using System.Collections.Specialized;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Time.Testing;
 using Polly;
 using Shouldly;
 
@@ -13,15 +12,13 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task JobShouldRetryOnFailure()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // Validate that the job was retried the correct number of times
         // Total = 2 retries + 1 success
@@ -32,15 +29,13 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task JobWithCustomPolicyShouldRetryOnFailure()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(3));
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // Validate that the job was retried the correct number of times
         // Fail 3 times = 3 retries + 1 success
@@ -51,15 +46,13 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task JobShouldFailAfterAllRetries()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // 1 initial + 2 retries, all 3 failed; 20 seconds timeout because retries take time
         var jobFinished = await WaitForJobsOrTimeout(3, TimeSpan.FromSeconds(20));
@@ -72,15 +65,13 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task JobShouldHonorJobCancellationDuringRetry()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         attempts.ShouldBe("Job retrying");
@@ -97,8 +88,6 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task CancelledJobIsStillAValidExecution()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
@@ -126,8 +115,8 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         };
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
-        
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
         while (nextJob!.CurrentState != JobStateType.Retrying)
         {
             await Task.Delay(1);
@@ -145,15 +134,13 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task JobShouldHonorApplicationCancellationDuringRetry()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         var hostAppLifeTime = provider.GetRequiredService<IHostApplicationLifetime>();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         attempts.ShouldBe("Job retrying");

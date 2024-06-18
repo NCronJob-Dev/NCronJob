@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
@@ -218,7 +217,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     /// <inheritdoc />
     public void ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
         RunDelegateJob(jobDelegate, startDate, true, token);
-    
+
     /// <inheritdoc />
     public void ForceRunInstantJob(Delegate jobDelegate, CancellationToken token = default) =>
         ForceRunScheduledJob(jobDelegate, TimeSpan.Zero, token);
@@ -226,7 +225,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     /// <inheritdoc />
     public void ForceRunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
         where TJob : IJob => ForceRunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
-    
+
     private void RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {
         var definition = dynamicJobFactoryRegistry.Add(jobDelegate);
@@ -235,7 +234,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         run.RunAt = startDate;
         run.IsOneTimeJob = true;
         run.CancellationToken = token;
-        
+
         if (forceExecution)
         {
             _ = jobWorker.InvokeJobWithSchedule(run, token);
@@ -254,7 +253,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         using (logger.BeginScope("Triggering RunScheduledJob:"))
         {
             var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
-            
+
             if (!jobRegistry.IsJobRegistered<TJob>())
             {
                 LogJobNotRegistered(typeof(TJob).Name);
@@ -285,7 +284,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
             }
         }
     }
-    
+
     [LoggerMessage(LogLevel.Warning, "Job {JobName} cancelled by request.")]
     private partial void LogCancellationNotice(string jobName);
 

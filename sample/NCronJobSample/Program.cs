@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components;
 using NCronJob;
 using NCronJobSample;
 

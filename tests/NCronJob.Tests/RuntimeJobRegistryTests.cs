@@ -1,7 +1,6 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -11,8 +10,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task DynamicallyAddedJobIsExecuted()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -20,7 +17,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.AddJob(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
     }
@@ -28,8 +25,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task MultipleDynamicallyAddedJobsAreExecuted()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -39,7 +34,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *")
             .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(2);
         jobFinished.ShouldBeTrue();
     }
@@ -47,8 +42,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task CanRemoveJobByName()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(
             s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *", jobName: "Job"));
         var provider = CreateServiceProvider();
@@ -57,7 +50,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.RemoveJob("Job");
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(200));
         jobFinished.ShouldBeFalse();
     }
@@ -65,8 +58,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task CanRemoveByJobType()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -74,7 +65,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.RemoveJob<SimpleJob>();
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(200));
         jobFinished.ShouldBeFalse();
     }
@@ -82,8 +73,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task CanUpdateScheduleOfAJob()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -91,7 +80,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.UpdateSchedule("JobName", "* * * * *");
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
     }
@@ -99,8 +88,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldThrowAnExceptionWhenJobIsNotFoundAndTryingToUpdateSchedule()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -112,8 +99,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldRetrieveScheduleForCronJob()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("*/2 * * * *").WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -129,8 +114,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldReturnFalseIfGivenJobWasNotFound()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -146,8 +129,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldFindDependentJobsWithAGivenName()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s =>
         {
             s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("Job1"))
@@ -166,8 +147,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task UpdatingParameterHasImmediateEffect()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
             .WithCronExpression("* * * * *")
             .WithParameter("foo")
@@ -178,7 +157,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.UpdateParameter("JobName", "Bar");
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         content.ShouldBe("Bar");
     }
@@ -186,9 +165,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void ShouldRetrieveAllSchedules()
     {
-        var fakeTimer = new FakeTimeProvider();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
             .WithCronExpression("*/2 * * * *", timeZoneInfo: timeZone)
             .WithName("JobName")));
@@ -210,8 +187,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void AddingJobDuringRuntimeIsRetrieved()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(p => p.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -228,8 +203,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldDisableJob()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -237,7 +210,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.DisableJob("JobName");
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(200));
         jobFinished.ShouldBeFalse();
     }
@@ -245,8 +218,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldThrowAnExceptionWhenJobIsNotFoundAndTryingToDisable()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob();
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -258,8 +229,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldEnableJob()
     {
-        var fakeTimer = new FakeTimeProvider();
-        ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -268,7 +237,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.EnableJob("JobName");
 
-        fakeTimer.Advance(TimeSpan.FromMinutes(1));
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
     }
