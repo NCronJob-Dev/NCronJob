@@ -197,7 +197,7 @@ internal sealed partial class JobWorker
 
     public void RemoveJobByName(string jobName)
     {
-        RemoveJobRunsByName(jobName);
+        RemoveJobRunByName(jobName);
         registry.RemoveByName(jobName);
     }
 
@@ -213,17 +213,17 @@ internal sealed partial class JobWorker
         jobQueueManager.RemoveQueue(fullName);
     }
 
-    public void RescheduleJobByName(JobDefinition jobDefinition)
+    public void RescheduleJobWithJobName(JobDefinition jobDefinition)
     {
         ArgumentNullException.ThrowIfNull(jobDefinition);
         ArgumentNullException.ThrowIfNull(jobDefinition.CustomName);
 
-        RemoveJobRunsByName(jobDefinition.CustomName);
+        RemoveJobRunByName(jobDefinition.CustomName);
         ScheduleJob(jobDefinition);
         jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
     }
 
-    private void RemoveJobRunsByName(string jobName)
+    private void RemoveJobRunByName(string jobName)
     {
         var jobType = registry.FindJobDefinition(jobName);
         if (jobType is null)
