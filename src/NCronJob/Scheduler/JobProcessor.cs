@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
 
-#pragma warning disable CA2008
 internal sealed partial class JobProcessor
 {
     private readonly JobExecutor jobExecutor;
