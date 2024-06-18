@@ -91,11 +91,10 @@ public interface IRuntimeJobRegistry
 /// <summary>
 /// Represents a recurring job schedule.
 /// </summary>
-/// <param name="JobType">The associated job type or <c>null</c> if the job is an anonymous job.</param>
 /// <param name="JobName">The job name given by the user.</param>
 /// <param name="CronExpression">The cron expression that defines when the job should be executed.</param>
 /// <param name="TimeZone">The timezone that is used to evaluate the cron expression.</param>
-public sealed record RecurringJobSchedule(Type? JobType, string? JobName, string CronExpression, TimeZoneInfo TimeZone);
+public sealed record RecurringJobSchedule(string? JobName, string CronExpression, TimeZoneInfo TimeZone);
 
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
@@ -197,7 +196,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         => jobRegistry
             .GetAllCronJobs()
             .Select(s => new RecurringJobSchedule(
-                s.Type == typeof(DynamicJobFactory) ? null : s.Type,
                 s.CustomName,
                 s.UserDefinedCronExpression!,
                 s.TimeZone!))

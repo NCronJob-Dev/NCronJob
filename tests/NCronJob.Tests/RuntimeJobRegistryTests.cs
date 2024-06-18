@@ -201,12 +201,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         allSchedules.Count.ShouldBe(2);
         allSchedules.ShouldContain(s => s.JobName == "JobName"
                                         && s.CronExpression == "*/2 * * * *"
-                                        && s.JobType == typeof(SimpleJob)
                                         && s.TimeZone == timeZone);
         allSchedules.ShouldContain(s => s.JobName == "JobName2"
                                         && s.CronExpression == "* * * * *"
-                                        && s.TimeZone == TimeZoneInfo.Utc
-                                        && s.JobType == null);
+                                        && s.TimeZone == TimeZoneInfo.Utc);
     }
 
     [Fact]
@@ -224,8 +222,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         allSchedules.Count.ShouldBe(1);
         allSchedules.ShouldContain(s => s.JobName == "JobName"
                                         && s.CronExpression == "* * * * *"
-                                        && s.TimeZone == TimeZoneInfo.Utc
-                                        && s.JobType == typeof(SimpleJob));
+                                        && s.TimeZone == TimeZoneInfo.Utc);
     }
 
     [Fact]
