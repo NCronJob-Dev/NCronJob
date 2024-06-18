@@ -14,7 +14,7 @@ internal class DeterministicTaskScheduler : TaskScheduler
     protected override void QueueTask(Task task)
     {
         tasks.Enqueue(task);
-        ThreadPool.UnsafeQueueUserWorkItem(_ => TryExecuteTask(task), null);
+        ThreadPool.QueueUserWorkItem(_ => TryExecuteTask(task), null);
     }
 
     protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
