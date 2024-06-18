@@ -6,7 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.8.0] - 2024-06-18
+
 ### Added
+
 - Allow dynamically adding, removing jobs, updating the schedule or parameter and getting the schedule for a given job.
   Done by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#83](https://github.com/linkdotnet/NCronJob/issues/83)
 
@@ -320,7 +323,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.4...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.0...HEAD
+[2.8.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.4...2.8.0
 [2.7.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.3...2.7.4
 [2.7.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.2...2.7.3
 [2.7.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...2.7.2
