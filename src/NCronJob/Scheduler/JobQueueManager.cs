@@ -38,14 +38,19 @@ internal sealed class JobQueueManager : IDisposable
 
     public void RemoveQueue(string queueName)
     {
-        lock (jobCancellationTokens)
+        if (jobQueues.TryRemove(queueName, out var jobQueue))
         {
-            if (jobQueues.TryRemove(queueName, out var jobQueue))
+            jobQueue.Clear();
+            jobQueue.CollectionChanged -= CallCollectionChanged;
+
+            if (semaphores.TryRemove(queueName, out var semaphore))
             {
-                jobQueue.Clear();
-                jobQueue.CollectionChanged -= CallCollectionChanged;
-                semaphores.Clear();
-                jobCancellationTokens.Clear();
+                semaphore.Dispose();
+            }
+
+            if (jobCancellationTokens.TryRemove(queueName, out var cts))
+            {
+                cts.Dispose();
             }
         }
     }
@@ -57,69 +62,66 @@ internal sealed class JobQueueManager : IDisposable
     public SemaphoreSlim GetOrAddSemaphore(string jobType, int concurrencyLimit) =>
         semaphores.GetOrAdd(jobType, _ => new SemaphoreSlim(concurrencyLimit));
 
-    public CancellationTokenSource GetOrAddCancellationTokenSource(string queueName)
-    {
-        lock (jobCancellationTokens)
-        {
-            if (jobCancellationTokens.TryGetValue(queueName, out var cts))
+    public CancellationTokenSource GetOrAddCancellationTokenSource(string queueName) =>
+        jobCancellationTokens.AddOrUpdate(queueName,
+            _ => new CancellationTokenSource(),
+            (_, existingCts) =>
             {
-                if (cts.IsCancellationRequested)
+                if (existingCts.IsCancellationRequested)
                 {
-                    cts.Dispose();
-                    jobCancellationTokens[queueName] = new CancellationTokenSource();
+                    existingCts.Dispose();
+                    return new CancellationTokenSource();
                 }
-            }
-            else
-            {
-                jobCancellationTokens[queueName] = new CancellationTokenSource();
-            }
-
-            return jobCancellationTokens[queueName];
-        }
-    }
+                return existingCts;
+            });
 
     public void SignalJobQueue(string queueName)
     {
-        lock (jobCancellationTokens)
+        if (jobCancellationTokens.TryGetValue(queueName, out var cts))
         {
-            if (jobCancellationTokens.TryGetValue(queueName, out var cts))
-            {
-                cts.Cancel();
-                Task.Delay(10).GetAwaiter().GetResult();
-                jobCancellationTokens[queueName] = new CancellationTokenSource();
-            }
+            cts.Cancel();
+            Task.Delay(10).GetAwaiter().GetResult();
+            jobCancellationTokens[queueName] = new CancellationTokenSource();
         }
     }
 
     public int Count(string queueName) => jobQueues.TryGetValue(queueName, out var jobQueue) ? jobQueue.Count : 0;
 
-    public void Dispose()
+    public void Dispose() => Dispose(true);
+
+    private void Dispose(bool disposing)
     {
         if (disposed)
             return;
 
-        foreach (var jobQueue in jobQueues.Values)
+        if (disposing)
         {
-            jobQueue.CollectionChanged -= CallCollectionChanged;
-        }
+            foreach (var jobQueue in jobQueues.Values)
+            {
+                jobQueue.CollectionChanged -= CallCollectionChanged;
+            }
 
-        foreach (var semaphore in semaphores.Values)
-        {
-            semaphore.Dispose();
-        }
+            foreach (var semaphore in semaphores.Values)
+            {
+                semaphore.Dispose();
+            }
 
-        foreach (var cts in jobCancellationTokens.Values)
-        {
-            cts.Dispose();
-        }
+            foreach (var cts in jobCancellationTokens.Values)
+            {
+                cts.Dispose();
+            }
+            jobCancellationTokens.Clear();
 
-        jobQueues.Clear();
-        semaphores.Clear();
-        jobCancellationTokens.Clear();
+            jobQueues.Clear();
+            semaphores.Clear();
+        }
 
         disposed = true;
     }
 
     private void CallCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        => CollectionChanged?.Invoke(sender, e);
+    {
+        var handler = Interlocked.CompareExchange(ref CollectionChanged, null, null);
+        handler?.Invoke(sender, e);
+    }
 }
