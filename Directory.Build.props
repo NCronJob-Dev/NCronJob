@@ -21,8 +21,4 @@
     <PropertyGroup>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
-
-    <PropertyGroup>
-        <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    </PropertyGroup>
 </Project>

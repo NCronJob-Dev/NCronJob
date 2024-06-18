@@ -37,11 +37,7 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
     where TPriority : IComparable<TPriority>
 {
     protected readonly PriorityQueue<TElement, TPriority> PriorityQueue;
-#if NET8_0
     protected readonly object Lock = new();
-#else
-    protected readonly Lock Lock = new();
-#endif
 
     public ObservablePriorityQueue(IComparer<TPriority> comparer)
     {

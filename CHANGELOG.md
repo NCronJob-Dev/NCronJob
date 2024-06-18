@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Removed preview feature as users had to opt-in to use it.
+
 ## [2.8.0] - 2024-06-18
 
 ### Added
