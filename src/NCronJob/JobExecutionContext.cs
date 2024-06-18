@@ -51,6 +51,11 @@ public sealed record JobExecutionContext
     public Guid CorrelationId => JobRun.CorrelationId;
 
     /// <summary>
+    /// The identifier of the job run.
+    /// </summary>
+    public Guid JobRunId => JobRun.JobRunId;
+
+    /// <summary>
     /// The output of the parent job. Is always <c>null</c> if the job was not started due to a dependency.
     /// </summary>
     public object? ParentOutput => JobRun.ParentOutput;

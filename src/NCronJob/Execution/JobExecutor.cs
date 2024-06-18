@@ -59,7 +59,7 @@ internal sealed partial class JobExecutor : IDisposable
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
-        run.CancellationToken = linkedCts.Token;
+        run.SetJobCancellationToken(linkedCts.Token);
 
         await using var scope = serviceProvider.CreateAsyncScope();
 
@@ -160,7 +160,7 @@ internal sealed partial class JobExecutor : IDisposable
 
         foreach (var dependentJob in dependencies)
         {
-            var newRun = JobRun.Create(dependentJob, dependentJob.Parameter, jobRun.CancellationToken);
+            var newRun = JobRun.Create(dependentJob, jobRun.CancellationToken);
             newRun.CorrelationId = jobRun.CorrelationId;
             newRun.ParentOutput = context.Output;
             newRun.IsOneTimeJob = true;

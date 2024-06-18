@@ -7,6 +7,7 @@ namespace NCronJob;
 internal sealed class JobQueueManager : IDisposable
 {
     private readonly TimeProvider timeProvider;
+    private readonly JobRunManager jobRunManager;
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
@@ -15,7 +16,11 @@ internal sealed class JobQueueManager : IDisposable
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event Action<string>? QueueAdded;
 
-    public JobQueueManager(TimeProvider timeProvider) => this.timeProvider = timeProvider;
+    public JobQueueManager(TimeProvider timeProvider, JobRunManager jobRunManager)
+    {
+        this.timeProvider = timeProvider;
+        this.jobRunManager = jobRunManager;
+    }
 
     public JobQueue GetOrAddQueue(string queueName)
     {
@@ -86,6 +91,25 @@ internal sealed class JobQueueManager : IDisposable
     }
 
     public int Count(string queueName) => jobQueues.TryGetValue(queueName, out var jobQueue) ? jobQueue.Count : 0;
+    
+    public void PauseQueue(string queueName)
+    {
+        foreach (var jobRun in GetJobRunsInQueue(queueName))
+        {
+            jobRunManager.PauseJobRun(jobRun.JobRunId);
+        }
+    }
+
+    public void ResumeQueue(string queueName)
+    {
+        foreach (var jobRun in GetJobRunsInQueue(queueName))
+        {
+            jobRunManager.ResumeJobRun(jobRun.JobRunId);
+        }
+    }
+
+    private IEnumerable<JobRun> GetJobRunsInQueue(string queueName) =>
+        jobQueues.TryGetValue(queueName, out var queue) ? queue.ToList() : [];
 
     public void Dispose() => Dispose(true);
 

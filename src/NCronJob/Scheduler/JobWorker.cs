@@ -6,18 +6,20 @@ namespace NCronJob;
 internal sealed partial class JobWorker
 {
     private readonly JobQueueManager jobQueueManager;
+    private readonly JobRunManager jobRunManager;
     private readonly JobProcessor jobProcessor;
     private readonly JobRegistry registry;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<JobWorker> logger;
     private readonly int globalConcurrencyLimit;
-    private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
+    private readonly ConcurrentDictionary<string, int> runningJobCounts = new();
     private int TotalRunningJobCount => runningJobCounts.Values.Sum();
     private readonly TaskFactory taskFactory;
 
 #pragma warning disable CA2008
     public JobWorker(
         JobQueueManager jobQueueManager,
+        JobRunManager jobRunManager,
         JobProcessor jobProcessor,
         JobRegistry registry,
         TimeProvider timeProvider,
@@ -25,6 +27,7 @@ internal sealed partial class JobWorker
         ILogger<JobWorker> logger)
     {
         this.jobQueueManager = jobQueueManager;
+        this.jobRunManager = jobRunManager;
         this.jobProcessor = jobProcessor;
         this.registry = registry;
         this.timeProvider = timeProvider;
@@ -81,10 +84,10 @@ internal sealed partial class JobWorker
         try
         {
             var cts = jobQueueManager.GetOrAddCancellationTokenSource(queueName);
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken, nextJob.CancellationToken);
             var linkedToken = linkedCts.Token;
 
-            await WaitForNextExecution(nextRunTime, linkedCts.Token).ConfigureAwait(false);
+            await WaitForNextExecution(nextRunTime, linkedToken).ConfigureAwait(false);
 
             if (!jobQueueManager.TryGetQueue(queueName, out var jobQueue))
             {
@@ -146,6 +149,8 @@ internal sealed partial class JobWorker
             {
                 jobRun.NotifyStateChange(JobStateType.Cancelled);
             }
+
+            jobRunManager.RemoveJobRun(jobRun.JobRunId);
         }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
 
     private async Task WaitForNextExecution(DateTimeOffset nextRunTime, CancellationToken stopToken)
@@ -187,8 +192,9 @@ internal sealed partial class JobWorker
         if (nextRunTime.HasValue)
         {
             LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
-            var run = JobRun.Create(job);
+            var run = jobRunManager.CreateJobRun(job, CancellationToken.None);
             run.RunAt = nextRunTime;
+            jobRunManager.RegisterJob(run);
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
             run.NotifyStateChange(JobStateType.Scheduled);

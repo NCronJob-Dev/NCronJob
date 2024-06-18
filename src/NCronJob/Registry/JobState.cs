@@ -28,6 +28,7 @@ internal enum JobStateType
     Initializing,
     Running,
     Retrying,
+    Paused,
     Completing,
     WaitingForDependency,
     Completed,

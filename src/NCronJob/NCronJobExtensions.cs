@@ -47,6 +47,11 @@ public static class NCronJobExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
 
+        services.TryAddSingleton<IJobsController, JobControlFacade>();
+        services.TryAddSingleton<JobRunManager>();
+        services.TryAddSingleton<IJobManager, JobManager>();
+
+
         return services;
     }
 }

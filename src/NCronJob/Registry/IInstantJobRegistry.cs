@@ -229,11 +229,10 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private void RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {
         var definition = dynamicJobFactoryRegistry.Add(jobDelegate);
-        var run = JobRun.Create(definition);
+        var run = JobRun.Create(definition, token);
         run.Priority = JobPriority.High;
         run.RunAt = startDate;
         run.IsOneTimeJob = true;
-        run.CancellationToken = token;
 
         if (forceExecution)
         {
@@ -267,7 +266,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
             token.Register(() => LogCancellationRequested(parameter));
 
-            var run = JobRun.Create(newJobDefinition, parameter, token);
+            var run = JobRun.Create(newJobDefinition, token);
             run.Priority = JobPriority.High;
             run.RunAt = startDate;
             run.IsOneTimeJob = true;

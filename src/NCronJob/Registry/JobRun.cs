@@ -4,15 +4,20 @@ namespace NCronJob;
 internal class JobRun
 {
     private int jobExecutionCount;
+    public JobRunResources Resources { get; private set; }
 
-    private JobRun() => Initialize();
+    public JobRun(CancellationToken globalCancellationToken)
+    {
+        Resources = new JobRunResources(CancellationToken.None, globalCancellationToken);
+        Initialize();
+    }
 
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
 
     public required Guid JobRunId { get; init; }
     public required JobDefinition JobDefinition { get; init; }
     public Guid CorrelationId { get; set; } = Guid.NewGuid();
-    public CancellationToken CancellationToken { get; set; }
+    public CancellationToken CancellationToken => Resources.CombinedTokenSource.Token;
     public DateTimeOffset? RunAt { get; set; }
 
     /// <summary>
@@ -28,21 +33,12 @@ internal class JobRun
     public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
-    public static JobRun Create(JobDefinition jobDefinition) =>
-        new()
+    public static JobRun Create(JobDefinition jobDefinition, CancellationToken token = default) =>
+        new(token)
         {
             JobRunId = Guid.NewGuid(),
             JobDefinition = jobDefinition,
             Parameter = jobDefinition.Parameter
-        };
-
-    public static JobRun Create(JobDefinition jobDefinition, object? parameter, CancellationToken token) =>
-        new()
-        {
-            JobRunId = Guid.NewGuid(),
-            JobDefinition = jobDefinition,
-            Parameter = parameter,
-            CancellationToken = token
         };
 
     private void Initialize()
@@ -69,6 +65,7 @@ internal class JobRun
                 case JobStateType.Initializing:
                 case JobStateType.WaitingForDependency:
                 case JobStateType.NotStarted:
+                case JobStateType.Paused:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
@@ -100,4 +97,34 @@ internal class JobRun
 
     private static bool IsFinalState(JobStateType stateType) =>
         stateType is JobStateType.Completed or JobStateType.Cancelled or JobStateType.Faulted or JobStateType.Crashed;
+
+    public void Pause()
+    {
+        if (CurrentState.Type == JobStateType.Running)
+        {
+            NotifyStateChange(JobStateType.Paused);
+            Resources.Pause();
+        }
+    }
+
+    public void Resume()
+    {
+        if (CurrentState.Type == JobStateType.Paused)
+        {
+            NotifyStateChange(JobStateType.Running);
+            Resources.Resume();
+        }
+    }
+
+    public void Cancel()
+    {
+        if (!Resources.CombinedTokenSource.IsCancellationRequested)
+        {
+            Resources.CombinedTokenSource.Cancel();
+            NotifyStateChange(JobStateType.Cancelled);
+        }
+    }
+
+    public void SetJobCancellationToken(CancellationToken jobCancellationToken) =>
+        Resources = new JobRunResources(jobCancellationToken, Resources.CombinedTokenSource.Token);
 }
