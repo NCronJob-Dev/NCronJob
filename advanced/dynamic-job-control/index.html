@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/advanced/dynamic-job-control/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Dynamic Job Control - NCronJob</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Dynamic Job Control";
+        var mkdocs_page_input_path = "advanced/dynamic-job-control.md";
+        var mkdocs_page_url = "/advanced/dynamic-job-control/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../..">
+          <img src="../../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/model-dependencies/">Model dependencies</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../log-level/">Controlling the log level</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Dynamic Job Control</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#defining-job-names">Defining job names</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#job-names">Job Names</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#adding-jobs">Adding jobs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#removing-jobs">Removing jobs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#updating-the-job-schedule">Updating the job schedule</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#updating-the-parameter">Updating the parameter</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#retrieving-a-job-schedule-by-name">Retrieving a job schedule by name</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#disabling-and-enabling-jobs">Disabling and enabling jobs</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Advanced</li>
+      <li class="breadcrumb-item active">Dynamic Job Control</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/advanced/dynamic-job-control.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="dynamic-job-control">Dynamic Job Control<a class="headerlink" href="#dynamic-job-control" title="Permanent link">&para;</a></h1>
+<p><strong>NCronJob</strong> allows you to dynmically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.</p>
+<h2 id="defining-job-names">Defining job names<a class="headerlink" href="#defining-job-names" title="Permanent link">&para;</a></h2>
+<p>The core idea is to define an unique job name for each job that might be mutated during runtime. The job name is an optional parameter:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">builder</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">builder</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SampleJob</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>The same applies to Minimal API:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyName));</span>
+</code></pre></div>
+
+<h3 id="job-names">Job Names<a class="headerlink" href="#job-names" title="Permanent link">&para;</a></h3>
+<p>Every recurring job (CRON job) can have a unique job name that identifies the job. Job names have to be unique across all jobs that were given a name. If a job is added without a name, it will not be possible to remove or update the job at runtime by name.</p>
+<h2 id="adding-jobs">Adding jobs<a class="headerlink" href="#adding-jobs" title="Permanent link">&para;</a></h2>
+<p>To add a job at runtime, leverage the <code>IRuntimeJobRegistry</code> interface:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/add-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SampleJob</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">)));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>The outer <code>AddJob</code> accepts a builder just like <code>builder.Services.AddNCronJob</code> does. The inner <code>AddJob</code> is the one that actually adds the job to the scheduler and does behave exactly the same.</p>
+<h2 id="removing-jobs">Removing jobs<a class="headerlink" href="#removing-jobs" title="Permanent link">&para;</a></h2>
+<p>There are two ways to remove a job from the scheduler. By name or by type. To remove a job by name:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapDelete</span><span class="p">(</span><span class="s">&quot;/remove-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RemoveJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>That will remove one job from the scheduler that has the name <code>MyName</code>. In contrast removing by type will remove all jobs of the given type (so zero to many jobs):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapDelete</span><span class="p">(</span><span class="s">&quot;/remove-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RemoveJob</span><span class="p">&lt;</span><span class="n">SampleJob</span><span class="p">&gt;();</span><span class="w"> </span><span class="c1">// Alternatively RemoveJob(typeof(SampleJob))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<h2 id="updating-the-job-schedule">Updating the job schedule<a class="headerlink" href="#updating-the-job-schedule" title="Permanent link">&para;</a></h2>
+<p>Updating the job schedule is done via the <code>UpdateSchedule</code> method. This method accepts a job name, a new CRON expression and optionally the time zone:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">UpdateSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">.</span><span class="n">Utc</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>Updating a schedule will lead to the job being rescheduled with the new CRON expression. Any planned job with the &ldquo;old&rdquo; schedule will be cancelled and rescheduled with the new schedule.</p>
+<h2 id="updating-the-parameter">Updating the parameter<a class="headerlink" href="#updating-the-parameter" title="Permanent link">&para;</a></h2>
+<p>Updating the parameter of a job is done via the <code>UpdateParameter</code> method. This method accepts a job name and a new parameter:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">UpdateParameter</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MyParameter</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the &ldquo;old&rdquo; parameter will be cancelled and rescheduled with the new parameter.</p>
+<h2 id="retrieving-a-job-schedule-by-name">Retrieving a job schedule by name<a class="headerlink" href="#retrieving-a-job-schedule-by-name" title="Permanent link">&para;</a></h2>
+<p>To retrieve the schedule of a job by name, use the <code>TryGetSchedule</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">TryGetSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">cronExpression</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">?</span><span class="w"> </span><span class="n">timeZone</span><span class="p">);</span><span class="w"></span>
+</code></pre></div>
+
+<p>The cron expression and time zone can be <code>null</code> even if the job was found. This indicates that the job has no schedule (like dependent jobs).</p>
+<h2 id="disabling-and-enabling-jobs">Disabling and enabling jobs<a class="headerlink" href="#disabling-and-enabling-jobs" title="Permanent link">&para;</a></h2>
+<p>To disable a job, use the <code>DisableJob</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/disable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">DisableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>If a job is disabled, it will not be scheduled anymore. Any planned job will be cancelled and the job will be removed from the scheduler.</p>
+<p>To enable a job, use the <code>EnableJob</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/enable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">EnableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../global-concurrency/" class="btn btn-neutral float-left" title="Global Concurrency"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>2024 <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../global-concurrency/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
