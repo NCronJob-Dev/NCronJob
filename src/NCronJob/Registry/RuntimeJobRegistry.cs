@@ -160,7 +160,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         job.CronExpression = cron;
         job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
 
-        jobWorker.RescheduleJobByName(job);
+        jobWorker.RescheduleJobWithJobName(job);
     }
 
     /// <inheritdoc />
@@ -171,7 +171,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
         job.Parameter = parameter;
 
-        jobWorker.RescheduleJobByName(job);
+        jobWorker.RescheduleJobWithJobName(job);
     }
 
     /// <inheritdoc />
@@ -214,7 +214,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             job.CronExpression = CronExpression.Parse(job.UserDefinedCronExpression);
         }
 
-        jobWorker.RescheduleJobByName(job);
+        jobWorker.RescheduleJobWithJobName(job);
     }
 
     /// <inheritdoc />
@@ -228,6 +228,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             job.CronExpression = CronExpression.Parse("* * 31 2 *");
         }
 
-        jobWorker.RescheduleJobByName(job);
+        jobWorker.RescheduleJobWithJobName(job);
     }
 }

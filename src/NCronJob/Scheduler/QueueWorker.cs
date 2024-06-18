@@ -43,7 +43,7 @@ internal sealed partial class QueueWorker : BackgroundService
             await shutdown.CancelAsync();
         }
 
-        while (workerTasks.IsEmpty)
+        while (!workerTasks.IsEmpty)
         {
             var currentTasks = workerTasks.ToList();
 
