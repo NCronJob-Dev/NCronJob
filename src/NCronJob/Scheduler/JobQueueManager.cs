@@ -38,10 +38,15 @@ internal sealed class JobQueueManager : IDisposable
 
     public void RemoveQueue(string queueName)
     {
-        if (jobQueues.TryRemove(queueName, out var jobQueue))
+        lock (jobCancellationTokens)
         {
-            jobQueue.Clear();
-            jobQueue.CollectionChanged -= CallCollectionChanged;
+            if (jobQueues.TryRemove(queueName, out var jobQueue))
+            {
+                jobQueue.Clear();
+                jobQueue.CollectionChanged -= CallCollectionChanged;
+                semaphores.Clear();
+                jobCancellationTokens.Clear();
+            }
         }
     }
 
