@@ -23,6 +23,6 @@ internal class ConcurrencySettings
     /// currently uses the ThreadPool.UnsafeQueueUserWorkItem method to execute tasks, which may have security implications,
     /// and is not currently recommended for production use.
     /// </remarks>
-    public static bool UseDeterministicTaskScheduler => true;
+    public static bool UseDeterministicTaskScheduler => false;
 }
 
