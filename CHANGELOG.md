@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.8.3] - 2024-06-20
+
 ### Changed
 
 - Identical Job Definitions will not lead to multiple instances of the job running concurrently. By [@linkdotnet](https://github.com/linkdotnet).
@@ -339,7 +341,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.2...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.3...HEAD
+[2.8.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.2...2.8.3
 [2.8.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.1...2.8.2
 [2.8.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.0...2.8.1
 [2.8.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.4...2.8.0
