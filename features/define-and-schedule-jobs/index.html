@@ -178,6 +178,22 @@
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
 
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Defining multiple identifical schedules for the same job will not lead to multiple instances of the job running concurrently. NCronJob will ensure that only one instance of the job is running at any given time. One can define different custom names for each schedule to differentiate between them.</p>
+</div>
+<p>The following example illustrates how to define multiple schedules that are identical and will only lead to one instance of the job running at any given time:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">         </span><span class="p">.</span><span class="n">And</span><span class="w"></span>
+<span class="w">         </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">});</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
 <h2 id="scheduling-jobs-with-time-zones">Scheduling Jobs With Time Zones<a class="headerlink" href="#scheduling-jobs-with-time-zones" title="Permanent link">&para;</a></h2>
 <p>The library offers you the ability to schedule jobs using time zones.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
