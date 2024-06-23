@@ -366,7 +366,7 @@ internal static class ExecuteWhenHelper
                 services.TryAddSingleton(s);
                 if (s.Type != typeof(DynamicJobFactory))
                 {
-                    services.TryAddSingleton(s.Type);
+                    services.TryAddScoped(s.Type);
                 }
             });
             jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);

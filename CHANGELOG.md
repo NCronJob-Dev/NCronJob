@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Dependent jobs where registered as singleton instead of scoped. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+
 ## [2.8.3] - 2024-06-20
 
 ### Changed
