@@ -151,10 +151,9 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(jobName);
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        var precisionRequired = JobOptionBuilder.DetermineAndValidatePrecision(cronExpression, null);
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
-        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression, precisionRequired);
+        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression);
 
         job.CronExpression = cron;
         job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;

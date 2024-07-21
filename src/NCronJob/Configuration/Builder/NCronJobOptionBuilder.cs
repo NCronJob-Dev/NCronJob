@@ -52,7 +52,7 @@ public class NCronJobOptionBuilder : IJobStage
         foreach (var option in jobOptions)
         {
             var cron = option.CronExpression is not null
-                ? GetCronExpression(option.CronExpression, option.EnableSecondPrecision)
+                ? GetCronExpression(option.CronExpression)
                 : null;
             var entry = new JobDefinition(typeof(T), option.Parameter, cron, option.TimeZoneInfo)
             {
@@ -87,15 +87,12 @@ public class NCronJobOptionBuilder : IJobStage
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
         ValidateConcurrencySetting(jobDelegate.Method);
 
-        var determinedPrecision = JobOptionBuilder.DetermineAndValidatePrecision(cronExpression, null);
-
         var jobOption = new JobOption
         {
             CronExpression = cronExpression,
-            EnableSecondPrecision = determinedPrecision,
             TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
-        var cron = GetCronExpression(jobOption.CronExpression, jobOption.EnableSecondPrecision);
+        var cron = GetCronExpression(jobOption.CronExpression);
 
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
         var entry = new JobDefinition(jobType, null, cron, jobOption.TimeZoneInfo,
@@ -124,9 +121,11 @@ public class NCronJobOptionBuilder : IJobStage
         }
     }
 
-    internal static CronExpression GetCronExpression(string expression, bool enableSecondPrecision)
+    internal static CronExpression GetCronExpression(string expression)
     {
-        var cf = enableSecondPrecision ? CronFormat.IncludeSeconds : CronFormat.Standard;
+        var precisionRequired = DetermineAndValidatePrecision(expression);
+
+        var cf = precisionRequired ? CronFormat.IncludeSeconds : CronFormat.Standard;
 
         return CronExpression.TryParse(expression, cf, out var cronExpression)
             ? cronExpression
@@ -139,6 +138,21 @@ public class NCronJobOptionBuilder : IJobStage
         {
             Services.AddSingleton(job);
         }
+    }
+
+    private static bool DetermineAndValidatePrecision(string cronExpression)
+    {
+        var parts = cronExpression.Split(' ');
+        var precisionRequired = parts.Length == 6;
+
+        var expectedLength = precisionRequired ? 6 : 5;
+        if (parts.Length != expectedLength)
+        {
+            var precisionText = precisionRequired ? "second precision" : "minute precision";
+            throw new ArgumentException($"Invalid cron expression format for {precisionText}.", nameof(cronExpression));
+        }
+
+        return precisionRequired;
     }
 }
 

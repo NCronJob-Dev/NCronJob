@@ -112,7 +112,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CronJobThatIsScheduledEverySecondShouldBeExecuted()
     {
         FakeTimer.Advance(TimeSpan.FromSeconds(1));
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *", true)));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -127,7 +127,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(
-            p => p.WithCronExpression("* * * * * *", true).And.WithCronExpression("* * * * *")));
+            p => p.WithCronExpression("* * * * * *").And.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
