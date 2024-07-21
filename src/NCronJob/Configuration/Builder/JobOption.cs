@@ -31,17 +31,6 @@ internal sealed class JobOption
     public bool IsStartupJob { get; set; }
 
     /// <summary>
-    /// Determines whether the cron expression can specify second-level precision.
-    /// </summary>
-    /// <remarks>
-    /// When enabled, cron expressions must include a seconds field, allowing for more precise scheduling.
-    /// By default, this is disabled, and cron expressions are expected to start with the minute field.
-    /// Enabling this affects scheduling granularity and may influence performance, especially for jobs
-    /// that are scheduled to run very frequently.
-    /// </remarks>
-    public bool EnableSecondPrecision { get; set; }
-
-    /// <summary>
     /// The job name given by the user, which can be used to identify the job.
     /// </summary>
     public string? Name { get; set; }
