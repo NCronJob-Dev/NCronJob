@@ -34,7 +34,7 @@ The `JobExecutionContext` object passed to the dependent job contains the output
 ```csharp
 public class JobA : IJob
 {
-    public Task ExecuteAsync(JobExecutionContext context)
+    public Task ExecuteAsync(IJobExecutionContext context)
     {
         context.Output = "Hello World";
         return Task.CompletedTask;
@@ -43,7 +43,7 @@ public class JobA : IJob
 
 public class JobB : IJob
 {
-    public Task ExecuteAsync(JobExecutionContext context)
+    public Task ExecuteAsync(IJobExecutionContext context)
     {
         var parentOutput = context.ParentOutput; // "Hello World"
         return Task.CompletedTask;
@@ -70,7 +70,7 @@ To actively cancel dependent jobs, the `JobExecutionContext` object passed offer
 ```csharp
 public class JobA : IJob
 {
-    public Task ExecuteAsync(JobExecutionContext context)
+    public Task ExecuteAsync(IJobExecutionContext context)
     {
         context.SkipChildren();
         return Task.CompletedTask;
@@ -79,7 +79,7 @@ public class JobA : IJob
 
 public class JobB : IJob
 {
-    public Task ExecuteAsync(JobExecutionContext context)
+    public Task ExecuteAsync(IJobExecutionContext context)
     {
         // This job will not run
         return Task.CompletedTask;
@@ -110,7 +110,7 @@ If you pass in a `JobExecutionContext` to the dependent job, you can access the 
 builder.Services.AddNCronJob(options => 
 {
     options.AddJob<ImportDataJob>().ExecuteWhen(
-        success: s => s.RunJob(async (JobExecutionContext context, ITransfomerService transformerService) => 
+        success: s => s.RunJob(async (IJobExecutionContext context, ITransfomerService transformerService) => 
         {
             var parentOutput = (MyDataModel)context.ParentOutput;
             await transformerService.TransformDataAsync(parentOutput);

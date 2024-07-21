@@ -25,7 +25,7 @@ builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider
 Also the `JobExecutionContext` and `CancellationToken` can be resolved from the DI container:
 
 ```csharp
-builder.Services.AddNCronJob((JobExecutionContext context, CancellationToken token) =>
+builder.Services.AddNCronJob((IJobExecutionContext context, CancellationToken token) =>
 {
     
 }, "*/5 * * * * *");
@@ -56,7 +56,7 @@ builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] () => { }, "0 * * * *"
 To know in which attempt the job currently is, the `JobExecutionContext` can be used:
 
 ```csharp
-builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] (JobExecutionContext context) => 
+builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] (IJobExecutionContext context) => 
 {
     if(context.Attempts == 1)
     {

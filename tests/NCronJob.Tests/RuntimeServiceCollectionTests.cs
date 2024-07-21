@@ -39,6 +39,6 @@ public class RuntimeServiceCollectionTests
 
     private sealed class SimpleJob : IJob
     {
-        public Task RunAsync(JobExecutionContext context, CancellationToken token) => throw new NotImplementedException();
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token) => throw new NotImplementedException();
     }
 }

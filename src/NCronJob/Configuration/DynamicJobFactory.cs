@@ -23,7 +23,7 @@ internal class DynamicJobFactory : IJob
 
         Func<IServiceProvider, object>?[] BuildServiceResolvers() =>
             parameters.Select(p =>
-                p.ParameterType == typeof(JobExecutionContext) || p.ParameterType == typeof(CancellationToken)
+                p.ParameterType == typeof(IJobExecutionContext) || p.ParameterType == typeof(CancellationToken)
                     ? null
                     : new Func<IServiceProvider, object>(sp => sp.GetRequiredService(p.ParameterType))
             ).ToArray();
@@ -55,7 +55,7 @@ internal class DynamicJobFactory : IJob
         throw new InvalidOperationException("The job action must return a Task or void type.");
     }
 
-    public Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         var arguments = new object[parameters.Length];
         for (var i = 0; i < parameters.Length; i++)

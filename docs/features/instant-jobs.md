@@ -8,7 +8,7 @@ So also CRON jobs can be triggered instantly.
 ```csharp
 public class MyJob : IJob
 {
-    public Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         ParameterDto dto = (ParameterDto)context.Parameter;
         // Do something
