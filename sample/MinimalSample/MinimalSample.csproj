@@ -6,6 +6,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>MinimalSample</RootNamespace>
+        <!-- Currently STJ in Version < 8.0.4 has a CVE. Microsoft.Extensions.Hosting does still include 8.0.0 -->
+        <NoWarn>NU1903</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
