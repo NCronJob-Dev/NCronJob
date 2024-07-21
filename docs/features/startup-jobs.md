@@ -7,7 +7,7 @@ Startup jobs are defined like regular CRON jobs and inherit from `IJob`. The onl
 ```csharp
 public class MyStartupJob : IJob
 {
-    public Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         // Perform startup task
         return Task.CompletedTask;
@@ -43,7 +43,7 @@ public class InitialDataLoader : IJob
         _dataService = dataService;
     }
 
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         await _dataService.LoadInitialDataAsync();
     }

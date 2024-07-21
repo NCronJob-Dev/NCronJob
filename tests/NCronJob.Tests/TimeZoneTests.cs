@@ -119,7 +119,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
 
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             try
             {

@@ -18,7 +18,7 @@ Here are examples of how to use the built-in retry policies:
 [RetryPolicy(retryCount: 4)]
 public class RetryJob(ILogger<RetryJob> logger) : IJob
 {
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         var attemptCount = context.Attempts;
 
@@ -40,7 +40,7 @@ public class RetryJob(ILogger<RetryJob> logger) : IJob
 [RetryPolicy(4, PolicyType.FixedInterval)]
 public class FixedIntervalRetryJob(ILogger<FixedIntervalRetryJob> logger) : IJob
 {
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         var attemptCount = context.Attempts;
 
@@ -64,7 +64,7 @@ You can also create custom retry policies by implementing the `IPolicyCreator` i
 [RetryPolicy<MyCustomPolicyCreator>(retryCount:4, delayFactor:1)]
 public class CustomPolicyJob(ILogger<CustomPolicyJob> logger) : IJob
 {
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         var attemptCount = context.Attempts;
 

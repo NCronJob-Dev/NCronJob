@@ -8,7 +8,7 @@ public partial class RunAtStartJobHandler : IJobNotificationHandler<RunAtStartJo
 
     public RunAtStartJobHandler(ILogger<RunAtStartJobHandler> logger) => this.logger = logger;
 
-    public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+    public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
 

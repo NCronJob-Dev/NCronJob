@@ -1,10 +1,8 @@
 
 namespace NCronJob;
 
-/// <summary>
-/// Represents the context of a job execution.
-/// </summary>
-public sealed record JobExecutionContext
+/// <inheritdoc />
+internal sealed record JobExecutionContext : IJobExecutionContext
 {
     internal bool ExecuteChildren = true;
 
@@ -14,26 +12,13 @@ public sealed record JobExecutionContext
     /// <param name="jobRun">The Job Run.</param>
     internal JobExecutionContext(JobRun jobRun) => JobRun = jobRun;
 
-    /// <summary>
-    /// Represents the context of a job execution.
-    /// </summary>
-    public JobExecutionContext(Type jobType, object? parameter)
-        => JobRun = JobRun.Create(new JobDefinition(jobType, parameter, null, null));
-
-    /// <summary>
-    /// The Job Instance Identifier, generated once upon creation of the context.
-    /// </summary>
+    /// <inheritdoc />
     public Guid Id { get; } = Guid.NewGuid();
 
-    /// <summary>
-    /// The output of a job that can be read by the <see cref="IJobNotificationHandler{TJob}"/>.
-    /// </summary>
+    /// <inheritdoc />
     public object? Output { get; set; }
 
-    /// <summary>
-    /// The attempts made to execute the job for one run. Will be incremented when a retry is triggered.
-    /// Retries will only occur when <see cref="RetryPolicyAttribute{T}"/> is set on the Job.
-    /// </summary>
+    /// <inheritdoc />
     public int Attempts { get; internal set; }
 
     /// <summary>The Job Run instance.</summary>
@@ -42,25 +27,15 @@ public sealed record JobExecutionContext
     /// <summary>The Type that represents the Job</summary>
     internal Type JobType => JobRun.JobDefinition.Type;
 
-    /// <summary>The passed in parameters to a job.</summary>
+    /// <inheritdoc />
     public object? Parameter => JobRun.Parameter;
 
-    /// <summary>
-    /// The correlation identifier of the job run. The <see cref="CorrelationId"/> stays the same for jobs and their dependencies.
-    /// </summary>
+    /// <inheritdoc />
     public Guid CorrelationId => JobRun.CorrelationId;
 
-    /// <summary>
-    /// The output of the parent job. Is always <c>null</c> if the job was not started due to a dependency.
-    /// </summary>
+    /// <inheritdoc />
     public object? ParentOutput => JobRun.ParentOutput;
 
-    /// <summary>
-    /// Prohibits the execution of dependent jobs.
-    /// </summary>
-    /// <remarks>
-    /// Calling <see cref="SkipChildren"/> has no effects when no dependent jobs are defined
-    /// via <see cref="INotificationStage{TJob}.ExecuteWhen"/>.
-    /// </remarks>
+    /// <inheritdoc />
     public void SkipChildren() => ExecuteChildren = false;
 }

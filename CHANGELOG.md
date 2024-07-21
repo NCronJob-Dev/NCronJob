@@ -7,6 +7,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ## [Unreleased]
 This is a new major version! A bit of cleanup! Check the `v3` migration guide for more information.
 
+### Changed
+- Created abstraction around `JobExecutionContext` to allow for easier testing and mocking. Will be now `IJobExecutionContext`.
+
 ### Removed
 - Removed `enableSecondPrecision` as it is now inferred automatically.
 

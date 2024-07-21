@@ -10,7 +10,7 @@ public class TestRetryJob(ILogger<TestRetryJob> logger, int maxFailuresBeforeSuc
     /// <summary>
     /// Runs the job, simulating failures based on a retry count. Will fail 3 times and then succeed.
     /// </summary>
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 

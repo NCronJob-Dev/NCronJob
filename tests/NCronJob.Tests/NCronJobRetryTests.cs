@@ -161,7 +161,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     private sealed class FailingJob(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -183,7 +183,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         public static int AttemptCount { get; private set; }
         public static bool Success { get; private set; }
 
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -212,7 +212,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         public static int AttemptCount { get; private set; }
         public static bool Success { get; private set; }
 
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -246,7 +246,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [RetryPolicy(retryCount: 2, PolicyType.FixedInterval)]
     private sealed class CancelRetryingJob2 : IJob
     {
-        public Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
             throw new InvalidOperationException("Job Failed");
@@ -257,7 +257,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     private sealed class JobUsingCustomPolicy(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 

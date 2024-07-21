@@ -10,7 +10,7 @@ public partial class PrintHelloWorldJob : IJob
 
     public PrintHelloWorldJob(ILogger<PrintHelloWorldJob> logger) => this.logger = logger;
 
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -31,7 +31,7 @@ public partial class DataProcessingJob : IJob
 
     public DataProcessingJob(ILogger<DataProcessingJob> logger) => this.logger = logger;
 
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 

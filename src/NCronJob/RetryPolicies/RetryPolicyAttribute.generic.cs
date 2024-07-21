@@ -19,7 +19,7 @@ namespace NCronJob;
 /// [RetryPolicyAttribute&lt;CustomRetryPolicyCreator&gt;(retryCount: 5, delayFactor: 1.5)]
 /// public class MyJob
 /// {
-///     public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+///     public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
 ///     {
 ///         // Unreliable Job logic that may require retries
 ///     }
