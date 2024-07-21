@@ -14,7 +14,6 @@ public class JobOptionBuilderTests
 
         options.Count.ShouldBe(1);
         options.Single().CronExpression.ShouldBe("* * * * *");
-        options.Single().EnableSecondPrecision.ShouldBeFalse();
         options.Single().Parameter.ShouldBeNull();
     }
 
@@ -32,10 +31,8 @@ public class JobOptionBuilderTests
 
         options.Count.ShouldBe(2);
         options[0].CronExpression.ShouldBe("* * * * *");
-        options[0].EnableSecondPrecision.ShouldBeFalse();
         options[0].Parameter.ShouldBe("foo");
         options[1].CronExpression.ShouldBe("0 * * * *");
-        options[1].EnableSecondPrecision.ShouldBeFalse();
         options[1].Parameter.ShouldBe("bar");
     }
 
@@ -52,10 +49,8 @@ public class JobOptionBuilderTests
 
         options.Count.ShouldBe(2);
         options[0].CronExpression.ShouldBe("* * * * *");
-        options[0].EnableSecondPrecision.ShouldBeFalse();
         options[0].Parameter.ShouldBeNull();
         options[1].CronExpression.ShouldBe("0 * * * *");
-        options[1].EnableSecondPrecision.ShouldBeFalse();
         options[1].Parameter.ShouldBeNull();
     }
 
@@ -73,10 +68,8 @@ public class JobOptionBuilderTests
 
         options.Count.ShouldBe(2);
         options[0].CronExpression.ShouldBe("* * * * *");
-        options[0].EnableSecondPrecision.ShouldBeFalse();
         options[0].Parameter.ShouldBe("foo");
         options[1].CronExpression.ShouldBe("0 * * * *");
-        options[1].EnableSecondPrecision.ShouldBeFalse();
         options[1].Parameter.ShouldBe("bar");
     }
 }

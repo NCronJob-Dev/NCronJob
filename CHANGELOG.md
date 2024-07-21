@@ -6,6 +6,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+This is a new major version! A bit of cleanup! Check the `v3` migration guide for more information.
+
+### Removed
+- Removed `enableSecondPrecision` as it is now inferred automatically.
+
 ## [2.8.4] - 2024-06-23
 
 ### Fixed

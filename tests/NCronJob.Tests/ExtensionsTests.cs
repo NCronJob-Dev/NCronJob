@@ -26,7 +26,7 @@ public class NCronJobTests
 
         Action act = () => builder.AddJob<FakeJob>(o =>
         {
-            o.WithCronExpression("* * * * * *", true);
+            o.WithCronExpression("* * * * * *");
         });
 
         act.ShouldNotThrow();
@@ -42,8 +42,10 @@ public class NCronJobTests
     [Fact]
     public void AddingCronExpressionWithIncorrectSegmentCountThrowsArgumentException()
     {
-        var builder = new JobOptionBuilder();
-        Should.Throw<ArgumentException>(() => builder.WithCronExpression("* * *"));
+        var collection = new ServiceCollection();
+        var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
+        var builder = new NCronJobOptionBuilder(collection, settings);
+        Should.Throw<ArgumentException>(() => builder.AddJob<FakeJob>(p => p.WithCronExpression("* * *")));
     }
 
     [Fact]
@@ -57,16 +59,8 @@ public class NCronJobTests
     public void AddingValidCronExpressionWithSecondPrecisionDoesNotThrowException()
     {
         var builder = new JobOptionBuilder();
-        Should.NotThrow(() => builder.WithCronExpression("30 5 * * * *", true));
+        Should.NotThrow(() => builder.WithCronExpression("30 5 * * * *"));
     }
-
-    [Fact]
-    public void AddingCronExpressionWithInvalidSecondPrecisionThrowsArgumentException()
-    {
-        var builder = new JobOptionBuilder();
-        Should.Throw<ArgumentException>(() => builder.WithCronExpression("5 * * * *", true));
-    }
-
 
     [Fact]
     public void AutoDetectSecondPrecisionWhenNotSpecified()
@@ -74,11 +68,11 @@ public class NCronJobTests
         var builder = new JobOptionBuilder();
         builder.WithCronExpression("0 0 12 * * ?");
         var options = builder.GetJobOptions();
-        options.ShouldContain(o => o.CronExpression == "0 0 12 * * ?" && o.EnableSecondPrecision);
+        options.ShouldContain(o => o.CronExpression == "0 0 12 * * ?");
 
         builder.WithCronExpression("0 1 * * *");
         options = builder.GetJobOptions();
-        options.ShouldContain(o => o.CronExpression == "0 1 * * *" && !o.EnableSecondPrecision);
+        options.ShouldContain(o => o.CronExpression == "0 1 * * *");
     }
 
     private sealed class FakeJob : IJob
