@@ -24,7 +24,7 @@ public class ConcurrentJob : IJob
         this.logger = logger;
     }
 
-    public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         logger.LogInformation($"ConcurrentJob with Id {context.Id} is running.");
         // Simulate some work by delaying

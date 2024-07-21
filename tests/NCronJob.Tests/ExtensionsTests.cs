@@ -77,7 +77,7 @@ public class NCronJobTests
 
     private sealed class FakeJob : IJob
     {
-        public Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => throw new NotImplementedException();
     }
 }

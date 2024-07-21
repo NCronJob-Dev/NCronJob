@@ -268,6 +268,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token) => await writer.WriteAsync(context.Parameter ?? string.Empty, token);
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token) => await writer.WriteAsync(context.Parameter ?? string.Empty, token);
     }
 }

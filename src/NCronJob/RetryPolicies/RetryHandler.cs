@@ -23,7 +23,7 @@ internal interface IRetryHandler
 /// [RetryPolicy(retryCount: 3, delayFactor: 2)]
 /// public class MyJob
 /// {
-///     public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+///     public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
 ///     {
 ///         // Job logic that may require retries
 ///     }

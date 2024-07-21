@@ -22,7 +22,7 @@ In the `ReportJob` you can now access the parameter via the `JobExecutionContext
 ```csharp
 public class ReportJob : IJob
 {
-    public Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         var parameter = context.Parameter;
         // Do something with the parameter
@@ -59,7 +59,7 @@ Services.AddNCronJob(b =>
 
 public class MyJob : IJob
 {
-  public Task RunAsync(JobExecutionContext context, CancellationToken token)
+  public Task RunAsync(IJobExecutionContext context, CancellationToken token)
   {
      var myParam = (MyParameter)context.Parameter;
      myParam.Counter++; // This will be incremented with each job run

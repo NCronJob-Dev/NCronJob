@@ -78,7 +78,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
     private sealed class SimpleJob : IJob
     {
-        public Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             context.Output = "Foo";
             return Task.CompletedTask;
@@ -87,31 +87,31 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
     private sealed class ExceptionJob : IJob
     {
-        public Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => throw new InvalidOperationException();
     }
 
     private sealed class SimpleJobHandler(ChannelWriter<object> writer) : IJobNotificationHandler<SimpleJob>
     {
-        public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+        public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
             => writer.WriteAsync(context.Output!, cancellationToken).AsTask();
     }
 
     private sealed class ExceptionHandler(ChannelWriter<object> writer) : IJobNotificationHandler<ExceptionJob>
     {
-        public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+        public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
             => writer.WriteAsync(exception!, cancellationToken).AsTask();
     }
 
     private sealed class HandlerThatThrowsException : IJobNotificationHandler<ExceptionJob>
     {
-        public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+        public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
             => throw new InvalidOperationException();
     }
 
     private sealed class HandlerThatThrowsInAsyncPartException : IJobNotificationHandler<ExceptionJob>
     {
-        public async Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+        public async Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
         {
             await Task.Delay(1, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
             throw new InvalidOperationException();
