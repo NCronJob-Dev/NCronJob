@@ -27,7 +27,7 @@ public class MyJobNotificationHandler : IJobNotificationHandler<MyJob>
         this.logger = logger;
     }
 
-    public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken token)
+    public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken token)
     {
         if (exception is not null)
         {

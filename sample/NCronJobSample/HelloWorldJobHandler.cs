@@ -8,7 +8,7 @@ public partial class HelloWorldJobHandler : IJobNotificationHandler<PrintHelloWo
 
     public HelloWorldJobHandler(ILogger<HelloWorldJobHandler> logger) => this.logger = logger;
 
-    public Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+    public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
 

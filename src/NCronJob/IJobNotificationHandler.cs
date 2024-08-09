@@ -15,7 +15,7 @@ public interface IJobNotificationHandler
     /// <remarks>
     /// The method will be invoked with the same scope as the job itself.
     /// </remarks>
-    Task HandleAsync(JobExecutionContext context, Exception? exception, CancellationToken cancellationToken);
+    Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken);
 }
 
 /// <summary>

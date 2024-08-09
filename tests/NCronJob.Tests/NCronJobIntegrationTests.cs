@@ -112,7 +112,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CronJobThatIsScheduledEverySecondShouldBeExecuted()
     {
         FakeTimer.Advance(TimeSpan.FromSeconds(1));
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *", true)));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -127,7 +127,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(
-            p => p.WithCronExpression("* * * * * *", true).And.WithCronExpression("* * * * *")));
+            p => p.WithCronExpression("* * * * * *").And.WithCronExpression("* * * * *")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -405,7 +405,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [SupportsConcurrency(2)]
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             try
             {
@@ -423,7 +423,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [SupportsConcurrency(2)]
     private sealed class ShortRunningJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             try
             {
@@ -440,13 +440,13 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
     private sealed class LongRunningJob(TimeProvider timeProvider) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token) =>
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token) =>
             await Task.Delay(TimeSpan.FromSeconds(10), timeProvider, token);
     }
 
     private sealed class ScopedServiceJob(ChannelWriter<object> writer, Storage storage, GuidGenerator guidGenerator) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             storage.Guids.Add(guidGenerator.NewGuid);
             await writer.WriteAsync(true, token);
@@ -455,13 +455,13 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
     private sealed class ParameterJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync(context.Parameter!, token);
     }
 
     private sealed class JobWithDependency(ChannelWriter<object> writer, GuidGenerator guidGenerator) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync(guidGenerator.NewGuid, token);
     }
 }

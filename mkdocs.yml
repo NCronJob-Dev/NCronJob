@@ -41,6 +41,7 @@ nav:
     - Startup Jobs: features/startup-jobs.md
     - Model dependencies: features/model-dependencies.md
   - Migration:
+    - v3 Migration Guide: migration/v3.md
     - v2 Migration Guide: migration/v2.md
   - Advanced:
     - Controlling the log level: advanced/log-level.md

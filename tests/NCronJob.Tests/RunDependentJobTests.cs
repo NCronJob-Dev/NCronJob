@@ -86,7 +86,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
     private sealed class PrincipalJob : IJob
     {
-        public Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             if (context.Parameter is true)
             {
@@ -104,13 +104,13 @@ public class RunDependentJobTests : JobIntegrationBase
 
     private sealed class DependentJob(ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync($"Me: {context.Parameter} Parent: {context.ParentOutput}", token);
     }
 
     private sealed class PrincipalCorrelationIdJob(Storage storage, ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             storage.Guids.Add(context.CorrelationId);
 
@@ -124,7 +124,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
     private sealed class DependentCorrelationIdJob(Storage storage, ChannelWriter<object> writer) : IJob
     {
-        public async Task RunAsync(JobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             storage.Guids.Add(context.CorrelationId);
             await writer.WriteAsync("done", token);

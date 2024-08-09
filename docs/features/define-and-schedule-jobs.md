@@ -19,7 +19,7 @@ public class MyCronJob : IJob
         _logger = logger;
     }
 
-    public Task RunAsync(JobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         _logger.LogInformation("MyCronJob is executing!");
         
