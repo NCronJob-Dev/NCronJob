@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Disposing can lead to issues inside `StopAsync`. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+
 ## [2.8.4] - 2024-06-23
 
 ### Fixed

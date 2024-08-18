@@ -45,7 +45,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
         while (!workerTasks.IsEmpty)
         {
-            var currentTasks = workerTasks.ToList();
+            var currentTasks = workerTasks.ToArray();
 
             foreach (var (jobType, task) in currentTasks)
             {
