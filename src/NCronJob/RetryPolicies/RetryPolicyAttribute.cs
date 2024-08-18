@@ -10,9 +10,9 @@ namespace NCronJob;
 /// The exponential back-off strategy increases the delay between retry attempts exponentially, which is useful for scenarios where repeated failures
 /// are likely to be resolved by allowing more time before retrying.
 /// </remarks>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Delegate, Inherited = false)]
 public sealed class RetryPolicyAttribute : RetryPolicyBaseAttribute
 {
-
     /// <summary>
     /// Gets the type of policy creator used to generate the retry policy.
     /// The type of policy determines how retries are performed, such as using

@@ -94,7 +94,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
         nextRunTime!.Value.ShouldBe(expectedRunTime);
     }
 
-    private DateTimeOffset? GetNextRunTime(JobDefinition jobEntry, DateTimeOffset baseTime, TimeZoneInfo timeZone) =>
+    private static DateTimeOffset? GetNextRunTime(JobDefinition jobEntry, DateTimeOffset baseTime, TimeZoneInfo timeZone) =>
         jobEntry.CronExpression!.GetNextOccurrence(baseTime, timeZone);
 
     private void SetupJobWithTimeZone<T>(string cronExpression, string timeZoneId) where T : class, IJob

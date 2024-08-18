@@ -27,6 +27,7 @@ namespace NCronJob;
 /// </code>
 /// Here, <c>CustomRetryPolicyCreator</c> defines how the retries are performed, and it must implement the <see cref="IPolicyCreator"/>.
 /// </example>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Delegate, Inherited = false)]
 public sealed class RetryPolicyAttribute<TPolicyCreator> : RetryPolicyBaseAttribute where TPolicyCreator : IPolicyCreator, new()
 {
     internal override IAsyncPolicy CreatePolicy(IServiceProvider serviceProvider)
