@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.8.5] - 2024-08-18
+
 ### Fixed
 
 - Disposing can lead to issues inside `StopAsync`. Fixed by [@linkdotnet](https://github.com/linkdotnet).
@@ -351,7 +353,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.4...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.5...HEAD
+[2.8.5]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.4...2.8.5
 [2.8.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.3...2.8.4
 [2.8.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.2...2.8.3
 [2.8.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.1...2.8.2
