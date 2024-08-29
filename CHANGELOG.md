@@ -6,7 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [2.8.6] - 2024-08-29
+
 ### Fixed
+
 - Dispose could still lead to issues when an exception has thrown an exception.
 
 ## [2.8.5] - 2024-08-18
@@ -356,7 +359,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.5...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.6...HEAD
+[2.8.6]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.5...2.8.6
 [2.8.5]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.4...2.8.5
 [2.8.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.3...2.8.4
 [2.8.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.2...2.8.3
