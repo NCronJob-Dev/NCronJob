@@ -13,7 +13,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly StartupJobManager startupJobManager;
     private readonly ILogger<QueueWorker> logger;
     private CancellationTokenSource? shutdown;
-    private readonly ConcurrentDictionary<string, Task> workerTasks = new();
+    private readonly ConcurrentDictionary<string, Task?> workerTasks = new();
     private readonly ConcurrentDictionary<string, bool> addingWorkerTasks = new();
     private volatile bool isDisposed;
 
@@ -49,6 +49,11 @@ internal sealed partial class QueueWorker : BackgroundService
 
             foreach (var (jobType, task) in currentTasks)
             {
+                if (task is null)
+                {
+                    continue;
+                }
+
                 var taskEnded = task.IsCanceled || task.IsFaulted || task.IsCompleted;
                 if (taskEnded && workerTasks.TryRemove(jobType, out _))
                 {
@@ -101,7 +106,8 @@ internal sealed partial class QueueWorker : BackgroundService
             CreateWorkerQueues(stopToken);
             jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
 
-            await Task.WhenAll(workerTasks.Values).ConfigureAwait(false);
+            var tasks = workerTasks.Values.WhereNotNull();
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

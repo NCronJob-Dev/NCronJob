@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+- Dispose could still lead to issues when an exception has thrown an exception.
+
 ## [2.8.5] - 2024-08-18
 
 ### Fixed
