@@ -6,7 +6,7 @@
 	"image": "mcr.microsoft.com/dotnet/sdk:9.0-preview",
 	"features": {
 		"ghcr.io/devcontainers/features/dotnet:2": {
-			"version": "latest"
+			"version": "8.0"
 		}
 	},
 
