@@ -10,7 +10,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Fixed
 
-- Dispose could still lead to issues when an exception has thrown an exception.
+- Dispose could still lead to issues when an exception was thrown inside a job/task.
 
 ## [2.8.5] - 2024-08-18
 
