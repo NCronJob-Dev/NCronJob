@@ -7,6 +7,7 @@ namespace NCronJob;
 internal sealed class JobQueueManager : IDisposable
 {
     private readonly TimeProvider timeProvider;
+    private readonly Lock syncRoot = new();
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
@@ -38,7 +39,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public void RemoveQueue(string queueName)
     {
-        lock (jobCancellationTokens)
+        lock (syncRoot)
         {
             if (jobQueues.TryRemove(queueName, out var jobQueue))
             {
@@ -59,7 +60,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public CancellationTokenSource GetOrAddCancellationTokenSource(string queueName)
     {
-        lock (jobCancellationTokens)
+        lock (syncRoot)
         {
             if (jobCancellationTokens.TryGetValue(queueName, out var cts))
             {
@@ -80,7 +81,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public void SignalJobQueue(string queueName)
     {
-        lock (jobCancellationTokens)
+        lock (syncRoot)
         {
             if (jobCancellationTokens.TryGetValue(queueName, out var cts))
             {
