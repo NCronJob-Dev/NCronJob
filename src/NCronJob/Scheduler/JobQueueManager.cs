@@ -10,6 +10,11 @@ internal sealed class JobQueueManager : IDisposable
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
+#if NET9_0_OR_GREATER
+    private readonly Lock syncLock = new();
+#else
+    private readonly object syncLock = new();
+#endif
     private bool disposed;
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
@@ -38,7 +43,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public void RemoveQueue(string queueName)
     {
-        lock (jobCancellationTokens)
+        lock (syncLock)
         {
             if (jobQueues.TryRemove(queueName, out var jobQueue))
             {
@@ -59,7 +64,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public CancellationTokenSource GetOrAddCancellationTokenSource(string queueName)
     {
-        lock (jobCancellationTokens)
+        lock (syncLock)
         {
             if (jobCancellationTokens.TryGetValue(queueName, out var cts))
             {
@@ -80,7 +85,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public void SignalJobQueue(string queueName)
     {
-        lock (jobCancellationTokens)
+        lock (syncLock)
         {
             if (jobCancellationTokens.TryGetValue(queueName, out var cts))
             {
