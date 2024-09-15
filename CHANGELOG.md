@@ -5,12 +5,17 @@ All notable changes to **NCronJob** will be documented in this file. The project
 <!-- The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) -->
 
 ## [Unreleased]
+
+## [3.0.3] - 2024-09-15
+
 This is a new major version! A bit of cleanup! Check the [`v3` migration guide](https://docs.ncronjob.dev/migration/v3/) for more information.
 
 ### Changed
+
 - Created abstraction around `JobExecutionContext` to allow for easier testing and mocking. Will now be `IJobExecutionContext`.
 
 ### Removed
+
 - Removed `enableSecondPrecision` as it is now inferred automatically.
 
 ## [2.8.6] - 2024-08-29
@@ -366,7 +371,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.6...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.0.3...HEAD
+[3.0.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.6...3.0.3
 [2.8.6]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.5...2.8.6
 [2.8.5]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.4...2.8.5
 [2.8.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.3...2.8.4
