@@ -88,6 +88,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
                   </li>
               </ul>
@@ -143,7 +145,7 @@
 </code></pre></div>
 
 <p>Also the <code>JobExecutionContext</code> and <code>CancellationToken</code> can be resolved from the DI container:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">((</span><span class="n">JobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">((</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 
 <span class="p">},</span><span class="w"> </span><span class="s">&quot;*/5 * * * * *&quot;</span><span class="p">);</span><span class="w"></span>
@@ -168,7 +170,7 @@
 </code></pre></div>
 
 <p>To know in which attempt the job currently is, the <code>JobExecutionContext</code> can be used:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">([</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">retryCount</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="p">)]</span><span class="w"> </span><span class="p">(</span><span class="n">JobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">([</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">retryCount</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="p">)]</span><span class="w"> </span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"></span>
 <span class="w">    </span><span class="p">{</span><span class="w"></span>

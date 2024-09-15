@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/migration/v2/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/migration/v3/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>v2 Migration Guide - NCronJob</title>
+    <title>v3 Migration Guide - NCronJob</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "v2 Migration Guide";
-        var mkdocs_page_input_path = "migration/v2.md";
-        var mkdocs_page_url = "/migration/v2/";
+        var mkdocs_page_name = "v3 Migration Guide";
+        var mkdocs_page_input_path = "migration/v3.md";
+        var mkdocs_page_url = "/migration/v3/";
       </script>
     
     <!--[if lt IE 9]>
@@ -74,13 +74,15 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul class="current">
-                  <li class="toctree-l1"><a class="reference internal" href="../v3/">v3 Migration Guide</a>
-                  </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">v2 Migration Guide</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">v3 Migration Guide</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#cronexpression-moved-towards-builder">CronExpression moved towards builder</a>
+    <li class="toctree-l2"><a class="reference internal" href="#second-precision-is-automatically-inferred">Second precision is automatically inferred</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jobexecutioncontext-is-now-ijobexecutioncontext">JobExecutionContext is now IJobExecutionContext</a>
     </li>
     </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../v2/">v2 Migration Guide</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Advanced</span></p>
@@ -107,9 +109,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Migration</li>
-      <li class="breadcrumb-item active">v2 Migration Guide</li>
+      <li class="breadcrumb-item active">v3 Migration Guide</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/migration/v2.md">Edit on NCronJob-Dev/NCronJob</a>
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/migration/v3.md">Edit on NCronJob-Dev/NCronJob</a>
     </li>
   </ul>
   <hr/>
@@ -117,45 +119,36 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="v2-migration-guide">v2 Migration Guide<a class="headerlink" href="#v2-migration-guide" title="Permanent link">&para;</a></h1>
-<p>This document will describe the changes made in <code>v2</code> of <strong>NCronJob</strong> and how to migrate from <code>v1</code>.</p>
-<p>Version 2 of <strong>NCronJob</strong> brings some breaking changes to mae a better API.</p>
-<h3 id="cronexpression-moved-towards-builder"><code>CronExpression</code> moved towards builder<a class="headerlink" href="#cronexpression-moved-towards-builder" title="Permanent link">&para;</a></h3>
-<p>In <code>v1</code> one would define as such:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">();</span><span class="w"></span>
-<span class="n">services</span><span class="p">.</span><span class="n">AddCronJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">CronExpression</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">Parameter</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+                <h1 id="v3-migration-guide">v3 Migration Guide<a class="headerlink" href="#v3-migration-guide" title="Permanent link">&para;</a></h1>
+<p>This document describes the changes made in <code>v3</code> of <strong>NCronJob</strong> and how to migrate from <code>v2</code>.</p>
+<p>Version 3 of <strong>NCronJob</strong> introduces some breaking changes to improve the API.</p>
+<h3 id="second-precision-is-automatically-inferred">Second precision is automatically inferred<a class="headerlink" href="#second-precision-is-automatically-inferred" title="Permanent link">&para;</a></h3>
+<p>In <code>v2</code> one would define as such:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SimpleJob</span><span class="p">&gt;(</span><span class="w"></span>
+<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)));</span><span class="w"></span>
 </code></pre></div>
 
-<p>With <code>v2</code> the <code>CronExpression</code> is moved towards the builder pattern and <code>AddCronJob</code> is merged into <code>AddNCronJob</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">         </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<p>Inside <code>WithCronExpression</code>, there was an optional parameter that, if set to <code>true</code>, required the cron expression to be in <em>seconds</em> precision. This was a bit confusing and not very intuitive. In <code>v3</code> the seconds precision is automatically inferred. Therefore, the above code can be simplified to:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SimpleJob</span><span class="p">&gt;(</span><span class="w"></span>
+<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * * *&quot;</span><span class="p">)));</span><span class="w"></span>
 </code></pre></div>
 
-<p>This allows to easily define multiple jobs without adding much boilerplate code.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">).</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Foo&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">And</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 * * *&quot;</span><span class="p">).</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Bar&quot;</span><span class="p">));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<h3 id="jobexecutioncontext-is-now-ijobexecutioncontext"><code>JobExecutionContext</code> is now <code>IJobExecutionContext</code><a class="headerlink" href="#jobexecutioncontext-is-now-ijobexecutioncontext" title="Permanent link">&para;</a></h3>
+<p>The <code>JobExecutionContext</code> class is no longer used. It has been replaced by the <code>IJobExecutionContext</code> interface. This change was made to allow for easier testing and mocking of the context. Until now you always had to pass in a valid instance which was a bit cumbersome. Now you can mock the interface (or provide a fake) and pass it in.</p>
+<p>For the migration, you just have to change the type of the parameter in your job from <code>JobExecutionContext</code> to <code>IJobExecutionContext</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gd">- public Task RunAsync(JobExecutionContext context, CancellationToken token)</span><span class="w"></span>
+<span class="gi">+ public Task RunAsync(IJobExecutionContext context, CancellationToken token)</span><span class="w"></span>
 </code></pre></div>
+
+<p>All the public members are still the same as before.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../v3/" class="btn btn-neutral float-left" title="v3 Migration Guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../advanced/log-level/" class="btn btn-neutral float-right" title="Controlling the log level">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../features/model-dependencies/" class="btn btn-neutral float-left" title="Model dependencies"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../v2/" class="btn btn-neutral float-right" title="v2 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -183,10 +176,10 @@
         </span>
     
     
-      <span><a href="../v3/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../../features/model-dependencies/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../advanced/log-level/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../v2/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
