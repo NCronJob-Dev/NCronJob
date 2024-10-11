@@ -57,11 +57,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="Cronos" Version="0.8.4" />
-		<PackageReference Include="Polly" Version="8.4.1" />
+		<PackageReference Include="Polly" Version="8.4.2" />
 	</ItemGroup>
 
   <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
   </ItemGroup>
 
 </Project>
