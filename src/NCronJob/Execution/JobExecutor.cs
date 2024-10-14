@@ -179,9 +179,16 @@ internal sealed partial class JobExecutor : IDisposable
     {
         foreach (var exceptionHandler in exceptionHandlers)
         {
-            if (await exceptionHandler.TryHandleAsync(runContext, exc, stoppingToken))
+            try
             {
-                break;
+                if (await exceptionHandler.TryHandleAsync(runContext, exc, stoppingToken))
+                {
+                    break;
+                }
+            }
+            catch
+            {
+                LogExceptionHandlerError(exceptionHandler.GetType());
             }
         }
     }
