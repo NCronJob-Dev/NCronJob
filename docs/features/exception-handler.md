@@ -15,5 +15,7 @@ public class MyExceptionHandler : IExceptionHandler
 
 If the `TryHandleAsync` method returns `true`, the exception is considered as handled and no other exception handler will be called. If it returns `false`, the next exception handler will be called, if available.
 
+Therefore the order of registration is important. The first registered exception handler will be called first.
+
 ## Order of execution with NotificationHandlers
 All exception handlers are executed before the `IJobNotificationHandler` for that specific job is called. Independent if the exception handler returns `true` or `false`, the `IJobNotificationHandler` will get the exception passed in.
