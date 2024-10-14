@@ -10,7 +10,6 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
     [Fact]
     public async Task ShouldInformGlobalExceptionHandlerInOrder()
     {
-        // Arrange
         ServiceCollection.AddNCronJob(o =>
         {
             o.AddExceptionHandler<FirstTestExceptionHandler>();
@@ -28,7 +27,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         var firstMessage = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         firstMessage.ShouldBe(1);
         var secondMessage = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        secondMessage.ShouldBe(1);
+        secondMessage.ShouldBe(2);
     }
 
     private sealed class FirstTestExceptionHandler : IExceptionHandler
@@ -54,7 +53,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         public async Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
         {
-            await writer.WriteAsync(1, cancellationToken);
+            await writer.WriteAsync(2, cancellationToken);
             return false;
         }
     }
