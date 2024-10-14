@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Global exception handlers. By [@linkdotnet](https://github.com/linkdotnet). Reported by [@nulltoken](https://github.com/nulltoken).
+
 ## [3.0.3] - 2024-09-15
 
 This is a new major version! A bit of cleanup! Check the [`v3` migration guide](https://docs.ncronjob.dev/migration/v3/) for more information.

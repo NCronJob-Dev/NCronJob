@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly JobQueueManager jobQueueManager;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly IJobHistory jobHistory;
+    private readonly ImmutableArray<IExceptionHandler> exceptionHandlers;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
@@ -22,7 +24,8 @@ internal sealed partial class JobExecutor : IDisposable
         IRetryHandler retryHandler,
         JobQueueManager jobQueueManager,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
-        IJobHistory jobHistory)
+        IJobHistory jobHistory,
+        IEnumerable<IExceptionHandler> exceptionHandlers)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
@@ -30,6 +33,7 @@ internal sealed partial class JobExecutor : IDisposable
         this.jobQueueManager = jobQueueManager;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.jobHistory = jobHistory;
+        this.exceptionHandlers = exceptionHandlers.ToImmutableArray();
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -69,7 +73,7 @@ internal sealed partial class JobExecutor : IDisposable
         var runContext = new JobExecutionContext(run);
         await ExecuteJob(runContext, job, scope);
     }
-    
+
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
     {
         if (definition.Type == typeof(DynamicJobFactory))
@@ -114,6 +118,7 @@ internal sealed partial class JobExecutor : IDisposable
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
             runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc.Message);
+            await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(exc, default);
         }
         // This needs to be async otherwise it can deadlock or try to use the disposed scope, maybe it needs to create its own serviceScope
@@ -166,6 +171,18 @@ internal sealed partial class JobExecutor : IDisposable
             newRun.IsOneTimeJob = true;
             var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(newRun);
+        }
+    }
+
+    private async Task NotifyExceptionHandlers(JobExecutionContext runContext, Exception exc,
+        CancellationToken stoppingToken)
+    {
+        foreach (var exceptionHandler in exceptionHandlers)
+        {
+            if (await exceptionHandler.TryHandleAsync(runContext, exc, stoppingToken))
+            {
+                break;
+            }
         }
     }
 }

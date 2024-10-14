@@ -103,6 +103,19 @@ public class NCronJobOptionBuilder : IJobStage
         return this;
     }
 
+    /// <summary>
+    /// Registers the <see cref="IExceptionHandler"/> implementation to the service collection.
+    /// </summary>
+    /// <remarks>The order of the exception handlers is important.
+    /// The first handler registered will be the first one to be called.
+    /// If the handler returns <c>true</c> no other exception handlers will be called.
+    /// </remarks>
+    public NCronJobOptionBuilder AddExceptionHandler<TExceptionHandler>() where TExceptionHandler : class, IExceptionHandler
+    {
+        Services.AddSingleton<IExceptionHandler, TExceptionHandler>();
+        return this;
+    }
+
     private void ValidateConcurrencySetting(object jobIdentifier)
     {
         var cachedJobAttributes = jobIdentifier switch

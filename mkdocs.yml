@@ -40,6 +40,7 @@ nav:
     - Minimal API: features/minimal-api.md
     - Startup Jobs: features/startup-jobs.md
     - Model dependencies: features/model-dependencies.md
+    - Exception handler: features/exception-handler.md
   - Migration:
     - v3 Migration Guide: migration/v3.md
     - v2 Migration Guide: migration/v2.md
