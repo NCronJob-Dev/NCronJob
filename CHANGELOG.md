@@ -8,6 +8,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Added
 - Global exception handlers. By [@linkdotnet](https://github.com/linkdotnet). Reported by [@nulltoken](https://github.com/nulltoken).
+- Expose `JobName` and `JobType` in `IJobExecutionContext`. 
 
 ## [3.0.3] - 2024-09-15
 

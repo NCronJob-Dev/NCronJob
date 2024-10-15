@@ -6,11 +6,7 @@ internal sealed record JobExecutionContext : IJobExecutionContext
 {
     internal bool ExecuteChildren = true;
 
-    /// <summary>
-    /// Represents the context of a job execution. Marked internal to prevent external instantiation.
-    /// </summary>
-    /// <param name="jobRun">The Job Run.</param>
-    internal JobExecutionContext(JobRun jobRun) => JobRun = jobRun;
+    public JobExecutionContext(JobRun jobRun) => JobRun = jobRun;
 
     /// <inheritdoc />
     public Guid Id { get; } = Guid.NewGuid();
@@ -20,6 +16,14 @@ internal sealed record JobExecutionContext : IJobExecutionContext
 
     /// <inheritdoc />
     public int Attempts { get; internal set; }
+
+    /// <inheritdoc />
+    public string? JobName => JobRun.JobDefinition.CustomName;
+
+    Type? IJobExecutionContext.JobType
+        => JobRun.JobDefinition.Type == typeof(DynamicJobFactory)
+            ? null
+            : JobRun.JobDefinition.Type;
 
     /// <summary>The Job Run instance.</summary>
     internal JobRun JobRun { get; }

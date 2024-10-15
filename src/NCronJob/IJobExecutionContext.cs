@@ -35,6 +35,16 @@ public interface IJobExecutionContext
     object? ParentOutput { get; }
 
     /// <summary>
+    /// The custom name of the job given by the user. If not set, it will be <c>null</c>.
+    /// </summary>
+    public string? JobName { get; }
+
+    /// <summary>
+    /// The type that represents the job. Is <c>null</c> if the job is an anonymous job.
+    /// </summary>
+    public Type? JobType { get; }
+
+    /// <summary>
     /// Prohibits the execution of dependent jobs.
     /// </summary>
     /// <remarks>
