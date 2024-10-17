@@ -6,7 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [3.1.3] - 2024-10-17
+
 ### Added
+
 - Global exception handlers. By [@linkdotnet](https://github.com/linkdotnet). Reported by [@nulltoken](https://github.com/nulltoken).
 - Expose `JobName` and `JobType` in `IJobExecutionContext`. 
 
@@ -375,7 +378,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.0.3...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.1.3...HEAD
+[3.1.3]: https://github.com/NCronJob-Dev/NCronJob/compare/3.0.3...3.1.3
 [3.0.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.6...3.0.3
 [2.8.6]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.5...2.8.6
 [2.8.5]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.4...2.8.5
