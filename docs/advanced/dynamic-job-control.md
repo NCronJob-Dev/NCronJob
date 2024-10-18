@@ -14,7 +14,7 @@ builder.Services.AddNCronJob(builder =>
 The same applies to Minimal API:
 
 ```csharp
-builder.Services.AddNCronJob(b => b.AddJob(() => {}, "* * * * *", "MyName));
+builder.Services.AddNCronJob(b => b.AddJob(() => {}, "* * * * *", "MyName"));
 ```
 
 ### Job Names
