@@ -93,6 +93,10 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#run-mutliple-jobs-after-the-completion-of-a-job">Run mutliple jobs after the completion of a job</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#construct-complex-dependencies">Construct complex dependencies</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
@@ -247,6 +251,41 @@
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IMyService</span><span class="w"> </span><span class="n">myService</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">myService</span><span class="p">.</span><span class="n">Run</span><span class="p">())</span><span class="w"></span>
 <span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Run when successful&quot;</span><span class="p">)));</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<h2 id="run-mutliple-jobs-after-the-completion-of-a-job">Run mutliple jobs after the completion of a job<a class="headerlink" href="#run-mutliple-jobs-after-the-completion-of-a-job" title="Permanent link">&para;</a></h2>
+<p>You can run multiple jobs after the completion of a job:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">successful</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span><span class="w"></span>
+<span class="w">      </span><span class="o">|-</span><span class="w"> </span><span class="n">successful</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+</code></pre></div>
+
+<p>Can be achieved in two ways:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<p>Or by chaining the <code>ExecuteWhen</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;()</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;())</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+</code></pre></div>
+
+<h2 id="construct-complex-dependencies">Construct complex dependencies<a class="headerlink" href="#construct-complex-dependencies" title="Permanent link">&para;</a></h2>
+<p>You can construct complex dependencies by using a combination of <code>AddJob</code> and <code>ExecuteWhen</code> methods. Here an example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+</code></pre></div>
+
+<p>This can be achieved by:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;()</span><span class="w"></span>
+<span class="w">           </span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
               
