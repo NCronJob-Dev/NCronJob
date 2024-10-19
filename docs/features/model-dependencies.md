@@ -155,3 +155,20 @@ Services.AddNCronJob(options =>
         .ExecuteWhen(success: s => s.RunJob<JobC>());
 });
 ```
+
+## Construct complex dependencies
+You can construct complex dependencies by using a combination of `AddJob` and `ExecuteWhen` methods. Here an example:
+
+```
+Job A -> Job B -> Job C
+```
+
+This can be achieved by:
+
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<JobA>().ExecuteWhen(success: s => s.RunJob<JobB>()
+           .AddJob<JobB>().ExecuteWhen(success: s => s.RunJob<JobC>());
+});
+```
