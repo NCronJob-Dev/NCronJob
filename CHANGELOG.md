@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed an issue where registering multiple dependent jobs would only call the last one. Reported by [@nulltoken](https://github.com/nulltoken) in [#101](https://github.com/NCronJob-Dev/NCronJob/issues/101). Fixed by [@linkdotnet](https://github.com/linkdotnet).
+
 ## [3.1.3] - 2024-10-17
 
 ### Added

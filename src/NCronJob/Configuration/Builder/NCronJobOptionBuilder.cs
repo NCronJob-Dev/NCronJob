@@ -396,7 +396,7 @@ internal static class ExecuteWhenHelper
                     services.TryAddScoped(s.Type);
                 }
             });
-            jobs.ForEach(j => j.RunWhenSuccess = runWhenSuccess);
+            jobs.ForEach(j => j.RunWhenSuccess.AddRange(runWhenSuccess));
         }
 
         if (faulted is not null)
@@ -409,7 +409,7 @@ internal static class ExecuteWhenHelper
                 services.TryAddSingleton(s);
                 services.TryAddSingleton(s.Type);
             });
-            jobs.ForEach(j => j.RunWhenFaulted = runWhenFaulted);
+            jobs.ForEach(j => j.RunWhenFaulted.AddRange(runWhenFaulted));
         }
     }
 }
