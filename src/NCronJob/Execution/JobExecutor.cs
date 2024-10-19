@@ -13,6 +13,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly JobQueueManager jobQueueManager;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly IJobHistory jobHistory;
+    private readonly DependingJobRegistry dependingJobRegistry;
     private readonly ImmutableArray<IExceptionHandler> exceptionHandlers;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
@@ -25,7 +26,8 @@ internal sealed partial class JobExecutor : IDisposable
         JobQueueManager jobQueueManager,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         IJobHistory jobHistory,
-        IEnumerable<IExceptionHandler> exceptionHandlers)
+        IEnumerable<IExceptionHandler> exceptionHandlers,
+        DependingJobRegistry dependingJobRegistry)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
@@ -33,7 +35,8 @@ internal sealed partial class JobExecutor : IDisposable
         this.jobQueueManager = jobQueueManager;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.jobHistory = jobHistory;
-        this.exceptionHandlers = exceptionHandlers.ToImmutableArray();
+        this.dependingJobRegistry = dependingJobRegistry;
+        this.exceptionHandlers = [..exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -157,8 +160,8 @@ internal sealed partial class JobExecutor : IDisposable
 
         var jobRun = context.JobRun;
         var dependencies = success
-            ? jobRun.JobDefinition.RunWhenSuccess
-            : jobRun.JobDefinition.RunWhenFaulted;
+            ? dependingJobRegistry.GetSuccessTypes(jobRun.JobDefinition.Type)
+            : dependingJobRegistry.GetFaultedTypes(jobRun.JobDefinition.Type);
 
         if (dependencies.Count > 0)
             jobRun.NotifyStateChange(JobStateType.WaitingForDependency);

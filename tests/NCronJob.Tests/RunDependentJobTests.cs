@@ -85,11 +85,10 @@ public class RunDependentJobTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task CanBuildAChainOfDependentJobs()
+    public async Task CanBuildAChainOfDependentJobsThatRunAfterOneJob()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("1"))
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("2"))
+            .ExecuteWhen(success: s => s.RunJob<DependentJob>("1").RunJob<DependentJob>("2"))
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("3")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -105,6 +104,28 @@ public class RunDependentJobTests : JobIntegrationBase
         results.ShouldContain("Me: 1 Parent: Success");
         results.ShouldContain("Me: 2 Parent: Success");
         results.ShouldContain("Me: 3 Parent: Success");
+    }
+
+    [Fact]
+    public async Task CanBuildAChainOfDependentJobs()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DependentJob>());
+            n.AddJob<DependentJob>().ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
+        });
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
+
+        using var timeoutToken = new CancellationTokenSource(2000);
+        using var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, CancellationToken);
+        var result = await CommunicationChannel.Reader.ReadAsync(linkedToken.Token) as string;
+        result.ShouldBe("Me:  Parent: Success");
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        result = await CommunicationChannel.Reader.ReadAsync(linkedToken.Token) as string;
+        result.ShouldBe("Dependent job did run");
     }
 
     private sealed class PrincipalJob : IJob
@@ -131,6 +152,12 @@ public class RunDependentJobTests : JobIntegrationBase
             => await writer.WriteAsync($"Me: {context.Parameter} Parent: {context.ParentOutput}", token);
     }
 
+
+    private sealed class DependentDependentJob(ChannelWriter<object> writer) : IJob
+    {
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+            => await writer.WriteAsync("Dependent job did run", token);
+    }
     private sealed class PrincipalCorrelationIdJob(Storage storage, ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)

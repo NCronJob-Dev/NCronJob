@@ -35,10 +35,6 @@ internal sealed record JobDefinition(
 
     public TimeZoneInfo? TimeZone { get; set; } = TimeZone;
 
-    public List<JobDefinition> RunWhenSuccess { get; set; } = [];
-
-    public List<JobDefinition> RunWhenFaulted { get; set; } = [];
-
     /// <summary>
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
     /// </summary>
