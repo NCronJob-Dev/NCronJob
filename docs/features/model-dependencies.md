@@ -127,3 +127,31 @@ builder.Services.AddNCronJob(options => {
         .ExecuteWhen(success: b => b.RunJob(() => Console.Write("Run when successful")));
 });
 ```
+
+## Run mutliple jobs after the completion of a job
+
+You can run multiple jobs after the completion of a job:
+```no-class
+Job A -- successful --> Job B
+      |- successful --> Job C
+```
+
+Can be achieved in two ways:
+
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<JobA>().ExecuteWhen(success: s => s.RunJob<JobB>().RunJob<JobC>());
+});
+```
+
+Or by chaining the `ExecuteWhen` method:
+
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<JobA>()
+        .ExecuteWhen(success: s => s.RunJob<JobB>())
+        .ExecuteWhen(success: s => s.RunJob<JobC>());
+});
+```
