@@ -54,6 +54,7 @@ public sealed class JobOptionBuilder
         {
             jobOptions.Add(new JobOption());
         }
+
         return jobOptions;
     }
 }

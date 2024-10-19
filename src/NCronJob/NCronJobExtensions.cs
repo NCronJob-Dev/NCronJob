@@ -44,6 +44,7 @@ public static class NCronJobExtensions
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
         services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>();
+        services.TryAddSingleton<DependingJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
 

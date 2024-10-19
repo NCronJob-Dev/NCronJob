@@ -260,11 +260,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
                 jobRegistry.Add(newJobDefinition);
             }
 
-            var oldJobDefinition = jobRegistry.GetJobDefinition<TJob>();
-            // copy the elements from the old list to the new list
-            newJobDefinition.RunWhenSuccess = [..oldJobDefinition.RunWhenSuccess];
-            newJobDefinition.RunWhenFaulted = [..oldJobDefinition.RunWhenFaulted];
-
             token.Register(() => LogCancellationRequested(parameter));
 
             var run = JobRun.Create(newJobDefinition, parameter, token);

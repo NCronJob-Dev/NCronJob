@@ -231,7 +231,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     /// <inheritdoc />
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
     {
-        ExecuteWhenHelper.AddRegistration(services, jobs, success, faulted);
+        ExecuteWhenHelper.AddRegistration(services, jobs[^1], success, faulted);
 
         return this;
     }
@@ -284,7 +284,7 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null,
         Action<DependencyBuilder<TJob>>? faulted = null)
     {
-        ExecuteWhenHelper.AddRegistration(services, jobs, success, faulted);
+        ExecuteWhenHelper.AddRegistration(services, jobs[^1], success, faulted);
 
         return this;
     }
@@ -378,7 +378,7 @@ internal static class ExecuteWhenHelper
 {
     public static void AddRegistration<TJob>(
         IServiceCollection services,
-        List<JobDefinition> jobs,
+        JobDefinition principalJob,
         Action<DependencyBuilder<TJob>>? success,
         Action<DependencyBuilder<TJob>>? faulted)
         where TJob : IJob
@@ -388,15 +388,13 @@ internal static class ExecuteWhenHelper
             var dependencyBuilder = new DependencyBuilder<TJob>(services);
             success(dependencyBuilder);
             var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
-            runWhenSuccess.ForEach(s =>
+            var entry = new DependentJobRegistryEntry
             {
-                services.TryAddSingleton(s);
-                if (s.Type != typeof(DynamicJobFactory))
-                {
-                    services.TryAddScoped(s.Type);
-                }
-            });
-            jobs.ForEach(j => j.RunWhenSuccess.AddRange(runWhenSuccess));
+                PrincipalType = principalJob.Type,
+                RunWhenSuccess = runWhenSuccess,
+
+            };
+            services.AddSingleton(entry);
         }
 
         if (faulted is not null)
@@ -404,12 +402,13 @@ internal static class ExecuteWhenHelper
             var dependencyBuilder = new DependencyBuilder<TJob>(services);
             faulted(dependencyBuilder);
             var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
-            runWhenFaulted.ForEach(s =>
+            var entry = new DependentJobRegistryEntry
             {
-                services.TryAddSingleton(s);
-                services.TryAddSingleton(s.Type);
-            });
-            jobs.ForEach(j => j.RunWhenFaulted.AddRange(runWhenFaulted));
+                PrincipalType = principalJob.Type,
+                RunWhenFaulted = runWhenFaulted,
+
+            };
+            services.TryAddSingleton(entry);
         }
     }
 }
