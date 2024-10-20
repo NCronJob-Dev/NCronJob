@@ -273,6 +273,10 @@
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;()</span><span class="w"></span>
 <span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;())</span><span class="w"></span>
 <span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// Register JobB and JobC into the container to avoid warnings</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;();</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;();</span><span class="w"></span>
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
 
@@ -286,6 +290,9 @@
 <span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;()</span><span class="w"></span>
 <span class="w">           </span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// Register JobC into the container to avoid warnings</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;();</span><span class="w"></span>
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
               
