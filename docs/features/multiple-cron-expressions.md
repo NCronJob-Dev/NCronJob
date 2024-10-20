@@ -1,5 +1,5 @@
 # Registering multiple CRON expressions
-The flient builder allows you to register multiple CRON expressions for a single job. This is useful when you want to run a job at different times of the day. For example:
+The fluent builder allows you to register multiple CRON expressions for a single job. This is useful when you want to run a job at different times of the day. For example:
 
 ```csharp
 Services.AddNCronJob(options =>

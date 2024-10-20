@@ -1,4 +1,4 @@
-# Notificatins
+# Notifications
 
 **NCronJob** provides a way to get notified when a job is done. For this, implement a `IJobNotificationHandler<TJob>`
 and register it in your DI container.
