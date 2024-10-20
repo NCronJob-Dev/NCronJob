@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- New `AddJob(Type jobType)` overload. By [@linkdotnet](https://github.com/linkdotnet).
+
 ## [3.2.0] - 2024-10-19
 
 ### Fixed

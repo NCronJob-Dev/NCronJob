@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -380,6 +381,20 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(250));
+        jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    [SuppressMessage("Usage", "CA2263: Prefer generic overload", Justification = "Needed for the test")]
+    public async Task AddJobWithTypeAsParameterAddsJobs()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob(typeof(SimpleJob), p => p.WithCronExpression("* * * * *")));
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
     }
 
