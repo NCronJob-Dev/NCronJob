@@ -160,6 +160,13 @@ Services.AddNCronJob(options =>
 });
 ```
 
+!!! note
+
+    The order of execution of the dependent jobs is not guaranteed. They will not necessarily run in the order of registration.
+    
+    In the example above, it can happen that `JobC` runs before `JobB`.
+    If you need to ensure the order of execution, see the next section.
+
 ## Construct complex dependencies
 You can construct complex dependencies by using a combination of `AddJob` and `ExecuteWhen` methods. Here an example:
 
