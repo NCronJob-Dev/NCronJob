@@ -280,6 +280,12 @@
 <span class="p">});</span><span class="w"></span>
 </code></pre></div>
 
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The order of execution of the dependent jobs is not guaranteed. They will not necessarily run in the order of registration.</p>
+<p>In the example above, it can happen that <code>JobC</code> runs before <code>JobB</code>.
+If you need to ensure the order of execution, see the next section.</p>
+</div>
 <h2 id="construct-complex-dependencies">Construct complex dependencies<a class="headerlink" href="#construct-complex-dependencies" title="Permanent link">&para;</a></h2>
 <p>You can construct complex dependencies by using a combination of <code>AddJob</code> and <code>ExecuteWhen</code> methods. Here an example:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span><span class="w"></span>

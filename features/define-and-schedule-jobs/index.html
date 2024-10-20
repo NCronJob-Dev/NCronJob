@@ -184,7 +184,7 @@
 
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>Defining multiple identifical schedules for the same job will not lead to multiple instances of the job running concurrently. NCronJob will ensure that only one instance of the job is running at any given time. One can define different custom names for each schedule to differentiate between them.</p>
+<p>Defining multiple identifical schedules for the same job will not lead to multiple instances of the job running concurrently. NCronJob will ensure that only one instance of the job is running at any given time. One can define different custom names for each schedule to differentiate between them. See <a href="../../advanced/dynamic-job-control/#defining-job-names"><em>&ldquo;Defining job names&rdquo;</em></a>.</p>
 </div>
 <p>The following example illustrates how to define multiple schedules that are identical and will only lead to one instance of the job running at any given time:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
