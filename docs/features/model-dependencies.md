@@ -153,6 +153,10 @@ Services.AddNCronJob(options =>
     options.AddJob<JobA>()
         .ExecuteWhen(success: s => s.RunJob<JobB>())
         .ExecuteWhen(success: s => s.RunJob<JobC>());
+    
+    // Register JobB and JobC into the container to avoid warnings
+    options.AddJob<JobB>();
+    options.AddJob<JobC>();
 });
 ```
 
@@ -170,5 +174,8 @@ Services.AddNCronJob(options =>
 {
     options.AddJob<JobA>().ExecuteWhen(success: s => s.RunJob<JobB>()
            .AddJob<JobB>().ExecuteWhen(success: s => s.RunJob<JobC>());
+
+    // Register JobC into the container to avoid warnings
+    options.AddJob<JobC>();
 });
 ```
