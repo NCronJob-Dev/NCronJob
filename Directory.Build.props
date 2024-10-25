@@ -18,7 +18,7 @@
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     </PropertyGroup>
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 </Project>
