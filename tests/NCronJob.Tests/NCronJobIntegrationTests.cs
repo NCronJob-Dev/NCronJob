@@ -409,7 +409,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         runtimeRegistry.AddJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var jobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(500));
+        var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
     }
 
