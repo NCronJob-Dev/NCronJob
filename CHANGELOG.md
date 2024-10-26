@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixes
+
+- `AddJob` during runtime didn't reevaluate the execution list correctly. Reported by [@IvaTutis](https://github.com/IvaTutis) in [#100](https://github.com/NCronJob-Dev/NCronJob/issues/100). Fixed by [@linkdotnet](https://github.com/linkdotnet).
+
 ### Added
 
 - New `AddJob(Type jobType)` overload. By [@linkdotnet](https://github.com/linkdotnet).

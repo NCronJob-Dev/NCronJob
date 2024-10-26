@@ -101,17 +101,20 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
+    private readonly JobQueueManager jobQueueManager;
     private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly ConcurrencySettings concurrencySettings;
 
     public RuntimeJobRegistry(
         JobRegistry jobRegistry,
         JobWorker jobWorker,
+        JobQueueManager jobQueueManager,
         DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         ConcurrencySettings concurrencySettings)
     {
         this.jobRegistry = jobRegistry;
         this.jobWorker = jobWorker;
+        this.jobQueueManager = jobQueueManager;
         this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.concurrencySettings = concurrencySettings;
     }
@@ -128,11 +131,13 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         {
             jobRegistry.Add(jobDefinition);
             jobWorker.ScheduleJob(jobDefinition);
+            jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
         }
 
         foreach (var entry in runtimeCollection.GetDynamicJobFactoryRegistries())
         {
             dynamicJobFactoryRegistry.Register(entry);
+            jobQueueManager.SignalJobQueue(entry.JobDefinition.JobFullName);
         }
     }
 

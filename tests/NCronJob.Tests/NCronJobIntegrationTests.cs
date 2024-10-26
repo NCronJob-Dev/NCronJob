@@ -398,6 +398,21 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task ShouldExecuteRuntimeJobsEvenWhenCurrentJobIsFarInTheFuture()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("0 0 29 2 *")));
+        var provider = CreateServiceProvider();
+        var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        runtimeRegistry.AddJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(500));
+        jobFinished.ShouldBeTrue();
+    }
+
     private static class JobMethods
     {
         public static async Task WriteTrueStaticAsync(ChannelWriter<object> writer, CancellationToken ct)
