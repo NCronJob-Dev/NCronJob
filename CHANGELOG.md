@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [3.3.2] - 2024-10-27
+
 ### Fixes
 
 - `AddJob` during runtime didn't reevaluate the execution list correctly. Reported by [@IvaTutis](https://github.com/IvaTutis) in [#100](https://github.com/NCronJob-Dev/NCronJob/issues/100). Fixed by [@linkdotnet](https://github.com/linkdotnet).
@@ -392,7 +394,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.2.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.2...HEAD
+[3.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/3.2.0...3.3.2
 [3.2.0]: https://github.com/NCronJob-Dev/NCronJob/compare/3.1.3...3.2.0
 [3.1.3]: https://github.com/NCronJob-Dev/NCronJob/compare/3.0.3...3.1.3
 [3.0.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.6...3.0.3
