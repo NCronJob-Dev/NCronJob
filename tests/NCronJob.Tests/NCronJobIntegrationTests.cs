@@ -330,12 +330,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public void AddingJobsWithTheSameCustomNameLeadsToException()
     {
-        ServiceCollection.AddNCronJob(
+        Action act = () => ServiceCollection.AddNCronJob(
             n => n.AddJob(() => { }, "* * * * *", jobName: "Job1")
                 .AddJob(() => { }, "0 * * * *", jobName: "Job1"));
-        var provider = CreateServiceProvider();
-
-        Action act = () => provider.GetRequiredService<JobRegistry>();
 
         act.ShouldThrow<InvalidOperationException>();
     }

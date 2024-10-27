@@ -9,7 +9,7 @@ internal sealed partial class QueueWorker : BackgroundService
 {
     private readonly JobQueueManager jobQueueManager;
     private readonly JobWorker jobWorker;
-    private readonly JobRegistry registry;
+    private readonly JobRegistry jobRegistry;
     private readonly StartupJobManager startupJobManager;
     private readonly ILogger<QueueWorker> logger;
     private CancellationTokenSource? shutdown;
@@ -20,14 +20,14 @@ internal sealed partial class QueueWorker : BackgroundService
     public QueueWorker(
         JobQueueManager jobQueueManager,
         JobWorker jobWorker,
-        JobRegistry registry,
+        JobRegistry jobRegistry,
         StartupJobManager startupJobManager,
         ILogger<QueueWorker> logger,
         IHostApplicationLifetime lifetime)
     {
         this.jobQueueManager = jobQueueManager;
         this.jobWorker = jobWorker;
-        this.registry = registry;
+        this.jobRegistry = jobRegistry;
         this.startupJobManager = startupJobManager;
         this.logger = logger;
 
@@ -152,7 +152,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void ScheduleInitialJobs()
     {
-        foreach (var job in registry.GetAllCronJobs())
+        foreach (var job in jobRegistry.GetAllCronJobs())
         {
             jobWorker.ScheduleJob(job);
         }
