@@ -25,17 +25,17 @@ public static class NCronJobExtensions
         this IServiceCollection services,
         Action<NCronJobOptionBuilder>? options = null)
     {
+        JobRegistry jobRegistry = new();
+
         // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
-        var builder = new NCronJobOptionBuilder(services, settings);
-        options?.Invoke(builder);
 
-        builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
+        var builder = new NCronJobOptionBuilder(services, settings, jobRegistry);
+        options?.Invoke(builder);
 
         services.TryAddSingleton(settings);
         services.AddHostedService<QueueWorker>();
-        services.TryAddSingleton<JobRegistry>();
-        services.TryAddSingleton<DynamicJobFactoryRegistry>();
+        services.TryAddSingleton(jobRegistry);
         services.TryAddSingleton<IJobHistory, NoOpJobHistory>();
         services.TryAddSingleton<JobQueueManager>();
         services.TryAddSingleton<JobWorker>();
@@ -43,8 +43,15 @@ public static class NCronJobExtensions
         services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
-        services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>();
-        services.TryAddSingleton<DependingJobRegistry>();
+        services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>((sp) =>
+        {
+            return new RuntimeJobRegistry(
+                services,
+                jobRegistry,
+                sp.GetRequiredService<JobWorker>(),
+                sp.GetRequiredService<JobQueueManager>(),
+                sp.GetRequiredService<ConcurrencySettings>());
+        });
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
 

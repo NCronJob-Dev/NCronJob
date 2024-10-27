@@ -1,4 +1,5 @@
 using Cronos;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NCronJob;
 
@@ -99,44 +100,40 @@ public sealed record RecurringJobSchedule(string? JobName, string CronExpression
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
+    private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
     private readonly JobQueueManager jobQueueManager;
-    private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly ConcurrencySettings concurrencySettings;
 
     public RuntimeJobRegistry(
+        IServiceCollection services,
         JobRegistry jobRegistry,
         JobWorker jobWorker,
         JobQueueManager jobQueueManager,
-        DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         ConcurrencySettings concurrencySettings)
     {
+        this.services = services;
         this.jobRegistry = jobRegistry;
         this.jobWorker = jobWorker;
         this.jobQueueManager = jobQueueManager;
-        this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.concurrencySettings = concurrencySettings;
     }
 
     /// <inheritdoc />
     public void AddJob(Action<NCronJobOptionBuilder> jobBuilder)
     {
-        var runtimeCollection = new RuntimeServiceCollection();
-        var builder = new NCronJobOptionBuilder(runtimeCollection, concurrencySettings);
+        var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
         jobBuilder(builder);
-        builder.RegisterJobs();
 
-        foreach (var jobDefinition in runtimeCollection.GetJobDefinitions())
+        foreach (var jobDefinition in this.jobRegistry.GetAllJobs())
         {
-            jobRegistry.Add(jobDefinition);
             jobWorker.ScheduleJob(jobDefinition);
             jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
         }
 
-        foreach (var entry in runtimeCollection.GetDynamicJobFactoryRegistries())
+        foreach (var entry in this.jobRegistry.DynamicJobRegistrations)
         {
-            dynamicJobFactoryRegistry.Register(entry);
             jobQueueManager.SignalJobQueue(entry.JobDefinition.JobFullName);
         }
     }
@@ -227,6 +224,8 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
         if (job.CronExpression is not null)
         {
+            // https://crontab.guru/#*_*_31_2_*
+            // Scheduling on Feb, 31st is a sure way to never get it to run
             job.CronExpression = CronExpression.Parse("* * 31 2 *");
         }
 

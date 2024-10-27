@@ -243,14 +243,12 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task ShouldThrowWhenDuplicateJobNamesDuringRegistration()
+    public void ShouldThrowWhenDuplicateJobNamesDuringRegistration()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")
+        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")
             .And.WithCronExpression("*/2 * * * *").WithName("JobName")));
 
-        var act = async () => await CreateServiceProvider().GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        await act.ShouldThrowAsync<InvalidOperationException>();
+        act.ShouldThrow<InvalidOperationException>();
     }
 
     [Fact]

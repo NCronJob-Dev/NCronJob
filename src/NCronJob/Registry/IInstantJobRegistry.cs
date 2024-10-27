@@ -148,7 +148,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private readonly TimeProvider timeProvider;
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
-    private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
     private readonly JobWorker jobWorker;
     private readonly ILogger<InstantJobRegistry> logger;
 
@@ -156,14 +155,12 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         TimeProvider timeProvider,
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
-        DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
         JobWorker jobWorker,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
-        this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
         this.jobWorker = jobWorker;
         this.logger = logger;
     }
@@ -228,7 +225,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
     private void RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {
-        var definition = dynamicJobFactoryRegistry.Add(jobDelegate);
+        var definition = jobRegistry.AddDynamicJob(jobDelegate);
         var run = JobRun.Create(definition);
         run.Priority = JobPriority.High;
         run.RunAt = startDate;

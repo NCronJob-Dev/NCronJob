@@ -10,7 +10,7 @@ public class NCronJobTests
     {
         var collection = new ServiceCollection();
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
-        var builder = new NCronJobOptionBuilder(collection, settings);
+        var builder = new NCronJobOptionBuilder(collection, settings, new());
 
         Action act = () => builder.AddJob<FakeJob>(o => o.WithCronExpression("not-valid"));
 
@@ -22,7 +22,7 @@ public class NCronJobTests
     {
         var collection = new ServiceCollection();
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
-        var builder = new NCronJobOptionBuilder(collection, settings);
+        var builder = new NCronJobOptionBuilder(collection, settings, new());
 
         Action act = () => builder.AddJob<FakeJob>(o =>
         {
@@ -44,7 +44,7 @@ public class NCronJobTests
     {
         var collection = new ServiceCollection();
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
-        var builder = new NCronJobOptionBuilder(collection, settings);
+        var builder = new NCronJobOptionBuilder(collection, settings, new());
         Should.Throw<ArgumentException>(() => builder.AddJob<FakeJob>(p => p.WithCronExpression("* * *")));
     }
 

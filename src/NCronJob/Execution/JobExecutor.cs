@@ -11,9 +11,8 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
     private readonly JobQueueManager jobQueueManager;
-    private readonly DynamicJobFactoryRegistry dynamicJobFactoryRegistry;
+    private readonly JobRegistry jobRegistry;
     private readonly IJobHistory jobHistory;
-    private readonly DependingJobRegistry dependingJobRegistry;
     private readonly ImmutableArray<IExceptionHandler> exceptionHandlers;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
@@ -24,18 +23,16 @@ internal sealed partial class JobExecutor : IDisposable
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler,
         JobQueueManager jobQueueManager,
-        DynamicJobFactoryRegistry dynamicJobFactoryRegistry,
+        JobRegistry jobRegistry,
         IJobHistory jobHistory,
-        IEnumerable<IExceptionHandler> exceptionHandlers,
-        DependingJobRegistry dependingJobRegistry)
+        IEnumerable<IExceptionHandler> exceptionHandlers)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
         this.jobQueueManager = jobQueueManager;
-        this.dynamicJobFactoryRegistry = dynamicJobFactoryRegistry;
+        this.jobRegistry = jobRegistry;
         this.jobHistory = jobHistory;
-        this.dependingJobRegistry = dependingJobRegistry;
         this.exceptionHandlers = [..exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
@@ -80,13 +77,14 @@ internal sealed partial class JobExecutor : IDisposable
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
     {
         if (definition.Type == typeof(DynamicJobFactory))
-            return dynamicJobFactoryRegistry.GetJobInstance(scopedServiceProvider, definition);
+            return jobRegistry.GetDynamicJobInstance(scopedServiceProvider, definition);
 
         var job = scopedServiceProvider.GetService(definition.Type);
         if (job != null)
             return (IJob)job;
 
         LogUnregisteredJob(definition.Type);
+
         job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
 
         return (IJob)job;
@@ -160,8 +158,8 @@ internal sealed partial class JobExecutor : IDisposable
 
         var jobRun = context.JobRun;
         var dependencies = success
-            ? dependingJobRegistry.GetSuccessTypes(jobRun.JobDefinition.Type)
-            : dependingJobRegistry.GetFaultedTypes(jobRun.JobDefinition.Type);
+            ? jobRegistry.GetDependentSuccessJobTypes(jobRun.JobDefinition.Type)
+            : jobRegistry.GetDependentFaultedJobTypes(jobRun.JobDefinition.Type);
 
         if (dependencies.Count > 0)
             jobRun.NotifyStateChange(JobStateType.WaitingForDependency);
