@@ -82,6 +82,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jobexecutioncontext-is-now-ijobexecutioncontext">JobExecutionContext is now IJobExecutionContext</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#addnotificationhandlertjobnotificationhandler-tjobdefinition-was-removed">AddNotificationHandler&lt;TJobNotificationHandler, TJobDefinition&gt;() was removed</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../v2/">v2 Migration Guide</a>
@@ -145,6 +147,9 @@
 </code></pre></div>
 
 <p>All the public members are still the same as before.</p>
+<h3 id="addnotificationhandlertjobnotificationhandler-tjobdefinition-was-removed"><code>AddNotificationHandler&lt;TJobNotificationHandler, TJobDefinition&gt;()</code> was removed<a class="headerlink" href="#addnotificationhandlertjobnotificationhandler-tjobdefinition-was-removed" title="Permanent link">&para;</a></h3>
+<p>The <code>AddNotificationHandler&lt;TJobNotificationHandler, TJobDefinition&gt;()</code> method was removed. This method was used to add a notification handler for a specific job. It was marked as obsolete and entirely removed after <code>v3.2</code>. </p>
+<p>It can be replaced with the <code>AddNotificationHandler&lt;TJobNotificationHandler&gt;()</code> method.</p>
               
             </div>
           </div><footer>
