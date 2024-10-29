@@ -4,9 +4,11 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
-    private readonly HashSet<JobDefinition> allJobs = new(JobDefinitionEqualityComparer.Instance);
+    private readonly HashSet<JobDefinition> allJobs
+        = new(JobDefinitionEqualityComparer.Instance);
     public List<DynamicJobRegistration> DynamicJobRegistrations { get; } = [];
-    private readonly Dictionary<Type, List<DependentJobRegistryEntry>> dependentJobsPerPrincipalJobType = [];
+    private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
+        = new(DependentJobDefinitionEqualityComparer.Instance);
 
     public IReadOnlyCollection<JobDefinition> GetAllJobs() => [.. allJobs];
 
@@ -78,22 +80,25 @@ internal sealed class JobRegistry
             .Single(d => d.JobDefinition.JobFullName == jobDefinition.JobFullName)
             .DynamicJobFactoryResolver(serviceProvider);
 
-    public void RegisterJobDependency(DependentJobRegistryEntry entry)
+    public void RegisterJobDependency(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
     {
-        if (!dependentJobsPerPrincipalJobType.TryGetValue(entry.PrincipalType, out var entries))
+        foreach (var jobDefinition in parentJobdefinitions)
         {
-            entries = [];
-            dependentJobsPerPrincipalJobType.Add(entry.PrincipalType, entries);
-        }
+            if (!dependentJobsPerJobDefinition.TryGetValue(jobDefinition, out var entries))
+            {
+                entries = [];
+                dependentJobsPerJobDefinition.Add(jobDefinition, entries);
+            }
 
-        entries.Add(entry);
+            entries.Add(entry);
+        }
     }
 
-    public IReadOnlyCollection<JobDefinition> GetDependentSuccessJobTypes(Type principalType)
-        => FilterByAndProject(principalType, v => v.SelectMany(p => p.RunWhenSuccess));
+    public IReadOnlyCollection<JobDefinition> GetDependentSuccessJobTypes(JobDefinition parentJobDefinition)
+        => FilterByAndProject(parentJobDefinition, v => v.SelectMany(p => p.RunWhenSuccess));
 
-    public IReadOnlyCollection<JobDefinition> GetDependentFaultedJobTypes(Type principalType)
-        => FilterByAndProject(principalType, v => v.SelectMany(p => p.RunWhenFaulted));
+    public IReadOnlyCollection<JobDefinition> GetDependentFaultedJobTypes(JobDefinition parentJobDefinition)
+        => FilterByAndProject(parentJobDefinition, v => v.SelectMany(p => p.RunWhenFaulted));
 
     private void AddDynamicJobRegistration(JobDefinition jobDefinition, Delegate jobDelegate)
         => DynamicJobRegistrations.Add(new DynamicJobRegistration(jobDefinition, sp => new DynamicJobFactory(sp, jobDelegate)));
@@ -112,10 +117,9 @@ internal sealed class JobRegistry
     }
 
     private JobDefinition[] FilterByAndProject(
-    Type principalJobType,
-    Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<JobDefinition>> transform)
-
-    => !dependentJobsPerPrincipalJobType.TryGetValue(principalJobType, out var types)
+        JobDefinition parentJobDefinition,
+        Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<JobDefinition>> transform)
+    => !dependentJobsPerJobDefinition.TryGetValue(parentJobDefinition, out var types)
         ? []
         : transform(types).ToArray();
 
@@ -128,7 +132,7 @@ internal sealed class JobRegistry
 
         allJobs.Remove(jobDefinition);
 
-        dependentJobsPerPrincipalJobType.Remove(jobDefinition.Type);
+        dependentJobsPerJobDefinition.Remove(jobDefinition);
     }
 
     private void AssertNoDuplicateJobNames(string? additionalJobName = null)
@@ -166,5 +170,31 @@ internal sealed class JobRegistry
             obj.TimeZone,
             obj.CustomName,
             obj.IsStartupJob);
+    }
+
+    private sealed class DependentJobDefinitionEqualityComparer : IEqualityComparer<JobDefinition>
+    {
+        // TODO: Maybe is the code conflating two different concepts.
+        // Dependent jobs may have a name, a type and a parameter, but that's the most of it.
+        // And the code currently uses the same type to hold the configuration of "lead" jobs
+        // and dependent jobs.
+        //
+        // Which brings this dependent job only comparer.
+        //
+        // Maybe should a DependentJobDefinition type spawn?
+
+        public static readonly DependentJobDefinitionEqualityComparer Instance = new();
+
+        public bool Equals(JobDefinition? x, JobDefinition? y) =>
+            (x is null && y is null) || (x is not null && y is not null
+                                         && x.Type == y.Type && x.Type != typeof(DynamicJobFactory)
+                                         && x.Parameter == y.Parameter
+                                         && x.CustomName == y.CustomName);
+
+        public int GetHashCode(JobDefinition obj) => HashCode.Combine(
+            obj.Type,
+            obj.Parameter,
+            obj.CustomName
+            );
     }
 }

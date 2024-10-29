@@ -154,8 +154,8 @@ internal sealed partial class JobExecutor : IDisposable
 
         var jobRun = context.JobRun;
         var dependencies = success
-            ? jobRegistry.GetDependentSuccessJobTypes(jobRun.JobDefinition.Type)
-            : jobRegistry.GetDependentFaultedJobTypes(jobRun.JobDefinition.Type);
+            ? jobRegistry.GetDependentSuccessJobTypes(jobRun.JobDefinition)
+            : jobRegistry.GetDependentFaultedJobTypes(jobRun.JobDefinition);
 
         if (dependencies.Count > 0)
             jobRun.NotifyStateChange(JobStateType.WaitingForDependency);

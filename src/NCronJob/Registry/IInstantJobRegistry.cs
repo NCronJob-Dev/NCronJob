@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace NCronJob;
 
@@ -235,17 +236,20 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     {
         using (logger.BeginScope("Triggering RunScheduledJob:"))
         {
-            var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
-
             if (!jobRegistry.IsJobRegistered<TJob>())
             {
                 LogJobNotRegistered(typeof(TJob).Name);
+                var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
                 jobRegistry.Add(newJobDefinition);
             }
 
+            var jobDefinition = jobRegistry.FindJobDefinition(typeof(TJob));
+
+            Debug.Assert(jobDefinition != null);
+
             token.Register(() => LogCancellationRequested(parameter));
 
-            RunInternal(newJobDefinition, parameter, startDate, forceExecution, token);
+            RunInternal(jobDefinition, parameter, startDate, forceExecution, token);
         }
     }
 
