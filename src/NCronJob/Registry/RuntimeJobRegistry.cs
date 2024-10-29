@@ -126,13 +126,13 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
         jobBuilder(builder);
 
-        foreach (var jobDefinition in this.jobRegistry.GetAllJobs())
+        foreach (var jobDefinition in jobRegistry.GetAllJobs())
         {
             jobWorker.ScheduleJob(jobDefinition);
             jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
         }
 
-        foreach (var entry in this.jobRegistry.DynamicJobRegistrations)
+        foreach (var entry in jobRegistry.DynamicJobRegistrations)
         {
             jobQueueManager.SignalJobQueue(entry.JobDefinition.JobFullName);
         }

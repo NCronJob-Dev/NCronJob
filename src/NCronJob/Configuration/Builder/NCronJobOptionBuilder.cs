@@ -89,7 +89,7 @@ public class NCronJobOptionBuilder : IJobStage
             TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
         };
 
-        this.jobRegistry.AddDynamicJob(jobDelegate, jobName, jobOption);
+        jobRegistry.AddDynamicJob(jobDelegate, jobName, jobOption);
 
         return this;
     }

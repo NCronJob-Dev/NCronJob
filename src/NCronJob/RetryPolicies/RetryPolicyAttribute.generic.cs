@@ -42,7 +42,7 @@ public sealed class RetryPolicyAttribute<TPolicyCreator> : RetryPolicyBaseAttrib
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(retryCount);
         ArgumentOutOfRangeException.ThrowIfNegative(delayFactor);
-        this.DelayFactor = delayFactor;
-        this.RetryCount = retryCount;
+        DelayFactor = delayFactor;
+        RetryCount = retryCount;
     }
 }
