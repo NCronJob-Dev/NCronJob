@@ -12,7 +12,6 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IRetryHandler retryHandler;
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
-    private readonly IJobHistory jobHistory;
     private readonly ImmutableArray<IExceptionHandler> exceptionHandlers;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
@@ -24,7 +23,6 @@ internal sealed partial class JobExecutor : IDisposable
         IRetryHandler retryHandler,
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
-        IJobHistory jobHistory,
         IEnumerable<IExceptionHandler> exceptionHandlers)
     {
         this.serviceProvider = serviceProvider;
@@ -32,7 +30,6 @@ internal sealed partial class JobExecutor : IDisposable
         this.retryHandler = retryHandler;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
-        this.jobHistory = jobHistory;
         this.exceptionHandlers = [..exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
@@ -69,7 +66,6 @@ internal sealed partial class JobExecutor : IDisposable
 
         var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
 
-        jobHistory.Add(run);
         var runContext = new JobExecutionContext(run);
         await ExecuteJob(runContext, job, scope);
     }
