@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+- Simplifications and refactoring of internal code. By [@nulltoken](https://github.com/nulltoken).
+
 ## [3.3.2] - 2024-10-27
 
 ### Fixes
