@@ -1,0 +1,28 @@
+﻿<Solution>
+  <Folder Name="/.items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+  </Folder>
+  <Folder Name="/.text/">
+    <File Path="CHANGELOG.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/.workflows/">
+    <File Path=".github\workflows\codeql.yml" />
+    <File Path=".github\workflows\create-release.yml" />
+    <File Path=".github\workflows\docs.yml" />
+    <File Path=".github\workflows\dotnet.yml" />
+  </Folder>
+  <Folder Name="/sample/">
+    <Project Path="sample\MinimalSample\MinimalSample.csproj" />
+    <Project Path="sample\NCronJobSample\NCronJobSample.csproj" />
+    <Project Path="sample\RunOnceSample\RunOnceSample.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src\NCronJob\NCronJob.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\NCronJob.Tests\NCronJob.Tests.csproj" />
+  </Folder>
+</Solution>
