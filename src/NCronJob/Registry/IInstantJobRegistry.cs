@@ -226,22 +226,8 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private void RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {
         var definition = jobRegistry.AddDynamicJob(jobDelegate);
-        var run = JobRun.Create(definition);
-        run.Priority = JobPriority.High;
-        run.RunAt = startDate;
-        run.IsOneTimeJob = true;
-        run.CancellationToken = token;
 
-        if (forceExecution)
-        {
-            _ = jobWorker.InvokeJobWithSchedule(run, token);
-        }
-        else
-        {
-            var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-            jobQueue.EnqueueForDirectExecution(run, startDate);
-            jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
-        }
+        RunInternal(definition, null, startDate, forceExecution, token);
     }
 
     private void RunJob<TJob>(DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
@@ -259,21 +245,31 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
             token.Register(() => LogCancellationRequested(parameter));
 
-            var run = JobRun.Create(newJobDefinition, parameter, token);
-            run.Priority = JobPriority.High;
-            run.RunAt = startDate;
-            run.IsOneTimeJob = true;
+            RunInternal(newJobDefinition, parameter, startDate, forceExecution, token);
+        }
+    }
 
-            if (forceExecution)
-            {
-                _ = jobWorker.InvokeJobWithSchedule(run, token);
-            }
-            else
-            {
-                var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-                jobQueue.EnqueueForDirectExecution(run, startDate);
-                jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
-            }
+    private void RunInternal(
+        JobDefinition jobDefinition,
+        object? parameter,
+        DateTimeOffset startDate,
+        bool forceExecution,
+        CancellationToken token)
+    {
+        var run = JobRun.Create(jobDefinition, parameter, token);
+        run.Priority = JobPriority.High;
+        run.RunAt = startDate;
+        run.IsOneTimeJob = true;
+
+        if (forceExecution)
+        {
+            _ = jobWorker.InvokeJobWithSchedule(run, token);
+        }
+        else
+        {
+            var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
+            jobQueue.EnqueueForDirectExecution(run, startDate);
+            jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
         }
     }
 
