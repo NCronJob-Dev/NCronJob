@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCronJob;
 
@@ -10,8 +11,8 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly JobQueueManager jobQueueManager;
     private readonly JobWorker jobWorker;
     private readonly JobRegistry jobRegistry;
-    private readonly StartupJobManager startupJobManager;
     private readonly ILogger<QueueWorker> logger;
+    private readonly MissingMethodCalledHandler missingMethodCalledHandler;
     private CancellationTokenSource? shutdown;
     private readonly ConcurrentDictionary<string, Task?> workerTasks = new();
     private readonly ConcurrentDictionary<string, bool> addingWorkerTasks = new();
@@ -21,15 +22,15 @@ internal sealed partial class QueueWorker : BackgroundService
         JobQueueManager jobQueueManager,
         JobWorker jobWorker,
         JobRegistry jobRegistry,
-        StartupJobManager startupJobManager,
         ILogger<QueueWorker> logger,
+        MissingMethodCalledHandler missingMethodCalledHandler,
         IHostApplicationLifetime lifetime)
     {
         this.jobQueueManager = jobQueueManager;
         this.jobWorker = jobWorker;
         this.jobRegistry = jobRegistry;
-        this.startupJobManager = startupJobManager;
         this.logger = logger;
+        this.missingMethodCalledHandler = missingMethodCalledHandler;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
 
@@ -92,6 +93,8 @@ internal sealed partial class QueueWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        AssertUseNCronJobWasCalled();
+
         shutdown?.Dispose();
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         var stopToken = shutdown.Token;
@@ -99,9 +102,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
         try
         {
-            await startupJobManager.ProcessStartupJobs(stopToken).ConfigureAwait(false);
             ScheduleInitialJobs();
-            await startupJobManager.WaitForStartupJobsCompletion().ConfigureAwait(false);
 
             CreateWorkerQueues(stopToken);
             jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
@@ -116,6 +117,14 @@ internal sealed partial class QueueWorker : BackgroundService
         catch (Exception ex)
         {
             LogQueueWorkerError(ex);
+        }
+    }
+
+    private void AssertUseNCronJobWasCalled()
+    {
+        if (!missingMethodCalledHandler.UseWasCalled)
+        {
+            LogUseNCronJobNotCalled();
         }
     }
 
