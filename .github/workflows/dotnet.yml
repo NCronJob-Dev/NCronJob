@@ -36,7 +36,11 @@ jobs:
     - name: Build
       run: dotnet build --no-restore -c Release /p:ContinuousIntegrationBuild=true
     - name: Test
-      run: dotnet test -c Release --no-build -p:VSTestUseMSBuildOutput=false --collect:"XPlat Code Coverage;Format=lcov" --results-directory coverage
+      run: dotnet test -c Release --no-build -p:VSTestUseMSBuildOutput=false
+
+    - name: Collect coverage
+      if: success() && matrix.os == 'ubuntu-latest'
+      run: dotnet test -c Release -f net8.0 --no-build --collect:"XPlat Code Coverage;Format=lcov" --results-directory coverage
 
     - name: Publish coverage report to coveralls.io
       if: success() && matrix.os == 'ubuntu-latest'
