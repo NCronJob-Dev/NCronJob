@@ -41,10 +41,10 @@ public class PrintHelloWorld : IJob
 ```
 
 ## 3. Register the service and the job
-The **NCronJob** library provides one easy entry point for all its magic, the `AddNCronJob` extension method on top of the `IServiceCollection` interface. 
+The **NCronJob** library provides one easy entry point for all its magic, the `AddNCronJob` extension method on top of the `IServiceCollection` interface. Additionally call the `UseNCronJobAsync` method.
 
 ```csharp
-Services.AddNCronJob(options => 
+builder.Services.AddNCronJob(options => 
 {
     options.AddJob<PrintHelloWorld>(j => 
     {
@@ -53,6 +53,10 @@ Services.AddNCronJob(options =>
          .WithParameter("Hello World");
     }));
 });
+
+var app = builder.Build();
+await app.UseNCronJobAsync();
+app.Run();
 ```
 
 Now your `PrintHelloWorld` job will run every minute and log "Hello World" to the console. And that is all!

@@ -6,6 +6,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+New `v4` release with some breaking changes and new features. Check the [`v4` migration guide](https://docs.ncronjob.dev/migration/v4/) for more information.
+
+### Added
+- `UseNCronJob` and `UseNCronJobAsync` methods to the `IHost` interface to execute startup jobs.
+
 ## [3.3.3] - 2024-10-31
 
 ### Changed

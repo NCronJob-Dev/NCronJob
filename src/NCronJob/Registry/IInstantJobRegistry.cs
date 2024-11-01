@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
@@ -29,7 +30,7 @@ public interface IInstantJobRegistry
     /// Runs an instant job, which gets directly executed.
     /// </summary>
     /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     /// <param name="jobDelegate">The delegate to execute.</param>
@@ -61,7 +62,7 @@ public interface IInstantJobRegistry
     /// <param name="delay">The delay until the job will be executed.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     void RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default);
@@ -73,7 +74,7 @@ public interface IInstantJobRegistry
     /// <param name="startDate">The starting point when the job will be executed.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     void RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
@@ -85,7 +86,7 @@ public interface IInstantJobRegistry
     /// <param name="delay">The delay until the job will be executed.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     void ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default);
@@ -97,7 +98,7 @@ public interface IInstantJobRegistry
     /// <param name="startDate">The starting point when the job will be executed.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     void ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
@@ -134,7 +135,7 @@ public interface IInstantJobRegistry
     /// Runs an instant job, which gets directly executed. The job will not be queued into the JobQueue, but executed directly.
     /// </summary>
     /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="ServiceCollectionExtensions.AddNCronJob"/>, that services can be retrieved dynamically.
+    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     /// <param name="jobDelegate">The delegate to execute.</param>
