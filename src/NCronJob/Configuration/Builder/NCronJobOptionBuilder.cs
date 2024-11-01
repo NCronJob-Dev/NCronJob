@@ -317,9 +317,18 @@ public interface IStartupStage<TJob> : INotificationStage<TJob>
     where TJob : class, IJob
 {
     /// <summary>
-    /// Configures the job to run once during the application startup before any other jobs.
+    /// Configures the job to run once before the application itself runs.
     /// </summary>
     /// <returns>Returns a <see cref="INotificationStage{TJob}"/> that allows adding notifications of another job.</returns>
+    /// <remarks>
+    /// If a job is marked to run at startup, it will be executed before any `IHostedService` is started. Use the <seealso cref="NCronJobExtensions.UseNCronJob"/> method to trigger the job execution.
+    /// In the context of ASP.NET:
+    /// <code>
+    /// await app.UseNCronJobAsync();
+    /// await app.RunAsync();
+    /// </code>
+    /// All startup jobs will be executed (and awaited) before the web application is started. This is particular useful for migration and cache hydration.
+    /// </remarks>
     INotificationStage<TJob> RunAtStartup();
 }
 
