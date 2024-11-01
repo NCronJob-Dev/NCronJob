@@ -77,6 +77,10 @@ In the same way, the concurrency level can be controlled (see [**Concurrency**](
 
 ```csharp
 builder.Services.AddNCronJob([SupportsConcurrency(2)] () => { }, "0 * * * *");
+
+var app = builder.Build();
+await app.UseNCronJobAsync();
+app.Run();
 ```
 
 Now, the job can only be executed by two instances at the same time.

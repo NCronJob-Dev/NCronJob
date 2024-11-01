@@ -19,20 +19,26 @@ public class MyStartupJob : IJob
 As with CRON jobs, they must be registered in the `AddNCronJob` method.
 
 ```csharp
-Services.AddNCronJob(options => 
+builder.Services.AddNCronJob(options => 
 {
     options.AddJob<MyStartupJob>()
            .RunAtStartup(); // Configure the job to run at startup
 });
+
+var app = builder.Build();
+// Execute all startup jobs
+await app.UseNCronJobAsync();
+app.Run();
 ```
 
-The `RunAtStartup` method ensures that the job is executed as soon as the application starts. This method is useful for scenarios where certain tasks need to be performed immediately upon application launch.
+The `RunAtStartup` in combination with `UseNCronJobAsync` method ensures that the job is executed as soon as the application starts. This method is useful for scenarios where certain tasks need to be performed immediately upon application launch.
 
 ## Example Use Case
 
 Consider an application that needs to load initial data from a database or perform some cleanup tasks whenever it starts. You can define and configure a startup job to handle this:
 
 ### Job Definition
+
 ```csharp
 public class InitialDataLoader : IJob
 {
@@ -67,6 +73,6 @@ This setup ensures that the `InitialDataLoader` job will be executed as soon as 
 
 ## Summary
 
-Startup jobs are a powerful feature of **NCronJob** that enable you to execute critical tasks immediately upon application startup. By using the `RunAtStartup` method, you can ensure that your application performs necessary setup procedures, data loading, or cleanup tasks right at the beginning of its lifecycle.
+Startup jobs are a powerful feature of **NCronJob** that enable you to execute critical tasks immediately before application startup. By using the `RunAtStartup` method, you can ensure that your application performs necessary setup procedures, data loading, or cleanup tasks right at the beginning of its lifecycle.
 
 This feature is particularly useful for applications that require certain operations to be completed before they are fully functional. By configuring startup jobs, you can streamline your application's initialization process and improve its overall reliability and performance.
