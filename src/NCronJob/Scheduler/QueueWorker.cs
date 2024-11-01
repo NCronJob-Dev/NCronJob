@@ -10,7 +10,6 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly JobQueueManager jobQueueManager;
     private readonly JobWorker jobWorker;
     private readonly JobRegistry jobRegistry;
-    private readonly StartupJobManager startupJobManager;
     private readonly ILogger<QueueWorker> logger;
     private CancellationTokenSource? shutdown;
     private readonly ConcurrentDictionary<string, Task?> workerTasks = new();
@@ -21,14 +20,12 @@ internal sealed partial class QueueWorker : BackgroundService
         JobQueueManager jobQueueManager,
         JobWorker jobWorker,
         JobRegistry jobRegistry,
-        StartupJobManager startupJobManager,
         ILogger<QueueWorker> logger,
         IHostApplicationLifetime lifetime)
     {
         this.jobQueueManager = jobQueueManager;
         this.jobWorker = jobWorker;
         this.jobRegistry = jobRegistry;
-        this.startupJobManager = startupJobManager;
         this.logger = logger;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
@@ -99,9 +96,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
         try
         {
-            await startupJobManager.ProcessStartupJobs(stopToken).ConfigureAwait(false);
             ScheduleInitialJobs();
-            await startupJobManager.WaitForStartupJobsCompletion().ConfigureAwait(false);
 
             CreateWorkerQueues(stopToken);
             jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues

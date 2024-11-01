@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace NCronJob;
 
 /// <summary>
-/// Extensions for the <see cref="IServiceCollection"/> to add cron jobs.
+/// Extensions for various types to use NCronJob.
 /// </summary>
 public static class NCronJobExtensions
 {
@@ -42,18 +43,36 @@ public static class NCronJobExtensions
         services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
-        services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>((sp) =>
-        {
-            return new RuntimeJobRegistry(
-                services,
-                jobRegistry,
-                sp.GetRequiredService<JobWorker>(),
-                sp.GetRequiredService<JobQueueManager>(),
-                sp.GetRequiredService<ConcurrencySettings>());
-        });
+        services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>(sp => new RuntimeJobRegistry(
+            services,
+            jobRegistry,
+            sp.GetRequiredService<JobWorker>(),
+            sp.GetRequiredService<JobQueueManager>(),
+            sp.GetRequiredService<ConcurrencySettings>()));
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
+    /// </summary>
+    /// <param name="host">The host.</param>
+    public static IHost UseNCronJob(this IHost host) => UseNCronJobAsync(host).ConfigureAwait(false).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
+    /// </summary>
+    /// <param name="host">The host.</param>
+    public static async Task<IHost> UseNCronJobAsync(this IHost host)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+
+        var jobManager = host.Services.GetRequiredService<StartupJobManager>();
+        var stopToken = host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
+        await jobManager.ProcessStartupJobs(stopToken);
+
+        return host;
     }
 }
