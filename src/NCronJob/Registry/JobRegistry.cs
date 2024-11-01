@@ -128,8 +128,7 @@ internal sealed class JobRegistry
 
         allJobs.Remove(jobDefinition);
 
-        // TODO: Shouldn't we also remove related entries in DependentJobsPerPrincipalJobType?
-        // cf. https://github.com/NCronJob-Dev/NCronJob/issues/107
+        dependentJobsPerPrincipalJobType.Remove(jobDefinition.Type);
     }
 
     private void AssertNoDuplicateJobNames(string? additionalJobName = null)
