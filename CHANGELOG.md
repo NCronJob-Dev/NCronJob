@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixes
+
+- Teach `IRuntimeJobRegistry.RemoveJob()` to clean up potential dependent jobs. Fixes [#107](https://github.com/NCronJob-Dev/NCronJob/issues/107), by [@nulltoken](https://github.com/nulltoken).
+
 ## [3.3.3] - 2024-10-31
 
 ### Changed
@@ -88,7 +92,7 @@ This is a new major version! A bit of cleanup! Check the [`v3` migration guide](
 ### Added
 
 - Allow dynamically adding, removing jobs, updating the schedule or parameter and getting the schedule for a given job.
-  Done by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#83](https://github.com/linkdotnet/NCronJob/issues/83)
+  Done by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#83](https://github.com/NCronJob-Dev/NCronJob/issues/83)
 
 ### Changed
 
@@ -103,8 +107,8 @@ implemented by [@falvarez1](https://github.com/falvarez1)
 
 ### Fixed
 
-- Closes [#65](https://github.com/linkdotnet/NCronJob/issues/65)
-- Fixes [#34](https://github.com/linkdotnet/NCronJob/issues/34)
+- Closes [#65](https://github.com/NCronJob-Dev/NCronJob/issues/65)
+- Fixes [#34](https://github.com/NCronJob-Dev/NCronJob/issues/34)
 
 ## [2.7.4] - 2024-06-03
 
@@ -158,12 +162,12 @@ This release has the same changes as `2.6.0` but fixes an issue in the release p
 ### Changed
 
 - API signature improvements - Enhanced the job scheduling framework with new classes and interfaces to better support job lifecycle management, including startup configuration and notification handling. This includes the introduction of `StartupStage<TJob>`, `NotificationStage<TJob>`, `IJobStage`, `IStartupStage<TJob>`, and `INotificationStage<TJob>`.
-  [#70](https://github.com/linkdotnet/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
+  [#70](https://github.com/NCronJob-Dev/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
 
 ### Added
 
-- Startup jobs - Run a job when the application starts. [#70](https://github.com/linkdotnet/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
-- Sample project - Added a sample project to demonstrate Startup Jobs. [#70](https://github.com/linkdotnet/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
+- Startup jobs - Run a job when the application starts. [#70](https://github.com/NCronJob-Dev/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
+- Sample project - Added a sample project to demonstrate Startup Jobs. [#70](https://github.com/NCronJob-Dev/NCronJob/pull/70) By [@falvarez1](https://github.com/falvarez1)
 
 ## [2.5.0] - 2024-05-21
 
@@ -209,7 +213,7 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
 ### Fixed
 
 - Instant jobs did ignore the concurrency attribute and global concurrency settings.
-  Fixed by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/linkdotnet/NCronJob/issues/52)
+  Fixed by [@linkdotnet](https://github.com/linkdotnet). Reported by [@KorsG](https://github.com/KorsG) in [#52](https://github.com/NCronJob-Dev/NCronJob/issues/52)
 
 ## [2.3.2] - 2024-05-08
 
@@ -221,7 +225,7 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
 
 ### Added
 
-- TimeZone Support implemented by [@falvarez1](https://github.com/falvarez1) in PR [#22](https://github.com/linkdotnet/NCronJob/pull/22).
+- TimeZone Support implemented by [@falvarez1](https://github.com/falvarez1) in PR [#22](https://github.com/NCronJob-Dev/NCronJob/pull/22).
 
 ## [2.2.1] - 2024-05-05
 
@@ -251,14 +255,14 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
 
 ### Contributors
 
-- Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/linkdotnet/NCronJob/pull/21).
+- Support for concurrent jobs and retries, as well as overall improvements, implemented by [@falvarez1](https://github.com/falvarez1) in PR [#21](https://github.com/NCronJob-Dev/NCronJob/pull/21).
 
 ## [2.0.5] - 2024-04-19
 
 ### Changed
 
 - Implementation of the scheduling. Better performance and closed some memory leaks
-- Throw exception if job cannot be resolved with dependencies from the DI container. Reported and implemented by [@skarum](https://github.com/skarum) in [#23](https://github.com/linkdotnet/NCronJob/issues/23)
+- Throw exception if job cannot be resolved with dependencies from the DI container. Reported and implemented by [@skarum](https://github.com/skarum) in [#23](https://github.com/NCronJob-Dev/NCronJob/issues/23)
 
 ## [2.0.4] - 2024-04-16
 
@@ -400,45 +404,45 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.3...HEAD
-[3.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.2...3.3.3
-[3.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/3.2.0...3.3.2
-[3.2.0]: https://github.com/NCronJob-Dev/NCronJob/compare/3.1.3...3.2.0
-[3.1.3]: https://github.com/NCronJob-Dev/NCronJob/compare/3.0.3...3.1.3
-[3.0.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.6...3.0.3
-[2.8.6]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.5...2.8.6
-[2.8.5]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.4...2.8.5
-[2.8.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.3...2.8.4
-[2.8.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.2...2.8.3
-[2.8.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.1...2.8.2
-[2.8.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.8.0...2.8.1
-[2.8.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.4...2.8.0
-[2.7.4]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.3...2.7.4
-[2.7.3]: https://github.com/NCronJob-Dev/NCronJob/compare/2.7.2...2.7.3
-[2.7.2]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.1...2.7.2
-[2.6.1]: https://github.com/NCronJob-Dev/NCronJob/compare/2.6.0...2.6.1
-[2.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.5.0...2.6.0
-[2.5.0]: https://github.com/NCronJob-Dev/NCronJob/compare/2.4.6...2.5.0
-[2.4.6]: https://github.com/linkdotnet/NCronJob/compare/2.4.5...2.4.6
-[2.4.5]: https://github.com/linkdotnet/NCronJob/compare/2.4.4...2.4.5
-[2.4.4]: https://github.com/linkdotnet/NCronJob/compare/2.3.2...2.4.4
-[2.3.2]: https://github.com/linkdotnet/NCronJob/compare/2.3.1...2.3.2
-[2.3.1]: https://github.com/linkdotnet/NCronJob/compare/2.2.1...2.3.1
-[2.2.1]: https://github.com/linkdotnet/NCronJob/compare/2.1.4...2.2.1
-[2.1.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.5...2.1.4
-[2.0.5]: https://github.com/linkdotnet/NCronJob/compare/2.0.4...2.0.5
-[2.0.4]: https://github.com/linkdotnet/NCronJob/compare/2.0.3...2.0.4
-[2.0.3]: https://github.com/linkdotnet/NCronJob/compare/1.0.2...2.0.3
-[1.0.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.2...1.0.2
-[0.13.2]: https://github.com/linkdotnet/NCronJob/compare/0.13.1...0.13.2
-[0.13.1]: https://github.com/linkdotnet/NCronJob/compare/0.13.0...0.13.1
-[0.13.0]: https://github.com/linkdotnet/NCronJob/compare/0.12.0...0.13.0
-[0.12.0]: https://github.com/linkdotnet/NCronJob/compare/0.11.5...0.12.0
-[0.11.5]: https://github.com/linkdotnet/NCronJob/compare/0.11.4...0.11.5
-[0.11.4]: https://github.com/linkdotnet/NCronJob/compare/0.10.1...0.11.4
-[0.10.1]: https://github.com/linkdotnet/NCronJob/compare/0.10.0...0.10.1
-[0.10.0]: https://github.com/linkdotnet/NCronJob/compare/0.9.3...0.10.0
-[0.9.3]: https://github.com/linkdotnet/NCronJob/compare/0.9.2...0.9.3
-[0.9.2]: https://github.com/linkdotnet/NCronJob/compare/0.9.1...0.9.2
-[0.9.1]: https://github.com/linkdotnet/NCronJob/compare/0.9.0...0.9.1
-[0.9.0]: https://github.com/linkdotnet/NCronJob/compare/cf7df8ffb3a740fa63ccc439336b42b890c9519c...0.9.0
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.3...HEAD
+[3.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.2...v3.3.3
+[3.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.2.0...v3.3.2
+[3.2.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.1.3...v3.2.0
+[3.1.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.0.3...v3.1.3
+[3.0.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.6...v3.0.3
+[2.8.6]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.5...v2.8.6
+[2.8.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.4...v2.8.5
+[2.8.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.3...v2.8.4
+[2.8.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.2...v2.8.3
+[2.8.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.1...v2.8.2
+[2.8.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.8.0...v2.8.1
+[2.8.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.7.4...v2.8.0
+[2.7.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.7.3...v2.7.4
+[2.7.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.7.2...v2.7.3
+[2.7.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.6.1...v2.7.2
+[2.6.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.6.0...v2.6.1
+[2.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.5.0...v2.6.0
+[2.5.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.4.6...v2.5.0
+[2.4.6]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.4.5...v2.4.6
+[2.4.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.4.4...v2.4.5
+[2.4.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.3.2...v2.4.4
+[2.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.2.1...v2.3.1
+[2.2.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.1.4...v2.2.1
+[2.1.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.0.5...v2.1.4
+[2.0.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.0.4...v2.0.5
+[2.0.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v2.0.3...v2.0.4
+[2.0.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v1.0.2...v2.0.3
+[1.0.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.13.2...v1.0.2
+[0.13.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.13.1...v0.13.2
+[0.13.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.13.0...v0.13.1
+[0.13.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.12.0...v0.13.0
+[0.12.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.11.5...v0.12.0
+[0.11.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.11.4...v0.11.5
+[0.11.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.10.1...v0.11.4
+[0.10.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.9.3...v0.10.0
+[0.9.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.9.2...v0.9.3
+[0.9.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.9.1...v0.9.2
+[0.9.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v0.9.0...v0.9.1
+[0.9.0]: https://github.com/NCronJob-Dev/NCronJob/compare/cf7df8ffb3a740fa63ccc439336b42b890c9519c...v0.9.0

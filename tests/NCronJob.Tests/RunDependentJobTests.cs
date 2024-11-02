@@ -37,6 +37,35 @@ public class RunDependentJobTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task RemovingAJobShouldAlsoRemoveItsDependencies()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<MainJob>()
+            .ExecuteWhen(success: s => s.RunJob<SubMainJob>()));
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        var instantJobRegistry = provider.GetRequiredService<IInstantJobRegistry>();
+        instantJobRegistry.ForceRunInstantJob<MainJob>();
+
+        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        Assert.Equal(nameof(MainJob), result);
+        result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        Assert.Equal(nameof(SubMainJob), result);
+
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        registry.RemoveJob<PrincipalCorrelationIdJob>();
+        registry.AddJob(n => n.AddJob<MainJob>());
+
+        instantJobRegistry.ForceRunInstantJob<MainJob>();
+
+        result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        Assert.Equal(nameof(MainJob), result);
+
+        (await WaitForJobsOrTimeout(1)).ShouldBe(false);
+    }
+
+    [Fact]
     public async Task CorrelationIdIsSharedByJobsAndTheirDependencies()
     {
         ServiceCollection.AddSingleton(new Storage());
@@ -179,6 +208,18 @@ public class RunDependentJobTests : JobIntegrationBase
             storage.Guids.Add(context.CorrelationId);
             await writer.WriteAsync("done", token);
         }
+    }
+
+    private sealed class MainJob(ChannelWriter<object> writer) : IJob
+    {
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+            => await writer.WriteAsync(nameof(MainJob), token);
+    }
+
+    private sealed class SubMainJob(ChannelWriter<object> writer) : IJob
+    {
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+            => await writer.WriteAsync(nameof(SubMainJob), token);
     }
 
     private sealed class Storage
