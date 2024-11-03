@@ -8,10 +8,10 @@ namespace NCronJob;
 /// <summary>
 /// Represents the builder for the NCronJob options.
 /// </summary>
-public class NCronJobOptionBuilder : IJobStage
+public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 {
-    private protected readonly IServiceCollection Services;
-    private protected readonly ConcurrencySettings Settings;
+    private readonly IServiceCollection services;
+    private readonly ConcurrencySettings settings;
     private readonly JobRegistry jobRegistry;
 
     internal NCronJobOptionBuilder(
@@ -19,8 +19,8 @@ public class NCronJobOptionBuilder : IJobStage
         ConcurrencySettings settings,
         JobRegistry jobRegistry)
     {
-        Services = services;
-        Settings = settings;
+        this.services = services;
+        this.settings = settings;
         this.jobRegistry = jobRegistry;
     }
 
@@ -41,7 +41,7 @@ public class NCronJobOptionBuilder : IJobStage
         where T : class, IJob
     {
         var builder = AddJobInternal(typeof(T), options);
-        return new StartupStage<T>(Services, Settings, jobRegistry, builder);
+        return new StartupStage<T>(services, settings, jobRegistry, builder);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public class NCronJobOptionBuilder : IJobStage
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
     {
         var builder = AddJobInternal(jobType, options);
-        return new StartupStage<IJob>(Services, Settings, jobRegistry, builder);
+        return new StartupStage<IJob>(services, settings, jobRegistry, builder);
     }
 
     /// <summary>
@@ -103,9 +103,24 @@ public class NCronJobOptionBuilder : IJobStage
     /// </remarks>
     public NCronJobOptionBuilder AddExceptionHandler<TExceptionHandler>() where TExceptionHandler : class, IExceptionHandler
     {
-        Services.AddSingleton<IExceptionHandler, TExceptionHandler>();
+        services.AddSingleton<IExceptionHandler, TExceptionHandler>();
         return this;
     }
+
+    IRuntimeJobBuilder IRuntimeJobBuilder.AddJob<TJob>(Action<JobOptionBuilder>? options)
+    {
+        AddJob<TJob>(options);
+        return this;
+    }
+
+    IRuntimeJobBuilder IRuntimeJobBuilder.AddJob(Type jobType, Action<JobOptionBuilder>? options)
+    {
+        AddJob(jobType, options);
+        return this;
+    }
+
+    IRuntimeJobBuilder IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>
+        AddJob(jobDelegate, cronExpression, timeZoneInfo, jobName);
 
     private void ValidateConcurrencySetting(object jobIdentifier)
     {
@@ -117,11 +132,11 @@ public class NCronJobOptionBuilder : IJobStage
         };
 
         var concurrencyAttribute = cachedJobAttributes.ConcurrencyPolicy;
-        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > Settings.MaxDegreeOfParallelism)
+        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
         {
             var name = jobIdentifier is Type type ? type.Name : ((MethodInfo)jobIdentifier).Name;
             throw new InvalidOperationException(
-                $"The MaxDegreeOfParallelism for {name} ({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed the global limit ({Settings.MaxDegreeOfParallelism}).");
+                $"The MaxDegreeOfParallelism for {name} ({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed the global limit ({settings.MaxDegreeOfParallelism}).");
         }
     }
 
@@ -143,7 +158,7 @@ public class NCronJobOptionBuilder : IJobStage
         var builder = new JobOptionBuilder();
         options?.Invoke(builder);
 
-        Services.TryAddScoped(jobType);
+        services.TryAddScoped(jobType);
 
         var jobOptions = builder.GetJobOptions();
 
