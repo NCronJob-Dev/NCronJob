@@ -344,7 +344,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var act = () => runtimeRegistry.AddJob(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        var act = () => runtimeRegistry.Register(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
 
         act.ShouldThrow<InvalidOperationException>();
     }
