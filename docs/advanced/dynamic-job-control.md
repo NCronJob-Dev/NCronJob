@@ -27,7 +27,13 @@ To add a job at runtime, leverage the `IRuntimeJobRegistry` interface:
 ```csharp
 app.MapPost("/add-job", (IRuntimeJobRegistry registry) => 
 {
-    registry.AddJob(n => n.AddJob<SampleJob>(p => p.WithCronExpression("* * * * *").WithName("MyName")));
+    var hasSucceeded = registry.TryRegister(n => n.AddJob<SampleJob>(p => p.WithCronExpression("* * * * *").WithName("MyName")), out Exception? exc);
+    
+    if (!hasSucceeded)
+    {
+        return TypedResults.Error(exc?.Message);
+    }
+
     return TypedResults.Ok();
 });
 ```
