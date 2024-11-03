@@ -64,7 +64,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
         registry.RemoveJob<PrincipalCorrelationIdJob>();
-        registry.AddJob(n => n.AddJob<MainJob>());
+        registry.Register(n => n.AddJob<MainJob>());
 
         instantJobRegistry.ForceRunInstantJob<MainJob>();
 

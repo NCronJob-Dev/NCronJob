@@ -15,7 +15,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.AddJob(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        registry.Register(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
@@ -30,7 +30,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.AddJob(s => s
+        registry.Register(s => s
             .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *")
             .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
 
@@ -171,7 +171,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             .WithName("JobName")));
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.AddJob(s => s.AddJob(() => { }, "* * * * *", jobName: "JobName2"));
+        registry.Register(s => s.AddJob(() => { }, "* * * * *", jobName: "JobName2"));
 
         var allSchedules = registry.GetAllRecurringJobs();
 
@@ -190,7 +190,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(p => p.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.AddJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
+        registry.Register(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
 
         var allSchedules = registry.GetAllRecurringJobs();
 
@@ -257,7 +257,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
         var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
 
-        var act = () => runtimeJobRegistry.AddJob(s => s.AddJob(() =>
+        var act = () => runtimeJobRegistry.Register(s => s.AddJob(() =>
         {
         }, "* * * * *", jobName: "JobName"));
 
