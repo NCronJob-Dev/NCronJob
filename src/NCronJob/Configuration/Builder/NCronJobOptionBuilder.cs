@@ -302,13 +302,10 @@ public interface IJobStage
     /// </code>
     /// </example>
     IStartupStage<TJob> AddJob<TJob>(Action<JobOptionBuilder>? options = null) where TJob : class, IJob;
-
+    
     /// <summary>
-    /// TODO.
+    /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// </summary>
-    /// <param name="jobType"></param>
-    /// <param name="options"></param>
-    /// <returns></returns>
     IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null);
 }
 
