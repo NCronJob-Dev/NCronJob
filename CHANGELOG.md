@@ -11,6 +11,9 @@ New `v4` release with some breaking changes and new features. Check the [`v4` mi
 ### Added
 - `UseNCronJob` and `UseNCronJobAsync` methods to the `IHost` interface to execute startup jobs.
 
+### Changed
+- `IRuntimeRegistry` is more restrictive and therefore doesn't allow odd behavior.
+
 ## [3.3.3] - 2024-10-31
 
 ### Changed
