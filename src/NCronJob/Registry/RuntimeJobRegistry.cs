@@ -11,7 +11,7 @@ public interface IRuntimeJobRegistry
     /// <summary>
     /// Gives the ability to add a job.
     /// </summary>
-    void AddJob(Action<IRuntimeJobBuilder> jobBuilder);
+    void Register(Action<IRuntimeJobBuilder> jobBuilder);
 
     /// <summary>
     /// Removes the job with the given name.
@@ -121,7 +121,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
-    public void AddJob(Action<IRuntimeJobBuilder> jobBuilder)
+    public void Register(Action<IRuntimeJobBuilder> jobBuilder)
     {
         var oldJobs = jobRegistry.GetAllJobs();
         var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
