@@ -18,8 +18,6 @@ internal sealed class JobRegistry
 
     public bool IsJobRegistered<T>() => allJobs.Any(j => j.Type == typeof(T));
 
-    public JobDefinition GetJobDefinition<T>() => allJobs.First(j => j.Type == typeof(T));
-
     public JobDefinition? FindJobDefinition(Type type)
         => allJobs.FirstOrDefault(j => j.Type == type);
 
