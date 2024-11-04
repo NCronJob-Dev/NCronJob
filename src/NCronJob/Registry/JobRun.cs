@@ -41,7 +41,7 @@ internal class JobRun
         {
             JobRunId = Guid.NewGuid(),
             JobDefinition = jobDefinition,
-            Parameter = parameter,
+            Parameter = parameter ?? jobDefinition.Parameter,
             CancellationToken = token
         };
 

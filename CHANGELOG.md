@@ -8,6 +8,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Changed
 
+- Ensure parameter handling is coherent. Fixed in [#132](https://github.com/NCronJob-Dev/NCronJob/issues/132), by [@nulltoken](https://github.com/nulltoken).
+
 - Prevent `InstantJobRegistry` from altering the content of `JobRegistry`. Fixed in [#131](https://github.com/NCronJob-Dev/NCronJob/issues/131), by [@nulltoken](https://github.com/nulltoken).
 
 ## [3.3.4] - 2024-11-03
