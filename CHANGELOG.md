@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [3.3.5] - 2024-11-04
+
 ### Changed
 
 - Ensure parameter handling is coherent. Fixed in [#132](https://github.com/NCronJob-Dev/NCronJob/issues/132), by [@nulltoken](https://github.com/nulltoken).
@@ -414,7 +416,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.4...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.5...HEAD
+[3.3.5]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.4...3.3.5
 [3.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.3...3.3.4
 [3.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.2...v3.3.3
 [3.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.2.0...v3.3.2
