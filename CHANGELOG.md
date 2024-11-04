@@ -14,7 +14,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Fixes
 
-- Ensure multiples schedules of the same job with different chains of dependent jobs are properly processed. Identified in [#108](https://github.com/NCronJob-Dev/NCronJob/issues/107), by [@nulltoken](https://github.com/nulltoken).
+- Ensure multiples schedules of the same job with different chains of dependent jobs are properly processed. Identified in [#108](https://github.com/NCronJob-Dev/NCronJob/issues/108), by [@nulltoken](https://github.com/nulltoken).
 
 - Teach `IRuntimeJobRegistry.RemoveJob()` to clean up potential dependent jobs. Fixes [#107](https://github.com/NCronJob-Dev/NCronJob/issues/107), by [@nulltoken](https://github.com/nulltoken).
 
