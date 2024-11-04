@@ -100,9 +100,55 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task CronJobShouldPassDownParameter()
+    public async Task InstantJobShouldInheritInitiallyDefinedParameter()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello World")));
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<ParameterJob>(o => o.WithCronExpression("* * 31 2 *").WithParameter("Hello from AddNCronJob")));
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>();
+
+        var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        content.ShouldBe("Hello from AddNCronJob");
+    }
+
+    [Fact]
+    public async Task InstantJobCanOverrideInitiallyDefinedParameter()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<ParameterJob>(o => o.WithCronExpression("* * 31 2 *").WithParameter("Hello from AddNCronJob")));
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello from InstantJob");
+
+        var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        content.ShouldBe("Hello from InstantJob");
+    }
+
+    [Fact]
+    public async Task InstantJobShouldPassDownParameter()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<ParameterJob>());
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello from InstantJob");
+
+        var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        content.ShouldBe("Hello from InstantJob");
+    }
+
+    [Fact]
+    public async Task CronJobShouldInheritInitiallyDefinedParameter()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello from AddNCronJob")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -110,20 +156,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        content.ShouldBe("Hello World");
-    }
-
-    [Fact]
-    public async Task InstantJobShouldGetParameter()
-    {
-        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>());
-        var provider = CreateServiceProvider();
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        content.ShouldBe("Hello World");
+        content.ShouldBe("Hello from AddNCronJob");
     }
 
     [Fact]
