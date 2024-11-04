@@ -36,16 +36,9 @@ jobs:
     - name: Build
       run: dotnet build --no-restore -c Release /p:ContinuousIntegrationBuild=true
     - name: Test
-      run: dotnet test -c Release --no-build -p:VSTestUseMSBuildOutput=false
+      run: dotnet test -c Release --no-build -p:VSTestUseMSBuildOutput=false --collect:"XPlat Code Coverage" --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
-    - name: Collect coverage
-      if: success() && matrix.os == 'ubuntu-latest'
-      run: dotnet test -c Release -f net8.0 --no-build --collect:"XPlat Code Coverage;Format=lcov" --results-directory coverage
-
-    - name: Publish coverage report to coveralls.io
-      if: success() && matrix.os == 'ubuntu-latest'
-      uses: coverallsapp/github-action@v2
+    - name: Upload results to Codecov
+      uses: codecov/codecov-action@v4
       with:
-        github-token: ${{ github.token }}
-        file: coverage/**/coverage.info
-        format: lcov
+        token: ${{ secrets.CODECOV_TOKEN }}
