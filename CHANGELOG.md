@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Prevent `InstantJobRegistry` from altering the content of `JobRegistry`. Fixed in [#131](https://github.com/NCronJob-Dev/NCronJob/issues/131), by [@nulltoken](https://github.com/nulltoken).
+
 ## [3.3.4] - 2024-11-03
 
 ### Fixes

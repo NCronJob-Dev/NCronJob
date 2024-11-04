@@ -70,6 +70,23 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task ExecuteAnInstantJobWithoutPreviousRegistration()
+    {
+        ServiceCollection.AddNCronJob();
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>();
+
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+
+        var jobRegistry = provider.GetRequiredService<JobRegistry>();
+        jobRegistry.FindJobDefinition(typeof(SimpleJob)).ShouldBeNull();
+    }
+
+    [Fact]
     public async Task ExecuteAnInstantJob()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
