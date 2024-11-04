@@ -11,7 +11,7 @@
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
-[![Coverage Status](https://coveralls.io/repos/github/NCronJob-Dev/NCronJob/badge.svg?branch=main)](https://coveralls.io/github/NCronJob-Dev/NCronJob?branch=main)
+[![Coverage](https://codecov.io/gh/NCronJob-Dev/NCronJob/graph/badge.svg?token=HM8G8TCYUC)](https://codecov.io/gh/NCronJob-Dev/NCronJob)
 
 # NCronJob
 
