@@ -6,11 +6,15 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Prevent `InstantJobRegistry` from altering the content of `JobRegistry`. Fixed in [#131](https://github.com/NCronJob-Dev/NCronJob/issues/131), by [@nulltoken](https://github.com/nulltoken).
+
 ## [3.3.4] - 2024-11-03
 
 ### Fixes
 
-- Ensure multiples schedules of the same job with different chains of dependent jobs are properly processed. Identified in [#108](https://github.com/NCronJob-Dev/NCronJob/issues/107), by [@nulltoken](https://github.com/nulltoken).
+- Ensure multiples schedules of the same job with different chains of dependent jobs are properly processed. Identified in [#108](https://github.com/NCronJob-Dev/NCronJob/issues/108), by [@nulltoken](https://github.com/nulltoken).
 
 - Teach `IRuntimeJobRegistry.RemoveJob()` to clean up potential dependent jobs. Fixes [#107](https://github.com/NCronJob-Dev/NCronJob/issues/107), by [@nulltoken](https://github.com/nulltoken).
 

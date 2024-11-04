@@ -236,16 +236,13 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     {
         using (logger.BeginScope("Triggering RunScheduledJob:"))
         {
-            if (!jobRegistry.IsJobRegistered<TJob>())
-            {
-                LogJobNotRegistered(typeof(TJob).Name);
-                var newJobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
-                jobRegistry.Add(newJobDefinition);
-            }
-
             var jobDefinition = jobRegistry.FindJobDefinition(typeof(TJob));
 
-            Debug.Assert(jobDefinition != null);
+            if (jobDefinition is null)
+            {
+                LogJobNotRegistered(typeof(TJob).Name);
+                jobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
+            }
 
             token.Register(() => LogCancellationRequested(parameter));
 

@@ -16,10 +16,6 @@ internal sealed class JobRegistry
 
     public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => allJobs.Where(c => c.IsStartupJob).ToList();
 
-    public bool IsJobRegistered<T>() => allJobs.Any(j => j.Type == typeof(T));
-
-    public JobDefinition GetJobDefinition<T>() => allJobs.First(j => j.Type == typeof(T));
-
     public JobDefinition? FindJobDefinition(Type type)
         => allJobs.FirstOrDefault(j => j.Type == type);
 
