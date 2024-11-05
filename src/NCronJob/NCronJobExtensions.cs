@@ -116,12 +116,18 @@ public static class NCronJobExtensions
     /// <summary>
     /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
     /// </summary>
+    /// <remarks>
+    /// Failure to call this method (or <see cref="UseNCronJobAsync(IHost)"/>) when startup jobs are defined will lead to a fatal exception during the application start.
+    /// </remarks>
     /// <param name="host">The host.</param>
     public static IHost UseNCronJob(this IHost host) => UseNCronJobAsync(host).ConfigureAwait(false).GetAwaiter().GetResult();
 
     /// <summary>
     /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
     /// </summary>
+    /// <remarks>
+    /// Failure to call this method (or <see cref="UseNCronJob(IHost)"/>) when startup jobs are defined will lead to a fatal exception during the application start.
+    /// </remarks>
     /// <param name="host">The host.</param>
     public static async Task<IHost> UseNCronJobAsync(this IHost host)
     {

@@ -39,7 +39,4 @@ internal sealed partial class QueueWorker
 
     [LoggerMessage(LogLevel.Information, "Job removed from queue: {JobType} at {RunAt}")]
     private partial void LogJobRemovedFromQueue(string jobType, DateTime? runAt);
-
-    [LoggerMessage(LogLevel.Warning, "The UseNCronJob(Async) method was not called. Startup jobs might not have been executed.")]
-    private partial void LogUseNCronJobNotCalled();
 }

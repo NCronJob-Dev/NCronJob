@@ -122,10 +122,20 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void AssertUseNCronJobWasCalled()
     {
-        if (!missingMethodCalledHandler.UseWasCalled)
+        if (missingMethodCalledHandler.UseWasCalled)
         {
-            LogUseNCronJobNotCalled();
+            return;
         }
+
+        if (jobRegistry.GetAllOneTimeJobs().Count == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Startup jobs have been registered. However, neither IHost.UseNCronJobAsync(), nor IHost.UseNCronJob() have been been called.
+            """);
     }
 
     private void CreateWorkerQueues(CancellationToken stopToken)
