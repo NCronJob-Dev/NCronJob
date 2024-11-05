@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,9 +10,19 @@ namespace NCronJob;
 public interface IRuntimeJobRegistry
 {
     /// <summary>
-    /// Gives the ability to add a job.
-    /// </summary>
-    void Register(Action<IRuntimeJobBuilder> jobBuilder);
+    /// Tries to register a job with the given configuration.
+    /// </summary>/param>
+    /// <param name="jobBuilder">The job builder that configures the job.</param>
+    /// <returns>Returns <c>true</c> if the registration was successful, otherwise <c>false</c>.</returns>
+    bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder);
+
+    /// <summary>
+    /// Tries to register a job with the given configuration.
+    /// </summary>/param>
+    /// <param name="jobBuilder">The job builder that configures the job.</param>
+    /// <param name="exception">The exception that occurred during the registration process. Or <c>null</c> if the registration was successful.</param>
+    /// <returns>Returns <c>true</c> if the registration was successful, otherwise <c>false</c>.</returns>
+    bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)]out Exception? exception);
 
     /// <summary>
     /// Removes the job with the given name.
@@ -121,22 +132,36 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
-    public void Register(Action<IRuntimeJobBuilder> jobBuilder)
+    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder)
+        => TryRegister(jobBuilder, out _);
+
+    /// <inheritdoc />
+    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)]out Exception? exception)
     {
-        var oldJobs = jobRegistry.GetAllJobs();
-        var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
-        jobBuilder(builder);
-
-        var newJobs = jobRegistry.GetAllJobs().Except(oldJobs);
-        foreach (var jobDefinition in newJobs)
+        try
         {
-            jobWorker.ScheduleJob(jobDefinition);
-            jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
+            var oldJobs = jobRegistry.GetAllJobs();
+            var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
+            jobBuilder(builder);
+
+            var newJobs = jobRegistry.GetAllJobs().Except(oldJobs);
+            foreach (var jobDefinition in newJobs)
+            {
+                jobWorker.ScheduleJob(jobDefinition);
+                jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
+            }
+
+            foreach (var entry in jobRegistry.DynamicJobRegistrations)
+            {
+                jobQueueManager.SignalJobQueue(entry.JobDefinition.JobFullName);
+            }
+            exception = null;
+            return true;
         }
-
-        foreach (var entry in jobRegistry.DynamicJobRegistrations)
+        catch (Exception ex)
         {
-            jobQueueManager.SignalJobQueue(entry.JobDefinition.JobFullName);
+            exception = ex;
+            return false;
         }
     }
 
