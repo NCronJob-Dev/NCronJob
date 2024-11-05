@@ -30,7 +30,7 @@ internal sealed class JobRegistry
         {
             throw new InvalidOperationException(
                 $"""
-                Job registration conflict for type: {jobDefinition.Type.Name} detected. Another job with the same type, parameters, or cron expression already exists.
+                Job registration conflict for type '{jobDefinition.Type.Name}' detected. Another job with the same type, parameters, or cron expression already exists.
                 Please either remove the duplicate job, change its parameters, or assign a unique name to it if duplication is intended.
                 """);
         }
