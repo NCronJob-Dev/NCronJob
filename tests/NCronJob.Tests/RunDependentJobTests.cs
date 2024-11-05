@@ -57,21 +57,21 @@ public class RunDependentJobTests : JobIntegrationBase
         instantJobRegistry.ForceRunInstantJob<MainJob>();
 
         var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        Assert.Equal(nameof(MainJob), result);
+        result.ShouldBe(nameof(MainJob));
         result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        Assert.Equal(nameof(SubMainJob), result);
+        result.ShouldBe(nameof(SubMainJob));
 
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.RemoveJob<PrincipalCorrelationIdJob>();
-        registry.Register(n => n.AddJob<MainJob>());
+        registry.RemoveJob<MainJob>();
+        registry.TryRegister(n => n.AddJob<MainJob>());
 
         instantJobRegistry.ForceRunInstantJob<MainJob>();
 
         result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        Assert.Equal(nameof(MainJob), result);
+        result.ShouldBe(nameof(MainJob));
 
-        (await WaitForJobsOrTimeout(1)).ShouldBe(false);
+        (await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(500))).ShouldBe(false);
     }
 
     [Fact]

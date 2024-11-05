@@ -107,19 +107,11 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         return this;
     }
 
-    IRuntimeJobBuilder IRuntimeJobBuilder.AddJob<TJob>(Action<JobOptionBuilder>? options)
-    {
-        AddJob<TJob>(options);
-        return this;
-    }
+    void IRuntimeJobBuilder.AddJob<TJob>(Action<JobOptionBuilder>? options) => AddJob<TJob>(options);
 
-    IRuntimeJobBuilder IRuntimeJobBuilder.AddJob(Type jobType, Action<JobOptionBuilder>? options)
-    {
-        AddJob(jobType, options);
-        return this;
-    }
+    void IRuntimeJobBuilder.AddJob(Type jobType, Action<JobOptionBuilder>? options) => AddJob(jobType, options);
 
-    IRuntimeJobBuilder IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>
+    void IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>
         AddJob(jobDelegate, cronExpression, timeZoneInfo, jobName);
 
     private void ValidateConcurrencySetting(object jobIdentifier)
@@ -328,7 +320,7 @@ public interface IJobStage
     /// </code>
     /// </example>
     IStartupStage<TJob> AddJob<TJob>(Action<JobOptionBuilder>? options = null) where TJob : class, IJob;
-    
+
     /// <summary>
     /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// </summary>
