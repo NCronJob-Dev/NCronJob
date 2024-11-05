@@ -235,6 +235,48 @@ public class RunDependentJobTests : JobIntegrationBase
         results.ShouldContain("2");
     }
 
+    [Fact]
+    public void ShouldThrowRuntimeExceptionWhenRegistratingAnAmbiguousDependentJobTypeReference()
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentJob>(s => s.WithCronExpression("* * 30 2 *"))
+                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1").AsTask()));
+            n.AddJob<DependentJob>(s => s.WithCronExpression("* * 31 2 *"))
+                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("2").AsTask()));
+            n.AddJob<PrincipalJob>(s => s.WithCronExpression("* * * * *")).ExecuteWhen(s => s.RunJob<DependentJob>());
+        });
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain($"Ambiguous job reference for type 'DependentJob' detected.");
+    }
+
+    [Fact]
+    public async Task CanUniquelyIdentifyAJobAmongAmbiguousDependentJobTypeReference()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentJob>(s => s.WithCronExpression("* * 30 2 *"))
+                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1").AsTask()));
+            n.AddJob<DependentJob>(s => s.WithCronExpression("* * 31 2 *").WithName("myJob").WithParameter("42"))
+                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("2").AsTask()));
+            n.AddJob<PrincipalJob>(s => s.WithCronExpression("* * * * *").WithParameter(true)).ExecuteWhen(s => s.RunJob("myJob", "17"));
+        });
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        List<string?> results = [];
+        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
+        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
+        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
+        results.ShouldContain("PrincipalJob: Success");
+        results.ShouldContain("DependentJob: 17 Parent: Success");
+        results.ShouldContain("2");
+    }
+
     private sealed class PrincipalJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
