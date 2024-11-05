@@ -15,7 +15,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.Register(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"), out _);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
@@ -30,9 +30,8 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.Register(s => s
-            .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *")
-            .AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
+        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true), "* * * * *"));
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(2);
@@ -171,7 +170,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             .WithName("JobName")));
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.Register(s => s.AddJob(() => { }, "* * * * *", jobName: "JobName2"));
+        registry.TryRegister(s => s.AddJob(() => { }, "* * * * *", jobName: "JobName2"), out _);
 
         var allSchedules = registry.GetAllRecurringJobs();
 
@@ -190,7 +189,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(p => p.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.Register(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
+        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
 
         var allSchedules = registry.GetAllRecurringJobs();
 
@@ -257,11 +256,38 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithName("JobName")));
         var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
 
-        var act = () => runtimeJobRegistry.Register(s => s.AddJob(() =>
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob(() =>
         {
-        }, "* * * * *", jobName: "JobName"));
+        }, "* * * * *", jobName: "JobName"), out var exception);
 
-        act.ShouldThrow<InvalidOperationException>();
+        successful.ShouldBeFalse();
+        exception.ShouldNotBeNull();
+        exception.ShouldBeOfType<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void TryRegisteringShouldIndicateFailureWithAGivenException()
+    {
+        ServiceCollection.AddNCronJob();
+        var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
+        runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")), out var exception);
+
+        successful.ShouldBeFalse();
+        exception.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void TryRegisterShouldIndicateSuccess()
+    {
+        ServiceCollection.AddNCronJob();
+        var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
+
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")), out var exception);
+
+        successful.ShouldBeTrue();
+        exception.ShouldBeNull();
     }
 
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
