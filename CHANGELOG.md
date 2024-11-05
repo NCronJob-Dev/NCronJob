@@ -416,8 +416,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.5...HEAD
-[3.3.5]: https://github.com/NCronJob-Dev/NCronJob/compare/3.3.4...3.3.5
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.5...HEAD
+[3.3.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.4...v3.3.5
 [3.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.3...3.3.4
 [3.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.2...v3.3.3
 [3.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.2.0...v3.3.2
