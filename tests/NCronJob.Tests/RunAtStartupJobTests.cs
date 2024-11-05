@@ -8,6 +8,26 @@ namespace NCronJob.Tests;
 public class RunAtStartupJobTests : JobIntegrationBase
 {
     [Fact]
+    public async Task UseNCronJobIsMandatoryWhenStartupJobsAreDefined()
+    {
+        var builder = Host.CreateDefaultBuilder();
+        var storage = new Storage();
+        builder.ConfigureServices(services =>
+        {
+            services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
+            services.AddSingleton(_ => storage);
+        });
+
+        using var app = builder.Build();
+
+#pragma warning disable IDISP013 // Await in using
+        Func<Task> act = () => RunApp(app);
+#pragma warning restore IDISP013 // Await in using
+
+        await act.ShouldThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
     public async Task UseNCronJobShouldTriggerStartupJobs()
     {
         var builder = Host.CreateDefaultBuilder();
