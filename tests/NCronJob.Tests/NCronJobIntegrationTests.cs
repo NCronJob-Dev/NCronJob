@@ -394,24 +394,10 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var act = () => runtimeRegistry.Register(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        var successful = runtimeRegistry.TryRegister(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"), out var exception);
 
-        act.ShouldThrow<InvalidOperationException>();
-    }
-
-    [Fact]
-    public async Task TwoJobsWithSameDefinitionLeadToOneExecution()
-    {
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").And.WithCronExpression("* * * * *")));
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        var countJobs = provider.GetRequiredService<JobRegistry>().GetAllCronJobs().Count;
-        countJobs.ShouldBe(1);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var jobFinished = await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(250));
-        jobFinished.ShouldBeFalse();
+        successful.ShouldBeFalse();
+        exception.ShouldNotBeNull();
     }
 
     [Fact]
@@ -453,8 +439,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.AddJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
-        registry.AddJob(n => n.AddJob<ShortRunningJob>(p => p.WithCronExpression("0 0 10 * *")));
+        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        registry.TryRegister(n => n.AddJob<ShortRunningJob>(p => p.WithCronExpression("0 0 10 * *")));
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
@@ -475,6 +461,30 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(2);
         jobFinished.ShouldBeTrue();
+    }
+
+    public void RegisteringDuplicatedJobsLeadToAnExceptionWhenRegistration()
+    {
+        Action act = () =>
+            ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p
+                .WithCronExpression("* * * * *")
+                .And
+                .WithCronExpression("* * * * *")));
+
+        act.ShouldThrow<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void RegisteringDuplicateDuringRuntimeLeadsToException()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        var provider = CreateServiceProvider();
+        var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var successful = runtimeRegistry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")), out var exception);
+
+        successful.ShouldBeFalse();
+        exception.ShouldNotBeNull();
     }
 
     private static class JobMethods
