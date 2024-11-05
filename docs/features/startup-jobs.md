@@ -33,6 +33,8 @@ app.Run();
 
 The `RunAtStartup` in combination with `UseNCronJobAsync` method ensures that the job is executed as soon as the application starts. This method is useful for scenarios where certain tasks need to be performed immediately upon application launch.
 
+Failure to call `UseNCronJobAsync` when startup jobs are defined will lead to a fatal exception during the application start.
+
 ## Example Use Case
 
 Consider an application that needs to load initial data from a database or perform some cleanup tasks whenever it starts. You can define and configure a startup job to handle this:
