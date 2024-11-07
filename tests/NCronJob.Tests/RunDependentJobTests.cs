@@ -11,8 +11,12 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasSuccessful_DependentJobShouldRun()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("Message")));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentJob>();
+            n.AddJob<PrincipalJob>()
+                .ExecuteWhen(success: s => s.RunJob<DependentJob>("Message"));
+        });
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -29,8 +33,12 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasFailed_DependentJobShouldRun()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("Message")));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentJob>();
+            n.AddJob<PrincipalJob>()
+                .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("Message"));
+        });
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -47,8 +55,12 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task RemovingAJobShouldAlsoRemoveItsDependencies()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<MainJob>()
-            .ExecuteWhen(success: s => s.RunJob<SubMainJob>()));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<SubMainJob>();
+            n.AddJob<MainJob>()
+                .ExecuteWhen(success: s => s.RunJob<SubMainJob>());
+        });
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -78,8 +90,12 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task CorrelationIdIsSharedByJobsAndTheirDependencies()
     {
         ServiceCollection.AddSingleton(new Storage());
-        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentCorrelationIdJob>();
+            n.AddJob<PrincipalCorrelationIdJob>()
+                        .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>());
+        });
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -96,8 +112,12 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task SkipChildrenShouldPreventDependentJobsFromRunning()
     {
         ServiceCollection.AddSingleton(new Storage());
-        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentCorrelationIdJob>();
+            n.AddJob<PrincipalCorrelationIdJob>()
+                .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>());
+        });
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -131,9 +151,13 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task CanBuildAChainOfDependentJobsThatRunAfterOneJob()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("1").RunJob<DependentJob>("2"))
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("3")));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DependentJob>();
+            n.AddJob<PrincipalJob>()
+                .ExecuteWhen(success: s => s.RunJob<DependentJob>("1").RunJob<DependentJob>("2"))
+                .ExecuteWhen(success: s => s.RunJob<DependentJob>("3"));
+        });
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -159,8 +183,9 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n =>
         {
-            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DependentJob>());
+            n.AddJob<DependentDependentJob>();
             n.AddJob<DependentJob>().ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DependentJob>());
         });
 
         var provider = CreateServiceProvider();
@@ -183,10 +208,11 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n =>
         {
-            n.AddJob<PrincipalJob>(o => o.WithCronExpression("* * * * *").WithParameter(true))
-                .ExecuteWhen(success: s => s.RunJob<DependentJob>());
+            n.AddJob<DependentDependentJob>();
             n.AddJob<DependentJob>(o => o.WithCronExpression("* * 31 2 *"))
                 .ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
+            n.AddJob<PrincipalJob>(o => o.WithCronExpression("* * * * *").WithParameter(true))
+                .ExecuteWhen(success: s => s.RunJob<DependentJob>());
         });
 
         var provider = CreateServiceProvider();

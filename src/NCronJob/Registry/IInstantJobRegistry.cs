@@ -241,8 +241,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
             if (jobDefinition is null)
             {
-                LogJobNotRegistered(typeof(TJob).Name);
-                jobDefinition = new JobDefinition(typeof(TJob), parameter, null, null);
+                throw new InvalidOperationException("Boom");
             }
 
             token.Register(() => LogCancellationRequested(parameter));

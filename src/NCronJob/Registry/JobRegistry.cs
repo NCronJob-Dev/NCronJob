@@ -8,7 +8,7 @@ internal sealed class JobRegistry
         = new(JobDefinitionEqualityComparer.Instance);
     public List<DynamicJobRegistration> DynamicJobRegistrations { get; } = [];
     private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
-        = new(DependentJobDefinitionEqualityComparer.Instance);
+        = new();
 
     public IReadOnlyCollection<JobDefinition> GetAllJobs() => [.. allJobs];
 

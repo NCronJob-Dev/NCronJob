@@ -24,7 +24,7 @@ public sealed class DependencyBuilder<TPrincipalJob>
 
         if (jobDefinition is null)
         {
-            dependentJobOptions.Add(new JobDefinition(typeof(TJob), parameter, null, null));
+            throw new InvalidOperationException("Boom");
         }
         else
         {
