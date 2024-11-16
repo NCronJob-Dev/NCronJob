@@ -463,6 +463,20 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         anotherJobFinished.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task CallingAddNCronJobMultipleTimesWillRegisterAllJobs()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<ShortRunningJob>());
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+    }
+
     private static class JobMethods
     {
         public static async Task WriteTrueStaticAsync(ChannelWriter<object> writer, CancellationToken ct)

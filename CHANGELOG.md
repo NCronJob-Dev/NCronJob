@@ -10,7 +10,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 - Added `net9.0` release packages for hosting abstraction.
 
 ### Fixed
-- Calling `AddJob` multiple times on `IRuntimeRegistry` triggered duplicates. Reported by [@vrohak](https://github.com/vrohak). Fixed by [@linkdotnet](https://github.com/linkdotnet)
+- Calling `AddJob` multiple times on `IRuntimeRegistry` triggered duplicates. Reported by [@vrohak](https://github.com/vrohak) in [#139](https://github.com/NCronJob-Dev/NCronJob/issues/139). Fixed by [@linkdotnet](https://github.com/linkdotnet)
+- Calling `AddNCronJob` multiple times should register all jobs. Reported by [@skarum](https://github.com/skarum) in [#138](https://github.com/NCronJob-Dev/NCronJob/issues/138). Fixed by [@linkdotnet](https://github.com/linkdotnet)
 
 ## [3.3.5] - 2024-11-04
 

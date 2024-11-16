@@ -25,7 +25,8 @@ public static class NCronJobExtensions
         this IServiceCollection services,
         Action<NCronJobOptionBuilder>? options = null)
     {
-        JobRegistry jobRegistry = new();
+        var jobRegistry = services.FirstOrDefault(d => d.ServiceType == typeof(JobRegistry))?.ImplementationInstance as JobRegistry
+                            ?? new JobRegistry();
 
         // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
