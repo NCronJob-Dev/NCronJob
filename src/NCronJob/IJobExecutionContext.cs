@@ -51,5 +51,5 @@ public interface IJobExecutionContext
     /// Calling <see cref="JobExecutionContext.SkipChildren"/> has no effects when no dependent jobs are defined
     /// via <see cref="INotificationStage{TJob}.ExecuteWhen"/>.
     /// </remarks>
-    void SkipChildren();
+    public void SkipChildren();
 }
