@@ -445,6 +445,24 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task AddingJobsAndDuringStartupAndRuntimeNotInOnlyOneCallOnlyOneExecution()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>().AddJob<ShortRunningJob>());
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        registry.AddJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        registry.AddJob(n => n.AddJob<ShortRunningJob>(p => p.WithCronExpression("0 0 10 * *")));
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeTrue();
+        var anotherJobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(500));
+        anotherJobFinished.ShouldBeFalse();
+    }
+
     private static class JobMethods
     {
         public static async Task WriteTrueStaticAsync(ChannelWriter<object> writer, CancellationToken ct)
