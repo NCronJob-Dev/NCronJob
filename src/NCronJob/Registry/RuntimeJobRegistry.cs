@@ -123,10 +123,12 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     /// <inheritdoc />
     public void AddJob(Action<NCronJobOptionBuilder> jobBuilder)
     {
+        var oldJobs = jobRegistry.GetAllJobs();
         var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
         jobBuilder(builder);
 
-        foreach (var jobDefinition in jobRegistry.GetAllJobs())
+        var newJobs = jobRegistry.GetAllJobs().Except(oldJobs);
+        foreach (var jobDefinition in newJobs)
         {
             jobWorker.ScheduleJob(jobDefinition);
             jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
