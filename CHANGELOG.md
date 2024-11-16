@@ -6,10 +6,14 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v3.3.8] - 2024-11-16
+
 ### Changed
+
 - Added `net9.0` release packages for hosting abstraction.
 
 ### Fixed
+
 - Calling `AddJob` multiple times on `IRuntimeRegistry` triggered duplicates. Reported by [@vrohak](https://github.com/vrohak) in [#139](https://github.com/NCronJob-Dev/NCronJob/issues/139). Fixed by [@linkdotnet](https://github.com/linkdotnet)
 - Calling `AddNCronJob` multiple times should register all jobs. Reported by [@skarum](https://github.com/skarum) in [#138](https://github.com/NCronJob-Dev/NCronJob/issues/138). Fixed by [@linkdotnet](https://github.com/linkdotnet)
 
@@ -423,7 +427,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.5...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.8...HEAD
+[v3.3.8]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.5...v3.3.8
 [3.3.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.4...v3.3.5
 [3.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.3...3.3.4
 [3.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.2...v3.3.3
