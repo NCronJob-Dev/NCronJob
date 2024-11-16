@@ -463,6 +463,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
     }
 
+    [Fact]
     public void RegisteringDuplicatedJobsLeadToAnExceptionWhenRegistration()
     {
         Action act = () =>
