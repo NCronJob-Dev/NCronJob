@@ -26,13 +26,14 @@ internal sealed class JobRegistry
     {
         AssertNoDuplicateJobNames(jobDefinition.CustomName);
 
-        var isTypeUpdate = allJobs.Any(j => j.JobFullName == jobDefinition.JobFullName);
-        if (isTypeUpdate)
+        if (!allJobs.Add(jobDefinition))
         {
-            Remove(jobDefinition);
+            throw new InvalidOperationException(
+                $"""
+                Job registration conflict for type: {jobDefinition.Type.Name} detected. Another job with the same type, parameters, or cron expression already exists.
+                Please either remove the duplicate job, change its parameters, or assign a unique name to it if duplication is intended.
+                """);
         }
-
-        allJobs.Add(jobDefinition);
     }
 
     public int GetJobTypeConcurrencyLimit(string jobTypeName)
@@ -142,7 +143,11 @@ internal sealed class JobRegistry
 
         if (duplicateJobName is not null)
         {
-            throw new InvalidOperationException($"Duplicate job names found: {string.Join(", ", duplicateJobName)}");
+            throw new InvalidOperationException(
+                $"""
+                Job registration conflict detected. Duplicate job names found: {duplicateJobName}.
+                Please use a different name for each job.
+                """);
         }
     }
 
