@@ -266,6 +266,23 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public void ShouldThrowRuntimeExceptionWhenRemovingAnAmbiguousTypeReference()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<SimpleJob>(s => s.WithCronExpression("* * 30 2 *"));
+            n.AddJob<SimpleJob>(s => s.WithCronExpression("* * 31 2 *"));
+        });
+
+        var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
+
+        Action act = runtimeJobRegistry.RemoveJob<SimpleJob>;
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain($"Ambiguous job reference for type 'SimpleJob' detected.");
+    }
+
+    [Fact]
     public void TryRegisteringShouldIndicateFailureWithAGivenException()
     {
         ServiceCollection.AddNCronJob();
