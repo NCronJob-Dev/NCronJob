@@ -39,6 +39,6 @@ jobs:
       run: dotnet test -c Release --no-build -p:VSTestUseMSBuildOutput=false --collect:"XPlat Code Coverage" --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
     - name: Upload results to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
