@@ -2,9 +2,9 @@ name: .NET
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, v4 ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, v4 ]
 
 env:
     VSTEST_CONNECTION_TIMEOUT: 180

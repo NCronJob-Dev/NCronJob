@@ -79,6 +79,10 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
     var logger = factory.CreateLogger("My Anonymous Job");
     logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
 }, "*/5 * * * * *");
+
+var app = builder.Build();
+await app.UseNCronJobAsync();
+app.Run();
 ```
 
 With this simple lambda, you can define a job that runs every 5 seconds. Pass in all dependencies, just like you would with a Minimal API.
@@ -155,6 +159,11 @@ builder.Services.AddNCronJob(options =>
     options.AddJob<MyJob>()
            .RunAtStartup();
 });
+
+var app = builder.Build();
+// Here the startup jobs will be executed
+await app.UseNCronJobAsync();
+app.Run();
 ```
 
 In this example, the job of type 'MyJob' will be executed as soon as the application starts. This is

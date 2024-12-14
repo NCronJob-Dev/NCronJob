@@ -11,4 +11,6 @@ builder.Services.AddNCronJob(options =>
 
 var app = builder.Build();
 
+await app.UseNCronJobAsync();
+
 await app.RunAsync();
