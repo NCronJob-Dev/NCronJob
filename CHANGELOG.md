@@ -6,6 +6,18 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+New `v4` release with some new features and improvements. Check the [`v4` migration guide](https://docs.ncronjob.dev/migration/v4/) for more information.
+
+### Added
+
+- Optionally make startup jobs run early
+
+### Changed
+
+- `IRuntimeRegistry.AddJob` is now called `TryRegister` to better reflect its behavior. 
+- Explicit handling of duplicates
+- Make `UseNCronJobAsync` mandatory when startup jobs have been defined 
+
 ## [v3.3.8] - 2024-11-16
 
 ### Changed
