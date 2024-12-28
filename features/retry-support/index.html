@@ -90,6 +90,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -138,74 +140,74 @@
 <h2 id="using-retry-policies">Using Retry Policies<a class="headerlink" href="#using-retry-policies" title="Permanent link">&para;</a></h2>
 <p>Here are examples of how to use the built-in retry policies:</p>
 <h3 id="example-1-basic-retry-policy-defaults-to-exponential-backoff">Example 1: Basic Retry Policy, defaults to Exponential Backoff<a class="headerlink" href="#example-1-basic-retry-policy-defaults-to-exponential-backoff" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy(retryCount: 4)]</span><span class="w"></span>
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">RetryJob</span><span class="p">(</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">RetryJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy(retryCount: 4)]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">RetryJob</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">RetryJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="p">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;RetryJob simulating failure.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in RetryJob.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;RetryJob simulating failure.&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in RetryJob.&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
 
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;RetryJob with Id {context.Id} was attempted {attemptCount} times.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;RetryJob with Id {context.Id} was attempted {attemptCount} times.&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 
 <h3 id="example-2-fixed-interval">Example 2: Fixed Interval<a class="headerlink" href="#example-2-fixed-interval" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy(4, PolicyType.FixedInterval)]</span><span class="w"></span>
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">FixedIntervalRetryJob</span><span class="p">(</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">FixedIntervalRetryJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy(4, PolicyType.FixedInterval)]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">FixedIntervalRetryJob</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">FixedIntervalRetryJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="p">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;FixedIntervalRetryJob simulating failure.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in FixedIntervalRetryJob.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;FixedIntervalRetryJob simulating failure.&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in FixedIntervalRetryJob.&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
 
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;FixedIntervalRetryJob with Id {context.Id} was attempted {attemptCount} times.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;FixedIntervalRetryJob with Id {context.Id} was attempted {attemptCount} times.&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 
 <h2 id="advanced-custom-retry-policies">Advanced: Custom Retry Policies<a class="headerlink" href="#advanced-custom-retry-policies" title="Permanent link">&para;</a></h2>
 <p>You can also create custom retry policies by implementing the <code>IPolicyCreator</code> interface. This allows you to define complex retry logic tailored to your specific needs.</p>
-<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy&lt;MyCustomPolicyCreator&gt;(retryCount:4, delayFactor:1)]</span><span class="w"></span>
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">CustomPolicyJob</span><span class="p">(</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">CustomPolicyJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy&lt;MyCustomPolicyCreator&gt;(retryCount:4, delayFactor:1)]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">CustomPolicyJob</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">CustomPolicyJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="p">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;FixedIntervalRetryJob simulating failure.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in FixedIntervalRetryJob.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;FixedIntervalRetryJob simulating failure.&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in FixedIntervalRetryJob.&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
 
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;CustomPolicyJob with Id {context.Id} was attempted {attemptCount} times.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;CustomPolicyJob with Id {context.Id} was attempted {attemptCount} times.&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomPolicyCreator</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IPolicyCreator</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">IAsyncPolicy</span><span class="w"> </span><span class="nf">CreatePolicy</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">maxRetryAttempts</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">delayFactor</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Policy</span><span class="p">.</span><span class="n">Handle</span><span class="p">&lt;</span><span class="n">Exception</span><span class="p">&gt;()</span><span class="w"></span>
-<span class="w">            </span><span class="p">.</span><span class="n">WaitAndRetryAsync</span><span class="p">(</span><span class="n">maxRetryAttempts</span><span class="p">,</span><span class="w"></span>
-<span class="w">                </span><span class="n">retryAttempt</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="n">Pow</span><span class="p">(</span><span class="n">delayFactor</span><span class="p">,</span><span class="w"> </span><span class="n">retryAttempt</span><span class="p">)));</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomPolicyCreator</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IPolicyCreator</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">IAsyncPolicy</span><span class="w"> </span><span class="nf">CreatePolicy</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">maxRetryAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">delayFactor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Policy</span><span class="p">.</span><span class="n">Handle</span><span class="o">&lt;</span><span class="n">Exception</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WaitAndRetryAsync</span><span class="p">(</span><span class="n">maxRetryAttempts</span><span class="p">,</span>
+<span class="w">                </span><span class="n">retryAttempt</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="n">Pow</span><span class="p">(</span><span class="n">delayFactor</span><span class="p">,</span><span class="w"> </span><span class="n">retryAttempt</span><span class="p">)));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
               
             </div>

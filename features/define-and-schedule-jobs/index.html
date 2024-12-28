@@ -90,6 +90,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -136,50 +138,50 @@
 <h2 id="defining-a-job">Defining a Job<a class="headerlink" href="#defining-a-job" title="Permanent link">&para;</a></h2>
 <p>Follow these steps to create and schedule a job in NCronJob:</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyCronJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">_logger</span><span class="p">;</span><span class="w"></span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">_logger</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">MyCronJob</span><span class="p">(</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">MyCronJob</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// MyCronJob lives in the container so you can inject services here</span>
-<span class="w">        </span><span class="n">_logger</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">_logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">_logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;MyCronJob is executing!&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;MyCronJob is executing!&quot;</span><span class="p">);</span>
 
 <span class="w">        </span><span class="c1">// Add your job logic here (e.g., database updates, sending emails, etc.)</span>
 
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 
 <h3 id="registering-the-job">Registering the Job<a class="headerlink" href="#registering-the-job" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="nn">NCronJob</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="nn">NCronJob</span><span class="p">;</span>
 
 <span class="c1">// Inside your service configuration</span>
-<span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">//  Runs every 5 minutes</span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="chaining-cron-expressions-with-and">Chaining Cron Expressions with <code>And</code><a class="headerlink" href="#chaining-cron-expressions-with-and" title="Permanent link">&para;</a></h2>
 <p>Execute the same job on multiple schedules using the <code>And</code> command:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 8 * * *&quot;</span><span class="p">)</span><span class="w">  </span><span class="c1">// Every day at 8:00 AM</span>
-<span class="w">         </span><span class="p">.</span><span class="n">And</span><span class="w"></span>
+<span class="w">         </span><span class="p">.</span><span class="n">And</span>
 <span class="w">         </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// Every day at 8:00 PM </span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <div class="admonition info">
@@ -187,27 +189,27 @@
 <p>Defining multiple identifical schedules for the same job will not lead to multiple instances of the job running concurrently. NCronJob will ensure that only one instance of the job is running at any given time. One can define different custom names for each schedule to differentiate between them. See <a href="../../advanced/dynamic-job-control/#defining-job-names"><em>&ldquo;Defining job names&rdquo;</em></a>.</p>
 </div>
 <p>The following example illustrates how to define multiple schedules that are identical and will only lead to one instance of the job running at any given time:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">         </span><span class="p">.</span><span class="n">And</span><span class="w"></span>
-<span class="w">         </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="p">.</span><span class="n">And</span>
+<span class="w">         </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 20 * * *&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="scheduling-jobs-with-time-zones">Scheduling Jobs With Time Zones<a class="headerlink" href="#scheduling-jobs-with-time-zones" title="Permanent link">&para;</a></h2>
 <p>The library offers you the ability to schedule jobs using time zones.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">timeZone</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">.</span><span class="n">FindSystemTimeZoneById</span><span class="p">(</span><span class="s">&quot;Pacific Standard Time&quot;</span><span class="p">);</span><span class="w"> </span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">MyCronJob</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">timeZone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">.</span><span class="n">FindSystemTimeZoneById</span><span class="p">(</span><span class="s">&quot;Pacific Standard Time&quot;</span><span class="p">);</span><span class="w"> </span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 15 * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">timeZoneInfo</span><span class="p">:</span><span class="w"> </span><span class="n">timeZone</span><span class="p">);</span><span class="w"> </span><span class="c1">// Every day at 3:00 PM PST</span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
 </code></pre></div>
               
             </div>

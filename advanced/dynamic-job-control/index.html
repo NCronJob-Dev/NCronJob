@@ -76,6 +76,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -139,87 +141,93 @@
 <p><strong>NCronJob</strong> allows you to dynmically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.</p>
 <h2 id="defining-job-names">Defining job names<a class="headerlink" href="#defining-job-names" title="Permanent link">&para;</a></h2>
 <p>The core idea is to define an unique job name for each job that might be mutated during runtime. The job name is an optional parameter:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">builder</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">builder</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SampleJob</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">builder</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">builder</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">SampleJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">));</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>The same applies to Minimal API:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyName&quot;</span><span class="p">));</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyName&quot;</span><span class="p">));</span>
 </code></pre></div>
 
 <h3 id="job-names">Job Names<a class="headerlink" href="#job-names" title="Permanent link">&para;</a></h3>
 <p>Every recurring job (CRON job) can have a unique job name that identifies the job. Job names have to be unique across all jobs that were given a name. If a job is added without a name, it will not be possible to remove or update the job at runtime by name.</p>
 <h2 id="adding-jobs">Adding jobs<a class="headerlink" href="#adding-jobs" title="Permanent link">&para;</a></h2>
 <p>To add a job at runtime, leverage the <code>IRuntimeJobRegistry</code> interface:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/add-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SampleJob</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">)));</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/add-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">hasSucceeded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">TryRegister</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">SampleJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">)),</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">Exception</span><span class="o">?</span><span class="w"> </span><span class="n">exc</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">hasSucceeded</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Error</span><span class="p">(</span><span class="n">exc</span><span class="o">?.</span><span class="n">Message</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>The outer <code>AddJob</code> accepts a builder just like <code>builder.Services.AddNCronJob</code> does. The inner <code>AddJob</code> is the one that actually adds the job to the scheduler and does behave exactly the same.</p>
 <h2 id="removing-jobs">Removing jobs<a class="headerlink" href="#removing-jobs" title="Permanent link">&para;</a></h2>
 <p>There are two ways to remove a job from the scheduler. By name or by type. To remove a job by name:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapDelete</span><span class="p">(</span><span class="s">&quot;/remove-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RemoveJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapDelete</span><span class="p">(</span><span class="s">&quot;/remove-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RemoveJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>That will remove one job from the scheduler that has the name <code>MyName</code>. In contrast removing by type will remove all jobs of the given type (so zero to many jobs):</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapDelete</span><span class="p">(</span><span class="s">&quot;/remove-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RemoveJob</span><span class="p">&lt;</span><span class="n">SampleJob</span><span class="p">&gt;();</span><span class="w"> </span><span class="c1">// Alternatively RemoveJob(typeof(SampleJob))</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapDelete</span><span class="p">(</span><span class="s">&quot;/remove-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RemoveJob</span><span class="o">&lt;</span><span class="n">SampleJob</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// Alternatively RemoveJob(typeof(SampleJob))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="updating-the-job-schedule">Updating the job schedule<a class="headerlink" href="#updating-the-job-schedule" title="Permanent link">&para;</a></h2>
 <p>Updating the job schedule is done via the <code>UpdateSchedule</code> method. This method accepts a job name, a new CRON expression and optionally the time zone:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">UpdateSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">.</span><span class="n">Utc</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">UpdateSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">.</span><span class="n">Utc</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>Updating a schedule will lead to the job being rescheduled with the new CRON expression. Any planned job with the &ldquo;old&rdquo; schedule will be cancelled and rescheduled with the new schedule.</p>
 <h2 id="updating-the-parameter">Updating the parameter<a class="headerlink" href="#updating-the-parameter" title="Permanent link">&para;</a></h2>
 <p>Updating the parameter of a job is done via the <code>UpdateParameter</code> method. This method accepts a job name and a new parameter:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">UpdateParameter</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MyParameter</span><span class="p">());</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">UpdateParameter</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MyParameter</span><span class="p">());</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the &ldquo;old&rdquo; parameter will be cancelled and rescheduled with the new parameter.</p>
 <h2 id="retrieving-a-job-schedule-by-name">Retrieving a job schedule by name<a class="headerlink" href="#retrieving-a-job-schedule-by-name" title="Permanent link">&para;</a></h2>
 <p>To retrieve the schedule of a job by name, use the <code>TryGetSchedule</code> method:</p>
-<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">TryGetSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">cronExpression</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="p">?</span><span class="w"> </span><span class="n">timeZone</span><span class="p">);</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">TryGetSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">cronExpression</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="o">?</span><span class="w"> </span><span class="n">timeZone</span><span class="p">);</span>
 </code></pre></div>
 
 <p>The cron expression and time zone can be <code>null</code> even if the job was found. This indicates that the job has no schedule (like dependent jobs).</p>
 <h2 id="disabling-and-enabling-jobs">Disabling and enabling jobs<a class="headerlink" href="#disabling-and-enabling-jobs" title="Permanent link">&para;</a></h2>
 <p>To disable a job, use the <code>DisableJob</code> method:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/disable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">DisableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/disable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">DisableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>If a job is disabled, it will not be scheduled anymore. Any planned job will be cancelled and the job will be removed from the scheduler.</p>
 <p>To enable a job, use the <code>EnableJob</code> method:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/enable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">EnableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/enable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">EnableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
               
             </div>

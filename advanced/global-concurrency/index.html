@@ -76,6 +76,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -123,7 +125,7 @@
 <p><strong>NCronJob</strong> utilisies a priority queue with a maximum amount of entries. That is, the queue will only hold and execute a maximum amount of jobs at any given time. This is to prevent the system from being overloaded with jobs.</p>
 <h2 id="the-maxmimum">The Maxmimum<a class="headerlink" href="#the-maxmimum" title="Permanent link">&para;</a></h2>
 <p>The global maximum of concurrent jobs is calculated as:</p>
-<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">maxDegreeOfParallelism</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Environment</span><span class="p">.</span><span class="n">ProcessorCount</span><span class="w"> </span><span class="p">*</span><span class="w"> </span><span class="m">4</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">maxDegreeOfParallelism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Environment</span><span class="p">.</span><span class="n">ProcessorCount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">4</span><span class="p">;</span>
 </code></pre></div>
 
 <p>If you have a CPU with 12 Cores (like a M2 Processor), the maximum amount of concurrent jobs will be 48. A CRON job is rescheduled after it has been executed. This means that the queue will always be filled with jobs that are ready to be executed. If that queue is full, no more jobs will be added to the queue until a job has been executed.</p>

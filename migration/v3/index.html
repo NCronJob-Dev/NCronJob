@@ -76,6 +76,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">v3 Migration Guide</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#second-precision-is-automatically-inferred">Second precision is automatically inferred</a>
@@ -128,22 +130,22 @@
 <p>Version 3 of <strong>NCronJob</strong> introduces some breaking changes to improve the API.</p>
 <h3 id="second-precision-is-automatically-inferred">Second precision is automatically inferred<a class="headerlink" href="#second-precision-is-automatically-inferred" title="Permanent link">&para;</a></h3>
 <p>In <code>v2</code> one would define as such:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SimpleJob</span><span class="p">&gt;(</span><span class="w"></span>
-<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)));</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">SimpleJob</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * * *&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)));</span>
 </code></pre></div>
 
 <p>Inside <code>WithCronExpression</code>, there was an optional parameter that, if set to <code>true</code>, required the cron expression to be in <em>seconds</em> precision. This was a bit confusing and not very intuitive. In <code>v3</code> the seconds precision is automatically inferred. Therefore, the above code can be simplified to:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">SimpleJob</span><span class="p">&gt;(</span><span class="w"></span>
-<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * * *&quot;</span><span class="p">)));</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">SimpleJob</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * * *&quot;</span><span class="p">)));</span>
 </code></pre></div>
 
 <h3 id="jobexecutioncontext-is-now-ijobexecutioncontext"><code>JobExecutionContext</code> is now <code>IJobExecutionContext</code><a class="headerlink" href="#jobexecutioncontext-is-now-ijobexecutioncontext" title="Permanent link">&para;</a></h3>
 <p>The <code>JobExecutionContext</code> class is no longer used. It has been replaced by the <code>IJobExecutionContext</code> interface. This change was made to allow for easier testing and mocking of the context. Until now you always had to pass in a valid instance which was a bit cumbersome. Now you can mock the interface (or provide a fake) and pass it in.</p>
 <p>For the migration, you just have to change the type of the parameter in your job from <code>JobExecutionContext</code> to <code>IJobExecutionContext</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="gd">- public Task RunAsync(JobExecutionContext context, CancellationToken token)</span><span class="w"></span>
-<span class="gi">+ public Task RunAsync(IJobExecutionContext context, CancellationToken token)</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="gd">- public Task RunAsync(JobExecutionContext context, CancellationToken token)</span>
+<span class="gi">+ public Task RunAsync(IJobExecutionContext context, CancellationToken token)</span>
 </code></pre></div>
 
 <p>All the public members are still the same as before.</p>
@@ -154,7 +156,7 @@
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../features/exception-handler/" class="btn btn-neutral float-left" title="Exception handler"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../v4/" class="btn btn-neutral float-left" title="v4 Migration Guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../v2/" class="btn btn-neutral float-right" title="v2 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -183,7 +185,7 @@
         </span>
     
     
-      <span><a href="../../features/exception-handler/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../v4/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../v2/" style="color: #fcfcfc">Next &raquo;</a></span>

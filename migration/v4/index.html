@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/migration/v4/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>v4 Migration Guide - NCronJob</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "v4 Migration Guide";
+        var mkdocs_page_input_path = "migration/v4.md";
+        var mkdocs_page_url = "/migration/v4/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../..">
+          <img src="../../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/model-dependencies/">Model dependencies</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/exception-handler/">Exception handler</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">v4 Migration Guide</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#usencronjob-and-usencronjobasync-methods">UseNCronJob and UseNCronJobAsync methods</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#runatstartup-method">RunAtStartup method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#addncronjobdelegate-move-to-ncronjobextensions">AddNCronJob(Delegate) move to NCronJobExtensions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#iruntimeregistry-is-more-restrictive">IRuntimeRegistry is more restrictive</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#iruntimeregistrys-addjob-is-now-called-tryregister">IRuntimeRegistrys AddJob is now called TryRegister</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#chaining-was-removed">Chaining was removed</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#registering-duplicated-jobs-will-lead-to-an-exception-during-startup">Registering duplicated jobs will lead to an exception during startup</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../v3/">v3 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Controlling the log level</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Migration</li>
+      <li class="breadcrumb-item active">v4 Migration Guide</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/migration/v4.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="v4-migration-guide">v4 Migration Guide<a class="headerlink" href="#v4-migration-guide" title="Permanent link">&para;</a></h1>
+<p>This document describes the changes made in <code>v4</code> of <strong>NCronJob</strong> and how to migrate from <code>v3</code>.</p>
+<p>Version 4 of <strong>NCronJob</strong> introduces some breaking changes to improve the API.</p>
+<h2 id="usencronjob-and-usencronjobasync-methods"><code>UseNCronJob</code> and <code>UseNCronJobAsync</code> methods<a class="headerlink" href="#usencronjob-and-usencronjobasync-methods" title="Permanent link">&para;</a></h2>
+<p>Following the classical ASP.NET pattern, the <code>UseNCronJob</code> and <code>UseNCronJobAsync</code> methods have been introduced to the <code>IHost</code> interface. The minimal setup now looks like this:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">builder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WebApplication</span><span class="p">.</span><span class="n">CreateBuilder</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(...);</span>
+
+<span class="kt">var</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="n">Build</span><span class="p">();</span>
+<span class="k">await</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">UseNCronJobAsync</span><span class="p">();</span>
+<span class="n">app</span><span class="p">.</span><span class="n">Run</span><span class="p">();</span>
+</code></pre></div>
+
+<p>Instead of the async method <code>UseNCronJobAsync</code>, you can also use the synchronous <code>UseNCronJob</code> method. The difference is that the async method returns a <code>Task</code> that you can await.</p>
+<h2 id="runatstartup-method"><code>RunAtStartup</code> method<a class="headerlink" href="#runatstartup-method" title="Permanent link">&para;</a></h2>
+<p>The <code>RunAtStartup</code> method has a bit different semantics than before. All startup jobs are now executed when <code>UseNCronJob</code> or <code>UseNCronJobAsync</code> is called. This ensures that all startup jobs are completed before any other part of the application is executed.</p>
+<h2 id="addncronjobdelegate-move-to-ncronjobextensions"><code>AddNCronJob(Delegate)</code> move to <code>NCronJobExtensions</code><a class="headerlink" href="#addncronjobdelegate-move-to-ncronjobextensions" title="Permanent link">&para;</a></h2>
+<p>The <code>AddNCronJob(Delegate)</code> (Minimal API) was a different static class than the <code>AddNCronJob(Action)</code> version. This has been fixed by moving the <code>AddNCronJob(Delegate)</code> method to the <code>NCronJobExtensions</code> class. As most developers are not invoking those extensions via the static class, this should not affect most users. Otherwise the migration is simple:</p>
+<div class="codehilite"><pre><span></span><code><span class="gd">- IServiceCollection.AddNCronJob(() =&gt; {}, &quot;* * * * *&quot;);</span>
+<span class="gi">+ NCronJobExtensions.AddNCronJob(services, () =&gt; {}, &quot;* * * * *&quot;);</span>
+</code></pre></div>
+
+<h2 id="iruntimeregistry-is-more-restrictive"><code>IRuntimeRegistry</code> is more restrictive<a class="headerlink" href="#iruntimeregistry-is-more-restrictive" title="Permanent link">&para;</a></h2>
+<p>In <code>v3</code> the <code>IRuntimeRegistry</code> offered the ability to use the whole <code>NCronJobOptionBuilder</code> which led to confusion, especially if done something like this:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">runtimeRegistry</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(...).</span><span class="n">RunAtStartup</span><span class="p">().</span><span class="n">AddExceptionHandler</span><span class="o">&lt;</span><span class="n">MyHandler</span><span class="o">&gt;</span><span class="p">());</span>
+</code></pre></div>
+
+<p>It didn&rsquo;t make sense to add a startup job during runtime. Also adding exception handlers during runtime was out of scope for this feature. Therefore the interface is more restrictive now and only allows to add jobs.</p>
+<h2 id="iruntimeregistrys-addjob-is-now-called-tryregister"><code>IRuntimeRegistry</code>s <code>AddJob</code> is now called <code>TryRegister</code><a class="headerlink" href="#iruntimeregistrys-addjob-is-now-called-tryregister" title="Permanent link">&para;</a></h2>
+<p>The <code>AddJob</code> method of the <code>IRuntimeRegistry</code> has been renamed to <code>Register</code> to better reflect its purpose and to avoid the convoluted naming.</p>
+<div class="codehilite"><pre><span></span><code><span class="gd">- runtimeRegistry.AddJob(r =&gt; r.AddJob);</span>
+<span class="gi">+ runtimeRegistry.TryRegister(r =&gt; r.AddJob);</span>
+</code></pre></div>
+
+<p>Not only that there is another overload:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">+</span><span class="w"> </span><span class="n">runtimeRegistry</span><span class="p">.</span><span class="n">TryRegister</span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">AddJob</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">Exception</span><span class="o">?</span><span class="w"> </span><span class="n">exc</span><span class="p">);</span>
+</code></pre></div>
+
+<p>The new <code>TryRegister</code> method returns a boolean indicating if the registration was successful and an exception if the registration failed. This can happen if the same configuration of a job is already configured (like same job type, with same cron expression and parameter).</p>
+<h3 id="chaining-was-removed">Chaining was removed<a class="headerlink" href="#chaining-was-removed" title="Permanent link">&para;</a></h3>
+<p>Additionally, the chaining of the former <code>Add</code> (now <code>TryRegister</code>) method was removed. If the first job registration was successful, but the second failed, the first job was still registered. This seemed arbitrary and was removed.</p>
+<p>Each chain should be its own <code>TryRegister</code> call now.</p>
+<h2 id="registering-duplicated-jobs-will-lead-to-an-exception-during-startup">Registering duplicated jobs will lead to an exception during startup<a class="headerlink" href="#registering-duplicated-jobs-will-lead-to-an-exception-during-startup" title="Permanent link">&para;</a></h2>
+<p>Given the following job registration:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">And</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)));</span>
+</code></pre></div>
+
+<p>In <code>v3</code> and earlier the second registration would have been ignored. In <code>v4</code> this will lead to an exception. This is to prevent accidental misconfigurations. Especially because jobs, by default, are not executed in parallel without further configuration.
+If you want to register the same job multiple times, you can define a custom name for the job:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">And</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;MyJob&quot;</span><span class="p">)));</span>
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../features/exception-handler/" class="btn btn-neutral float-left" title="Exception handler"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../v3/" class="btn btn-neutral float-right" title="v3 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>2024 <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../../features/exception-handler/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../v3/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

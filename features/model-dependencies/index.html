@@ -104,6 +104,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -147,12 +149,12 @@
 <p>This chapter explains how to define jobs that should automatically run based on the completion of other jobs. This feature is useful when you have a series of tasks that must be executed in a specific order allowing to build a pipeline of jobs.</p>
 <h2 id="modelling-dependencies-with-executewhen">Modelling Dependencies with <code>ExecuteWhen</code><a class="headerlink" href="#modelling-dependencies-with-executewhen" title="Permanent link">&para;</a></h2>
 <p>In <strong>NCronJob</strong>, you can define job dependencies using the <code>ExecuteWhen</code> method. This method allows you to specify that a job should run only after another job has completed successfully or faulted.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">SuccessJob</span><span class="p">&gt;(),</span><span class="w"></span>
-<span class="w">        </span><span class="n">faulted</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">FaultedJob</span><span class="p">&gt;());</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span>
+<span class="w">        </span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SuccessJob</span><span class="o">&gt;</span><span class="p">(),</span>
+<span class="w">        </span><span class="n">faulted</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">FaultedJob</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>Both <code>success</code> and <code>faulted</code> are optional so that you can define only one of them if needed. <code>RunJob</code> can be chained to allow multiple jobs to run after the completion of the main job.</p>
@@ -160,37 +162,37 @@
 <img alt="dependencies" src="../../assets/flow.webp" /></p>
 <h3 id="passing-parameters-to-dependent-jobs">Passing parameters to dependent jobs<a class="headerlink" href="#passing-parameters-to-dependent-jobs" title="Permanent link">&para;</a></h3>
 <p>The <code>RunJob</code> method allows optional parameters to be passed to the dependent job. </p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">SuccessJob</span><span class="p">&gt;(</span><span class="s">&quot;Foo&quot;</span><span class="p">));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SuccessJob</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;Foo&quot;</span><span class="p">));</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="accessing-the-state-of-the-parent-job">Accessing the state of the parent job<a class="headerlink" href="#accessing-the-state-of-the-parent-job" title="Permanent link">&para;</a></h2>
 <p>The <code>JobExecutionContext</code> object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from parent to the child job.</p>
-<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">Output</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">Output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobB</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">parentOutput</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">ParentOutput</span><span class="p">;</span><span class="w"> </span><span class="c1">// &quot;Hello World&quot;</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobB</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">parentOutput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">ParentOutput</span><span class="p">;</span><span class="w"> </span><span class="c1">// &quot;Hello World&quot;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 
 <span class="c1">// Register the dependency so that JobB runs after JobA automatically</span>
-<span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;());</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="order-of-execution-between-inotificationjobhandler-and-dependent-jobs">Order of execution between <code>INotificationJobHandler</code> and dependent jobs<a class="headerlink" href="#order-of-execution-between-inotificationjobhandler-and-dependent-jobs" title="Permanent link">&para;</a></h2>
@@ -199,85 +201,85 @@
 <p>Every <code>JobExecutionContext</code> has a <code>CorrelationId</code> property that can be used to trace the execution of dependent jobs. This property is automatically set to the <code>CorrelationId</code> of the parent job and stays the same for all dependent jobs down the chain.</p>
 <h2 id="cancelling-dependent-jobs">Cancelling dependent jobs<a class="headerlink" href="#cancelling-dependent-jobs" title="Permanent link">&para;</a></h2>
 <p>To actively cancel dependent jobs, the <code>JobExecutionContext</code> object passed offers a <code>SkipChildren</code> method. This method can be called to prevent dependent jobs from running.</p>
-<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">SkipChildren</span><span class="p">();</span><span class="w"></span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">SkipChildren</span><span class="p">();</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobB</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobB</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// This job will not run</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 
-<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;());</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="minimal-api">Minimal API<a class="headerlink" href="#minimal-api" title="Permanent link">&para;</a></h2>
 <p>The <code>ExecuteWhen</code> method can also be used in a <a href="../minimal-api/">Minimal API</a> to define job dependencies:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">ImportDataJob</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">ITransfomerService</span><span class="w"> </span><span class="n">transformerService</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">transformerService</span><span class="p">.</span><span class="n">TransformDataAsync</span><span class="p">()),</span><span class="w"></span>
-<span class="w">        </span><span class="n">faulted</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">INotificationService</span><span class="w"> </span><span class="n">notificationService</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">notificationService</span><span class="p">.</span><span class="n">SendNotificationAsync</span><span class="p">()));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ImportDataJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span>
+<span class="w">        </span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">ITransfomerService</span><span class="w"> </span><span class="n">transformerService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">transformerService</span><span class="p">.</span><span class="n">TransformDataAsync</span><span class="p">()),</span>
+<span class="w">        </span><span class="n">faulted</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">INotificationService</span><span class="w"> </span><span class="n">notificationService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">notificationService</span><span class="p">.</span><span class="n">SendNotificationAsync</span><span class="p">()));</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h3 id="getting-the-parent-jobs-output-in-a-minimal-api">Getting the parent job&rsquo;s output in a Minimal API<a class="headerlink" href="#getting-the-parent-jobs-output-in-a-minimal-api" title="Permanent link">&para;</a></h3>
 <p>If you pass in a <code>JobExecutionContext</code> to the dependent job, you can access the parent job&rsquo;s output:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">ImportDataJob</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">ITransfomerService</span><span class="w"> </span><span class="n">transformerService</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">        </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="kt">var</span><span class="w"> </span><span class="n">parentOutput</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="n">MyDataModel</span><span class="p">)</span><span class="n">context</span><span class="p">.</span><span class="n">ParentOutput</span><span class="p">;</span><span class="w"></span>
-<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="n">transformerService</span><span class="p">.</span><span class="n">TransformDataAsync</span><span class="p">(</span><span class="n">parentOutput</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="p">}));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ImportDataJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span>
+<span class="w">        </span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">ITransfomerService</span><span class="w"> </span><span class="n">transformerService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">var</span><span class="w"> </span><span class="n">parentOutput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">MyDataModel</span><span class="p">)</span><span class="n">context</span><span class="p">.</span><span class="n">ParentOutput</span><span class="p">;</span>
+<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="n">transformerService</span><span class="p">.</span><span class="n">TransformDataAsync</span><span class="p">(</span><span class="n">parentOutput</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}));</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h3 id="defining-dependencies-for-minimal-jobs">Defining dependencies for minimal Jobs<a class="headerlink" href="#defining-dependencies-for-minimal-jobs" title="Permanent link">&para;</a></h3>
 <p>To define that a job should be executed afterward, you can use the <code>AddJob</code> overload like this:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IMyService</span><span class="w"> </span><span class="n">myService</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">myService</span><span class="p">.</span><span class="n">Run</span><span class="p">())</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Run when successful&quot;</span><span class="p">)));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IMyService</span><span class="w"> </span><span class="n">myService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">myService</span><span class="p">.</span><span class="n">Run</span><span class="p">())</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Run when successful&quot;</span><span class="p">)));</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <h2 id="run-mutliple-jobs-after-the-completion-of-a-job">Run mutliple jobs after the completion of a job<a class="headerlink" href="#run-mutliple-jobs-after-the-completion-of-a-job" title="Permanent link">&para;</a></h2>
 <p>You can run multiple jobs after the completion of a job:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">successful</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span><span class="w"></span>
-<span class="w">      </span><span class="o">|-</span><span class="w"> </span><span class="n">successful</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">successful</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span>
+<span class="w">      </span><span class="o">|-</span><span class="w"> </span><span class="n">successful</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span>
 </code></pre></div>
 
 <p>Can be achieved in two ways:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>Or by chaining the <code>ExecuteWhen</code> method:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;()</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;())</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">())</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">());</span>
 
 <span class="w">    </span><span class="c1">// Register JobB and JobC into the container to avoid warnings</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;();</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <div class="admonition note">
@@ -288,18 +290,18 @@ If you need to ensure the order of execution, see the next section.</p>
 </div>
 <h2 id="construct-complex-dependencies">Construct complex dependencies<a class="headerlink" href="#construct-complex-dependencies" title="Permanent link">&para;</a></h2>
 <p>You can construct complex dependencies by using a combination of <code>AddJob</code> and <code>ExecuteWhen</code> methods. Here an example:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Job</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">C</span>
 </code></pre></div>
 
 <p>This can be achieved by:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobA</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;()</span><span class="w"></span>
-<span class="w">           </span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobB</span><span class="p">&gt;().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;());</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">           </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">());</span>
 
 <span class="w">    </span><span class="c1">// Register JobC into the container to avoid warnings</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">JobC</span><span class="p">&gt;();</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">});</span>
 </code></pre></div>
               
             </div>

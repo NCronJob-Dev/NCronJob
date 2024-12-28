@@ -76,6 +76,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">v2 Migration Guide</a>
@@ -124,33 +126,33 @@
 <p>Version 2 of <strong>NCronJob</strong> brings some breaking changes to mae a better API.</p>
 <h3 id="cronexpression-moved-towards-builder"><code>CronExpression</code> moved towards builder<a class="headerlink" href="#cronexpression-moved-towards-builder" title="Permanent link">&para;</a></h3>
 <p>In <code>v1</code> one would define as such:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">();</span><span class="w"></span>
-<span class="n">services</span><span class="p">.</span><span class="n">AddCronJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">CronExpression</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">Parameter</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">();</span>
+<span class="n">services</span><span class="p">.</span><span class="n">AddCronJob</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">CronExpression</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;* * * * *&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">Parameter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>With <code>v2</code> the <code>CronExpression</code> is moved towards the builder pattern and <code>AddCronJob</code> is merged into <code>AddNCronJob</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">         </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
 </code></pre></div>
 
 <p>This allows to easily define multiple jobs without adding much boilerplate code.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">p</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">).</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Foo&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">And</span><span class="w"></span>
-<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 * * *&quot;</span><span class="p">).</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Bar&quot;</span><span class="p">));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">).</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Foo&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">And</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 * * *&quot;</span><span class="p">).</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Bar&quot;</span><span class="p">));</span>
+<span class="p">});</span>
 </code></pre></div>
               
             </div>

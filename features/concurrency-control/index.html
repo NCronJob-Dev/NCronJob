@@ -94,6 +94,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -141,24 +143,24 @@ By default jobs are not executed concurrently if the <code>SupportsConcurrency</
 <h2 id="using-the-supportsconcurrency-attribute">Using the SupportsConcurrency Attribute<a class="headerlink" href="#using-the-supportsconcurrency-attribute" title="Permanent link">&para;</a></h2>
 <p>Here is an example of how to apply this attribute to a job:</p>
 <h3 id="example-concurrency-in-jobs">Example: Concurrency in Jobs<a class="headerlink" href="#example-concurrency-in-jobs" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="na">[SupportsConcurrency(10)]</span><span class="w"></span>
-<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">ConcurrentJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">ConcurrentJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="na">[SupportsConcurrency(10)]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">ConcurrentJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">ConcurrentJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">ConcurrentJob</span><span class="p">(</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">ConcurrentJob</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="n">logger</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">ConcurrentJob</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">ConcurrentJob</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="n">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;ConcurrentJob with Id {context.Id} is running.&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;ConcurrentJob with Id {context.Id} is running.&quot;</span><span class="p">);</span>
 <span class="w">        </span><span class="c1">// Simulate some work by delaying</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;ConcurrentJob with Id {context.Id} has completed.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;ConcurrentJob with Id {context.Id} has completed.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 
 <h2 id="important-considerations">Important Considerations<a class="headerlink" href="#important-considerations" title="Permanent link">&para;</a></h2>

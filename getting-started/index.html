@@ -86,6 +86,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v2/">v2 Migration Guide</a>
@@ -130,54 +132,58 @@
 <h2 id="1-install-the-package">1. Install the package<a class="headerlink" href="#1-install-the-package" title="Permanent link">&para;</a></h2>
 <p><a href="https://www.nuget.org/packages/NCronJob"><img alt="NuGet" src="https://img.shields.io/nuget/vpre/NCronJob.svg" /></a></p>
 <p>Install the latest stable version of the package via NuGet:</p>
-<div class="codehilite"><pre><span></span><code>dotnet add package NCronJob
+<div class="codehilite"><pre><span></span><code>dotnet<span class="w"> </span>add<span class="w"> </span>package<span class="w"> </span>NCronJob
 </code></pre></div>
 
 <p>Alternatively add the package reference to your <code>.csproj</code> file:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">&lt;PackageReference</span> <span class="na">Include=</span><span class="s">&quot;NCronJob&quot;</span> <span class="na">Version=</span><span class="s">&quot;3.3.8&quot;</span> <span class="nt">/&gt;</span>
+<div class="codehilite"><pre><span></span><code><span class="nt">&lt;PackageReference</span><span class="w"> </span><span class="na">Include=</span><span class="s">&quot;NCronJob&quot;</span><span class="w"> </span><span class="na">Version=</span><span class="s">&quot;4.0.2&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
 </code></pre></div>
 
 <h2 id="2-create-a-job">2. Create a job<a class="headerlink" href="#2-create-a-job" title="Permanent link">&para;</a></h2>
 <p><strong>NCronJob</strong> offers a single way of defining jobs: by implementing the <code>IJob</code> interface with a single <code>RunAsync</code> method:</p>
-<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PrintHelloWorld</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PrintHelloWorld</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">PrintHelloWorld</span><span class="p">(</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="n">logger</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">PrintHelloWorld</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="n">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Parameter: {Parameter}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Parameter: {Parameter}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">);</span>
 
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 
 <h2 id="3-register-the-service-and-the-job">3. Register the service and the job<a class="headerlink" href="#3-register-the-service-and-the-job" title="Permanent link">&para;</a></h2>
-<p>The <strong>NCronJob</strong> library provides one easy entry point for all its magic, the <code>AddNCronJob</code> extension method on top of the <code>IServiceCollection</code> interface. </p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">&lt;</span><span class="n">PrintHelloWorld</span><span class="p">&gt;(</span><span class="n">j</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<p>The <strong>NCronJob</strong> library provides one easy entry point for all its magic, the <code>AddNCronJob</code> extension method on top of the <code>IServiceCollection</code> interface. Additionally call the <code>UseNCronJobAsync</code> method.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Every minute and optional parameter</span>
-<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">         </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}));</span><span class="w"></span>
-<span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}));</span>
+<span class="p">});</span>
+
+<span class="kt">var</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="n">Build</span><span class="p">();</span>
+<span class="k">await</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">UseNCronJobAsync</span><span class="p">();</span>
+<span class="n">app</span><span class="p">.</span><span class="n">Run</span><span class="p">();</span>
 </code></pre></div>
 
 <p>Now your <code>PrintHelloWorld</code> job will run every minute and log &ldquo;Hello World&rdquo; to the console. And that is all!</p>
 <h2 id="too-complicated">Too complicated?<a class="headerlink" href="#too-complicated" title="Permanent link">&para;</a></h2>
 <p>We also over a &ldquo;Minimal API&rdquo; that allows you to define jobs similiar to the Minimal API for Controllers.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">((</span><span class="n">ILogger</span><span class="p">&lt;</span><span class="n">Program</span><span class="p">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="n">TimeProvider</span><span class="w"> </span><span class="n">timeProvider</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Hello World - The current date and time is {Time}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">timeProvider</span><span class="p">.</span><span class="n">GetLocalNow</span><span class="p">());</span><span class="w"></span>
-<span class="p">},</span><span class="w"> </span><span class="s">&quot;*/5 * * * * *&quot;</span><span class="p">);</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">((</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">Program</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="n">TimeProvider</span><span class="w"> </span><span class="n">timeProvider</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Hello World - The current date and time is {Time}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">timeProvider</span><span class="p">.</span><span class="n">GetLocalNow</span><span class="p">());</span>
+<span class="p">},</span><span class="w"> </span><span class="s">&quot;*/5 * * * * *&quot;</span><span class="p">);</span>
 </code></pre></div>
 
 <p>The job will be defined &ldquo;inline&rdquo; and is capable of resolving services from the DI container.</p>

@@ -80,6 +80,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
@@ -121,14 +123,14 @@
               
                 <h1 id="exception-handler">Exception Handler<a class="headerlink" href="#exception-handler" title="Permanent link">&para;</a></h1>
 <p><strong>NCronJob</strong>, much like <strong>ASP.NET</strong>, offers a central way to handle exceptions. This is useful when you want to log exceptions or send an E-Mail when a job fails. The exception handler has to inherit from the <code>IExceptionHandler</code> interface.</p>
-<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyExceptionHandler</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IExceptionHandler</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="p">&lt;</span><span class="kt">bool</span><span class="p">&gt;</span><span class="w"> </span><span class="n">TryHandleAsync</span><span class="p">(</span><span class="n">JobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">exc</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyExceptionHandler</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IExceptionHandler</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TryHandleAsync</span><span class="p">(</span><span class="n">JobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">exc</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Handle the exception</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">FromResult</span><span class="p">(</span><span class="k">true</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">FromResult</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 
 <p>If the <code>TryHandleAsync</code> method returns <code>true</code>, the exception is considered as handled and no other exception handler will be called. If it returns <code>false</code>, the next exception handler will be called, if available.</p>
@@ -140,7 +142,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../model-dependencies/" class="btn btn-neutral float-left" title="Model dependencies"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../migration/v3/" class="btn btn-neutral float-right" title="v3 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../migration/v4/" class="btn btn-neutral float-right" title="v4 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -171,7 +173,7 @@
       <span><a href="../model-dependencies/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../migration/v3/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../../migration/v4/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
