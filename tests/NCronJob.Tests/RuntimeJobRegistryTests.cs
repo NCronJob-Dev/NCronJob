@@ -58,6 +58,22 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task DoesNotCringeWhenRemovingNonExistingJobs()
+    {
+        ServiceCollection.AddNCronJob();
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var jobRegistry = provider.GetRequiredService<JobRegistry>();
+        Assert.Empty(jobRegistry.GetAllJobs());
+
+        registry.RemoveJob("Nope");
+        registry.RemoveJob<SimpleJob>();
+    }
+
+    [Fact]
     public async Task CanRemoveByJobType()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute)));
