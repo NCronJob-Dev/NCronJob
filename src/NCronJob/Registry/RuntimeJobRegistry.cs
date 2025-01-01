@@ -34,11 +34,13 @@ public interface IRuntimeJobRegistry
     /// <summary>
     /// Removes all jobs of the given type.
     /// </summary>
+    /// <remarks>If the given job is not found, no exception is thrown.</remarks>
     void RemoveJob<TJob>() where TJob : IJob;
 
     /// <summary>
     /// Removes all jobs of the given type.
     /// </summary>
+    /// <remarks>If the given job is not found, no exception is thrown.</remarks>
     void RemoveJob(Type type);
 
     /// <summary>
@@ -80,7 +82,7 @@ public interface IRuntimeJobRegistry
     IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs();
 
     /// <summary>
-    /// This will enable a job that was previously disabled.
+    /// Enables a job that was previously disabled.
     /// </summary>
     /// <param name="jobName">The unique job name that identifies this job.</param>
     /// <remarks>
@@ -90,7 +92,7 @@ public interface IRuntimeJobRegistry
     void EnableJob(string jobName);
 
     /// <summary>
-    /// This will disable a job that was previously enabled.
+    /// Disables a job that was previously enabled.
     /// </summary>
     /// <param name="jobName">The unique job name that identifies this job.</param>
     /// <remarks>
