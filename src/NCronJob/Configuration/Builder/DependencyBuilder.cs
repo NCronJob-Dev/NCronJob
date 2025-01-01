@@ -20,8 +20,41 @@ public sealed class DependencyBuilder<TPrincipalJob>
     public DependencyBuilder<TPrincipalJob> RunJob<TJob>(object? parameter = null)
         where TJob : IJob
     {
-        dependentJobOptions.Add(new JobDefinition(typeof(TJob), parameter, null, null));
+        var jobDefinition = jobRegistry.FindJobDefinition(typeof(TJob));
+
+        if (jobDefinition is null)
+        {
+            dependentJobOptions.Add(new JobDefinition(typeof(TJob), parameter, null, null));
+        }
+        else
+        {
+            dependentJobOptions.Add(jobDefinition with { Parameter = parameter });
+        }
+
         return this;
+    }
+
+    /// <summary>
+    /// Adds a job that runs after the principal job has finished with a given <paramref name="parameter"/>.
+    /// <param name="jobName">The name of the registered job to run.</param>
+    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
+    /// </summary>
+    /// <remarks>
+    /// </remarks>
+    public DependencyBuilder<TPrincipalJob> RunJob(string jobName, object? parameter = null)
+    {
+        var jobDefinition = jobRegistry.FindJobDefinition(jobName);
+
+        if (jobDefinition is not null)
+        {
+            dependentJobOptions.Add(jobDefinition with { Parameter = parameter });
+            return this;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Invalid job reference detected. Job named '{jobName}' hasn't been previously registered.
+            """);
     }
 
     /// <summary>

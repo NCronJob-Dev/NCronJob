@@ -145,6 +145,26 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task ShouldThrowRuntimeExceptionWhenForceRunningAnAmbiguousTypeReference()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<ParameterJob>(s => s.WithCronExpression("* * 30 2 *"));
+            n.AddJob<ParameterJob>(s => s.WithCronExpression("* * 31 2 *"));
+        });
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        var instantJobRegistry = provider.GetRequiredService<IInstantJobRegistry>();
+
+        Action act = () => instantJobRegistry.ForceRunInstantJob<ParameterJob>("something", CancellationToken);
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain($"Ambiguous job reference for type 'ParameterJob' detected.");
+    }
+
+    [Fact]
     public async Task CronJobShouldInheritInitiallyDefinedParameter()
     {
         ServiceCollection.AddNCronJob(

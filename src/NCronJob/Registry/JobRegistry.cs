@@ -17,7 +17,22 @@ internal sealed class JobRegistry
     public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => allJobs.Where(c => c.IsStartupJob).ToList();
 
     public JobDefinition? FindJobDefinition(Type type)
-        => allJobs.FirstOrDefault(j => j.Type == type);
+    {
+        var jobDefinitionsPerType = allJobs.Where(j => j.Type == type).ToList();
+
+#pragma warning disable IDE0046 // 'if' statement can be simplified
+        if (jobDefinitionsPerType.Count <= 1)
+        {
+            return jobDefinitionsPerType.SingleOrDefault();
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Ambiguous job reference for type '{type.Name}' detected. Multiple jobs with the same type already exists.
+            Please either remove duplicated jobs, or assign a unique name to it if duplication is intended and reference it using its name.
+            """);
+#pragma warning restore IDE0046 // 'if' statement can be simplified
+    }
 
     public JobDefinition? FindJobDefinition(string jobName)
         => allJobs.FirstOrDefault(j => j.CustomName == jobName);
@@ -30,7 +45,7 @@ internal sealed class JobRegistry
         {
             throw new InvalidOperationException(
                 $"""
-                Job registration conflict for type: {jobDefinition.Type.Name} detected. Another job with the same type, parameters, or cron expression already exists.
+                Job registration conflict for type '{jobDefinition.Type.Name}' detected. Another job with the same type, parameters, or cron expression already exists.
                 Please either remove the duplicate job, change its parameters, or assign a unique name to it if duplication is intended.
                 """);
         }
@@ -189,12 +204,12 @@ internal sealed class JobRegistry
         public bool Equals(JobDefinition? x, JobDefinition? y) =>
             (x is null && y is null) || (x is not null && y is not null
                                          && x.Type == y.Type && x.Type != typeof(DynamicJobFactory)
-                                         && x.Parameter == y.Parameter
+                                         //&& x.Parameter == y.Parameter
                                          && x.CustomName == y.CustomName);
 
         public int GetHashCode(JobDefinition obj) => HashCode.Combine(
             obj.Type,
-            obj.Parameter,
+            //obj.Parameter,
             obj.CustomName
             );
     }
