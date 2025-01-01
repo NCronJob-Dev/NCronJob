@@ -233,6 +233,40 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task DisablingByJobTypeAccountsForAllJobs()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>());
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("2 * * * *")));
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var jobRegistry = provider.GetRequiredService<JobRegistry>();
+        var jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+        Assert.Equal(2, jobs.Count);
+
+        Assert.All(jobs, j =>
+        {
+            if (j.CronExpression is null)
+            {
+                return;
+            }
+
+            Assert.NotEqual(RuntimeJobRegistry.TheThirtyFirstOfFebruary, j.CronExpression);
+        });
+
+        registry.DisableJob<SimpleJob>();
+
+        jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+
+        Assert.All(jobs, j =>
+        {
+            Assert.Equal(RuntimeJobRegistry.TheThirtyFirstOfFebruary, j.CronExpression);
+        });
+    }
+
+    [Fact]
     public async Task ShouldThrowAnExceptionWhenJobIsNotFoundAndTryingToDisable()
     {
         ServiceCollection.AddNCronJob();

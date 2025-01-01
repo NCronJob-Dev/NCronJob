@@ -223,6 +223,15 @@ internal sealed partial class JobWorker
         jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
     }
 
+    public void RescheduleJobByType(JobDefinition jobDefinition)
+    {
+        ArgumentNullException.ThrowIfNull(jobDefinition);
+
+        jobQueueManager.RemoveQueue(jobDefinition.JobFullName);
+        ScheduleJob(jobDefinition);
+        jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
+    }
+
     private void RemoveJobRunByName(string jobName)
     {
         var jobType = registry.FindJobDefinition(jobName);
