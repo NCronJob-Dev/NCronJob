@@ -226,6 +226,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression);
 
         job.CronExpression = cron;
+        job.UserDefinedCronExpression = cronExpression;
         job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
 
         jobWorker.RescheduleJobWithJobName(job);

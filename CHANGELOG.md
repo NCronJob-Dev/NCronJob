@@ -14,6 +14,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Fixed
 
 - Make `RemoveJob<TJob>()` and `RemoveJob(Type)` remove all jobs of the given type. Fixed in [#151](https://github.com/NCronJob-Dev/NCronJob/issues/151), by [@nulltoken](https://github.com/nulltoken).
+- Ensure `UpdateSchedule()` behavior is consistent. Fixed in [#151](https://github.com/NCronJob-Dev/NCronJob/issues/151), by [@nulltoken](https://github.com/nulltoken).
 
 ## [v4.0.2] - 2024-12-28
 
