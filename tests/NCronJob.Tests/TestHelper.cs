@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,7 +10,8 @@ namespace NCronJob.Tests;
 
 public abstract class JobIntegrationBase : IDisposable
 {
-    private readonly CancellationTokenSource cancellationTokenSource = new();
+    private readonly CancellationTokenSource cancellationTokenSource
+        = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private ServiceProvider? serviceProvider;
 
     private readonly TaskCompletionSource<bool> cancellationSignaled = new();
