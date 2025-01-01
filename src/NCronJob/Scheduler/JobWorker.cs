@@ -203,7 +203,7 @@ internal sealed partial class JobWorker
 
     public void RemoveJobType(Type type)
     {
-        var fullName = registry.FindJobDefinition(type)?.JobFullName;
+        var fullName = registry.FindFirstJobDefinition(type)?.JobFullName;
         if (fullName is null)
         {
             return;

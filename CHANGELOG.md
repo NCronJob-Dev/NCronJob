@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Make `RemoveJob<TJob>()` and `RemoveJob(Type)` remove all jobs of the given type. Fixed in [#151](https://github.com/NCronJob-Dev/NCronJob/issues/151), by [@nulltoken](https://github.com/nulltoken).
+
 ## [v4.0.2] - 2024-12-28
 
 New `v4` release with some new features and improvements. Check the [`v4` migration guide](https://docs.ncronjob.dev/migration/v4/) for more information.

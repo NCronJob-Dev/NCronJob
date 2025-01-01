@@ -16,7 +16,10 @@ internal sealed class JobRegistry
 
     public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => allJobs.Where(c => c.IsStartupJob).ToList();
 
-    public JobDefinition? FindJobDefinition(Type type)
+    public IReadOnlyCollection<JobDefinition> FindAllJobDefinition(Type type)
+        => allJobs.Where(j => j.Type == type).ToList();
+
+    public JobDefinition? FindFirstJobDefinition(Type type)
         => allJobs.FirstOrDefault(j => j.Type == type);
 
     public JobDefinition? FindJobDefinition(string jobName)
@@ -43,7 +46,15 @@ internal sealed class JobRegistry
 
     public void RemoveByName(string jobName) => Remove(allJobs.FirstOrDefault(j => j.CustomName == jobName));
 
-    public void RemoveByType(Type type) => Remove(allJobs.FirstOrDefault(j => j.Type == type));
+    public void RemoveByType(Type type)
+    {
+        var jobDefinitions = FindAllJobDefinition(type);
+
+        foreach (var jobDefinition in jobDefinitions)
+        {
+            Remove(jobDefinition);
+        }
+    }
 
     public JobDefinition AddDynamicJob(
         Delegate jobDelegate,

@@ -70,6 +70,24 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task RemovingByJobTypeAccountsForAllJobs()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("1 * * * *")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("2 * * * *")));
+
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var jobRegistry = provider.GetRequiredService<JobRegistry>();
+        Assert.Equal(2, jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).Count);
+
+        registry.RemoveJob<SimpleJob>();
+
+        Assert.Empty(jobRegistry.FindAllJobDefinition(typeof(SimpleJob)));
+    }
+
+    [Fact]
     public async Task CanUpdateScheduleOfAJob()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));

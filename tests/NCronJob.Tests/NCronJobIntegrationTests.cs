@@ -83,7 +83,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         jobFinished.ShouldBeTrue();
 
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
-        jobRegistry.FindJobDefinition(typeof(SimpleJob)).ShouldBeNull();
+        jobRegistry.FindFirstJobDefinition(typeof(SimpleJob)).ShouldBeNull();
     }
 
     [Fact]
