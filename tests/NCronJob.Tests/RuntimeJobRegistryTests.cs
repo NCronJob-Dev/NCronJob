@@ -7,6 +7,8 @@ namespace NCronJob.Tests;
 
 public class RuntimeJobRegistryTests : JobIntegrationBase
 {
+    private const string AtMinute2 = "2 * * * *";
+
     [Fact]
     public async Task DynamicallyAddedJobIsExecuted()
     {
@@ -73,7 +75,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public async Task RemovingByJobTypeAccountsForAllJobs()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("1 * * * *")));
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("2 * * * *")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtMinute2)));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -233,10 +235,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task DisablingByJobTypeAccountsForAllJobs()
+    public async Task DisablingAndEnablingByJobTypeAccountsForAllJobs()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>());
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("2 * * * *")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtMinute2)));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -259,11 +261,20 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         registry.DisableJob<SimpleJob>();
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+        Assert.Equal(2, jobs.Count);
 
         Assert.All(jobs, j =>
         {
             Assert.Equal(RuntimeJobRegistry.TheThirtyFirstOfFebruary, j.CronExpression);
         });
+
+        registry.EnableJob<SimpleJob>();
+
+        jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+        Assert.Equal(2, jobs.Count);
+
+        Assert.Single(jobs, j => j.CronExpression is null);
+        Assert.Single(jobs, j => j.CronExpression is not null && j.CronExpression.ToString() == AtMinute2);
     }
 
     [Fact]

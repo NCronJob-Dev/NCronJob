@@ -92,6 +92,24 @@ public interface IRuntimeJobRegistry
     void EnableJob(string jobName);
 
     /// <summary>
+    /// Enables all jobs of the given type that were previously disabled.
+    /// </summary>
+    /// <remarks>
+    /// If the job is already enabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void EnableJob<TJob>() where TJob : IJob;
+
+    /// <summary>
+    /// Enables all jobs of the given type that were previously disabled.
+    /// </summary>
+    /// <remarks>
+    /// If the job is already enabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void EnableJob(Type type);
+
+    /// <summary>
     /// Disables a job that was previously enabled.
     /// </summary>
     /// <param name="jobName">The unique job name that identifies this job.</param>
@@ -259,6 +277,15 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
                   ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
         EnableJob(job, jobName);
+    }
+
+    /// <inheritdoc />
+    public void EnableJob<TJob>() where TJob : IJob => EnableJob(typeof(TJob));
+
+    /// <inheritdoc />
+    public void EnableJob(Type type)
+    {
+        ProcessAllJobDefinitionsOfType(type, j => EnableJob(j));
     }
 
     /// <inheritdoc />

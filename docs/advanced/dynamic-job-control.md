@@ -123,12 +123,24 @@ app.MapPut("/disable-job", (IRuntimeJobRegistry registry) =>
 
 If a job is disabled, it will not be scheduled anymore. Any planned job will be cancelled and the job will be removed from the scheduler.
 
-To enable a job, use the `EnableJob` method:
+Of course, it's also possible to enable back previously disabled jobs.
+
+To enable a job by name:
 
 ```csharp
 app.MapPut("/enable-job", (IRuntimeJobRegistry registry) => 
 {
     registry.EnableJob("MyName");
+    return TypedResults.Ok();
+});
+```
+
+And similarly, to enable all jobs of the given type (so zero to many jobs):
+
+```csharp
+app.MapPut("/enable-job", (IRuntimeJobRegistry registry) =>
+{
+    registry.EnableJob<SampleJob>(); // Alternatively EnableJob(typeof(SampleJob))
     return TypedResults.Ok();
 });
 ```

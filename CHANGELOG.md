@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 
 - Expose typed version of `DisableJob()`. Added in [#151](https://github.com/NCronJob-Dev/NCronJob/issues/151), by [@nulltoken](https://github.com/nulltoken).
+- Expose typed version of `EnableJob()`. Added in [#151](https://github.com/NCronJob-Dev/NCronJob/issues/151), by [@nulltoken](https://github.com/nulltoken).
 
 ### Fixed
 
