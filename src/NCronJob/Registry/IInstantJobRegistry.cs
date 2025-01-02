@@ -237,7 +237,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     {
         using (logger.BeginScope("Triggering RunScheduledJob:"))
         {
-            var jobDefinition = jobRegistry.FindJobDefinition(typeof(TJob));
+            var jobDefinition = jobRegistry.FindFirstJobDefinition(typeof(TJob));
 
             if (jobDefinition is null)
             {

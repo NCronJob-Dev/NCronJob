@@ -34,11 +34,13 @@ public interface IRuntimeJobRegistry
     /// <summary>
     /// Removes all jobs of the given type.
     /// </summary>
+    /// <remarks>If the given job is not found, no exception is thrown.</remarks>
     void RemoveJob<TJob>() where TJob : IJob;
 
     /// <summary>
     /// Removes all jobs of the given type.
     /// </summary>
+    /// <remarks>If the given job is not found, no exception is thrown.</remarks>
     void RemoveJob(Type type);
 
     /// <summary>
@@ -80,7 +82,7 @@ public interface IRuntimeJobRegistry
     IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs();
 
     /// <summary>
-    /// This will enable a job that was previously disabled.
+    /// Enables a job that was previously disabled.
     /// </summary>
     /// <param name="jobName">The unique job name that identifies this job.</param>
     /// <remarks>
@@ -90,7 +92,25 @@ public interface IRuntimeJobRegistry
     void EnableJob(string jobName);
 
     /// <summary>
-    /// This will disable a job that was previously enabled.
+    /// Enables all jobs of the given type that were previously disabled.
+    /// </summary>
+    /// <remarks>
+    /// If the job is already enabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void EnableJob<TJob>() where TJob : IJob;
+
+    /// <summary>
+    /// Enables all jobs of the given type that were previously disabled.
+    /// </summary>
+    /// <remarks>
+    /// If the job is already enabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void EnableJob(Type type);
+
+    /// <summary>
+    /// Disables a job that was previously enabled.
     /// </summary>
     /// <param name="jobName">The unique job name that identifies this job.</param>
     /// <remarks>
@@ -98,6 +118,24 @@ public interface IRuntimeJobRegistry
     /// If the job is not found, an exception is thrown.
     /// </remarks>
     void DisableJob(string jobName);
+
+    /// <summary>
+    /// Disables all jobs of the given type.
+    /// </summary>
+    /// <remarks>
+    /// If the job is already disabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void DisableJob<TJob>() where TJob : IJob;
+
+    /// <summary>
+    /// Disables all jobs of the given type.
+    /// </summary>
+    /// <remarks>
+    /// If the job is already disabled, this method does nothing.
+    /// If the job is not found, an exception is thrown.
+    /// </remarks>
+    void DisableJob(Type type);
 }
 
 /// <summary>
@@ -111,6 +149,9 @@ public sealed record RecurringJobSchedule(string? JobName, string CronExpression
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
+    // https://crontab.guru/#*_*_31_2_*
+    internal static readonly CronExpression TheThirtyFirstOfFebruary = CronExpression.Parse("* * 31 2 *");
+
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
@@ -185,6 +226,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression);
 
         job.CronExpression = cron;
+        job.UserDefinedCronExpression = cronExpression;
         job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
 
         jobWorker.RescheduleJobWithJobName(job);
@@ -235,12 +277,16 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindJobDefinition(jobName)
                   ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
-        if (job.CronExpression is not null)
-        {
-            job.CronExpression = CronExpression.Parse(job.UserDefinedCronExpression);
-        }
+        EnableJob(job, jobName);
+    }
 
-        jobWorker.RescheduleJobWithJobName(job);
+    /// <inheritdoc />
+    public void EnableJob<TJob>() where TJob : IJob => EnableJob(typeof(TJob));
+
+    /// <inheritdoc />
+    public void EnableJob(Type type)
+    {
+        ProcessAllJobDefinitionsOfType(type, j => EnableJob(j));
     }
 
     /// <inheritdoc />
@@ -249,13 +295,58 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindJobDefinition(jobName)
                   ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
-        if (job.CronExpression is not null)
+        DisableJob(job, jobName);
+    }
+
+    /// <inheritdoc />
+    public void DisableJob<TJob>() where TJob : IJob => DisableJob(typeof(TJob));
+
+    /// <inheritdoc />
+    public void DisableJob(Type type)
+    {
+        ProcessAllJobDefinitionsOfType(type, j=> DisableJob(j));
+    }
+
+    private void ProcessAllJobDefinitionsOfType(Type type, Action<JobDefinition> processor)
+    {
+        var jobDefinitions = jobRegistry.FindAllJobDefinition(type);
+
+        foreach (var jobDefinition in jobDefinitions)
         {
-            // https://crontab.guru/#*_*_31_2_*
-            // Scheduling on Feb, 31st is a sure way to never get it to run
-            job.CronExpression = CronExpression.Parse("* * 31 2 *");
+            processor(jobDefinition);
+        }
+    }
+
+    private void EnableJob(JobDefinition job, string? customName = null)
+    {
+        if (job.UserDefinedCronExpression is not null)
+        {
+            job.CronExpression = CronExpression.Parse(job.UserDefinedCronExpression);
+        }
+        else
+        {
+            job.CronExpression = null;
         }
 
-        jobWorker.RescheduleJobWithJobName(job);
+        RescheduleJob(job, customName);
+    }
+
+    private void DisableJob(JobDefinition job, string? customName = null)
+    {
+        // Scheduling on Feb, 31st is a sure way to never get it to run
+        job.CronExpression = TheThirtyFirstOfFebruary;
+
+        RescheduleJob(job, customName);
+    }
+
+    private void RescheduleJob(JobDefinition job, string? customName = null)
+    {
+        if (customName is not null)
+        {
+            jobWorker.RescheduleJobWithJobName(job);
+            return;
+        }
+
+        jobWorker.RescheduleJobByType(job);
     }
 }

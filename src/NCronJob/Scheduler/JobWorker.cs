@@ -203,7 +203,7 @@ internal sealed partial class JobWorker
 
     public void RemoveJobType(Type type)
     {
-        var fullName = registry.FindJobDefinition(type)?.JobFullName;
+        var fullName = registry.FindFirstJobDefinition(type)?.JobFullName;
         if (fullName is null)
         {
             return;
@@ -219,6 +219,15 @@ internal sealed partial class JobWorker
         ArgumentNullException.ThrowIfNull(jobDefinition.CustomName);
 
         RemoveJobRunByName(jobDefinition.CustomName);
+        ScheduleJob(jobDefinition);
+        jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
+    }
+
+    public void RescheduleJobByType(JobDefinition jobDefinition)
+    {
+        ArgumentNullException.ThrowIfNull(jobDefinition);
+
+        jobQueueManager.RemoveQueue(jobDefinition.JobFullName);
         ScheduleJob(jobDefinition);
         jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
     }
