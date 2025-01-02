@@ -50,6 +50,11 @@ public static class NCronJobExtensions
             sp.GetRequiredService<JobWorker>(),
             sp.GetRequiredService<JobQueueManager>(),
             sp.GetRequiredService<ConcurrencySettings>()));
+        services.TryAddSingleton<JobExecutionProgressObserver>();
+        services.TryAddSingleton<IJobExecutionProgressReporter, JobExecutionProgressObserver>((sp) =>
+        {
+            return sp.GetRequiredService<JobExecutionProgressObserver>();
+        });
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
         services.TryAddSingleton<MissingMethodCalledHandler>();

@@ -161,6 +161,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
+    private readonly JobExecutionProgressObserver observer;
     private readonly ILogger<InstantJobRegistry> logger;
 
     public InstantJobRegistry(
@@ -168,12 +169,14 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
         JobWorker jobWorker,
+        JobExecutionProgressObserver observer,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
         this.jobWorker = jobWorker;
+        this.observer = observer;
         this.logger = logger;
     }
 
@@ -268,7 +271,12 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         bool forceExecution,
         CancellationToken token)
     {
-        var run = JobRun.Create(jobDefinition, parameter, token);
+        var run = JobRun.Create(
+            observer.Report,
+            jobDefinition,
+            parameter,
+            token);
+
         run.Priority = JobPriority.High;
         run.RunAt = startDate;
         run.IsOneTimeJob = true;

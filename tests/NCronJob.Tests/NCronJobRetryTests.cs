@@ -94,6 +94,8 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         var jobQueueManager = provider.GetRequiredService<JobQueueManager>();
         var jobQueue = jobQueueManager.GetOrAddQueue(typeof(CancelRetryingJob2).FullName!);
 
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
         JobRun? nextJob = null;
         var tcs = new TaskCompletionSource<JobStateType>();
 
@@ -129,6 +131,24 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         await Task.Delay(10, CancellationToken);
         nextJob!.CurrentState.Type.ShouldBe(JobStateType.Cancelled);
         nextJob!.JobExecutionCount.ShouldBe(1);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
+        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+
+        Assert.Equal(ExecutionState.OrchestrationStarted, filteredEvents[0].State);
+        Assert.Equal(ExecutionState.NotStarted, filteredEvents[1].State);
+        Assert.Equal(ExecutionState.Scheduled, filteredEvents[2].State);
+        Assert.Equal(ExecutionState.Initializing, filteredEvents[3].State);
+        Assert.Equal(ExecutionState.Running, filteredEvents[4].State);
+        Assert.Equal(ExecutionState.Retrying, filteredEvents[5].State);
+        Assert.Equal(ExecutionState.Cancelled, filteredEvents[6].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, filteredEvents[7].State);
+        Assert.Equal(8, filteredEvents.Count);
     }
 
     [Fact]

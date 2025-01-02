@@ -1,27 +1,39 @@
 
+using System.Collections.Concurrent;
+
 namespace NCronJob;
 
 internal class JobRun
 {
+    private readonly JobRun rootJob;
     private int jobExecutionCount;
+    private readonly Action<JobRun> progressReporter;
+    private readonly ConcurrentBag<JobRun> pendingDependents = [];
 
     private JobRun(
         JobDefinition jobDefinition,
-        object? parameter)
-    : this(null, jobDefinition, parameter)
+        object? parameter,
+        Action<JobRun> progressReporter)
+    : this(null, jobDefinition, parameter, progressReporter)
     { }
 
     private JobRun(
         JobRun? parentJob,
         JobDefinition jobDefinition,
-        object? parameter)
+        object? parameter,
+        Action<JobRun> progressReporter)
     {
         var jobRunId = Guid.NewGuid();
 
         JobRunId = jobRunId;
+        ParentJobRunId = parentJob is not null ? parentJob.JobRunId : null;
+        IsOrchestrationRoot = parentJob is null;
         CorrelationId = parentJob is not null ? parentJob.CorrelationId : Guid.NewGuid();
         JobDefinition = jobDefinition;
         Parameter = parameter ?? jobDefinition.Parameter;
+
+        this.progressReporter = progressReporter;
+        rootJob = parentJob is not null ? parentJob.rootJob : this;
 
         Initialize();
     }
@@ -29,8 +41,10 @@ internal class JobRun
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
 
     public Guid JobRunId { get; }
+    public Guid? ParentJobRunId { get; }
     public JobDefinition JobDefinition { get; }
     public Guid CorrelationId { get; }
+    public bool IsOrchestrationRoot { get; }
     public CancellationToken CancellationToken { get; set; }
     public DateTimeOffset? RunAt { get; set; }
 
@@ -48,14 +62,16 @@ internal class JobRun
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     public static JobRun Create(
+        Action<JobRun> progressReporter,
         JobDefinition jobDefinition)
-    => new(jobDefinition, jobDefinition.Parameter);
+    => new(jobDefinition, jobDefinition.Parameter, progressReporter);
 
     public static JobRun Create(
+        Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
         object? parameter,
         CancellationToken token)
-    => new(jobDefinition, parameter)
+    => new(jobDefinition, parameter, progressReporter)
     {
         CancellationToken = token,
     };
@@ -65,10 +81,12 @@ internal class JobRun
         object? parameter,
         CancellationToken token)
     {
-        JobRun run = new(this, jobDefinition, parameter)
+        JobRun run = new(this, jobDefinition, parameter, progressReporter)
         {
             CancellationToken = token,
         };
+
+        pendingDependents.Add(run);
 
         return run;
     }
@@ -101,10 +119,14 @@ internal class JobRun
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
             }
+
+            progressReporter(jr);
         };
 
         AddState(new JobState(JobStateType.NotStarted));
     }
+
+    public bool RootJobHasPendingDependentJobs => rootJob.HasPendingDependentJobs();
 
     // State change logic
     public bool IsCompleted => States.Exists(s => IsFinalState(s.Type));
@@ -134,4 +156,9 @@ internal class JobRun
         JobStateType.Faulted or
         JobStateType.Crashed or
         JobStateType.Expired;
+
+    private bool HasPendingDependentJobs()
+    {
+        return !pendingDependents.IsEmpty && pendingDependents.Any(j => !j.IsCompleted || j.HasPendingDependentJobs());
+    }
 }

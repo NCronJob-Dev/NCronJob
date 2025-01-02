@@ -167,9 +167,12 @@ public class RunDependentJobTests : JobIntegrationBase
         });
 
         var provider = CreateServiceProvider();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+        Guid orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
         List<string?> results = [];
         results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
@@ -179,6 +182,16 @@ public class RunDependentJobTests : JobIntegrationBase
         results.ShouldContain("PrincipalJob: Success");
         results.ShouldContain("DependentJob:  Parent: Success");
         results.ShouldContain("Dependent job did run");
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
+        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.Completed, events[18].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[19].State);
+        Assert.Equal(20, events.Count);
     }
 
     [Fact]

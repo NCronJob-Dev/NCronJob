@@ -9,6 +9,7 @@ internal sealed partial class JobWorker
     private readonly JobProcessor jobProcessor;
     private readonly JobRegistry registry;
     private readonly TimeProvider timeProvider;
+    private readonly JobExecutionProgressObserver observer;
     private readonly ILogger<JobWorker> logger;
     private readonly int globalConcurrencyLimit;
     private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
@@ -22,12 +23,14 @@ internal sealed partial class JobWorker
         JobRegistry registry,
         TimeProvider timeProvider,
         ConcurrencySettings concurrencySettings,
+        JobExecutionProgressObserver observer,
         ILogger<JobWorker> logger)
     {
         this.jobQueueManager = jobQueueManager;
         this.jobProcessor = jobProcessor;
         this.registry = registry;
         this.timeProvider = timeProvider;
+        this.observer = observer;
         this.logger = logger;
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
 
@@ -187,7 +190,7 @@ internal sealed partial class JobWorker
         if (nextRunTime.HasValue)
         {
             LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
-            var run = JobRun.Create(job);
+            var run = JobRun.Create(observer.Report, job);
             run.RunAt = nextRunTime;
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
