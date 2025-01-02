@@ -84,12 +84,13 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>(token: CancellationToken);
+        var correlationId = provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>(token: CancellationToken);
 
         await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(2);
         storage.Guids.Distinct().Count().ShouldBe(1);
+        storage.Guids.First().ShouldBe(correlationId);
     }
 
     [Fact]
