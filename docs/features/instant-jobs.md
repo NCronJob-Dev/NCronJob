@@ -104,3 +104,15 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
     return TypedResults.Ok();
 });
 ```
+
+## Instrumentation
+
+All members of the `IInstantJobRegistry` interface return the correlation id of the triggered job (See [*"Tracing requests of dependencies via `CorrelationId`"*](./model-dependencies.md#tracing-requests-of-dependencies-via-correlationid).).
+
+```csharp
+Guid oneCorrelationId = jobRegistry.RunInstantJob<MyJob>();
+
+Guid anotherCorrelationId = jobRegistry.RunScheduledJob<MyJob>(TimeSpan.FromMinutes(5));
+
+[...]
+```
