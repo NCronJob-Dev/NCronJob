@@ -69,6 +69,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#minimal-api">Minimal API</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#instrumentation">Instrumentation</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../concurrency-control/">Concurrency control</a>
@@ -216,6 +218,15 @@ So also CRON jobs can be triggered instantly.</p>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
 <span class="p">});</span>
+</code></pre></div>
+
+<h2 id="instrumentation">Instrumentation<a class="headerlink" href="#instrumentation" title="Permanent link">&para;</a></h2>
+<p>All members of the <code>IInstantJobRegistry</code> interface return the correlation id of the triggered job (See <a href="../model-dependencies/#tracing-requests-of-dependencies-via-correlationid"><em>&ldquo;Tracing requests of dependencies via <code>CorrelationId</code>&ldquo;</em></a>.).</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Guid</span><span class="w"> </span><span class="n">oneCorrelationId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunInstantJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="n">Guid</span><span class="w"> </span><span class="n">anotherCorrelationId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunScheduledJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="m">5</span><span class="p">));</span>
+
+<span class="na">[...]</span>
 </code></pre></div>
               
             </div>

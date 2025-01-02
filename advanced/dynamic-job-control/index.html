@@ -213,7 +213,8 @@
 
 <p>The cron expression and time zone can be <code>null</code> even if the job was found. This indicates that the job has no schedule (like dependent jobs).</p>
 <h2 id="disabling-and-enabling-jobs">Disabling and enabling jobs<a class="headerlink" href="#disabling-and-enabling-jobs" title="Permanent link">&para;</a></h2>
-<p>To disable a job, use the <code>DisableJob</code> method:</p>
+<p>There are two ways to disable a job from the scheduler. By name or by type.</p>
+<p>To disable a job by name:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/disable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">DisableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span>
@@ -221,11 +222,29 @@
 <span class="p">});</span>
 </code></pre></div>
 
+<p>That will prevent one job named <code>MyName</code> from being scheduled.</p>
+<p>In contrast disabling by type will disable all jobs of the given type (so zero to many jobs):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/disable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">DisableJob</span><span class="o">&lt;</span><span class="n">SampleJob</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// Alternatively DisableJob(typeof(SampleJob))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
+</code></pre></div>
+
 <p>If a job is disabled, it will not be scheduled anymore. Any planned job will be cancelled and the job will be removed from the scheduler.</p>
-<p>To enable a job, use the <code>EnableJob</code> method:</p>
+<p>Of course, it&rsquo;s also possible to enable back previously disabled jobs.</p>
+<p>To enable a job by name:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/enable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">EnableJob</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p>And similarly, to enable all jobs of the given type (so zero to many jobs):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/enable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">EnableJob</span><span class="o">&lt;</span><span class="n">SampleJob</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// Alternatively EnableJob(typeof(SampleJob))</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
 <span class="p">});</span>
 </code></pre></div>
