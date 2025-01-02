@@ -119,14 +119,14 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
         while (nextJob!.CurrentState != JobStateType.Retrying)
         {
-            await Task.Delay(1);
+            await Task.Delay(1, CancellationToken);
         }
         // wait until we're in retrying state before cancelling
         jobExecutor.CancelJobs();
 
-        var cancellationHandled = await Task.WhenAny(tcs.Task, Task.Delay(1000));
+        var cancellationHandled = await Task.WhenAny(tcs.Task, Task.Delay(1000, CancellationToken));
         cancellationHandled.ShouldBe(tcs.Task);
-        await Task.Delay(10);
+        await Task.Delay(10, CancellationToken);
         nextJob!.CurrentState.Type.ShouldBe(JobStateType.Cancelled);
         nextJob!.JobExecutionCount.ShouldBe(1);
     }
@@ -146,10 +146,10 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         attempts.ShouldBe("Job retrying");
 
         hostAppLifeTime.StopApplication();
-        await Task.Delay(100); // allow some time for cancellation to propagate
+        await Task.Delay(100, CancellationToken); // allow some time for cancellation to propagate
 
         var cancellationMessageTask = CommunicationChannel.Reader.ReadAsync(CancellationToken.None).AsTask();
-        var winnerTask = await Task.WhenAny(cancellationMessageTask, Task.Delay(5000));
+        var winnerTask = await Task.WhenAny(cancellationMessageTask, Task.Delay(5000, CancellationToken));
         winnerTask.ShouldBe(cancellationMessageTask);
         CancelRetryingJob.Success.ShouldBeFalse();
         CancelRetryingJob.AttemptCount.ShouldBe(1);

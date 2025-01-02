@@ -17,7 +17,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
         List<string?> results = [];
         results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
@@ -35,7 +35,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false, token: CancellationToken);
 
         List<string?> results = [];
         results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
@@ -54,7 +54,7 @@ public class RunDependentJobTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         var instantJobRegistry = provider.GetRequiredService<IInstantJobRegistry>();
-        instantJobRegistry.ForceRunInstantJob<MainJob>();
+        instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
 
         var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         result.ShouldBe(nameof(MainJob));
@@ -66,7 +66,7 @@ public class RunDependentJobTests : JobIntegrationBase
         registry.RemoveJob<MainJob>();
         registry.TryRegister(n => n.AddJob<MainJob>());
 
-        instantJobRegistry.ForceRunInstantJob<MainJob>();
+        instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
 
         result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         result.ShouldBe(nameof(MainJob));
@@ -84,7 +84,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>();
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>(token: CancellationToken);
 
         await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
@@ -102,7 +102,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true);
+        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true, token: CancellationToken);
 
         await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         var storage = provider.GetRequiredService<Storage>();
@@ -112,14 +112,16 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasSuccessful_DependentAnonymousJobShouldRun()
     {
-        Func<ChannelWriter<object>, JobExecutionContext, Task> execution = async (writer, context) => await writer.WriteAsync($"Parent: {context.ParentOutput}");
+        Func<ChannelWriter<object>, JobExecutionContext, Task> execution = async (writer, context)
+            => await writer.WriteAsync($"Parent: {context.ParentOutput}", CancellationToken);
+
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob(execution)));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
         List<string?> results = [];
         results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
@@ -138,7 +140,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
         List<string?> results = [];
         using var timeoutToken = new CancellationTokenSource(2000);
@@ -166,7 +168,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true);
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
         List<string?> results = [];
         results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
@@ -210,9 +212,9 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob<PrincipalJob>(s => s.WithCronExpression("1 0 1 * *").WithParameter(true))
-                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1").AsTask()));
+                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1", CancellationToken).AsTask()));
             n.AddJob<PrincipalJob>(s => s.WithCronExpression("1 0 2 * *").WithParameter(true))
-                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("2").AsTask()));
+                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("2", CancellationToken).AsTask()));
         });
 
         var provider = CreateServiceProvider();
