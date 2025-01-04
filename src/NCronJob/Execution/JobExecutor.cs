@@ -162,10 +162,14 @@ internal sealed partial class JobExecutor : IDisposable
 
         foreach (var dependentJob in dependencies)
         {
-            var newRun = JobRun.Create(dependentJob, dependentJob.Parameter, jobRun.CancellationToken);
-            newRun.CorrelationId = jobRun.CorrelationId;
+            var newRun = jobRun.CreateDependent(
+                dependentJob,
+                dependentJob.Parameter,
+                jobRun.CancellationToken);
+
             newRun.ParentOutput = context.Output;
             newRun.IsOneTimeJob = true;
+
             var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(newRun);
         }
