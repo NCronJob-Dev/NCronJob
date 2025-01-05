@@ -120,7 +120,7 @@ internal class JobRun
 
     public void NotifyStateChange(JobStateType type, string message = "")
     {
-        if (CurrentState.Type == type)
+        if (CurrentState.Type == type || IsCompleted)
             return;
 
         var state = new JobState(type, message);
