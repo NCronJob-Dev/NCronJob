@@ -128,5 +128,10 @@ internal class JobRun
     }
 
     private static bool IsFinalState(JobStateType stateType) =>
-        stateType is JobStateType.Completed or JobStateType.Cancelled or JobStateType.Faulted or JobStateType.Crashed;
+        stateType is
+        JobStateType.Completed or
+        JobStateType.Cancelled or
+        JobStateType.Faulted or
+        JobStateType.Crashed or
+        JobStateType.Expired;
 }
