@@ -5,13 +5,32 @@ internal class JobRun
 {
     private int jobExecutionCount;
 
-    private JobRun() => Initialize();
+    private JobRun(
+        JobDefinition jobDefinition,
+        object? parameter)
+    : this(null, jobDefinition, parameter)
+    { }
+
+    private JobRun(
+        JobRun? parentJob,
+        JobDefinition jobDefinition,
+        object? parameter)
+    {
+        var jobRunId = Guid.NewGuid();
+
+        JobRunId = jobRunId;
+        CorrelationId = parentJob is not null ? parentJob.CorrelationId : Guid.NewGuid();
+        JobDefinition = jobDefinition;
+        Parameter = parameter ?? jobDefinition.Parameter;
+
+        Initialize();
+    }
 
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
 
-    public required Guid JobRunId { get; init; }
-    public required JobDefinition JobDefinition { get; init; }
-    public Guid CorrelationId { get; set; } = Guid.NewGuid();
+    public Guid JobRunId { get; }
+    public JobDefinition JobDefinition { get; }
+    public Guid CorrelationId { get; }
     public CancellationToken CancellationToken { get; set; }
     public DateTimeOffset? RunAt { get; set; }
 
@@ -23,27 +42,36 @@ internal class JobRun
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
     public bool IsExpired(TimeProvider timeProvider) => RunAt.HasValue && timeProvider.GetUtcNow() - RunAt.Value > Expiry;
     public bool IsOneTimeJob { get; set; }
-    public object? Parameter { get; init; }
+    public object? Parameter { get; }
     public object? ParentOutput { get; set; }
     public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
-    public static JobRun Create(JobDefinition jobDefinition) =>
-        new()
+    public static JobRun Create(
+        JobDefinition jobDefinition)
+    => new(jobDefinition, jobDefinition.Parameter);
+
+    public static JobRun Create(
+        JobDefinition jobDefinition,
+        object? parameter,
+        CancellationToken token)
+    => new(jobDefinition, parameter)
+    {
+        CancellationToken = token,
+    };
+
+    public JobRun CreateDependent(
+        JobDefinition jobDefinition,
+        object? parameter,
+        CancellationToken token)
+    {
+        JobRun run = new(this, jobDefinition, parameter)
         {
-            JobRunId = Guid.NewGuid(),
-            JobDefinition = jobDefinition,
-            Parameter = jobDefinition.Parameter
+            CancellationToken = token,
         };
 
-    public static JobRun Create(JobDefinition jobDefinition, object? parameter, CancellationToken token) =>
-        new()
-        {
-            JobRunId = Guid.NewGuid(),
-            JobDefinition = jobDefinition,
-            Parameter = parameter ?? jobDefinition.Parameter,
-            CancellationToken = token
-        };
+        return run;
+    }
 
     private void Initialize()
     {
@@ -74,6 +102,7 @@ internal class JobRun
                     throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
             }
         };
+
         AddState(new JobState(JobStateType.NotStarted));
     }
 
@@ -88,7 +117,7 @@ internal class JobRun
         States.Add(state);
         OnStateChanged?.Invoke(this, state);
     }
-    
+
     public void NotifyStateChange(JobStateType type, string message = "")
     {
         if (CurrentState.Type == type)
