@@ -32,7 +32,7 @@
 		<PackageReleaseNotes>
 			Changes in NCronJob
 
-			See the full changelog at https://github.com/NCronJob-Dev/NCronJob/releases
+			See the full changelog at https://github.com/NCronJob-Dev/NCronJob/blob/main/CHANGELOG.md
 		</PackageReleaseNotes>
 	</PropertyGroup>
 
