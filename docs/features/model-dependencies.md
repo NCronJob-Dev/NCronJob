@@ -29,7 +29,7 @@ Services.AddNCronJob(options =>
 ```
 
 ## Accessing the state of the parent job
-The `JobExecutionContext` object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from parent to the child job.
+The `JobExecutionContext` object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.
 
 ```csharp
 public class JobA : IJob

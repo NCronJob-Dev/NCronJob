@@ -1,7 +1,7 @@
 # Global Concurrency
-**NCronJob** utilisies a priority queue with a maximum amount of entries. That is, the queue will only hold and execute a maximum amount of jobs at any given time. This is to prevent the system from being overloaded with jobs.
+**NCronJob** relies on a priority queue with a maximum amount of entries. That is, the queue will only hold and execute a maximum amount of jobs at any given time. This is to prevent the system from being overloaded with jobs.
 
-## The Maxmimum
+## The Maximum
 The global maximum of concurrent jobs is calculated as:
 
 ```csharp
