@@ -130,6 +130,8 @@ internal class JobRun
 
     // State change logic
     public bool IsCompleted => States.Exists(s => IsFinalState(s.Type));
+    public bool CanRun => CanInitiateRun(CurrentState);
+    public bool IsCancellable => CanBeCancelled(CurrentState);
     public JobState CurrentState => States.LastOrDefault();
     public List<JobState> States { get; } = [];
     public event Action<JobRun, JobState>? OnStateChanged;
@@ -156,6 +158,17 @@ internal class JobRun
         JobStateType.Faulted or
         JobStateType.Crashed or
         JobStateType.Expired;
+
+    private static bool CanInitiateRun(JobStateType stateType) =>
+        stateType is
+        JobStateType.Initializing or
+        JobStateType.Retrying;
+
+    private static bool CanBeCancelled(JobStateType stateType) =>
+        stateType is
+        JobStateType.NotStarted or
+        JobStateType.Scheduled ||
+        CanInitiateRun(stateType);
 
     private bool HasPendingDependentJobs()
     {
