@@ -95,15 +95,45 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtMinute2)));
 
         var provider = CreateServiceProvider();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
         Assert.Equal(2, jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).Count);
 
+        List<Guid> orchestrationIds = events.Select(e => e.CorrelationId).Distinct().ToList();
+        Assert.Equal(2, orchestrationIds.Count);
+
+        foreach (var orchestrationId in orchestrationIds)
+        {
+            List<ExecutionProgress> orchestrationEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+            Assert.Equal(ExecutionState.OrchestrationStarted, orchestrationEvents[0].State);
+            Assert.Equal(ExecutionState.NotStarted, orchestrationEvents[1].State);
+            Assert.Equal(ExecutionState.Scheduled, orchestrationEvents[2].State);
+            Assert.Equal(3, orchestrationEvents.Count);
+        }
+
         registry.RemoveJob<SimpleJob>();
 
         Assert.Empty(jobRegistry.FindAllJobDefinition(typeof(SimpleJob)));
+
+        subscriber.Dispose();
+
+        foreach (var orchestrationId in orchestrationIds)
+        {
+            List<ExecutionProgress> orchestrationEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+            Assert.Equal(ExecutionState.OrchestrationStarted, orchestrationEvents[0].State);
+            Assert.Equal(ExecutionState.NotStarted, orchestrationEvents[1].State);
+            Assert.Equal(ExecutionState.Scheduled, orchestrationEvents[2].State);
+            Assert.Equal(ExecutionState.Cancelled, orchestrationEvents[3].State);
+            Assert.Equal(ExecutionState.OrchestrationCompleted, orchestrationEvents[4].State);
+            Assert.Equal(5, orchestrationEvents.Count);
+        }
+
+        Assert.Equal(10, events.Count);
     }
 
     [Fact]

@@ -101,6 +101,11 @@ internal sealed partial class JobExecutor : IDisposable
 
         try
         {
+            if (!runContext.JobRun.CanRun)
+            {
+                return;
+            }
+
             runContext.JobRun.NotifyStateChange(JobStateType.Running);
             LogRunningJob(job.GetType(), runContext.CorrelationId);
 
