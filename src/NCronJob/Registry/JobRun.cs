@@ -95,32 +95,6 @@ internal class JobRun
     {
         OnStateChanged += (jr, state) =>
         {
-            switch (state.Type)
-            {
-                case JobStateType.Completed:
-                    jr.JobDefinition.OnCompletion?.Invoke(jr.JobDefinition);
-                    break;
-                case JobStateType.Faulted:
-                    jr.JobDefinition.OnFailure?.Invoke(jr.JobDefinition, state.Message);
-                    break;
-                case JobStateType.Running:
-                    jr.JobDefinition.OnRunning?.Invoke(jr.JobDefinition);
-                    break;
-                case JobStateType.Retrying:
-                case JobStateType.Scheduled:
-                case JobStateType.Cancelled:
-                case JobStateType.Expired:
-                case JobStateType.Skipped:
-                case JobStateType.Crashed:
-                case JobStateType.Completing:
-                case JobStateType.Initializing:
-                case JobStateType.WaitingForDependency:
-                case JobStateType.NotStarted:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(state), state.Type, "Unexpected JobStateType value");
-            }
-
             progressReporter(jr);
         };
 
