@@ -110,6 +110,7 @@ internal class JobRun
                 case JobStateType.Scheduled:
                 case JobStateType.Cancelled:
                 case JobStateType.Expired:
+                case JobStateType.Skipped:
                 case JobStateType.Crashed:
                 case JobStateType.Completing:
                 case JobStateType.Initializing:
@@ -126,7 +127,7 @@ internal class JobRun
         AddState(new JobState(JobStateType.NotStarted));
     }
 
-    public bool RootJobHasPendingDependentJobs => rootJob.HasPendingDependentJobs();
+    public bool RootJobIsCompleted => rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
 
     // State change logic
     public bool IsCompleted => States.Exists(s => IsFinalState(s.Type));
@@ -153,6 +154,7 @@ internal class JobRun
 
     private static bool IsFinalState(JobStateType stateType) =>
         stateType is
+        JobStateType.Skipped or
         JobStateType.Completed or
         JobStateType.Cancelled or
         JobStateType.Faulted or

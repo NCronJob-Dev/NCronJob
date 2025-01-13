@@ -49,6 +49,11 @@ public enum ExecutionState
     WaitingForDependency,
 
     /// <summary>
+    /// The job has been explicitly skipped by its parent job.
+    /// </summary>
+    Skipped,
+
+    /// <summary>
     /// The job has completed.
     /// </summary>
     Completed,

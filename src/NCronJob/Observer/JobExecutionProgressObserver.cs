@@ -53,7 +53,7 @@ internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReport
 
             progresses.Insert(0, orchestrationStarted);
         }
-        else if (run.IsCompleted && !run.RootJobHasPendingDependentJobs)
+        else if (run.IsCompleted && run.RootJobIsCompleted)
         {
             var orchestrationCompleted = progress
             with
