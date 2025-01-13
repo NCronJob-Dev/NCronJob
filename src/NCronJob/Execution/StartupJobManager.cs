@@ -5,8 +5,6 @@ internal class StartupJobManager(
     JobProcessor jobProcessor,
     JobExecutionProgressObserver observer)
 {
-    private readonly AsyncManualResetEvent startupJobsCompleted = new();
-
     public async Task ProcessStartupJobs(CancellationToken stopToken)
     {
         var startupJobs = jobRegistry.GetAllOneTimeJobs();
@@ -16,22 +14,8 @@ internal class StartupJobManager(
         {
             await Task.WhenAll(startupTasks).ConfigureAwait(false);
         }
-
-        startupJobsCompleted.Set();
     }
 
     private async Task CreateExecutionTask(JobRun job, CancellationToken stopToken) =>
         await jobProcessor.ProcessJobAsync(job, stopToken).ConfigureAwait(false);
-
-    public Task WaitForStartupJobsCompletion() => startupJobsCompleted.WaitAsync();
 }
-
-internal class AsyncManualResetEvent
-{
-    private readonly TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    public Task WaitAsync() => tcs.Task;
-
-    public void Set() => tcs.TrySetResult();
-}
-
