@@ -30,6 +30,7 @@ internal enum JobStateType
     Retrying,
     Completing,
     WaitingForDependency,
+    Skipped,
     Completed,
     Faulted,
     Cancelled,

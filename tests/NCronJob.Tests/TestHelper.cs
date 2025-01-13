@@ -142,9 +142,18 @@ public abstract class JobIntegrationBase : IDisposable
     {
         List<ExecutionProgress> events = [];
 
+#if NET9_0_OR_GREATER
+        Lock eventsLock = new();
+#else
+        object eventsLock = new();
+#endif
+
         void Subscriber(ExecutionProgress progress)
         {
-            events.Add(progress);
+            lock (eventsLock)
+            {
+                events.Add(progress);
+            }
         }
 
         var progressReporter = serviceProvider.GetRequiredService<IJobExecutionProgressReporter>();

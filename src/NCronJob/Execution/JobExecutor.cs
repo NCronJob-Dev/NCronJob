@@ -101,6 +101,11 @@ internal sealed partial class JobExecutor : IDisposable
 
         try
         {
+            if (!runContext.JobRun.CanRun)
+            {
+                return;
+            }
+
             runContext.JobRun.NotifyStateChange(JobStateType.Running);
             LogRunningJob(job.GetType(), runContext.CorrelationId);
 
@@ -147,11 +152,6 @@ internal sealed partial class JobExecutor : IDisposable
 
     public void InformDependentJobs(JobExecutionContext context, bool success)
     {
-        if (!context.ExecuteChildren)
-        {
-            return;
-        }
-
         var jobRun = context.JobRun;
         var dependencies = success
             ? jobRegistry.GetDependentSuccessJobTypes(jobRun.JobDefinition)
@@ -169,6 +169,12 @@ internal sealed partial class JobExecutor : IDisposable
 
             newRun.ParentOutput = context.Output;
             newRun.IsOneTimeJob = true;
+
+            if (!context.ExecuteChildren)
+            {
+                newRun.NotifyStateChange(JobStateType.Skipped);
+                continue;
+            }
 
             var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(newRun);
