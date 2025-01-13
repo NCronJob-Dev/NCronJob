@@ -47,6 +47,8 @@ internal sealed class JobQueueManager : IDisposable
         {
             if (jobQueues.TryRemove(queueName, out var jobQueue))
             {
+                // TODO: Should we first cancel the potentially existing JobRuns here?
+
                 jobQueue.Clear();
                 jobQueue.CollectionChanged -= CallCollectionChanged;
                 semaphores.Clear();

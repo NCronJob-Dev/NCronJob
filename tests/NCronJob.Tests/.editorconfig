@@ -1,0 +1,3 @@
+[*.cs]
+
+dotnet_diagnostic.IDISP017.severity = none # IDISP017: Prefer using

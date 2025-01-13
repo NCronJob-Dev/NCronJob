@@ -30,13 +30,33 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
                 .AddJob<ExceptionJob>(p => p.WithCronExpression("* * * * *"))
                 .AddNotificationHandler<ExceptionHandler>()
         );
+
         var provider = CreateServiceProvider();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         message.ShouldBeOfType<InvalidOperationException>();
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
+        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+
+        Assert.Equal(ExecutionState.OrchestrationStarted, filteredEvents[0].State);
+        Assert.Equal(ExecutionState.NotStarted, filteredEvents[1].State);
+        Assert.Equal(ExecutionState.Scheduled, filteredEvents[2].State);
+        Assert.Equal(ExecutionState.Initializing, filteredEvents[3].State);
+        Assert.Equal(ExecutionState.Running, filteredEvents[4].State);
+        Assert.Equal(ExecutionState.Faulted, filteredEvents[5].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, filteredEvents[6].State);
+        Assert.Equal(7, filteredEvents.Count);
     }
 
     [Fact]

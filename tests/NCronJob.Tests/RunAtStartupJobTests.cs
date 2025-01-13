@@ -56,7 +56,10 @@ public class RunAtStartupJobTests : JobIntegrationBase
             services.AddSingleton(_ => storage);
             services.AddHostedService<StartingService>();
         });
+
         using var app = builder.Build();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -64,6 +67,22 @@ public class RunAtStartupJobTests : JobIntegrationBase
         storage.Content.Count.ShouldBe(2);
         storage.Content[0].ShouldBe("SimpleJob");
         storage.Content[1].ShouldBe("StartingService");
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
+        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.NotStarted, events[1].State);
+        Assert.Equal(ExecutionState.Initializing, events[2].State);
+        Assert.Equal(ExecutionState.Running, events[3].State);
+        Assert.Equal(ExecutionState.Completing, events[4].State);
+        Assert.Equal(ExecutionState.Completed, events[5].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[6].State);
+        Assert.Equal(7, events.Count);
     }
 
     [Fact]
@@ -80,13 +99,31 @@ public class RunAtStartupJobTests : JobIntegrationBase
             });
             services.AddSingleton(_ => storage);
         });
+
         using var app = builder.Build();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
 
         storage.Content.Count.ShouldBe(1);
         storage.Content[0].ShouldBe("ExceptionHandler");
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
+        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.NotStarted, events[1].State);
+        Assert.Equal(ExecutionState.Initializing, events[2].State);
+        Assert.Equal(ExecutionState.Running, events[3].State);
+        Assert.Equal(ExecutionState.Faulted, events[4].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[5].State);
+        Assert.Equal(6, events.Count);
     }
 
     [SuppressMessage("Major Code Smell", "S108:Nested blocks of code should not be left empty", Justification = "On purpose")]

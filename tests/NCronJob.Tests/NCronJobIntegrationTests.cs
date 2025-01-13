@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -215,7 +216,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             using var serviceScope = provider.CreateScope();
             using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
             var jobDefinition = new JobDefinition(typeof(JobWithDependency), null, null, null);
-            await executor.RunJob(JobRun.Create(jobDefinition), CancellationToken.None);
+            await executor.RunJob(JobRun.Create((jr) => { }, jobDefinition), CancellationToken.None);
         });
     }
 
@@ -247,6 +248,36 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
         jobFinished.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task ExecuteAScheduledJobWithDateTimeOffsetInThePast()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
+        var provider = CreateServiceProvider();
+        var runDate = FakeTimer.GetUtcNow().AddDays(-1);
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(runDate, token: CancellationToken);
+
+        await Task.Delay(10, CancellationToken);
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        var jobFinished = await WaitForJobsOrTimeout(1);
+        jobFinished.ShouldBeFalse();
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
+        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.NotStarted, events[1].State);
+        Assert.Equal(ExecutionState.Expired, events[2].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[3].State);
+        Assert.Equal(4, events.Count);
     }
 
     [Fact]

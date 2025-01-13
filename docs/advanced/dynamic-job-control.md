@@ -1,5 +1,5 @@
 # Dynamic Job Control
-**NCronJob** allows you to dynmically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.
+**NCronJob** allows you to dynamically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.
 
 ## Defining job names
 The core idea is to define an unique job name for each job that might be mutated during runtime. The job name is an optional parameter:

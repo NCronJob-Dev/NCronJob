@@ -107,6 +107,51 @@ public abstract class JobIntegrationBase : IDisposable
         }
     }
 
+    protected static async Task WaitForOrchestrationCompletion(
+        IList<ExecutionProgress> events,
+        Guid orchestrationId)
+    {
+        // Note: Although this function could seem a bit over-engineered, it's sadly necessary. 
+        // Indeed, events may actually be updated upstream while it's being enumerated
+        // in here (which leads to a "Collection was modified; enumeration operation may not
+        // execute." error message would we using any enumerating based (eg. Linq) traversal.
+
+        int index = 0;
+
+        while (true)
+        {
+            int count = events.Count;
+
+            while (index < count)
+            {
+                ExecutionProgress @event = events[index];
+
+                if (@event.CorrelationId == orchestrationId && @event.State == ExecutionState.OrchestrationCompleted)
+                {
+                    return;
+                }
+
+                index++;
+            }
+
+            await Task.Delay(TimeSpan.FromMicroseconds(100));
+        }
+    }
+
+    protected static (IDisposable subscriber, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
+    {
+        List<ExecutionProgress> events = [];
+
+        void Subscriber(ExecutionProgress progress)
+        {
+            events.Add(progress);
+        }
+
+        var progressReporter = serviceProvider.GetRequiredService<IJobExecutionProgressReporter>();
+
+        return (progressReporter.Register(Subscriber), events);
+    }
+
     private async IAsyncEnumerable<object> GetCompletionJobsAsync(int expectedJobCount, Action timeAdvancer, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         for (var i = 0; i < expectedJobCount; i++)
