@@ -124,32 +124,33 @@ internal class JobRun
             progressReporter(jr);
         };
 
-        AddState(new JobState(JobStateType.NotStarted));
+        SetState(new JobState(JobStateType.NotStarted));
     }
 
     public bool RootJobIsCompleted => rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
 
     // State change logic
-    public bool IsCompleted => States.Exists(s => IsFinalState(s.Type));
+    public bool IsCompleted => IsFinalState(CurrentState);
     public bool CanRun => CanInitiateRun(CurrentState);
     public bool IsCancellable => CanBeCancelled(CurrentState);
-    public JobState CurrentState => States.LastOrDefault();
-    public List<JobState> States { get; } = [];
+    public JobState CurrentState { get; private set; }
     public event Action<JobRun, JobState>? OnStateChanged;
 
-    public void AddState(JobState state)
+    private void SetState(JobState state)
     {
-        States.Add(state);
+        CurrentState = state;
         OnStateChanged?.Invoke(this, state);
     }
 
     public void NotifyStateChange(JobStateType type, string message = "")
     {
         if (CurrentState.Type == type || IsCompleted)
+        {
             return;
+        }
 
         var state = new JobState(type, message);
-        AddState(state);
+        SetState(state);
     }
 
     private static bool IsFinalState(JobStateType stateType) =>
