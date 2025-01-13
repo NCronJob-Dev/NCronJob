@@ -97,17 +97,51 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task SkipChildrenShouldPreventDependentJobsFromRunning()
     {
         ServiceCollection.AddSingleton(new Storage());
-        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalCorrelationIdJob>()
+                .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>())
+                .ExecuteWhen(success: s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1", CancellationToken)));
+        });
 
         var provider = CreateServiceProvider();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true, token: CancellationToken);
+        Guid orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true, token: CancellationToken);
 
-        await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscriber.Dispose();
+
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(1);
+
+        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.NotStarted, events[1].State);
+        Assert.Equal(ExecutionState.Initializing, events[2].State);
+        Assert.Equal(ExecutionState.Running, events[3].State);
+        Assert.Equal(ExecutionState.Completing, events[4].State);
+        Assert.Equal(ExecutionState.WaitingForDependency, events[5].State);
+
+        // Assess the dependent jobs
+        Assert.Equal(events[1].RunId, events[6].ParentRunId);
+        Assert.Equal(ExecutionState.NotStarted, events[6].State);
+        Assert.Equal(events[1].RunId, events[7].ParentRunId);
+        Assert.Equal(ExecutionState.Skipped, events[7].State);
+        Assert.Equal(events[1].RunId, events[8].ParentRunId);
+        Assert.Equal(ExecutionState.NotStarted, events[8].State);
+        Assert.Equal(events[1].RunId, events[9].ParentRunId);
+        Assert.Equal(ExecutionState.Skipped, events[9].State);
+
+        Assert.NotEqual(events[6].RunId, events[8].RunId);
+
+        Assert.Equal(ExecutionState.Completed, events[10].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[11].State);
+        Assert.Equal(12, events.Count);
     }
 
     [Fact]
