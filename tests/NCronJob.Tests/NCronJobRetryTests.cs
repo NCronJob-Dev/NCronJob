@@ -106,11 +106,11 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
                 nextJob = args.NewItems?.OfType<JobRun>().FirstOrDefault();
                 nextJob!.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
                 nextJob!.JobExecutionCount.ShouldBe(0);
-                nextJob!.OnStateChanged += (s, e) =>
+                nextJob!.OnStateChanged += (jr) =>
                 {
-                    if (e == JobStateType.Cancelled)
+                    if (jr.CurrentState == JobStateType.Cancelled)
                     {
-                        tcs.SetResult(e);
+                        tcs.SetResult(jr.CurrentState);
                     }
                 };
             }

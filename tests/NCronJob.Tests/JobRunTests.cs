@@ -43,7 +43,7 @@ public class JobRunStatesTests
         jobRun.NotifyStateChange(value);
         Assert.Equal(value, jobRun.CurrentState.Type);
 
-        jobRun.OnStateChanged += (sender, args) => { hasBeenCalled = true; };
+        jobRun.OnStateChanged += (_) => { hasBeenCalled = true; };
 
         foreach (JobStateType state in AllPossibleStates.Keys)
         {

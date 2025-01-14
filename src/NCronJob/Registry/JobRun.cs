@@ -35,7 +35,9 @@ internal class JobRun
         this.progressReporter = progressReporter;
         rootJob = parentJob is not null ? parentJob.rootJob : this;
 
-        Initialize();
+        OnStateChanged = (jr) => { progressReporter(jr); };
+
+        SetState(new JobState(JobStateType.NotStarted));
     }
 
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
@@ -91,16 +93,6 @@ internal class JobRun
         return run;
     }
 
-    private void Initialize()
-    {
-        OnStateChanged += (jr, state) =>
-        {
-            progressReporter(jr);
-        };
-
-        SetState(new JobState(JobStateType.NotStarted));
-    }
-
     public bool RootJobIsCompleted => rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
 
     // State change logic
@@ -108,12 +100,12 @@ internal class JobRun
     public bool CanRun => CanInitiateRun(CurrentState);
     public bool IsCancellable => CanBeCancelled(CurrentState);
     public JobState CurrentState { get; private set; }
-    public event Action<JobRun, JobState>? OnStateChanged;
+    public event Action<JobRun> OnStateChanged;
 
     private void SetState(JobState state)
     {
         CurrentState = state;
-        OnStateChanged?.Invoke(this, state);
+        OnStateChanged(this);
     }
 
     public void NotifyStateChange(JobStateType type, string message = "")

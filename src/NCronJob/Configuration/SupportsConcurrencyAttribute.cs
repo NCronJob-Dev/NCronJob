@@ -19,6 +19,6 @@ public sealed class SupportsConcurrencyAttribute : Attribute
     public SupportsConcurrencyAttribute(int maxDegreeOfParallelism) => MaxDegreeOfParallelism = maxDegreeOfParallelism;
 
     /// <inheritdoc />
-    public SupportsConcurrencyAttribute() => MaxDegreeOfParallelism = Environment.ProcessorCount;
+    public SupportsConcurrencyAttribute() : this(Environment.ProcessorCount) { }
 }
 
