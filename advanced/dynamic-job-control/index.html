@@ -111,6 +111,8 @@
     </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../observing-job-progress/">Observing progress of jobs</a>
+                  </li>
               </ul>
       </div>
     </div>
@@ -138,7 +140,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="dynamic-job-control">Dynamic Job Control<a class="headerlink" href="#dynamic-job-control" title="Permanent link">&para;</a></h1>
-<p><strong>NCronJob</strong> allows you to dynmically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.</p>
+<p><strong>NCronJob</strong> allows you to dynamically add or remove CRON jobs from the scheduler. This is useful when you want to add jobs at runtime or remove jobs based on some condition without restarting the scheduler.</p>
 <h2 id="defining-job-names">Defining job names<a class="headerlink" href="#defining-job-names" title="Permanent link">&para;</a></h2>
 <p>The core idea is to define an unique job name for each job that might be mutated during runtime. The job name is an optional parameter:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">builder</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
@@ -253,6 +255,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../global-concurrency/" class="btn btn-neutral float-left" title="Global Concurrency"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../observing-job-progress/" class="btn btn-neutral float-right" title="Observing progress of jobs">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -282,6 +285,8 @@
     
       <span><a href="../global-concurrency/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
+    
+      <span><a href="../observing-job-progress/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

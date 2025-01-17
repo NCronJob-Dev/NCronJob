@@ -89,11 +89,13 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Global Concurrency</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#the-maxmimum">The Maxmimum</a>
+    <li class="toctree-l2"><a class="reference internal" href="#the-maximum">The Maximum</a>
     </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../observing-job-progress/">Observing progress of jobs</a>
                   </li>
               </ul>
       </div>
@@ -122,8 +124,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="global-concurrency">Global Concurrency<a class="headerlink" href="#global-concurrency" title="Permanent link">&para;</a></h1>
-<p><strong>NCronJob</strong> utilisies a priority queue with a maximum amount of entries. That is, the queue will only hold and execute a maximum amount of jobs at any given time. This is to prevent the system from being overloaded with jobs.</p>
-<h2 id="the-maxmimum">The Maxmimum<a class="headerlink" href="#the-maxmimum" title="Permanent link">&para;</a></h2>
+<p><strong>NCronJob</strong> relies on a priority queue with a maximum amount of entries. That is, the queue will only hold and execute a maximum amount of jobs at any given time. This is to prevent the system from being overloaded with jobs.</p>
+<h2 id="the-maximum">The Maximum<a class="headerlink" href="#the-maximum" title="Permanent link">&para;</a></h2>
 <p>The global maximum of concurrent jobs is calculated as:</p>
 <div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">maxDegreeOfParallelism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Environment</span><span class="p">.</span><span class="n">ProcessorCount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">4</span><span class="p">;</span>
 </code></pre></div>

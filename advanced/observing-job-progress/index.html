@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/advanced/observing-job-progress/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Observing progress of jobs - NCronJob</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Observing progress of jobs";
+        var mkdocs_page_input_path = "advanced/observing-job-progress.md";
+        var mkdocs_page_url = "/advanced/observing-job-progress/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../..">
+          <img src="../../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/model-dependencies/">Model dependencies</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/exception-handler/">Exception handler</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../log-level/">Controlling the log level</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Observing progress of jobs</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#subscribing-to-the-executions-of-jobs">Subscribing to the executions of jobs</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#forewords">Forewords</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#registering-a-notifier-callback">Registering a notifier callback</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#sample-usage">Sample usage</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#known-limitations">Known limitations</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Advanced</li>
+      <li class="breadcrumb-item active">Observing progress of jobs</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/advanced/observing-job-progress.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="observing-job-progress">Observing job progress<a class="headerlink" href="#observing-job-progress" title="Permanent link">&para;</a></h1>
+<p>Every time one schedules a job (or triggers it as an instant job), a virtual orchestration is spawned.</p>
+<p>An orchestration can be as simple as a unique job, or as complex as a root job and the whole hierarchy of its direct and indirect dependent jobs (see <a href="../../features/model-dependencies/"><em>&ldquo;Model Dependencies&rdquo;</em></a>).</p>
+<p>An orchestration is uniquely identifed by an identifier. All jobs belonging to an orchestration share this same <code>CorrelationId</code> (See <a href="../../features/model-dependencies/#tracing-requests-of-dependencies-via-correlationid"><em>&ldquo;Tracing requests of dependencies via <code>CorrelationId</code>&ldquo;</em></a>).</p>
+<p>From a timeline perspective, an orchestration starts before the root job that initiated it and completes when <strong>all</strong> of its leaf jobs have reached a final state.</p>
+<h2 id="subscribing-to-the-executions-of-jobs">Subscribing to the executions of jobs<a class="headerlink" href="#subscribing-to-the-executions-of-jobs" title="Permanent link">&para;</a></h2>
+<h3 id="forewords">Forewords<a class="headerlink" href="#forewords" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This is an <strong>experimental</strong> feature subject to breaking changes independently of the standard semver lifecycle release of <strong>NCronJob</strong>.</p>
+<p>While reporting feedback or bugs about it, please do not forget to
+mention in the issue which version of NCronJob you&rsquo;re using.</p>
+</div>
+<p>Would you decide to give it an early try, in order to suppress the warnings that comes with the <a href="https://learn.microsoft.com/en-us/dotnet/fundamentals/apicompat/preview-apis#experimentalattribute">.NET Experimental attribute</a>, update your <code>.csproj</code> with a <code>&lt;NoWarn&gt;</code> project setting:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">&lt;PropertyGroup&gt;</span>
+<span class="w">    </span>...
+<span class="w">    </span><span class="nt">&lt;NoWarn&gt;</span>$(NoWarn);NCRONJOB_OBSERVER<span class="nt">&lt;/NoWarn&gt;</span>
+<span class="nt">&lt;/PropertyGroup&gt;</span>
+</code></pre></div>
+
+<h3 id="registering-a-notifier-callback">Registering a notifier callback<a class="headerlink" href="#registering-a-notifier-callback" title="Permanent link">&para;</a></h3>
+<p><strong>NCronJob</strong> exposes the capability to notify whenever jobs change states. One can
+suscribe to this by leveraging the <code>IJobExecutionProgressReporter</code> service.</p>
+<p>This is done through the following exposed method</p>
+<div class="codehilite"><pre><span></span><code><span class="n">IDisposable</span><span class="w"> </span><span class="nf">Register</span><span class="p">(</span><span class="n">Action</span><span class="o">&lt;</span><span class="n">ExecutionProgress</span><span class="o">&gt;</span><span class="w"> </span><span class="n">callback</span><span class="p">);</span>
+</code></pre></div>
+
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The registration returns the subscriber as a <code>IDisposable</code> object.
+In order to stop the subscriber from receiving notifications anymore, invoke the <code>Dispose()</code> method of it.</p>
+</div>
+<p>Subscribers to the reporting service will receive an immutable instance of the <code>ExecutionProgress</code>. This type will expose every meaningful change to any job or orchestration handled by NCronJob.</p>
+<h3 id="sample-usage">Sample usage<a class="headerlink" href="#sample-usage" title="Permanent link">&para;</a></h3>
+<p>Considering the following orchestration</p>
+<div class="codehilite"><pre><span></span><code>A ─┬─ (successful) ──&gt; B
+   └─ (successful) ──&gt; C ─── (successful) ──&gt; D
+</code></pre></div>
+
+<p>Below a very simple approach to schedule it every minute and register a subscriber.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="nn">NCronJob</span><span class="p">;</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">A</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">A</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">A</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[A]: Starting processing...&quot;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[A]: Processing is done.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">B</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">B</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">B</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">B</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[B]: Starting processing...&quot;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[B]: Processing is done.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">C</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">C</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">C</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">C</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[C]: Starting processing...&quot;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[C]: Processing is done.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">D</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">D</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[D]: Starting processing...&quot;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[D]: Processing is done.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Program</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">builder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Host</span><span class="p">.</span><span class="n">CreateApplicationBuilder</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="w">            </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">C</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">());</span>
+
+<span class="w">            </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">B</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="w">            </span><span class="n">n</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">A</span><span class="o">&gt;</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">))</span>
+<span class="w">                </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">B</span><span class="o">&gt;</span><span class="p">())</span>
+<span class="w">                </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">C</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="w">        </span><span class="p">});</span>
+
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="n">Build</span><span class="p">();</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">UseNCronJobAsync</span><span class="p">();</span>
+
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">Program</span><span class="o">&gt;&gt;</span><span class="p">();</span>
+
+<span class="w">        </span><span class="c1">// Retrieve the observer service from the DI container...</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">reporter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">IJobExecutionProgressReporter</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="w">        </span><span class="c1">// ...enlist a new subscriber to it...</span>
+<span class="w">        </span><span class="n">IDisposable</span><span class="w"> </span><span class="n">subscriber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reporter</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">Subscriber</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">RunAsync</span><span class="p">();</span>
+
+<span class="w">        </span><span class="c1">// ...and when you&#39;re done with it, unhook the subscription.</span>
+<span class="w">        </span><span class="n">subscriber</span><span class="p">.</span><span class="n">Dispose</span><span class="p">();</span>
+
+<span class="w">        </span><span class="k">void</span><span class="w"> </span><span class="nf">Subscriber</span><span class="p">(</span><span class="n">ExecutionProgress</span><span class="w"> </span><span class="n">progress</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">progress</span><span class="p">.</span><span class="n">RunId</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span>
+<span class="w">                    </span><span class="s">&quot;Orchestration {CorrelationId} - {Status}&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="n">progress</span><span class="p">.</span><span class="n">CorrelationId</span><span class="p">,</span>
+<span class="w">                    </span><span class="n">progress</span><span class="p">.</span><span class="n">State</span><span class="p">);</span>
+
+<span class="w">                </span><span class="k">return</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;Job {JobRunId} - {Status}&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">RunId</span><span class="p">,</span>
+<span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">State</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Given the orchestration defined above, with jobs of varying durations, the generated output log may look like this:</p>
+<div class="codehilite"><pre><span></span><code>10:46:47 warn: Program[0] Orchestration d36e2b62-6997-44c5-a9f9-de442b8a1807 - OrchestrationStarted
+10:46:50 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - NotStarted
+10:46:50 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Scheduled
+10:47:00 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Initializing
+10:47:00 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Running
+10:47:00 info: A[0] [A]: Starting processing...
+10:47:01 info: A[0] [A]: Processing is done.
+10:47:01 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Completing
+10:47:01 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - WaitingForDependency
+10:47:01 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - NotStarted
+10:47:01 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - NotStarted
+10:47:01 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Completed
+10:47:01 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Initializing
+10:47:01 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Running
+10:47:01 info: B[0] [B]: Starting processing...
+10:47:01 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Initializing
+10:47:01 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Running
+10:47:01 info: C[0] [C]: Starting processing...
+10:47:02 info: C[0] [C]: Processing is done.
+10:47:02 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Completing
+10:47:02 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - WaitingForDependency
+10:47:02 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - NotStarted
+10:47:02 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Completed
+10:47:03 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Initializing
+10:47:03 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Running
+10:47:03 info: D[0] [D]: Starting processing...
+10:47:04 info: D[0] [D]: Processing is done.
+10:47:04 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Completing
+10:47:04 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Completed
+10:47:07 info: B[0] [B]: Processing is done.
+10:47:07 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Completing
+10:47:07 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Completed
+10:47:07 warn: Program[0] Orchestration d36e2b62-6997-44c5-a9f9-de442b8a1807 - OrchestrationCompleted
+</code></pre></div>
+
+<h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
+<p>As global NCronJob observability is still under development, it&rsquo;s not feature complete yet.</p>
+<p>Below are know missing parts of it. Would you find other releated areas of interest that may be worth investigating, please submit a request in the issue tracker.</p>
+<ul>
+<li><a href="https://github.com/NCronJob-Dev/NCronJob/issues/161">Report removed jobs as <code>Cancelled</code></a></li>
+<li><a href="https://github.com/NCronJob-Dev/NCronJob/issues/160">Report skipped child jobs as <code>Skipped</code></a></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../dynamic-job-control/" class="btn btn-neutral float-left" title="Dynamic Job Control"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>2024 <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../dynamic-job-control/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

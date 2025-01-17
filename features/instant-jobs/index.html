@@ -103,6 +103,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
               </ul>
       </div>
     </div>
@@ -168,7 +170,7 @@ So also CRON jobs can be triggered instantly.</p>
 
 <p>The <code>RunInstantJob</code> method takes the job type and the parameters as arguments. Optionally you can pass in a <code>CancellationToken</code> as well. The job will be executed immediately.</p>
 <h2 id="starting-a-job-with-a-delay">Starting a job with a delay<a class="headerlink" href="#starting-a-job-with-a-delay" title="Permanent link">&para;</a></h2>
-<p>If you find the need of delaying the execution of an instant job, you can use the <code>RunScheduledJob</code> method with a <code>TimeSpan</code> as a delay. The same as <code>RunInstantJob</code> applies here, the job has to be registered in the <code>AddNCronJob</code> method.</p>
+<p>If you find the need to delay the execution of an instant job, you can use the <code>RunScheduledJob</code> method with a <code>TimeSpan</code> as a delay. The same as <code>RunInstantJob</code> applies here, the job has to be registered in the <code>AddNCronJob</code> method.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">RequestDto</span><span class="w"> </span><span class="n">dto</span><span class="p">,</span><span class="w"> </span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">parameterDto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterDto</span>

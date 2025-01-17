@@ -95,6 +95,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
               </ul>
       </div>
     </div>
@@ -122,7 +124,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="passing-parameters-to-a-job">Passing parameters to a job<a class="headerlink" href="#passing-parameters-to-a-job" title="Permanent link">&para;</a></h1>
-<p>Often times a job needs some kind of configuration or parameter to run. Imagine you have a job that generates a report and can run daily, weekly or monthly. You could create three different jobs for each frequency, but that would be a lot of duplicated code. Instead, you can pass in parameters to the job.</p>
+<p>Often a job needs some kind of configuration or parameter to run. Imagine you have a job that generates a report and can run daily, weekly or monthly. You could create three different jobs for each frequency, but that would be a lot of duplicated code. Instead, you can pass in parameters to the job.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ReportJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
@@ -162,7 +164,7 @@
 </code></pre></div>
 
 <h2 id="parameters-are-not-immutable">Parameters are not immutable<a class="headerlink" href="#parameters-are-not-immutable" title="Permanent link">&para;</a></h2>
-<p>Passed in parameters are not immutable by default or cloned through out the job execution. This means that if you change the parameter in the job, it will also change in the next execution. If you need to keep the parameter unchanged, you should clone it in the job.</p>
+<p>Passed in parameters are not immutable by default or cloned throughout the job execution. This means that if you change the parameter in the job, it will also change in the next execution. If you need to keep the parameter unchanged, you should clone it in the job.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyParameter</span>
 <span class="p">{</span>
 <span class="w">  </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Counter</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
