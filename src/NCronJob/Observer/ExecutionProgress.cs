@@ -55,6 +55,7 @@ public record ExecutionProgress
             JobStateType.Retrying => ExecutionState.Retrying,
             JobStateType.Completing => ExecutionState.Completing,
             JobStateType.WaitingForDependency => ExecutionState.WaitingForDependency,
+            JobStateType.Skipped => ExecutionState.Skipped,
             JobStateType.Completed => ExecutionState.Completed,
             JobStateType.Faulted => ExecutionState.Faulted,
             JobStateType.Cancelled => ExecutionState.Cancelled,

@@ -10,6 +10,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 - Expose an **experimental** basic job execution progress reporting hook. Added in [#157](https://github.com/NCronJob-Dev/NCronJob/issues/157), by [@nulltoken](https://github.com/nulltoken).
 
+- Report additional `ExecutionState`s (`Cancelled` removed jobs and `Skipped` dependent jobs). Added in [#162](https://github.com/NCronJob-Dev/NCronJob/issues/162), by [@nulltoken](https://github.com/nulltoken).
+
 ## [v4.1.0] - 2025-01-02
 
 ### Added

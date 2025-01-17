@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -140,7 +141,7 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected static (IDisposable subscriber, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
     {
-        List<ExecutionProgress> events = [];
+        SynchronizedCollection<ExecutionProgress> events = [];
 
         void Subscriber(ExecutionProgress progress)
         {
