@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.2.0] - 2025-01-17
+
 ### Added
 
 - Expose an **experimental** basic job execution progress reporting hook. Added in [#157](https://github.com/NCronJob-Dev/NCronJob/issues/157), by [@nulltoken](https://github.com/nulltoken).
@@ -463,7 +465,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.1.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.2.0...HEAD
+[v4.2.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.1.0...v4.2.0
 [v4.1.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.0.2...v4.1.0
 [v4.0.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.8...v4.0.2
 [v3.3.8]: https://github.com/NCronJob-Dev/NCronJob/compare/v3.3.5...v3.3.8
