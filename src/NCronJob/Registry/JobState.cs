@@ -11,6 +11,8 @@ internal readonly struct JobState
 
     public JobState(JobStateType type, Exception? fault = default)
     {
+        Debug.Assert(fault is not null || type != JobStateType.Faulted);
+
         Type = type;
         Timestamp = DateTimeOffset.Now;
         Fault = fault;

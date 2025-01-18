@@ -10,7 +10,9 @@ internal sealed record JobDefinition(
     string? JobName = null,
     JobExecutionAttributes? JobPolicyMetadata = null)
 {
-    public bool IsStartupJob { get; set; }
+    public bool IsStartupJob => ShouldCrashOnStartupFailure is not null;
+
+    public bool? ShouldCrashOnStartupFailure { get; set; }
 
     public string JobName { get; } = JobName ?? Type.Name;
 

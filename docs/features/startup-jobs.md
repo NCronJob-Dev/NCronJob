@@ -35,6 +35,8 @@ The `RunAtStartup` in combination with `UseNCronJobAsync` method ensures that th
 
 Failure to call `UseNCronJobAsync` when startup jobs are defined will lead to a fatal exception during the application start.
 
+It may happen that the specified startup job runs task that are required for the application setup. For those cases, when one cannot tolerate a startup job to fail, the `RunAtStartup` method accepts an optional parameter `shouldCrashOnFailure`. When set to `true`, the specified job is expected to complete in a successful state. Otherwise, an exception will be thrown preventing the application start.
+
 ## Example Use Case
 
 Consider an application that needs to load initial data from a database or perform some cleanup tasks whenever it starts. You can define and configure a startup job to handle this:
@@ -66,11 +68,13 @@ In your `Program.cs` or `Startup.cs` file, register the job and configure it to 
 builder.Services.AddNCronJob(options => 
 {
     options.AddJob<InitialDataLoader>()
-           .RunAtStartup();
+           .RunAtStartup(shouldCrashOnFailure: true);
 });
 ```
 
-This setup ensures that the `InitialDataLoader` job will be executed as soon as the application starts, loading the necessary initial data.
+This setup ensures that:
+- The `InitialDataLoader` job will be executed as soon as the application starts, loading the necessary initial data.
+- Would anything prevent the job to successfully complete, the application will fail to start.
 
 
 ## Summary
