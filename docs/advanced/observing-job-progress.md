@@ -28,6 +28,17 @@ Would you decide to give it an early try, in order to suppress the warnings that
 </PropertyGroup>
 ```
 
+Alternatively, it can also be silenced through an `.editorconfig` setting.
+
+```text
+[*.cs]
+
+...
+
+# NCRONJOB_OBSERVER: Type is for evaluation purposes only and is subject to change or removal in future updates.
+dotnet_diagnostic.NCRONJOB_OBSERVER.severity = none
+```
+
 ### Registering a notifier callback
 
 **NCronJob** exposes the capability to notify whenever jobs change states. One can
@@ -41,8 +52,8 @@ IDisposable Register(Action<ExecutionProgress> callback);
 
 !!! info
 
-    The registration returns the subscriber as a `IDisposable` object.
-    In order to stop the subscriber from receiving notifications anymore, invoke the `Dispose()` method of it.
+    The registration returns the subscription as a `IDisposable` object.
+    In order to stop the callback from receiving notifications anymore, invoke the `Dispose()` method of it.
 
 Subscribers to the reporting service will receive an immutable instance of the `ExecutionProgress`. This type will expose every meaningful change to any job or orchestration handled by NCronJob.
 
@@ -51,7 +62,6 @@ Subscribers to the reporting service will receive an immutable instance of the `
 Considering the following orchestration
 
 ```text
-
 A ─┬─ (successful) ──> B
    └─ (successful) ──> C ─── (successful) ──> D
 ```
@@ -227,5 +237,5 @@ As global NCronJob observability is still under development, it's not feature co
 
 Below are know missing parts of it. Would you find other releated areas of interest that may be worth investigating, please submit a request in the issue tracker.
 
-- [Report removed jobs as `Cancelled`](https://github.com/NCronJob-Dev/NCronJob/issues/161)
-- [Report skipped child jobs as `Skipped`](https://github.com/NCronJob-Dev/NCronJob/issues/160)
+- ~~[Report removed jobs as `Cancelled`](https://github.com/NCronJob-Dev/NCronJob/issues/161)~~
+- ~~[Report skipped child jobs as `Skipped`](https://github.com/NCronJob-Dev/NCronJob/issues/160)~~
