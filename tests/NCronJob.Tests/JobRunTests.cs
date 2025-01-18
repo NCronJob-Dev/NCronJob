@@ -18,7 +18,6 @@ public class JobRunStatesTests
             { JobStateType.Faulted, true},
             { JobStateType.Cancelled, true},
             { JobStateType.Expired, true},
-            { JobStateType.Crashed, true},
         };
 
     [Fact]

@@ -125,7 +125,6 @@ internal class JobRun
         JobStateType.Completed or
         JobStateType.Cancelled or
         JobStateType.Faulted or
-        JobStateType.Crashed or
         JobStateType.Expired;
 
     private static bool CanInitiateRun(JobStateType stateType) =>

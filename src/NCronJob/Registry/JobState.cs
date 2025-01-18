@@ -35,5 +35,4 @@ internal enum JobStateType
     Faulted,
     Cancelled,
     Expired,
-    Crashed
 }
