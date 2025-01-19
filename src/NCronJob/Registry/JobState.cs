@@ -7,13 +7,13 @@ internal readonly struct JobState
 {
     public JobStateType Type { get; }
     public DateTimeOffset Timestamp { get; }
-    public string? Message { get; }
+    public Exception? Fault { get; }
 
-    public JobState(JobStateType type, string? message = default)
+    public JobState(JobStateType type, Exception? fault = default)
     {
         Type = type;
         Timestamp = DateTimeOffset.Now;
-        Message = message;
+        Fault = fault;
     }
 
     private string DebuggerDisplay => $"Type = {Type}, Timestamp = {Timestamp}";

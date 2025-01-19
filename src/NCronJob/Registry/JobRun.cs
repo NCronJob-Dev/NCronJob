@@ -108,14 +108,14 @@ internal class JobRun
         OnStateChanged(this);
     }
 
-    public void NotifyStateChange(JobStateType type, string message = "")
+    public void NotifyStateChange(JobStateType type, Exception? fault = default)
     {
         if (CurrentState.Type == type || IsCompleted)
         {
             return;
         }
 
-        var state = new JobState(type, message);
+        var state = new JobState(type, fault);
         SetState(state);
     }
 
