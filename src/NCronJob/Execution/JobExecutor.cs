@@ -119,7 +119,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc.Message);
+            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(exc, default);
         }

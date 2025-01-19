@@ -165,7 +165,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
                 : null;
             var entry = new JobDefinition(jobType, option.Parameter, cron, option.TimeZoneInfo)
             {
-                IsStartupJob = option.IsStartupJob,
+                ShouldCrashOnStartupFailure = option.ShouldCrashOnStartupFailure,
                 CustomName = option.Name,
                 UserDefinedCronExpression = option.CronExpression
             };
@@ -219,11 +219,11 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     }
 
     /// <inheritdoc />
-    public INotificationStage<TJob> RunAtStartup()
+    public INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false)
     {
-        jobOptionBuilder.SetRunAtStartup();
+        jobOptionBuilder.SetRunAtStartup(shouldCrashOnFailure);
 
-        jobRegistry.UpdateJobDefinitionsToRunAtStartup<TJob>();
+        jobRegistry.UpdateJobDefinitionsToRunAtStartup<TJob>(shouldCrashOnFailure);
 
         return new NotificationStage<TJob>(services, jobDefinitions, settings, jobRegistry);
     }
@@ -337,6 +337,7 @@ public interface IStartupStage<TJob> : INotificationStage<TJob>
     /// <summary>
     /// Configures the job to run once before the application itself runs.
     /// </summary>
+    /// <param name="shouldCrashOnFailure">When <code>true</code>, will lead to a fatal exception during the application start would the job crash. Default is <code>false</code>.</param>
     /// <returns>Returns a <see cref="INotificationStage{TJob}"/> that allows adding notifications of another job.</returns>
     /// <remarks>
     /// If a job is marked to run at startup, it will be executed before any `IHostedService` is started. Use the <seealso cref="NCronJobExtensions.UseNCronJob"/> method to trigger the job execution.
@@ -347,7 +348,7 @@ public interface IStartupStage<TJob> : INotificationStage<TJob>
     /// </code>
     /// All startup jobs will be executed (and awaited) before the web application is started. This is particular useful for migration and cache hydration.
     /// </remarks>
-    INotificationStage<TJob> RunAtStartup();
+    INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false);
 }
 
 /// <summary>

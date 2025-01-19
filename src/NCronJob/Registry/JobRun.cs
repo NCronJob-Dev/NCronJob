@@ -108,14 +108,14 @@ internal class JobRun
         OnStateChanged(this);
     }
 
-    public void NotifyStateChange(JobStateType type, string message = "")
+    public void NotifyStateChange(JobStateType type, Exception? fault = default)
     {
         if (CurrentState.Type == type || IsCompleted)
         {
             return;
         }
 
-        var state = new JobState(type, message);
+        var state = new JobState(type, fault);
         SetState(state);
     }
 
@@ -125,7 +125,6 @@ internal class JobRun
         JobStateType.Completed or
         JobStateType.Cancelled or
         JobStateType.Faulted or
-        JobStateType.Crashed or
         JobStateType.Expired;
 
     private static bool CanInitiateRun(JobStateType stateType) =>

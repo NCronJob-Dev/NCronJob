@@ -12,7 +12,7 @@ public sealed class JobOptionBuilder
     /// This is because we only support one job per builder.
     /// </summary>
     /// <returns></returns>
-    internal JobOptionBuilder SetRunAtStartup()
+    internal JobOptionBuilder SetRunAtStartup(bool shouldCrashOnFailure = false)
     {
         if (jobOptions.Count == 1)
         {
@@ -20,7 +20,7 @@ public sealed class JobOptionBuilder
             if(jobOptions[0].CronExpression != null)
                 throw new InvalidOperationException("Startup jobs cannot have a cron expression.");
 
-            jobOptions[0].IsStartupJob = true;
+            jobOptions[0].ShouldCrashOnStartupFailure = shouldCrashOnFailure;
         }
         return this;
     }

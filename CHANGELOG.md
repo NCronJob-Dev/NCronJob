@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Teach startup jobs to optionaly prevent the application start on failure. Added in [#165](https://github.com/NCronJob-Dev/NCronJob/issues/165), by [@nulltoken](https://github.com/nulltoken).
+
 ## [v4.2.0] - 2025-01-17
 
 ### Added

@@ -7,13 +7,15 @@ internal readonly struct JobState
 {
     public JobStateType Type { get; }
     public DateTimeOffset Timestamp { get; }
-    public string? Message { get; }
+    public Exception? Fault { get; }
 
-    public JobState(JobStateType type, string? message = default)
+    public JobState(JobStateType type, Exception? fault = default)
     {
+        Debug.Assert(fault is not null || type != JobStateType.Faulted);
+
         Type = type;
         Timestamp = DateTimeOffset.Now;
-        Message = message;
+        Fault = fault;
     }
 
     private string DebuggerDisplay => $"Type = {Type}, Timestamp = {Timestamp}";
@@ -35,5 +37,4 @@ internal enum JobStateType
     Faulted,
     Cancelled,
     Expired,
-    Crashed
 }

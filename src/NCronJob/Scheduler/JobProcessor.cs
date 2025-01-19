@@ -41,7 +41,7 @@ internal sealed partial class JobProcessor
         }
         catch (Exception ex)
         {
-            jobRun.NotifyStateChange(JobStateType.Faulted, ex.Message);
+            jobRun.NotifyStateChange(JobStateType.Faulted, ex);
         }
         finally
         {

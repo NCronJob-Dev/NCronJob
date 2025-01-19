@@ -28,7 +28,7 @@ internal sealed class JobOption
     /// <summary>
     /// Startup Jobs will be executed once during the application startup before any other jobs.
     /// </summary>
-    public bool IsStartupJob { get; set; }
+    public bool? ShouldCrashOnStartupFailure { get; set; }
 
     /// <summary>
     /// The job name given by the user, which can be used to identify the job.

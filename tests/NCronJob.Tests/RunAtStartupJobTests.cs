@@ -126,6 +126,34 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Assert.Equal(6, events.Count);
     }
 
+    [Fact]
+    public async Task StartupJobCanBeConfiguredToPreventHostFromStartingOnFailure()
+    {
+        var builder = Host.CreateDefaultBuilder();
+        var storage = new Storage();
+        builder.ConfigureServices(services =>
+        {
+            services.AddNCronJob(s =>
+            {
+                s.AddJob<FailingJob>().RunAtStartup(shouldCrashOnFailure: true);
+                s.AddExceptionHandler<ExceptionHandler>();
+            });
+            services.AddSingleton(_ => storage);
+        });
+
+        using var app = builder.Build();
+
+        var exc = await Assert.ThrowsAsync<InvalidOperationException>(app.UseNCronJobAsync);
+
+        Assert.StartsWith(
+            $"At least one of the startup jobs failed{Environment.NewLine}- System.InvalidOperationException: Failed",
+            exc.Message,
+            StringComparison.Ordinal);
+
+        storage.Content.Count.ShouldBe(1);
+        storage.Content[0].ShouldBe("ExceptionHandler");
+    }
+
     [SuppressMessage("Major Code Smell", "S108:Nested blocks of code should not be left empty", Justification = "On purpose")]
     private static async Task RunApp(IHost app, TimeSpan? runtime = null)
     {

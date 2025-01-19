@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace NCronJob;
 
@@ -115,7 +116,7 @@ internal sealed partial class JobWorker
         catch (Exception ex)
         {
             LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
-            nextJob.NotifyStateChange(JobStateType.Faulted, ex.Message);
+            nextJob.NotifyStateChange(JobStateType.Faulted, ex);
         }
         finally
         {
@@ -142,7 +143,8 @@ internal sealed partial class JobWorker
         {
             if (task.IsFaulted)
             {
-                jobRun.NotifyStateChange(JobStateType.Faulted);
+                Debug.Assert(task.Exception is not null);
+                jobRun.NotifyStateChange(JobStateType.Faulted, task.Exception);
             }
 
             if (task.IsCanceled)

@@ -18,7 +18,6 @@ public class JobRunStatesTests
             { JobStateType.Faulted, true},
             { JobStateType.Cancelled, true},
             { JobStateType.Expired, true},
-            { JobStateType.Crashed, true},
         };
 
     [Fact]
@@ -40,14 +39,16 @@ public class JobRunStatesTests
     
         Assert.Equal(JobStateType.NotStarted, jobRun.CurrentState.Type);
 
-        jobRun.NotifyStateChange(value);
+        var fault = new Exception();
+
+        jobRun.NotifyStateChange(value, fault);
         Assert.Equal(value, jobRun.CurrentState.Type);
 
         jobRun.OnStateChanged += (_) => { hasBeenCalled = true; };
 
         foreach (JobStateType state in AllPossibleStates.Keys)
         {
-            jobRun.NotifyStateChange(state);
+            jobRun.NotifyStateChange(state, fault);
             Assert.Equal(value, jobRun.CurrentState.Type);
             Assert.False(hasBeenCalled);
         }
