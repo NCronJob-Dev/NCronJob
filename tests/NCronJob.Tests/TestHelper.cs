@@ -154,7 +154,7 @@ public abstract class JobIntegrationBase : IDisposable
         }
     }
 
-    protected static (IDisposable subscriber, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
+    protected static (IDisposable subscription, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
     {
         SynchronizedCollection<ExecutionProgress> events = [];
 

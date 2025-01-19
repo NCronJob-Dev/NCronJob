@@ -59,7 +59,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = builder.Build();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -72,7 +72,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
@@ -102,7 +102,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = builder.Build();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -114,7 +114,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);

@@ -94,7 +94,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         var jobQueueManager = provider.GetRequiredService<JobQueueManager>();
         var jobQueue = jobQueueManager.GetOrAddQueue(typeof(CancelRetryingJob2).FullName!);
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         JobRun? nextJob = null;
         var tcs = new TaskCompletionSource<JobStateType>();
@@ -136,7 +136,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
 

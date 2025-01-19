@@ -106,7 +106,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         var provider = CreateServiceProvider();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -114,7 +114,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         var storage = provider.GetRequiredService<Storage>();
         storage.Guids.Count.ShouldBe(1);
@@ -202,7 +202,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         var provider = CreateServiceProvider();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -219,7 +219,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);

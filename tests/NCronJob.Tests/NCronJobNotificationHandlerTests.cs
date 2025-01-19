@@ -33,7 +33,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
         var provider = CreateServiceProvider();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -45,7 +45,7 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
 
