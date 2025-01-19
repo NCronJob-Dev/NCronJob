@@ -56,15 +56,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Cronos" Version="0.9.0" />
-		<PackageReference Include="Polly" Version="8.5.1" />
+		<PackageReference Include="Cronos" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+		<PackageReference Include="Polly" />
 	</ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.1" />
-  </ItemGroup>
 
 </Project>
