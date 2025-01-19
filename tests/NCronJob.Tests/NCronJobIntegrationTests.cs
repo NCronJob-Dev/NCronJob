@@ -348,15 +348,29 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             .And.WithCronExpression("* * * * *").WithName("Job 2")
             .And.WithCronExpression("* * * * *").WithName("Job 3")
             .And.WithCronExpression("* * * * *").WithName("Job 4")));
+
         var provider = CreateServiceProvider();
+
+        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        // Wait 2 instances at the same time
-        (await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(150))).ShouldBeTrue();
-        // But not another instance
-        (await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(50))).ShouldBeFalse();
+
+        await WaitUntilConditionIsMet(events, AtLeastTwoJobsAreInitializing);
+
+        subscriber.Dispose();
+
+        var runningJobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
+
+        Assert.Equal(2, runningJobs.Count);
+        Assert.NotEqual(runningJobs[0].CorrelationId, runningJobs[1].CorrelationId);
+
+        bool AtLeastTwoJobsAreInitializing(IList<ExecutionProgress> events)
+        {
+            var jobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
+            return jobs.Count >= 2;
+        }
     }
 
     [Fact]
