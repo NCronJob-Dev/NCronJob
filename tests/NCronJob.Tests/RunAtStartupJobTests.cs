@@ -169,10 +169,10 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
     private sealed class Storage
     {
-#if NET8_0
-        private readonly object locker = new();
-#else
+#if NET9_0_OR_GREATER
         private readonly Lock locker = new();
+#else
+        private readonly object locker = new();
 #endif
         public List<string> Content { get; private set; } = [];
 
