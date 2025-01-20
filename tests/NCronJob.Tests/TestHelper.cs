@@ -108,9 +108,9 @@ public abstract class JobIntegrationBase : IDisposable
         }
     }
 
-    protected static async Task WaitForOrchestrationCompletion(
+    protected async Task WaitUntilConditionIsMet(
         IList<ExecutionProgress> events,
-        Guid orchestrationId)
+        Func<IList<ExecutionProgress>, bool> evaluator)
     {
         // Note: Although this function could seem a bit over-engineered, it's sadly necessary. 
         // Indeed, events may actually be updated upstream while it's being enumerated
@@ -119,23 +119,38 @@ public abstract class JobIntegrationBase : IDisposable
 
         int index = 0;
 
+        List<ExecutionProgress> tmp = [];
+
         while (true)
         {
             int count = events.Count;
 
             while (index < count)
             {
-                ExecutionProgress @event = events[index];
-
-                if (@event.CorrelationId == orchestrationId && @event.State == ExecutionState.OrchestrationCompleted)
-                {
-                    return;
-                }
-
+                tmp.Add(events[index]);
                 index++;
             }
 
-            await Task.Delay(TimeSpan.FromMicroseconds(100));
+            if (evaluator(tmp))
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMicroseconds(10), CancellationToken);
+        }
+    }
+
+    protected async Task WaitForOrchestrationCompletion(
+        IList<ExecutionProgress> events,
+        Guid orchestrationId)
+    {
+        await WaitUntilConditionIsMet(events, OrchestrationIsCompleted);
+
+        bool OrchestrationIsCompleted(IList<ExecutionProgress> events)
+        {
+            return events.Any(@event =>
+                @event.CorrelationId == orchestrationId &&
+                @event.State == ExecutionState.OrchestrationCompleted);
         }
     }
 
