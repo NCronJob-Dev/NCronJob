@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
 
@@ -37,7 +38,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
             services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
             services.AddSingleton(_ => storage);
         });
-        using var app = builder.Build();
+
+        using var app = BuildApp(builder);
 
         await app.UseNCronJobAsync();
 
@@ -57,7 +59,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
             services.AddHostedService<StartingService>();
         });
 
-        using var app = builder.Build();
+        using var app = BuildApp(builder);
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
@@ -100,7 +102,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
             services.AddSingleton(_ => storage);
         });
 
-        using var app = builder.Build();
+        using var app = BuildApp(builder);
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
@@ -141,7 +143,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
             services.AddSingleton(_ => storage);
         });
 
-        using var app = builder.Build();
+        using var app = BuildApp(builder);
 
         var exc = await Assert.ThrowsAsync<InvalidOperationException>(app.UseNCronJobAsync);
 
@@ -152,6 +154,16 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         storage.Content.Count.ShouldBe(1);
         storage.Content[0].ShouldBe("ExceptionHandler");
+    }
+
+    private IHost BuildApp(IHostBuilder builder)
+    {
+        builder.ConfigureServices(services =>
+        {
+            services.Replace(new ServiceDescriptor(typeof(TimeProvider), FakeTimer));
+        });
+
+        return builder.Build();
     }
 
     [SuppressMessage("Major Code Smell", "S108:Nested blocks of code should not be left empty", Justification = "On purpose")]
@@ -200,7 +212,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private sealed class SimpleJob: IJob
+    private sealed class SimpleJob : IJob
     {
         private readonly Storage storage;
 
@@ -213,7 +225,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         }
     }
 
-    private sealed class FailingJob: IJob
+    private sealed class FailingJob : IJob
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token) => throw new InvalidOperationException("Failed");
     }
