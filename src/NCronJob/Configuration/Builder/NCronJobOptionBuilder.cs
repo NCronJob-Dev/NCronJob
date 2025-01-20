@@ -223,7 +223,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     {
         jobOptionBuilder.SetRunAtStartup(shouldCrashOnFailure);
 
-        jobRegistry.UpdateJobDefinitionsToRunAtStartup<TJob>(shouldCrashOnFailure);
+        JobRegistry.UpdateJobDefinitionsToRunAtStartup(jobDefinitions, shouldCrashOnFailure);
 
         return new NotificationStage<TJob>(services, jobDefinitions, settings, jobRegistry);
     }

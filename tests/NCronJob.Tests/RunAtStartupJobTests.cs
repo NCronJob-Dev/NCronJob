@@ -48,6 +48,34 @@ public class RunAtStartupJobTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task StartupJobsShouldOnlyRunOnceWhenAlsoConfiguredAsCron()
+    {
+        var builder = Host.CreateDefaultBuilder();
+        var storage = new Storage();
+        builder.ConfigureServices(services =>
+        {
+            services.AddNCronJob(s =>
+            {
+                s.AddJob<SimpleJob>(jo => jo.WithCronExpression("5 * * * *"));
+                s.AddJob<SimpleJob>().RunAtStartup();
+            });
+
+            services.AddSingleton(_ => storage);
+        });
+
+        using var app = BuildApp(builder);
+
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
+
+        await app.UseNCronJobAsync();
+        await RunApp(app);
+
+        subscription.Dispose();
+
+        Assert.Equal(1, events.Count(e => e.State == ExecutionState.Running));
+    }
+
+    [Fact]
     public async Task ShouldStartStartupJobsBeforeApplicationIsSpunUp()
     {
         var builder = Host.CreateDefaultBuilder();

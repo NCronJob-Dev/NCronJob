@@ -111,15 +111,12 @@ internal sealed class JobRegistry
     private void AddDynamicJobRegistration(JobDefinition jobDefinition, Delegate jobDelegate)
         => DynamicJobRegistrations.Add(new DynamicJobRegistration(jobDefinition, sp => new DynamicJobFactory(sp, jobDelegate)));
 
-    public void UpdateJobDefinitionsToRunAtStartup<TJob>(bool shouldCrashOnFailure = false)
+    public static void UpdateJobDefinitionsToRunAtStartup(
+        IReadOnlyCollection<JobDefinition> jobDefinitions,
+        bool shouldCrashOnFailure = false)
     {
-        foreach (var jobDefinition in allJobs)
+        foreach (var jobDefinition in jobDefinitions)
         {
-            if (jobDefinition.Type != typeof(TJob))
-            {
-                continue;
-            }
-
             jobDefinition.ShouldCrashOnStartupFailure = shouldCrashOnFailure;
         }
     }
