@@ -96,7 +96,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var provider = CreateServiceProvider();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -120,7 +120,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         Assert.Empty(jobRegistry.FindAllJobDefinition(typeof(SimpleJob)));
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         foreach (var orchestrationId in orchestrationIds)
         {

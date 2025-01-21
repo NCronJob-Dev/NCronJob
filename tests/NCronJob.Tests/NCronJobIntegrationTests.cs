@@ -257,7 +257,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         var runDate = FakeTimer.GetUtcNow().AddDays(-1);
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -270,7 +270,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
@@ -286,7 +286,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("0 * * * *")));
         var provider = CreateServiceProvider();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -294,7 +294,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, instantOrchestrationId);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         Guid scheduledOrchestrationId = events.First().CorrelationId;
 

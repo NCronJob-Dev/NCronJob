@@ -165,12 +165,12 @@ public class Program
         var reporter = app.Services.GetRequiredService<IJobExecutionProgressReporter>();
 
         // ...enlist a new subscriber to it...
-        IDisposable subscriber = reporter.Register(Subscriber);
+        IDisposable subscription = reporter.Register(Subscriber);
 
         await app.RunAsync();
 
         // ...and when you're done with it, unhook the subscription.
-        subscriber.Dispose();
+        subscription.Dispose();
 
         void Subscriber(ExecutionProgress progress)
         {
@@ -189,7 +189,6 @@ public class Program
                 progress.State);
         }
     }
-
 }
 ```
 
