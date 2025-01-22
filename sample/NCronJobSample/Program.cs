@@ -24,10 +24,7 @@ builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
-
-    .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
-    .AddNotificationHandler<HelloWorldJobHandler>()
+         .AddNotificationHandler<HelloWorldJobHandler>()
 
     // Multiple instances of the same job with different cron expressions can be supported
     // by marking the job with [SupportsConcurrency] attribute
