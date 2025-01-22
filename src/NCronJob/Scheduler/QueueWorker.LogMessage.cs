@@ -35,8 +35,8 @@ internal sealed partial class QueueWorker
     private partial void LogCancellationRequestedInJob();
 
     [LoggerMessage(LogLevel.Information, "Job added to queue: {JobType} at {RunAt:o}")]
-    private partial void LogJobAddedToQueue(string jobType, DateTime? runAt);
+    private partial void LogJobAddedToQueue(string jobType, DateTimeOffset? runAt);
 
     [LoggerMessage(LogLevel.Information, "Job removed from queue: {JobType} at {RunAt:o}")]
-    private partial void LogJobRemovedFromQueue(string jobType, DateTime? runAt);
+    private partial void LogJobRemovedFromQueue(string jobType, DateTimeOffset? runAt);
 }
