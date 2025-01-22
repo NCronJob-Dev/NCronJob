@@ -4,7 +4,7 @@ namespace NCronJob;
 
 internal sealed partial class JobWorker
 {
-    [LoggerMessage(LogLevel.Trace, "Next run of job '{JobType}' is at {NextRun}")]
+    [LoggerMessage(LogLevel.Trace, "Next run of job '{JobType}' is at {NextRun:o}")]
     private partial void LogNextJobRun(Type jobType, DateTimeOffset nextRun);
 
     [LoggerMessage(LogLevel.Debug, "Running job '{JobType}'.")]
