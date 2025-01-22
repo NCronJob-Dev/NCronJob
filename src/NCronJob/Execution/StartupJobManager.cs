@@ -1,12 +1,15 @@
+using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Text;
 
 namespace NCronJob;
 
-internal class StartupJobManager(
+internal partial class StartupJobManager(
     JobRegistry jobRegistry,
     JobProcessor jobProcessor,
-    JobExecutionProgressObserver observer)
+    JobExecutionProgressObserver observer,
+    TimeProvider timeProvider,
+    ILogger<StartupJobManager> logger)
 {
     public async Task ProcessStartupJobs(CancellationToken stopToken)
     {
@@ -17,6 +20,8 @@ internal class StartupJobManager(
             return;
         }
 
+        LogStartupJobsStart(logger, timeProvider.GetUtcNow());
+
         List<JobRun> jobRuns = [];
         var startupTasks = startupJobs.Select(definition =>
         {
@@ -26,6 +31,8 @@ internal class StartupJobManager(
         });
 
         await Task.WhenAll(startupTasks).ConfigureAwait(false);
+
+        LogStartupJobsCompletion(logger, timeProvider.GetUtcNow());
 
         Exception[] faults = jobRuns
             .Where(jr => jr.JobDefinition.ShouldCrashOnStartupFailure == true && jr.CurrentState.Type == JobStateType.Faulted)
@@ -50,4 +57,10 @@ internal class StartupJobManager(
 
     private async Task CreateExecutionTask(JobRun job, CancellationToken stopToken) =>
         await jobProcessor.ProcessJobAsync(job, stopToken).ConfigureAwait(false);
+
+    [LoggerMessage(LogLevel.Information, "Triggering startup jobs execution at {at:o}")]
+    private static partial void LogStartupJobsStart(ILogger logger, DateTimeOffset at);
+
+    [LoggerMessage(LogLevel.Information, "Completed startup jobs execution at {at:o}")]
+    private static partial void LogStartupJobsCompletion(ILogger logger, DateTimeOffset at);
 }
