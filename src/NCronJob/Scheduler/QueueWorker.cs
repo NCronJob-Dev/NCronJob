@@ -39,7 +39,12 @@ internal sealed partial class QueueWorker : BackgroundService
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (shutdown != null)
+        if (isDisposed)
+        {
+            return;
+        }
+        
+        if (shutdown is not null)
         {
             await shutdown.CancelAsync();
         }

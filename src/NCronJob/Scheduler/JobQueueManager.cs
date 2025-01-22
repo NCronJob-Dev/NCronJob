@@ -15,10 +15,11 @@ internal sealed class JobQueueManager : IDisposable
 #else
     private readonly object syncLock = new();
 #endif
-    private bool disposed;
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event Action<string>? QueueAdded;
+
+    public bool IsDisposed { get; private set; }
 
     public JobQueueManager(TimeProvider timeProvider) => this.timeProvider = timeProvider;
 
@@ -105,7 +106,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
+        if (IsDisposed)
             return;
 
         foreach (var jobQueue in jobQueues.Values)
@@ -127,7 +128,7 @@ internal sealed class JobQueueManager : IDisposable
         semaphores.Clear();
         jobCancellationTokens.Clear();
 
-        disposed = true;
+        IsDisposed = true;
     }
 
     private void CallCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

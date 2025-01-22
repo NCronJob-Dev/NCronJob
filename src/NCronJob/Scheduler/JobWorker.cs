@@ -120,7 +120,7 @@ internal sealed partial class JobWorker
         }
         finally
         {
-            if (shouldReleaseSemaphore)
+            if (shouldReleaseSemaphore && !jobQueueManager.IsDisposed)
             {
                 semaphore.Release();
             }
