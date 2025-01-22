@@ -8,24 +8,6 @@ public sealed class JobOptionBuilder
     private readonly List<JobOption> jobOptions = [];
 
     /// <summary>
-    /// The jobOptions item we need to work with will always be the first.
-    /// This is because we only support one job per builder.
-    /// </summary>
-    /// <returns></returns>
-    internal JobOptionBuilder SetRunAtStartup(bool shouldCrashOnFailure = false)
-    {
-        if (jobOptions.Count == 1)
-        {
-            // Startup Jobs should not be initialized with a cron expression.
-            if(jobOptions[0].CronExpression != null)
-                throw new InvalidOperationException("Startup jobs cannot have a cron expression.");
-
-            jobOptions[0].ShouldCrashOnStartupFailure = shouldCrashOnFailure;
-        }
-        return this;
-    }
-
-    /// <summary>
     /// Adds a cron expression for the given job.
     /// </summary>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>

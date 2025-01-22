@@ -8,6 +8,8 @@ namespace NCronJob.Tests;
 
 public class RunAtStartupJobTests : JobIntegrationBase
 {
+    private const string AtMinute5 = "5 * * * *";
+
     [Fact]
     public async Task UseNCronJobIsMandatoryWhenStartupJobsAreDefined()
     {
@@ -47,20 +49,16 @@ public class RunAtStartupJobTests : JobIntegrationBase
         storage.Content[0].ShouldBe("SimpleJob");
     }
 
-    [Fact]
-    public async Task StartupJobsShouldOnlyRunOnceWhenAlsoConfiguredAsCron()
+    [Theory]
+    [MemberData(nameof(CronAndRunAtStartupBuilders))]
+    public async Task StartupJobsShouldOnlyRunOnceWhenAlsoConfiguredAsCron(Action<NCronJobOptionBuilder> nBuilder)
     {
         var builder = Host.CreateDefaultBuilder();
         var storage = new Storage();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s =>
-            {
-                s.AddJob<SimpleJob>(jo => jo.WithCronExpression("5 * * * *"));
-                s.AddJob<SimpleJob>().RunAtStartup();
-            });
-
             services.AddSingleton(_ => storage);
+            services.AddNCronJob(nBuilder);
         });
 
         using var app = BuildApp(builder);
@@ -74,6 +72,27 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         Assert.Equal(1, events.Count(e => e.State == ExecutionState.Running));
     }
+
+    public static TheoryData<Action<NCronJobOptionBuilder>> CronAndRunAtStartupBuilders = new()
+    {
+        {
+            s =>
+            {
+                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(AtMinute5));
+                s.AddJob<SimpleJob>().RunAtStartup();
+            }
+        },
+        {
+            s =>
+            {
+                s.AddJob<SimpleJob>().RunAtStartup();
+                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(AtMinute5));
+            }
+        },
+        {
+            s => s.AddJob<SimpleJob>(jo => jo.WithCronExpression(AtMinute5)).RunAtStartup()
+        },
+    };
 
     [Fact]
     public async Task ShouldStartStartupJobsBeforeApplicationIsSpunUp()

@@ -8,6 +8,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Added
 
+- Allow a cron job to also run at startup. Added in [#171](https://github.com/NCronJob-Dev/NCronJob/issues/171), by [@nulltoken](https://github.com/nulltoken).
+
 - Teach startup jobs to optionaly prevent the application start on failure. Added in [#165](https://github.com/NCronJob-Dev/NCronJob/issues/165), by [@nulltoken](https://github.com/nulltoken).
 
 ### Fixed

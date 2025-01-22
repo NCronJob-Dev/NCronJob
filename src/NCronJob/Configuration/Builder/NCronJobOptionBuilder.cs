@@ -40,8 +40,8 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     public IStartupStage<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
-        var (builder, jobDefinitions) = AddJobInternal(typeof(T), options);
-        return new StartupStage<T>(services, jobDefinitions, settings, jobRegistry, builder);
+        var jobDefinitions = AddJobInternal(typeof(T), options);
+        return new StartupStage<T>(services, jobDefinitions, settings, jobRegistry);
     }
 
     /// <summary>
@@ -59,8 +59,8 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     /// </example>
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
     {
-        var (builder, jobDefinitions) = AddJobInternal(jobType, options);
-        return new StartupStage<IJob>(services, jobDefinitions, settings, jobRegistry, builder);
+        var jobDefinitions = AddJobInternal(jobType, options);
+        return new StartupStage<IJob>(services, jobDefinitions, settings, jobRegistry);
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             : throw new InvalidOperationException("Invalid cron expression");
     }
 
-    private (JobOptionBuilder, IReadOnlyCollection<JobDefinition>) AddJobInternal(
+    private List<JobDefinition> AddJobInternal(
         Type jobType,
         Action<JobOptionBuilder>? options)
     {
@@ -173,7 +173,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             jobDefinitions.Add(entry);
         }
 
-        return (builder, jobDefinitions);
+        return jobDefinitions;
     }
 
     private static bool DetermineAndValidatePrecision(string cronExpression)
@@ -201,28 +201,23 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
     private readonly JobRegistry jobRegistry;
-    private readonly JobOptionBuilder jobOptionBuilder;
     private readonly IReadOnlyCollection<JobDefinition> jobDefinitions;
 
     internal StartupStage(
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
         ConcurrencySettings settings,
-        JobRegistry jobRegistry,
-        JobOptionBuilder jobOptionBuilder)
+        JobRegistry jobRegistry)
     {
         this.jobDefinitions = jobDefinitions;
         this.services = services;
         this.settings = settings;
         this.jobRegistry = jobRegistry;
-        this.jobOptionBuilder = jobOptionBuilder;
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false)
     {
-        jobOptionBuilder.SetRunAtStartup(shouldCrashOnFailure);
-
         JobRegistry.UpdateJobDefinitionsToRunAtStartup(jobDefinitions, shouldCrashOnFailure);
 
         return new NotificationStage<TJob>(services, jobDefinitions, settings, jobRegistry);

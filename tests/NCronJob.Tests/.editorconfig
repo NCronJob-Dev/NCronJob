@@ -1,3 +1,7 @@
 [*.cs]
 
-dotnet_diagnostic.IDISP017.severity = none # IDISP017: Prefer using
+# IDISP017: Prefer using
+dotnet_diagnostic.IDISP017.severity = none 
+
+# CA2211: Non-constant fields should not be visible
+dotnet_diagnostic.CA2211.severity = suggestion
