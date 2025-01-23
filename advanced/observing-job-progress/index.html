@@ -153,6 +153,15 @@ mention in the issue which version of NCronJob you&rsquo;re using.</p>
 <span class="nt">&lt;/PropertyGroup&gt;</span>
 </code></pre></div>
 
+<p>Alternatively, it can also be silenced through an <code>.editorconfig</code> setting.</p>
+<div class="codehilite"><pre><span></span><code>[*.cs]
+
+...
+
+# NCRONJOB_OBSERVER: Type is for evaluation purposes only and is subject to change or removal in future updates.
+dotnet_diagnostic.NCRONJOB_OBSERVER.severity = none
+</code></pre></div>
+
 <h3 id="registering-a-notifier-callback">Registering a notifier callback<a class="headerlink" href="#registering-a-notifier-callback" title="Permanent link">&para;</a></h3>
 <p><strong>NCronJob</strong> exposes the capability to notify whenever jobs change states. One can
 suscribe to this by leveraging the <code>IJobExecutionProgressReporter</code> service.</p>
@@ -162,8 +171,8 @@ suscribe to this by leveraging the <code>IJobExecutionProgressReporter</code> se
 
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>The registration returns the subscriber as a <code>IDisposable</code> object.
-In order to stop the subscriber from receiving notifications anymore, invoke the <code>Dispose()</code> method of it.</p>
+<p>The registration returns the subscription as a <code>IDisposable</code> object.
+In order to stop the callback from receiving notifications anymore, invoke the <code>Dispose()</code> method of it.</p>
 </div>
 <p>Subscribers to the reporting service will receive an immutable instance of the <code>ExecutionProgress</code>. This type will expose every meaningful change to any job or orchestration handled by NCronJob.</p>
 <h3 id="sample-usage">Sample usage<a class="headerlink" href="#sample-usage" title="Permanent link">&para;</a></h3>
@@ -269,12 +278,12 @@ In order to stop the subscriber from receiving notifications anymore, invoke the
 <span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">reporter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">IJobExecutionProgressReporter</span><span class="o">&gt;</span><span class="p">();</span>
 
 <span class="w">        </span><span class="c1">// ...enlist a new subscriber to it...</span>
-<span class="w">        </span><span class="n">IDisposable</span><span class="w"> </span><span class="n">subscriber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reporter</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">Subscriber</span><span class="p">);</span>
+<span class="w">        </span><span class="n">IDisposable</span><span class="w"> </span><span class="n">subscription</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reporter</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">Subscriber</span><span class="p">);</span>
 
 <span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">RunAsync</span><span class="p">();</span>
 
 <span class="w">        </span><span class="c1">// ...and when you&#39;re done with it, unhook the subscription.</span>
-<span class="w">        </span><span class="n">subscriber</span><span class="p">.</span><span class="n">Dispose</span><span class="p">();</span>
+<span class="w">        </span><span class="n">subscription</span><span class="p">.</span><span class="n">Dispose</span><span class="p">();</span>
 
 <span class="w">        </span><span class="k">void</span><span class="w"> </span><span class="nf">Subscriber</span><span class="p">(</span><span class="n">ExecutionProgress</span><span class="w"> </span><span class="n">progress</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
@@ -293,7 +302,6 @@ In order to stop the subscriber from receiving notifications anymore, invoke the
 <span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">State</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
-
 <span class="p">}</span>
 </code></pre></div>
 
@@ -337,8 +345,8 @@ In order to stop the subscriber from receiving notifications anymore, invoke the
 <p>As global NCronJob observability is still under development, it&rsquo;s not feature complete yet.</p>
 <p>Below are know missing parts of it. Would you find other releated areas of interest that may be worth investigating, please submit a request in the issue tracker.</p>
 <ul>
-<li><a href="https://github.com/NCronJob-Dev/NCronJob/issues/161">Report removed jobs as <code>Cancelled</code></a></li>
-<li><a href="https://github.com/NCronJob-Dev/NCronJob/issues/160">Report skipped child jobs as <code>Skipped</code></a></li>
+<li>~~<a href="https://github.com/NCronJob-Dev/NCronJob/issues/161">Report removed jobs as <code>Cancelled</code></a>~~</li>
+<li>~~<a href="https://github.com/NCronJob-Dev/NCronJob/issues/160">Report skipped child jobs as <code>Skipped</code></a>~~</li>
 </ul>
               
             </div>

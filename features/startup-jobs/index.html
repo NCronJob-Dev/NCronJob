@@ -159,6 +159,8 @@
 
 <p>The <code>RunAtStartup</code> in combination with <code>UseNCronJobAsync</code> method ensures that the job is executed as soon as the application starts. This method is useful for scenarios where certain tasks need to be performed immediately upon application launch.</p>
 <p>Failure to call <code>UseNCronJobAsync</code> when startup jobs are defined will lead to a fatal exception during the application start.</p>
+<p>Of course, the call to <code>RunAtStartup</code> can also be chained to the registration of a standard CRON job. This setup may be useful, for instance, when one wants to prime a cache before the application starts, and then regularly refresh its content.</p>
+<p>It may happen that the specified startup job runs task that are required for the application setup. For those cases, when one cannot tolerate a startup job to fail, the <code>RunAtStartup</code> method accepts an optional parameter <code>shouldCrashOnFailure</code>. When set to <code>true</code>, the specified job is expected to complete in a successful state. Otherwise, an exception will be thrown preventing the application start.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>Consider an application that needs to load initial data from a database or perform some cleanup tasks whenever it starts. You can define and configure a startup job to handle this:</p>
 <h3 id="job-definition">Job Definition<a class="headerlink" href="#job-definition" title="Permanent link">&para;</a></h3>
@@ -183,11 +185,13 @@
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">InitialDataLoader</span><span class="o">&gt;</span><span class="p">()</span>
-<span class="w">           </span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">();</span>
+<span class="w">           </span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">(</span><span class="n">shouldCrashOnFailure</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
 <span class="p">});</span>
 </code></pre></div>
 
-<p>This setup ensures that the <code>InitialDataLoader</code> job will be executed as soon as the application starts, loading the necessary initial data.</p>
+<p>This setup ensures that:
+- The <code>InitialDataLoader</code> job will be executed as soon as the application starts, loading the necessary initial data.
+- Would anything prevent the job to successfully complete, the application will fail to start.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Startup jobs are a powerful feature of <strong>NCronJob</strong> that enable you to execute critical tasks immediately before application startup. By using the <code>RunAtStartup</code> method, you can ensure that your application performs necessary setup procedures, data loading, or cleanup tasks right at the beginning of its lifecycle.</p>
 <p>This feature is particularly useful for applications that require certain operations to be completed before they are fully functional. By configuring startup jobs, you can streamline your application&rsquo;s initialization process and improve its overall reliability and performance.</p>
