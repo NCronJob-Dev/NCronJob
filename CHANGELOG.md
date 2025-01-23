@@ -16,6 +16,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 - Prevent `RunAtStartup()` from blindly decorating all jobs of the same type. Added in [#170](https://github.com/NCronJob-Dev/NCronJob/issues/170), by [@nulltoken](https://github.com/nulltoken).
 - Use UTC format for logger output.
+- Prevented `ObjectDisposedException` in various places. Reported by [@nulltoken](https://github.com/nulltoken) in [#172](https://github.com/NCronJob-Dev/NCronJob/issues/172). Fixed by [@linkdotnet](https://github.com/linkdotnet).
 
 ## [v4.2.0] - 2025-01-17
 
