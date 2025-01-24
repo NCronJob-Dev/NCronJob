@@ -8,8 +8,6 @@ namespace NCronJob.Tests;
 
 public class RunAtStartupJobTests : JobIntegrationBase
 {
-    private const string AtMinute5 = "5 * * * *";
-
     [Fact]
     public async Task UseNCronJobIsMandatoryWhenStartupJobsAreDefined()
     {
@@ -78,7 +76,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         {
             s =>
             {
-                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(AtMinute5));
+                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
                 s.AddJob<SimpleJob>().RunAtStartup();
             }
         },
@@ -86,11 +84,11 @@ public class RunAtStartupJobTests : JobIntegrationBase
             s =>
             {
                 s.AddJob<SimpleJob>().RunAtStartup();
-                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(AtMinute5));
+                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
             }
         },
         {
-            s => s.AddJob<SimpleJob>(jo => jo.WithCronExpression(AtMinute5)).RunAtStartup()
+            s => s.AddJob<SimpleJob>(jo => jo.WithCronExpression(Cron.AtMinute5)).RunAtStartup()
         },
     };
 

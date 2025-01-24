@@ -8,12 +8,12 @@ public class JobOptionBuilderTests
     public void ShouldCreateJobOptionsWithCronExpression()
     {
         var builder = new JobOptionBuilder();
-        builder.WithCronExpression("* * * * *");
+        builder.WithCronExpression(Cron.AtEveryMinute);
 
         var options = builder.GetJobOptions();
 
         options.Count.ShouldBe(1);
-        options.Single().CronExpression.ShouldBe("* * * * *");
+        options.Single().CronExpression.ShouldBe(Cron.AtEveryMinute);
         options.Single().Parameter.ShouldBeNull();
     }
 
@@ -21,18 +21,18 @@ public class JobOptionBuilderTests
     public void ShouldCreateMultipleJobsWithParameters()
     {
         var builder = new JobOptionBuilder();
-        builder.WithCronExpression("* * * * *")
+        builder.WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo")
             .And
-            .WithCronExpression("0 * * * *")
+            .WithCronExpression(Cron.AtMinute0)
             .WithParameter("bar");
 
         var options = builder.GetJobOptions();
 
         options.Count.ShouldBe(2);
-        options[0].CronExpression.ShouldBe("* * * * *");
+        options[0].CronExpression.ShouldBe(Cron.AtEveryMinute);
         options[0].Parameter.ShouldBe("foo");
-        options[1].CronExpression.ShouldBe("0 * * * *");
+        options[1].CronExpression.ShouldBe(Cron.AtMinute0);
         options[1].Parameter.ShouldBe("bar");
     }
 
@@ -41,16 +41,16 @@ public class JobOptionBuilderTests
     {
         var builder = new JobOptionBuilder();
         builder
-            .WithCronExpression("* * * * *")
+            .WithCronExpression(Cron.AtEveryMinute)
             .And
-            .WithCronExpression("0 * * * *");
+            .WithCronExpression(Cron.AtMinute0);
 
         var options = builder.GetJobOptions();
 
         options.Count.ShouldBe(2);
-        options[0].CronExpression.ShouldBe("* * * * *");
+        options[0].CronExpression.ShouldBe(Cron.AtEveryMinute);
         options[0].Parameter.ShouldBeNull();
-        options[1].CronExpression.ShouldBe("0 * * * *");
+        options[1].CronExpression.ShouldBe(Cron.AtMinute0);
         options[1].Parameter.ShouldBeNull();
     }
 
@@ -58,18 +58,18 @@ public class JobOptionBuilderTests
     public void ShouldCreateMultipleJobsWithoutAnd()
     {
         var builder = new JobOptionBuilder();
-        builder.WithCronExpression("* * * * *")
+        builder.WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo");
 
-        builder.WithCronExpression("0 * * * *")
+        builder.WithCronExpression(Cron.AtMinute0)
             .WithParameter("bar");
 
         var options = builder.GetJobOptions();
 
         options.Count.ShouldBe(2);
-        options[0].CronExpression.ShouldBe("* * * * *");
+        options[0].CronExpression.ShouldBe(Cron.AtEveryMinute);
         options[0].Parameter.ShouldBe("foo");
-        options[1].CronExpression.ShouldBe("0 * * * *");
+        options[1].CronExpression.ShouldBe(Cron.AtMinute0);
         options[1].Parameter.ShouldBe("bar");
     }
 }

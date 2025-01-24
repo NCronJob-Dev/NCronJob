@@ -26,7 +26,7 @@ public class NCronJobTests
 
         Action act = () => builder.AddJob<FakeJob>(o =>
         {
-            o.WithCronExpression("* * * * * *");
+            o.WithCronExpression(Cron.AtEverySecond);
         });
 
         act.ShouldNotThrow();
@@ -52,7 +52,7 @@ public class NCronJobTests
     public void AddingValidCronExpressionWithMinutePrecisionDoesNotThrowException()
     {
         var builder = new JobOptionBuilder();
-        Should.NotThrow(() => builder.WithCronExpression("5 * * * *"));
+        Should.NotThrow(() => builder.WithCronExpression(Cron.AtMinute5));
     }
 
     [Fact]

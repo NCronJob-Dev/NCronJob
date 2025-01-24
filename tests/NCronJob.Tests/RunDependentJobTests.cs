@@ -233,9 +233,9 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n =>
         {
-            n.AddJob<PrincipalJob>(o => o.WithCronExpression("* * * * *").WithParameter(true))
+            n.AddJob<PrincipalJob>(o => o.WithCronExpression(Cron.AtEveryMinute).WithParameter(true))
                 .ExecuteWhen(success: s => s.RunJob<DependentJob>());
-            n.AddJob<DependentJob>(o => o.WithCronExpression("* * 31 2 *"))
+            n.AddJob<DependentJob>(o => o.WithCronExpression(Cron.Never))
                 .ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
         });
 

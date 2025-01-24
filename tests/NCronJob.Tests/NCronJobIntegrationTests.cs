@@ -13,7 +13,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -26,7 +26,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task AdvancingTheWholeTimeShouldHaveTenEntries()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -40,7 +40,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task JobsShouldCancelOnCancellation()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -56,9 +56,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddSingleton(storage);
         ServiceCollection.AddScoped<GuidGenerator>();
         ServiceCollection.AddNCronJob(n => n.AddJob<ScopedServiceJob>(
-            p => p.WithCronExpression("* * * * *").WithParameter("null")
+            p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("null")
                 .And
-                .WithCronExpression("* * * * *")));
+                .WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -104,7 +104,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task InstantJobShouldInheritInitiallyDefinedParameter()
     {
         ServiceCollection.AddNCronJob(
-            n => n.AddJob<ParameterJob>(o => o.WithCronExpression("* * 31 2 *").WithParameter("Hello from AddNCronJob")));
+            n => n.AddJob<ParameterJob>(o => o.WithCronExpression(Cron.Never).WithParameter("Hello from AddNCronJob")));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -119,7 +119,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task InstantJobCanOverrideInitiallyDefinedParameter()
     {
         ServiceCollection.AddNCronJob(
-            n => n.AddJob<ParameterJob>(o => o.WithCronExpression("* * 31 2 *").WithParameter("Hello from AddNCronJob")));
+            n => n.AddJob<ParameterJob>(o => o.WithCronExpression(Cron.Never).WithParameter("Hello from AddNCronJob")));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -149,7 +149,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CronJobShouldInheritInitiallyDefinedParameter()
     {
         ServiceCollection.AddNCronJob(
-            n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("Hello from AddNCronJob")));
+            n => n.AddJob<ParameterJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("Hello from AddNCronJob")));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -164,7 +164,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CronJobThatIsScheduledEverySecondShouldBeExecuted()
     {
         FakeTimer.Advance(TimeSpan.FromSeconds(1));
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEverySecond)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -179,7 +179,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(
-            p => p.WithCronExpression("* * * * * *").And.WithCronExpression("* * * * *")));
+            p => p.WithCronExpression(Cron.AtEverySecond).And.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -193,8 +193,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task LongRunningJobShouldNotBlockScheduler()
     {
         ServiceCollection.AddNCronJob(n => n
-                .AddJob<LongRunningJob>(p => p.WithCronExpression("* * * * *"))
-                .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+                .AddJob<LongRunningJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -208,7 +208,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task ThrowIfJobWithDependenciesIsNotRegistered()
     {
         ServiceCollection
-            .AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression("* * * * *")));
+            .AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -283,7 +283,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task WhileAwaitingJobTriggeringInstantJobShouldAnywayTriggerCronJob()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("0 * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute0)));
         var provider = CreateServiceProvider();
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
@@ -330,7 +330,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(async (ChannelWriter<object?> writer) =>
         {
             await writer.WriteAsync(null, CancellationToken);
-        }, "* * * * *");
+        }, Cron.AtEveryMinute);
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -344,14 +344,14 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task ConcurrentJobConfigurationShouldBeRespected()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<ShortRunningJob>(p => p
-            .WithCronExpression("* * * * *").WithName("Job 1")
-            .And.WithCronExpression("* * * * *").WithName("Job 2")
-            .And.WithCronExpression("* * * * *").WithName("Job 3")
-            .And.WithCronExpression("* * * * *").WithName("Job 4")));
+            .WithCronExpression(Cron.AtEveryMinute).WithName("Job 1")
+            .And.WithCronExpression(Cron.AtEveryMinute).WithName("Job 2")
+            .And.WithCronExpression(Cron.AtEveryMinute).WithName("Job 3")
+            .And.WithCronExpression(Cron.AtEveryMinute).WithName("Job 4")));
 
         var provider = CreateServiceProvider();
 
-        (IDisposable subscriber, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -359,7 +359,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await WaitUntilConditionIsMet(events, AtLeastTwoJobsAreInitializing);
 
-        subscriber.Dispose();
+        subscription.Dispose();
 
         var runningJobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
 
@@ -376,7 +376,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobHasHigherPriorityThanCronJob()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter("CRON")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("CRON")));
         ServiceCollection.AddSingleton(_ => new ConcurrencySettings { MaxDegreeOfParallelism = 1 });
         var provider = CreateServiceProvider();
 
@@ -424,7 +424,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         {
             await Task.Delay(10, ct);
             await writer.WriteAsync(true, ct);
-        }, "* * * * *"));
+        }, Cron.AtEveryMinute));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
@@ -439,7 +439,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task StaticAnonymousJobsCanBeExecutedMultipleTimes()
     {
 
-        ServiceCollection.AddNCronJob(n => n.AddJob(JobMethods.WriteTrueStaticAsync, "* * * * *"));
+        ServiceCollection.AddNCronJob(n => n.AddJob(JobMethods.WriteTrueStaticAsync, Cron.AtEveryMinute));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -455,8 +455,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public void AddingJobsWithTheSameCustomNameLeadsToException()
     {
         Action act = () => ServiceCollection.AddNCronJob(
-            n => n.AddJob(() => { }, "* * * * *", jobName: "Job1")
-                .AddJob(() => { }, "0 * * * *", jobName: "Job1"));
+            n => n.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Job1")
+                .AddJob(() => { }, Cron.AtMinute0, jobName: "Job1"));
 
         act.ShouldThrow<InvalidOperationException>();
     }
@@ -464,11 +464,11 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public void AddJobsDynamicallyWhenNameIsDuplicatedLeadsToException()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"));
+        ServiceCollection.AddNCronJob(n => n.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Job1"));
         var provider = CreateServiceProvider();
         var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var successful = runtimeRegistry.TryRegister(n => n.AddJob(() => { }, "* * * * *", jobName: "Job1"), out var exception);
+        var successful = runtimeRegistry.TryRegister(n => n.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Job1"), out var exception);
 
         successful.ShouldBeFalse();
         exception.ShouldNotBeNull();
@@ -478,8 +478,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     public async Task TwoJobsWithDifferentDefinitionLeadToTwoExecutions()
     {
         ServiceCollection.AddNCronJob(n => n
-            .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithParameter("1"))
-            .AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *").WithParameter("2")));
+            .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("1"))
+            .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("2")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -495,7 +495,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [SuppressMessage("Usage", "CA2263: Prefer generic overload", Justification = "Needed for the test")]
     public async Task AddJobWithTypeAsParameterAddsJobs()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob(typeof(SimpleJob), p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob(typeof(SimpleJob), p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -513,7 +513,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         registry.TryRegister(n => n.AddJob<ShortRunningJob>(p => p.WithCronExpression("0 0 10 * *")));
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
@@ -526,8 +526,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task CallingAddNCronJobMultipleTimesWillRegisterAllJobs()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<ShortRunningJob>(p => p.WithCronExpression("* * * * *")));
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<ShortRunningJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -542,9 +542,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         Action act = () =>
             ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p
-                .WithCronExpression("* * * * *")
+                .WithCronExpression(Cron.AtEveryMinute)
                 .And
-                .WithCronExpression("* * * * *")));
+                .WithCronExpression(Cron.AtEveryMinute)));
 
         act.ShouldThrow<InvalidOperationException>();
     }
@@ -552,11 +552,11 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public void RegisteringDuplicateDuringRuntimeLeadsToException()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
         var runtimeRegistry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var successful = runtimeRegistry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression("* * * * *")), out var exception);
+        var successful = runtimeRegistry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
 
         successful.ShouldBeFalse();
         exception.ShouldNotBeNull();

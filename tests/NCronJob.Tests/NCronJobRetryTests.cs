@@ -13,7 +13,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     public async Task JobShouldRetryOnFailure()
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
-        ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -30,7 +30,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     public async Task JobWithCustomPolicyShouldRetryOnFailure()
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(3));
-        ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -47,7 +47,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     public async Task JobShouldFailAfterAllRetries()
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
-        ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -66,7 +66,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     public async Task JobShouldHonorJobCancellationDuringRetry()
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
-        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
 
@@ -88,7 +88,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     [Fact]
     public async Task CancelledJobIsStillAValidExecution()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
         var jobQueueManager = provider.GetRequiredService<JobQueueManager>();
@@ -155,7 +155,7 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     public async Task JobShouldHonorApplicationCancellationDuringRetry()
     {
         ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
-        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression("* * * * *")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
         var hostAppLifeTime = provider.GetRequiredService<IHostApplicationLifetime>();
 
