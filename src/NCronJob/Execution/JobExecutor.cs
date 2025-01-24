@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Globalization;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -30,7 +32,7 @@ internal sealed partial class JobExecutor : IDisposable
         this.retryHandler = retryHandler;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
-        this.exceptionHandlers = [..exceptionHandlers];
+        this.exceptionHandlers = [.. exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -84,6 +86,41 @@ internal sealed partial class JobExecutor : IDisposable
         job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
 
         return (IJob)job;
+    }
+
+    internal void EnsureJobResolvability()
+    {
+        var jobDefinitions = jobRegistry.GetAllJobs();
+
+        List<JobDefinition> jobDefinitionsPerType = jobDefinitions.GroupBy(jd => jd.JobFullName, (key, g) => g.First()).ToList();
+
+        var issues = new Dictionary<string, Exception>();
+
+        foreach (var jobDefinition in jobDefinitionsPerType)
+        {
+            try
+            {
+                _ = ResolveJob(serviceProvider, jobDefinition);
+            }
+            catch (Exception ex)
+            {
+                issues.Add(jobDefinition.JobFullName, ex);
+            }
+        }
+
+        if (issues.Count == 0)
+        {
+            return;
+        }
+
+        StringBuilder sb = new();
+        sb.AppendLine("The following registered jobs aren't resolvable");
+        foreach (var issue in issues)
+        {
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- {issue.Key}: {issue.Value}");
+        }
+
+        throw new InvalidOperationException(sb.ToString());
     }
 
     public void Dispose()

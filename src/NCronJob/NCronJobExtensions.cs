@@ -139,13 +139,24 @@ public static class NCronJobExtensions
     {
         ArgumentNullException.ThrowIfNull(host);
 
+        var serviceProvider = host.Services;
+
+        EnsureJobResolvability(serviceProvider);
+
         var jobManager = host.Services.GetRequiredService<StartupJobManager>();
         var stopToken = host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
         await jobManager.ProcessStartupJobs(stopToken);
 
-        host.Services.GetRequiredService<MissingMethodCalledHandler>().UseWasCalled = true;
+        serviceProvider.GetRequiredService<MissingMethodCalledHandler>().UseWasCalled = true;
 
         return host;
+    }
+
+    private static void EnsureJobResolvability(IServiceProvider serviceProvider)
+    {
+        var jobExecutor = serviceProvider.GetRequiredService<JobExecutor>();
+
+        jobExecutor.EnsureJobResolvability();
     }
 
     // Inspired by https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.DependencyInjection.Abstractions/src/Extensions/ServiceCollectionDescriptorExtensions.cs

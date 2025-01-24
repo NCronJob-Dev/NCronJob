@@ -203,6 +203,29 @@ public class RunAtStartupJobTests : JobIntegrationBase
         storage.Content[0].ShouldBe("ExceptionHandler");
     }
 
+
+    [Fact]
+    public async Task UseNCronJobAsyncEnsureResolvablityOfJobs()
+    {
+        var builder = Host.CreateDefaultBuilder();
+        builder.ConfigureServices(services =>
+        {
+            services.AddNCronJob(s =>
+            {
+                s.AddJob<JobThatThrowsInCtor>().RunAtStartup(shouldCrashOnFailure: true);
+            });
+        });
+
+        using var app = BuildApp(builder);
+
+        var exc = await Assert.ThrowsAsync<InvalidOperationException>(app.UseNCronJobAsync);
+
+        Assert.StartsWith(
+            $"The following registered jobs aren't resolvable{Environment.NewLine}- NCronJob.Tests.RunAtStartupJobTests+JobThatThrowsInCtor: System.Exception: Boom",
+            exc.Message,
+            StringComparison.Ordinal);
+    }
+
     private IHost BuildApp(IHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -275,6 +298,22 @@ public class RunAtStartupJobTests : JobIntegrationBase
     private sealed class FailingJob : IJob
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token) => throw new InvalidOperationException("Failed");
+    }
+
+    private sealed class JobThatThrowsInCtor : IJob
+    {
+        public JobThatThrowsInCtor()
+        {
+            throw new Exception("Boom");
+        }
+
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        {
+            // Should never reach this point
+            Assert.True(false);
+
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class ExceptionHandler : IExceptionHandler
