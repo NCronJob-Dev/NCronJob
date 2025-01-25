@@ -15,4 +15,7 @@ internal sealed partial class JobExecutor
 
     [LoggerMessage(LogLevel.Warning, "The exception handler '{JobType}' throw an exception.")]
     private partial void LogExceptionHandlerError(Type jobType);
+
+    [LoggerMessage(LogLevel.Error, "The job '{JobType}' with correlation id: {CorrelationId} failed to execute.")]
+    private partial void LogJobFailed(Type jobType, Guid correlationId);
 }

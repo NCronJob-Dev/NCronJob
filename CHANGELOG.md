@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed an issue where exception handler aren't called when a job can't be created. Reported by [@nulltoken](https://github.com/nulltoken) in #177. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+
 ## [v4.3.1] - 2025-01-23
 
 ### Added

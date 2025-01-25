@@ -63,11 +63,20 @@ internal sealed partial class JobExecutor : IDisposable
         run.CancellationToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
-
-        var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
-
         var runContext = new JobExecutionContext(run);
-        await ExecuteJob(runContext, job, scope);
+
+        try
+        {
+            var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
+            await ExecuteJob(runContext, job);
+        }
+        catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
+        {
+            LogExceptionHandlerError(runContext.JobType);
+            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
+            await NotifyExceptionHandlers(runContext, exc, stoppingToken);
+            await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
+        }
     }
 
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
@@ -95,59 +104,52 @@ internal sealed partial class JobExecutor : IDisposable
         isDisposed = true;
     }
 
-    private async Task ExecuteJob(JobExecutionContext runContext, IJob job, AsyncServiceScope serviceScope)
+    private async Task ExecuteJob(JobExecutionContext runContext, IJob job)
     {
         var stoppingToken = runContext.JobRun.CancellationToken;
-
-        try
+        if (!runContext.JobRun.CanRun)
         {
-            if (!runContext.JobRun.CanRun)
-            {
-                return;
-            }
-
-            runContext.JobRun.NotifyStateChange(JobStateType.Running);
-            LogRunningJob(job.GetType(), runContext.CorrelationId);
-
-            await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
-
-            stoppingToken.ThrowIfCancellationRequested();
-
-            runContext.JobRun.NotifyStateChange(JobStateType.Completing);
-
-            await AfterJobCompletionTask(null, stoppingToken);
+            return;
         }
-        catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
+
+        runContext.JobRun.NotifyStateChange(JobStateType.Running);
+        LogRunningJob(job.GetType(), runContext.CorrelationId);
+
+        await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
+
+        stoppingToken.ThrowIfCancellationRequested();
+
+        runContext.JobRun.NotifyStateChange(JobStateType.Completing);
+
+        await AfterJobCompletionTask(runContext, null, stoppingToken);
+    }
+
+    private async Task AfterJobCompletionTask(
+        JobExecutionContext runContext,
+        Exception? exc,
+        CancellationToken ct)
+    {
+        if (isDisposed)
         {
-            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
-            await NotifyExceptionHandlers(runContext, exc, stoppingToken);
-            await AfterJobCompletionTask(exc, default);
+            LogSkipAsDisposed();
+            return;
         }
-        // This needs to be async otherwise it can deadlock or try to use the disposed scope, maybe it needs to create its own serviceScope
-        async Task AfterJobCompletionTask(Exception? exc, CancellationToken ct)
+
+        var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobType);
+
+        if (serviceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
         {
-            if (isDisposed)
+            try
             {
-                LogSkipAsDisposed();
-                return;
+                await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
             }
-
-            var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobType);
-
-            if (serviceScope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
+            catch (Exception innerExc) when (innerExc is not OperationCanceledException or AggregateException)
             {
-                try
-                {
-                    await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
-                }
-                catch (Exception innerExc) when (innerExc is not OperationCanceledException or AggregateException)
-                {
-                    // We don't want to throw exceptions from the notification service
-                }
+                // We don't want to throw exceptions from the notification service
             }
-
-            InformDependentJobs(runContext, exc is null);
         }
+
+        InformDependentJobs(runContext, exc is null);
     }
 
     public void InformDependentJobs(JobExecutionContext context, bool success)
