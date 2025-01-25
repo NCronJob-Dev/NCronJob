@@ -68,7 +68,7 @@ internal sealed partial class JobWorker
     public async Task InvokeJobWithSchedule(JobRun jobRun, CancellationToken cancellationToken)
     {
         jobRun.NotifyStateChange(JobStateType.Scheduled);
-        await WaitForNextExecution(jobRun.RunAt ?? DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
+        await WaitForNextExecution(jobRun.RunAt ?? timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
 
