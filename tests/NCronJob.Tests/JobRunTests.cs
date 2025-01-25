@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Time.Testing;
+
 namespace NCronJob.Tests;
 
 public class JobRunStatesTests
@@ -35,7 +37,7 @@ public class JobRunStatesTests
         bool hasBeenCalled = false;
 
         JobDefinition jd = new JobDefinition(typeof(DummyJob), null, null, null);
-        var jobRun = JobRun.Create((jr) => { }, jd);
+        var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { }, jd);
     
         Assert.Equal(JobStateType.NotStarted, jobRun.CurrentState.Type);
 

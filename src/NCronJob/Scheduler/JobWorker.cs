@@ -192,7 +192,7 @@ internal sealed partial class JobWorker
         if (nextRunTime.HasValue)
         {
             LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
-            var run = JobRun.Create(observer.Report, job);
+            var run = JobRun.Create(timeProvider, observer.Report, job);
             run.RunAt = nextRunTime;
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));

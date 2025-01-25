@@ -7,17 +7,20 @@ internal class JobRun
 {
     private readonly JobRun rootJob;
     private int jobExecutionCount;
+    private readonly TimeProvider timeProvider;
     private readonly Action<JobRun> progressReporter;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
 
     private JobRun(
+        TimeProvider timeProvider,
         JobDefinition jobDefinition,
         object? parameter,
         Action<JobRun> progressReporter)
-    : this(null, jobDefinition, parameter, progressReporter)
+    : this(timeProvider, null, jobDefinition, parameter, progressReporter)
     { }
 
     private JobRun(
+        TimeProvider timeProvider,
         JobRun? parentJob,
         JobDefinition jobDefinition,
         object? parameter,
@@ -29,6 +32,7 @@ internal class JobRun
         ParentJobRunId = parentJob is not null ? parentJob.JobRunId : null;
         IsOrchestrationRoot = parentJob is null;
         CorrelationId = parentJob is not null ? parentJob.CorrelationId : Guid.NewGuid();
+        this.timeProvider = timeProvider;
         JobDefinition = jobDefinition;
         Parameter = parameter ?? jobDefinition.Parameter;
 
@@ -37,7 +41,7 @@ internal class JobRun
 
         OnStateChanged = (jr) => { progressReporter(jr); };
 
-        SetState(new JobState(JobStateType.NotStarted));
+        SetState(new JobState(JobStateType.NotStarted, timeProvider.GetUtcNow()));
     }
 
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
@@ -64,16 +68,18 @@ internal class JobRun
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     public static JobRun Create(
+        TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition)
-    => new(jobDefinition, jobDefinition.Parameter, progressReporter);
+    => new(timeProvider, jobDefinition, jobDefinition.Parameter, progressReporter);
 
     public static JobRun Create(
+        TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
         object? parameter,
         CancellationToken token)
-    => new(jobDefinition, parameter, progressReporter)
+    => new(timeProvider, jobDefinition, parameter, progressReporter)
     {
         CancellationToken = token,
     };
@@ -83,7 +89,7 @@ internal class JobRun
         object? parameter,
         CancellationToken token)
     {
-        JobRun run = new(this, jobDefinition, parameter, progressReporter)
+        JobRun run = new(timeProvider, this, jobDefinition, parameter, progressReporter)
         {
             CancellationToken = token,
         };
@@ -115,7 +121,7 @@ internal class JobRun
             return;
         }
 
-        var state = new JobState(type, fault);
+        var state = new JobState(type, timeProvider.GetUtcNow(), fault);
         SetState(state);
     }
 
