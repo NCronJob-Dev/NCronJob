@@ -8,12 +8,15 @@ namespace NCronJob;
 [Experimental("NCRONJOB_OBSERVER")]
 public record ExecutionProgress
 {
-    internal ExecutionProgress(JobRun run)
+    internal ExecutionProgress(
+        JobRun run,
+        DateTimeOffset utcNow)
     {
         RunId = run.JobRunId;
         ParentRunId = run.ParentJobRunId;
         CorrelationId = run.CorrelationId;
         State = MapFrom(run.CurrentState.Type);
+        Timestamp = utcNow;
     }
 
     /// <summary>
@@ -42,7 +45,7 @@ public record ExecutionProgress
     /// <summary>
     /// The instant this <see cref="ExecutionProgress"/> was created./>
     /// </summary>
-    public DateTimeOffset Timestamp { get; } = DateTimeOffset.Now;
+    public DateTimeOffset Timestamp { get; }
 
     private static ExecutionState MapFrom(JobStateType currentState)
     {

@@ -9,12 +9,19 @@ namespace NCronJob;
 internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReporter
 {
     private readonly List<Action<ExecutionProgress>> callbacks = [];
+    private readonly TimeProvider timeProvider;
 
 #if NET9_0_OR_GREATER
     private readonly Lock callbacksLock = new();
 #else
     private readonly object callbacksLock = new();
 #endif
+
+    public JobExecutionProgressObserver(
+        TimeProvider timeProvider)
+    {
+        this.timeProvider = timeProvider;
+    }
 
     public IDisposable Register(Action<ExecutionProgress> callback)
     {
@@ -38,7 +45,7 @@ internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReport
     {
         List<ExecutionProgress> progresses = [];
 
-        var progress = new ExecutionProgress(run);
+        var progress = new ExecutionProgress(run, timeProvider.GetUtcNow());
         progresses.Add(progress);
 
         if (run.IsOrchestrationRoot && progress.State == ExecutionState.NotStarted)
