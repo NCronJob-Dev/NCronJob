@@ -285,6 +285,21 @@ public class RunDependentJobTests : JobIntegrationBase
         results.ShouldContain("2");
     }
 
+    [Fact]
+    public async Task WhenJobIsNotCreated_DependentFailureJobShouldRun()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<JobThatThrowsInCtor>()
+            .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("After Exception")));
+        var provider = CreateServiceProvider();
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(false, token: CancellationToken);
+
+        var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
+        message.ShouldNotBeNull();
+        message.ShouldContain("DependentJob: After Exception Parent:");
+    }
+
     private sealed class PrincipalJob(ChannelWriter<object> writer) : IJob
     {
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
@@ -357,5 +372,14 @@ public class RunDependentJobTests : JobIntegrationBase
     private sealed class Storage
     {
         public ConcurrentBag<Guid> Guids { get; } = [];
+    }
+
+    private sealed class JobThatThrowsInCtor : IJob
+    {
+        public JobThatThrowsInCtor()
+            => throw new InvalidOperationException();
+
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+            => Task.CompletedTask;
     }
 }

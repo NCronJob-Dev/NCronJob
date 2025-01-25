@@ -205,22 +205,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task ThrowIfJobWithDependenciesIsNotRegistered()
-    {
-        ServiceCollection
-            .AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
-
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-        {
-            using var serviceScope = provider.CreateScope();
-            using var executor = serviceScope.ServiceProvider.GetRequiredService<JobExecutor>();
-            var jobDefinition = new JobDefinition(typeof(JobWithDependency), null, null, null);
-            await executor.RunJob(JobRun.Create(FakeTimer, (jr) => { }, jobDefinition), CancellationToken.None);
-        });
-    }
-
-    [Fact]
     public async Task ExecuteAScheduledJob()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>());
@@ -257,11 +241,11 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         var runDate = FakeTimer.GetUtcNow().AddDays(-1);
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (var subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(runDate, token: CancellationToken);
+        var orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<SimpleJob>(runDate, token: CancellationToken);
 
         await Task.Delay(10, CancellationToken);
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
@@ -286,17 +270,17 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute0)));
         var provider = CreateServiceProvider();
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (var subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid instantOrchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>(token: CancellationToken);
+        var instantOrchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<SimpleJob>(token: CancellationToken);
 
         await WaitForOrchestrationCompletion(events, instantOrchestrationId);
 
         subscription.Dispose();
 
-        Guid scheduledOrchestrationId = events.First().CorrelationId;
+        var scheduledOrchestrationId = events.First().CorrelationId;
 
         var scheduledOrchestrationEvents = events.Where(e => e.CorrelationId == scheduledOrchestrationId).ToList();
         var instantOrchestrationEvents = events.Where(e => e.CorrelationId == instantOrchestrationId).ToList();
@@ -351,7 +335,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var provider = CreateServiceProvider();
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        (var subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
@@ -366,7 +350,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         Assert.Equal(2, runningJobs.Count);
         Assert.NotEqual(runningJobs[0].CorrelationId, runningJobs[1].CorrelationId);
 
-        bool AtLeastTwoJobsAreInitializing(IList<ExecutionProgress> events)
+        static bool AtLeastTwoJobsAreInitializing(IList<ExecutionProgress> events)
         {
             var jobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
             return jobs.Count >= 2;
@@ -642,5 +626,14 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync(guidGenerator.NewGuid, token);
+    }
+
+    private sealed class ExceptionHandler(ChannelWriter<object> writer) : IExceptionHandler
+    {
+        public async Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
+        {
+            await writer.WriteAsync(1, cancellationToken);
+            return false;
+        }
     }
 }
