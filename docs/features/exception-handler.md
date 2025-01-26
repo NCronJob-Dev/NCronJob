@@ -19,3 +19,8 @@ Therefore the order of registration is important. The first registered exception
 
 ## Order of execution with NotificationHandlers
 All exception handlers are executed before the `IJobNotificationHandler` for that specific job is called. Independent if the exception handler returns `true` or `false`, the `IJobNotificationHandler` will get the exception passed in.
+
+## Exceptions when a job is created
+If an exception occurs when a job is created and therefore the job can not be executed/scheduled, the exception handler will be called with the exception that occurred (and logs the exception to the active logger). **NCronJob** will not crash in this case.
+
+Furthermore, if a dependent job is configured that should run when the parent job fails, the dependent job will be executed in this case.
