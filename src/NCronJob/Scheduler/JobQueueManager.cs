@@ -55,7 +55,7 @@ internal sealed class JobQueueManager : IDisposable
 
                 jobQueue.Clear();
                 jobQueue.CollectionChanged -= CallCollectionChanged;
-                semaphores.Clear();
+                semaphores.TryRemove(queueName, out _);
                 jobCancellationTokens.Clear();
             }
         }
@@ -65,8 +65,8 @@ internal sealed class JobQueueManager : IDisposable
 
     public IEnumerable<string> GetAllJobQueueNames() => jobQueues.Keys;
 
-    public SemaphoreSlim GetOrAddSemaphore(string jobType, int concurrencyLimit) =>
-        semaphores.GetOrAdd(jobType, _ => new SemaphoreSlim(concurrencyLimit));
+    public SemaphoreSlim GetOrAddSemaphore(string queueName, int concurrencyLimit) =>
+        semaphores.GetOrAdd(queueName, _ => new SemaphoreSlim(concurrencyLimit));
 
     public CancellationTokenSource GetOrAddCancellationTokenSource(string queueName)
     {
