@@ -21,7 +21,7 @@
 		<RepositoryUrl>https://github.com/NCronJob-Dev/NCronJob</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/NCronJob-Dev/NCronJob</PackageProjectUrl>
-		<PackageTags>job-scheduler,jobscheduler,jobs,dotnet,csharp,fire-and-forget,recurring,cron,queue,background</PackageTags>
+		<PackageTags>job;jobs;task;tasks;scheduler;instant;trigger;fire and forget;long running;recurring;cron;queue;background;worker,service;ihostedservice</PackageTags>
 		<Authors>Steven Giesel</Authors>
 		<Company>Giesel Engineering</Company>
 		<Copyright>Steven Giesel</Copyright>
