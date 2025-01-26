@@ -17,7 +17,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob(() =>
             {
                 throw new InvalidOperationException();
-            }, "* * * * *");
+            }, Cron.AtEveryMinute);
         });
 
         var provider = CreateServiceProvider();
@@ -40,7 +40,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob(() =>
             {
                 throw new InvalidOperationException();
-            }, "* * * * *");
+            }, Cron.AtEveryMinute);
         });
 
         var provider = CreateServiceProvider();
@@ -61,7 +61,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob(() =>
             {
                 throw new InvalidOperationException();
-            }, "* * * * *");
+            }, Cron.AtEveryMinute);
         });
 
         var provider = CreateServiceProvider();

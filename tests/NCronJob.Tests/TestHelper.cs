@@ -20,7 +20,7 @@ public abstract class JobIntegrationBase : IDisposable
     protected CancellationToken CancellationToken => cancellationTokenSource.Token;
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
-    protected FakeTimeProvider FakeTimer { get; } = new();
+    protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
 
     protected JobIntegrationBase()
     {
@@ -136,7 +136,10 @@ public abstract class JobIntegrationBase : IDisposable
                 return;
             }
 
-            await Task.Delay(TimeSpan.FromMicroseconds(10), CancellationToken);
+            var delay = TimeSpan.FromMicroseconds(10);
+            FakeTimer.Advance(delay);
+
+            await Task.Delay(delay, CancellationToken);
         }
     }
 

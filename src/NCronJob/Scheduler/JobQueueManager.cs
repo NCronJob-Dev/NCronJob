@@ -6,7 +6,6 @@ namespace NCronJob;
 
 internal sealed class JobQueueManager : IDisposable
 {
-    private readonly TimeProvider timeProvider;
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
@@ -21,15 +20,13 @@ internal sealed class JobQueueManager : IDisposable
 
     public bool IsDisposed { get; private set; }
 
-    public JobQueueManager(TimeProvider timeProvider) => this.timeProvider = timeProvider;
-
     public JobQueue GetOrAddQueue(string queueName)
     {
         var isCreating = false;
         var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
         {
             isCreating = true;
-            var queue = new JobQueue(timeProvider, jt);
+            var queue = new JobQueue(jt);
             queue.CollectionChanged += CallCollectionChanged;
             return queue;
         });

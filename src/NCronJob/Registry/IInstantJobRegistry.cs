@@ -272,13 +272,14 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         CancellationToken token)
     {
         var run = JobRun.Create(
+            timeProvider,
             observer.Report,
             jobDefinition,
+            startDate,
             parameter,
             token);
 
         run.Priority = JobPriority.High;
-        run.RunAt = startDate;
         run.IsOneTimeJob = true;
 
         if (forceExecution)
@@ -288,7 +289,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         else
         {
             var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-            jobQueue.EnqueueForDirectExecution(run, startDate);
+            jobQueue.EnqueueForDirectExecution(run);
             jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
         }
 

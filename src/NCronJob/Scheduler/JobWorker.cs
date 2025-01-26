@@ -68,7 +68,7 @@ internal sealed partial class JobWorker
     public async Task InvokeJobWithSchedule(JobRun jobRun, CancellationToken cancellationToken)
     {
         jobRun.NotifyStateChange(JobStateType.Scheduled);
-        await WaitForNextExecution(jobRun.RunAt ?? DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
+        await WaitForNextExecution(jobRun.RunAt, cancellationToken).ConfigureAwait(false);
         await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
 
@@ -191,9 +191,8 @@ internal sealed partial class JobWorker
 
         if (nextRunTime.HasValue)
         {
-            LogNextJobRun(job.Type, nextRunTime.Value.LocalDateTime);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
-            var run = JobRun.Create(observer.Report, job);
-            run.RunAt = nextRunTime;
+            LogNextJobRun(job.Type, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
+            var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
             var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
             run.NotifyStateChange(JobStateType.Scheduled);

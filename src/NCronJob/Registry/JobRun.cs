@@ -7,19 +7,24 @@ internal class JobRun
 {
     private readonly JobRun rootJob;
     private int jobExecutionCount;
+    private readonly TimeProvider timeProvider;
     private readonly Action<JobRun> progressReporter;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
 
     private JobRun(
+        TimeProvider timeProvider,
         JobDefinition jobDefinition,
+        DateTimeOffset runAt,
         object? parameter,
         Action<JobRun> progressReporter)
-    : this(null, jobDefinition, parameter, progressReporter)
+    : this(timeProvider, null, jobDefinition, runAt, parameter, progressReporter)
     { }
 
     private JobRun(
+        TimeProvider timeProvider,
         JobRun? parentJob,
         JobDefinition jobDefinition,
+        DateTimeOffset runAt,
         object? parameter,
         Action<JobRun> progressReporter)
     {
@@ -29,7 +34,9 @@ internal class JobRun
         ParentJobRunId = parentJob is not null ? parentJob.JobRunId : null;
         IsOrchestrationRoot = parentJob is null;
         CorrelationId = parentJob is not null ? parentJob.CorrelationId : Guid.NewGuid();
+        this.timeProvider = timeProvider;
         JobDefinition = jobDefinition;
+        RunAt = runAt;
         Parameter = parameter ?? jobDefinition.Parameter;
 
         this.progressReporter = progressReporter;
@@ -37,7 +44,7 @@ internal class JobRun
 
         OnStateChanged = (jr) => { progressReporter(jr); };
 
-        SetState(new JobState(JobStateType.NotStarted));
+        SetState(new JobState(JobStateType.NotStarted, timeProvider.GetUtcNow()));
     }
 
     internal JobPriority Priority { get; set; } = JobPriority.Normal;
@@ -48,7 +55,7 @@ internal class JobRun
     public Guid CorrelationId { get; }
     public bool IsOrchestrationRoot { get; }
     public CancellationToken CancellationToken { get; set; }
-    public DateTimeOffset? RunAt { get; set; }
+    public DateTimeOffset RunAt { get; }
 
     /// <summary>
     /// At the moment of processing, if the difference between the current time and the scheduled time exceeds the
@@ -56,7 +63,7 @@ internal class JobRun
     /// but it has been dequeued then essentially the job is dropped.
     /// </summary>
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
-    public bool IsExpired(TimeProvider timeProvider) => RunAt.HasValue && timeProvider.GetUtcNow() - RunAt.Value > Expiry;
+    public bool IsExpired => timeProvider.GetUtcNow() - RunAt > Expiry;
     public bool IsOneTimeJob { get; set; }
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
@@ -64,16 +71,26 @@ internal class JobRun
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     public static JobRun Create(
+        TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition)
-    => new(jobDefinition, jobDefinition.Parameter, progressReporter);
+    => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), jobDefinition.Parameter, progressReporter);
 
     public static JobRun Create(
+        TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
+        DateTimeOffset runAt)
+    => new(timeProvider, jobDefinition, runAt, jobDefinition.Parameter, progressReporter);
+
+    public static JobRun Create(
+        TimeProvider timeProvider,
+        Action<JobRun> progressReporter,
+        JobDefinition jobDefinition,
+        DateTimeOffset runAt,
         object? parameter,
         CancellationToken token)
-    => new(jobDefinition, parameter, progressReporter)
+    => new(timeProvider, jobDefinition, runAt, parameter, progressReporter)
     {
         CancellationToken = token,
     };
@@ -83,7 +100,7 @@ internal class JobRun
         object? parameter,
         CancellationToken token)
     {
-        JobRun run = new(this, jobDefinition, parameter, progressReporter)
+        JobRun run = new(timeProvider, this, jobDefinition, timeProvider.GetUtcNow(), parameter, progressReporter)
         {
             CancellationToken = token,
         };
@@ -115,7 +132,7 @@ internal class JobRun
             return;
         }
 
-        var state = new JobState(type, fault);
+        var state = new JobState(type, timeProvider.GetUtcNow(), fault);
         SetState(state);
     }
 

@@ -7,8 +7,6 @@ namespace NCronJob.Tests;
 
 public class RuntimeJobRegistryTests : JobIntegrationBase
 {
-    private const string AtEveryMinute = "* * * * *";
-    private const string AtMinute2 = "2 * * * *";
 
     [Fact]
     public async Task DynamicallyAddedJobIsExecuted()
@@ -18,7 +16,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), AtEveryMinute), out _);
+        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), Cron.AtEveryMinute), out _);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
@@ -33,8 +31,8 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), AtEveryMinute));
-        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), AtEveryMinute));
+        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), Cron.AtEveryMinute));
+        registry.TryRegister(s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), Cron.AtEveryMinute));
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(2);
@@ -45,7 +43,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public async Task CanRemoveJobByName()
     {
         ServiceCollection.AddNCronJob(
-            s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), AtEveryMinute, jobName: "Job"));
+            s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), Cron.AtEveryMinute, jobName: "Job"));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -76,7 +74,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task CanRemoveByJobType()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute)));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -92,7 +90,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public async Task RemovingByJobTypeAccountsForAllJobs()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("1 * * * *")));
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtMinute2)));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute2)));
 
         var provider = CreateServiceProvider();
 
@@ -144,12 +142,12 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.UpdateSchedule("JobName", AtEveryMinute);
+        registry.UpdateSchedule("JobName", Cron.AtEveryMinute);
 
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
         var jobDefinition = jobRegistry.GetAllJobs().Single();
 
-        Assert.Equal(AtEveryMinute, jobDefinition.UserDefinedCronExpression);
+        Assert.Equal(Cron.AtEveryMinute, jobDefinition.UserDefinedCronExpression);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         var jobFinished = await WaitForJobsOrTimeout(1);
@@ -164,13 +162,13 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        Should.Throw<InvalidOperationException>(() => registry.UpdateSchedule("JobName", AtEveryMinute));
+        Should.Throw<InvalidOperationException>(() => registry.UpdateSchedule("JobName", Cron.AtEveryMinute));
     }
 
     [Fact]
     public async Task ShouldRetrieveScheduleForCronJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("*/2 * * * *").WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -178,7 +176,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var successful = registry.TryGetSchedule("JobName", out var cronExpression, out var timeZoneInfo);
 
         successful.ShouldBeTrue();
-        cronExpression.ShouldBe("*/2 * * * *");
+        cronExpression.ShouldBe(Cron.AtEvery2ndMinute);
         timeZoneInfo.ShouldBe(TimeZoneInfo.Utc);
     }
 
@@ -202,7 +200,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(s =>
         {
-            s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute).WithName("Job1"))
+            s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Job1"))
                 .ExecuteWhen(r => r.RunJob(() => { }, "Job2"));
         });
         var provider = CreateServiceProvider();
@@ -219,7 +217,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public async Task UpdatingParameterHasImmediateEffect()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
-            .WithCronExpression(AtEveryMinute)
+            .WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo")
             .WithName("JobName")));
         var provider = CreateServiceProvider();
@@ -238,20 +236,20 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
-            .WithCronExpression("*/2 * * * *", timeZoneInfo: timeZone)
+            .WithCronExpression(Cron.AtEvery2ndMinute, timeZoneInfo: timeZone)
             .WithName("JobName")));
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.TryRegister(s => s.AddJob(() => { }, AtEveryMinute, jobName: "JobName2"), out _);
+        registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "JobName2"), out _);
 
         var allSchedules = registry.GetAllRecurringJobs();
 
         allSchedules.Count.ShouldBe(2);
         allSchedules.ShouldContain(s => s.JobName == "JobName"
-                                        && s.CronExpression == "*/2 * * * *"
+                                        && s.CronExpression == Cron.AtEvery2ndMinute
                                         && s.TimeZone == timeZone);
         allSchedules.ShouldContain(s => s.JobName == "JobName2"
-                                        && s.CronExpression == AtEveryMinute
+                                        && s.CronExpression == Cron.AtEveryMinute
                                         && s.TimeZone == TimeZoneInfo.Utc);
     }
 
@@ -261,20 +259,20 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(p => p.AddJob<SimpleJob>());
         var provider = CreateServiceProvider();
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute).WithName("JobName")));
+        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
 
         var allSchedules = registry.GetAllRecurringJobs();
 
         allSchedules.Count.ShouldBe(1);
         allSchedules.ShouldContain(s => s.JobName == "JobName"
-                                        && s.CronExpression == AtEveryMinute
+                                        && s.CronExpression == Cron.AtEveryMinute
                                         && s.TimeZone == TimeZoneInfo.Utc);
     }
 
     [Fact]
     public async Task ShouldDisableJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -290,7 +288,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public async Task DisablingAndEnablingByJobTypeAccountsForAllJobs()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>());
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtMinute2)));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute2)));
 
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
@@ -326,7 +324,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         Assert.Equal(2, jobs.Count);
 
         Assert.Single(jobs, j => j.CronExpression is null);
-        Assert.Single(jobs, j => j.CronExpression is not null && j.CronExpression.ToString() == AtMinute2);
+        Assert.Single(jobs, j => j.CronExpression is not null && j.CronExpression.ToString() == Cron.AtMinute2);
     }
 
     [Fact]
@@ -343,7 +341,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldEnableJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
         var provider = CreateServiceProvider();
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
@@ -359,8 +357,8 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void ShouldThrowWhenDuplicateJobNamesDuringRegistration()
     {
-        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute).WithName("JobName")
-            .And.WithCronExpression("*/2 * * * *").WithName("JobName")));
+        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")
+            .And.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
 
         act.ShouldThrow<InvalidOperationException>();
     }
@@ -368,12 +366,12 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void ShouldThrowRuntimeExceptionWithDuplicateJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
         var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
 
         var successful = runtimeJobRegistry.TryRegister(s => s.AddJob(() =>
         {
-        }, AtEveryMinute, jobName: "JobName"), out var exception);
+        }, Cron.AtEveryMinute, jobName: "JobName"), out var exception);
 
         successful.ShouldBeFalse();
         exception.ShouldNotBeNull();
@@ -385,9 +383,9 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob();
         var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
-        runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute)));
+        runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute)), out var exception);
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
 
         successful.ShouldBeFalse();
         exception.ShouldNotBeNull();
@@ -399,7 +397,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob();
         var runtimeJobRegistry = CreateServiceProvider().GetRequiredService<IRuntimeJobRegistry>();
 
-        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(AtEveryMinute)), out var exception);
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
 
         successful.ShouldBeTrue();
         exception.ShouldBeNull();

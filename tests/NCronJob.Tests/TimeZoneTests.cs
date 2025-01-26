@@ -13,7 +13,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     {
         var builder = new JobOptionBuilder();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
-        builder.WithCronExpression("* * * * *", timeZoneInfo: timeZone);
+        builder.WithCronExpression(Cron.AtEveryMinute, timeZoneInfo: timeZone);
 
         var options = builder.GetJobOptions();
 
@@ -24,7 +24,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     public void ShouldDefaultToUtcIfTimeZoneNotSpecified()
     {
         var builder = new JobOptionBuilder();
-        builder.WithCronExpression("* * * * *");
+        builder.WithCronExpression(Cron.AtEveryMinute);
 
         var options = builder.GetJobOptions();
 
@@ -36,7 +36,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     {
         var builder = new JobOptionBuilder();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
-        var cronExpression = "* * * * *";
+        var cronExpression = Cron.AtEveryMinute;
         builder.WithCronExpression(cronExpression, timeZoneInfo: timeZone);
 
         var options = builder.GetJobOptions();
@@ -51,7 +51,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
         var builder = new JobOptionBuilder();
         Should.Throw<TimeZoneNotFoundException>(() =>
         {
-            builder.WithCronExpression("* * * * *", timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Non-Existent Time Zone"));
+            builder.WithCronExpression(Cron.AtEveryMinute, timeZoneInfo: TimeZoneInfo.FindSystemTimeZoneById("Non-Existent Time Zone"));
         });
     }
 

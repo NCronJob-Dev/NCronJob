@@ -9,12 +9,15 @@ internal readonly struct JobState
     public DateTimeOffset Timestamp { get; }
     public Exception? Fault { get; }
 
-    public JobState(JobStateType type, Exception? fault = default)
+    public JobState(
+        JobStateType type,
+        DateTimeOffset utcNow,
+        Exception? fault = default)
     {
         Debug.Assert(fault is not null || type != JobStateType.Faulted);
 
         Type = type;
-        Timestamp = DateTimeOffset.Now;
+        Timestamp = utcNow;
         Fault = fault;
     }
 
