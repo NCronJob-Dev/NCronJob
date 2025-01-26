@@ -621,19 +621,4 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
             => await writer.WriteAsync(context.Parameter!, token);
     }
-
-    private sealed class JobWithDependency(ChannelWriter<object> writer, GuidGenerator guidGenerator) : IJob
-    {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => await writer.WriteAsync(guidGenerator.NewGuid, token);
-    }
-
-    private sealed class ExceptionHandler(ChannelWriter<object> writer) : IExceptionHandler
-    {
-        public async Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
-        {
-            await writer.WriteAsync(1, cancellationToken);
-            return false;
-        }
-    }
 }
