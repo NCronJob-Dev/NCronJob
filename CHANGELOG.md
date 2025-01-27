@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.3.2] - 2025-01-27
+
 ### Fixed
 
 - Fixed an issue where exception handlers aren't called when a job can't be created. Reported by [@nulltoken](https://github.com/nulltoken) in #177. Fixed by [@linkdotnet](https://github.com/linkdotnet).
@@ -483,7 +485,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.1...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.2...HEAD
+[v4.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.1...v4.3.2
 [v4.3.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.2.0...v4.3.1
 [v4.2.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.1.0...v4.2.0
 [v4.1.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.0.2...v4.1.0
