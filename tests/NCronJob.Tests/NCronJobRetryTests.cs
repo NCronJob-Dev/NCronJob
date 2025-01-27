@@ -89,50 +89,22 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     public async Task CancelledJobIsStillAValidExecution()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
         var provider = CreateServiceProvider();
         var jobExecutor = provider.GetRequiredService<JobExecutor>();
-        var jobQueueManager = provider.GetRequiredService<JobQueueManager>();
-        var jobQueue = jobQueueManager.GetOrAddQueue(typeof(CancelRetryingJob2).FullName!);
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
-
-        JobRun? nextJob = null;
-        var tcs = new TaskCompletionSource<JobStateType>();
-
-        jobQueue.CollectionChanged += (sender, args) =>
-        {
-            if (args.Action == NotifyCollectionChangedAction.Add && nextJob == null)
-            {
-                nextJob = args.NewItems?.OfType<JobRun>().FirstOrDefault();
-                nextJob!.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
-                nextJob!.JobExecutionCount.ShouldBe(0);
-                nextJob!.OnStateChanged += (jr) =>
-                {
-                    if (jr.CurrentState == JobStateType.Cancelled)
-                    {
-                        tcs.SetResult(jr.CurrentState);
-                    }
-                };
-            }
-        };
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        while (nextJob!.CurrentState != JobStateType.Retrying)
-        {
-            await Task.Delay(1, CancellationToken);
-        }
-        // wait until we're in retrying state before cancelling
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.Retrying);
+
         jobExecutor.CancelJobs();
 
-        var cancellationHandled = await Task.WhenAny(tcs.Task, Task.Delay(1000, CancellationToken));
-        cancellationHandled.ShouldBe(tcs.Task);
-        await Task.Delay(10, CancellationToken);
-        nextJob!.CurrentState.Type.ShouldBe(JobStateType.Cancelled);
-        nextJob!.JobExecutionCount.ShouldBe(1);
-
-        Guid orchestrationId = events.First().CorrelationId;
+        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.Cancelled);
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
