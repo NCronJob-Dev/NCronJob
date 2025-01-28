@@ -8,29 +8,6 @@ internal class ObservablePriorityQueue<TElement> : ObservablePriorityQueue<TElem
 {
     public ObservablePriorityQueue(IComparer<(DateTimeOffset NextRunTime, int Priority)> comparer) : base(comparer)
     { }
-
-    protected void RemoveByPredicate(Func<TElement, bool> predicate)
-    {
-        ArgumentNullException.ThrowIfNull(predicate);
-
-        lock (Lock)
-        {
-            // A unique job name can only lead to one entry in the queue
-            var elementToRemove = this.FirstOrDefault(predicate);
-            if (elementToRemove is null)
-                return;
-
-#if NET9_0_OR_GREATER
-            PriorityQueue.Remove(elementToRemove, out _, out _);
-#else
-            var allElementsExceptDeleted = PriorityQueue.UnorderedItems.Where(e => !ReferenceEquals(e.Element, elementToRemove)).ToList();
-            PriorityQueue.Clear();
-            PriorityQueue.EnqueueRange(allElementsExceptDeleted);
-#endif
-
-            InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, elementToRemove));
-        }
-    }
 }
 
 internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TElement>, INotifyCollectionChanged

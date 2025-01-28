@@ -22,21 +22,25 @@ internal sealed class JobQueueManager : IDisposable
 
     public JobQueue GetOrAddQueue(string queueName)
     {
-        var isCreating = false;
-        var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
+        lock (syncLock)
         {
-            isCreating = true;
-            var queue = new JobQueue(jt);
-            queue.CollectionChanged += CallCollectionChanged;
-            return queue;
-        });
+            var isCreating = false;
+            var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
+            {
+                isCreating = true;
+                var queue = new JobQueue(jt);
+                queue.CollectionChanged += CallCollectionChanged;
+                jobCancellationTokens[jt] = new CancellationTokenSource();
+                return queue;
+            });
 
-        if (isCreating)
-        {
-            QueueAdded?.Invoke(queueName);
+            if (isCreating)
+            {
+                QueueAdded?.Invoke(queueName);
+            }
+
+            return jobQueue;
         }
-
-        return jobQueue;
     }
 
     public void RemoveQueue(string queueName)
@@ -53,7 +57,11 @@ internal sealed class JobQueueManager : IDisposable
                 jobQueue.Clear();
                 jobQueue.CollectionChanged -= CallCollectionChanged;
                 semaphores.TryRemove(queueName, out _);
-                jobCancellationTokens.Clear();
+                if (jobCancellationTokens.TryRemove(queueName, out CancellationTokenSource? x))
+                {
+                    x.Cancel();
+                    x.Dispose();
+                }
             }
         }
     }
@@ -65,37 +73,16 @@ internal sealed class JobQueueManager : IDisposable
     public SemaphoreSlim GetOrAddSemaphore(string queueName, int concurrencyLimit) =>
         semaphores.GetOrAdd(queueName, _ => new SemaphoreSlim(concurrencyLimit));
 
-    public CancellationTokenSource GetOrAddCancellationTokenSource(string queueName)
-    {
-        lock (syncLock)
-        {
-            if (jobCancellationTokens.TryGetValue(queueName, out var cts))
-            {
-                if (cts.IsCancellationRequested)
-                {
-                    cts.Dispose();
-                    jobCancellationTokens[queueName] = new CancellationTokenSource();
-                }
-            }
-            else
-            {
-                jobCancellationTokens[queueName] = new CancellationTokenSource();
-            }
-
-            return jobCancellationTokens[queueName];
-        }
-    }
+    public CancellationTokenSource GetCancellationTokenSource(string queueName) => jobCancellationTokens[queueName];
 
     public void SignalJobQueue(string queueName)
     {
         lock (syncLock)
         {
-            if (jobCancellationTokens.TryGetValue(queueName, out var cts))
-            {
-                cts.Cancel();
-                Task.Delay(10).GetAwaiter().GetResult();
-                jobCancellationTokens[queueName] = new CancellationTokenSource();
-            }
+            var cts = jobCancellationTokens[queueName];
+            cts.Cancel();
+            Task.Delay(10).GetAwaiter().GetResult();
+            jobCancellationTokens[queueName] = new CancellationTokenSource();
         }
     }
 
