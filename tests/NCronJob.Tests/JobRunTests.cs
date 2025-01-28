@@ -34,25 +34,25 @@ public class JobRunStatesTests
     [ClassData(typeof(FinalJobStateTypeTestData))]
     internal void CompletedJobRunsCannotChangeTheirStateFurther(JobStateType value)
     {
-        bool hasBeenCalled = false;
+        int howManyTimes = 0;
 
         JobDefinition jd = new JobDefinition(typeof(DummyJob), null, null, null);
-        var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { }, jd);
+        var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
     
         Assert.Equal(JobStateType.NotStarted, jobRun.CurrentState.Type);
+        Assert.Equal(1, howManyTimes);
 
         var fault = new Exception();
 
         jobRun.NotifyStateChange(value, fault);
         Assert.Equal(value, jobRun.CurrentState.Type);
-
-        jobRun.OnStateChanged += (_) => { hasBeenCalled = true; };
+        Assert.Equal(2, howManyTimes);
 
         foreach (JobStateType state in AllPossibleStates.Keys)
         {
             jobRun.NotifyStateChange(state, fault);
             Assert.Equal(value, jobRun.CurrentState.Type);
-            Assert.False(hasBeenCalled);
+            Assert.Equal(2, howManyTimes);
         }
     }
 

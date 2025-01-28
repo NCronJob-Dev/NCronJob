@@ -42,8 +42,6 @@ internal class JobRun
         this.progressReporter = progressReporter;
         rootJob = parentJob is not null ? parentJob.rootJob : this;
 
-        OnStateChanged = (jr) => { progressReporter(jr); };
-
         SetState(new JobState(JobStateType.NotStarted, timeProvider.GetUtcNow()));
     }
 
@@ -117,12 +115,11 @@ internal class JobRun
     public bool CanRun => CanInitiateRun(CurrentState);
     public bool IsCancellable => CanBeCancelled(CurrentState);
     public JobState CurrentState { get; private set; }
-    public event Action<JobRun> OnStateChanged;
 
     private void SetState(JobState state)
     {
         CurrentState = state;
-        OnStateChanged(this);
+        progressReporter(this);
     }
 
     public void NotifyStateChange(JobStateType type, Exception? fault = default)

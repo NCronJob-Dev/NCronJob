@@ -147,13 +147,21 @@ public abstract class JobIntegrationBase : IDisposable
         IList<ExecutionProgress> events,
         Guid orchestrationId)
     {
-        await WaitUntilConditionIsMet(events, OrchestrationIsCompleted);
+        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.OrchestrationCompleted);
+    }
 
-        bool OrchestrationIsCompleted(IList<ExecutionProgress> events)
+    protected async Task WaitForOrchestrationState(
+        IList<ExecutionProgress> events,
+        Guid orchestrationId,
+        ExecutionState state)
+    {
+        await WaitUntilConditionIsMet(events, OrchestrationHasReachedExpectedState);
+
+        bool OrchestrationHasReachedExpectedState(IList<ExecutionProgress> events)
         {
             return events.Any(@event =>
                 @event.CorrelationId == orchestrationId &&
-                @event.State == ExecutionState.OrchestrationCompleted);
+                @event.State == state);
         }
     }
 
