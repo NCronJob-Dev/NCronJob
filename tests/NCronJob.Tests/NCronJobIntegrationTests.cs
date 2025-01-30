@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -143,6 +142,53 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         content.ShouldBe("Hello from InstantJob");
+    }
+
+    [Theory]
+    [MemberData(nameof(InstantJobRunners))]
+    public async Task InstantJobCanStartADisabledJob(Func<IInstantJobRegistry, string, CancellationToken, Guid> instantJobRunner)
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<ParameterJob>((jo) => jo.WithCronExpression(Cron.AtEveryMinute)));
+
+        var provider = CreateServiceProvider();
+
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
+        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        registry.DisableJob<ParameterJob>();
+
+        var instantJobRegistry = provider.GetRequiredService<IInstantJobRegistry>();
+        var orchestrationId = instantJobRunner(instantJobRegistry, "Hello from InstantJob", CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.NotStarted, events[1].State);
+        Assert.Equal(ExecutionState.Scheduled, events[2].State);
+        Assert.Equal(ExecutionState.Cancelled, events[3].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[4].State);
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[5].State);
+        Assert.Equal(ExecutionState.NotStarted, events[6].State);
+        Assert.Equal(ExecutionState.Initializing, events[7].State);
+        Assert.Equal(ExecutionState.Running, events[8].State);
+        Assert.Equal(ExecutionState.Completing, events[9].State);
+        Assert.Equal(ExecutionState.Completed, events[10].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[11].State);
+        Assert.Equal(12, events.Count);
+    }
+
+    public static TheoryData<Func<IInstantJobRegistry, string, CancellationToken, Guid>> InstantJobRunners()
+    {
+        var t = new TheoryData<Func<IInstantJobRegistry, string, CancellationToken, Guid>>();
+        t.Add((i, p, t) => i.RunInstantJob<ParameterJob>(p, t));
+        t.Add((i, p, t) => i.ForceRunInstantJob<ParameterJob>(p, t));
+        return t;
     }
 
     [Fact]
