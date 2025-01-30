@@ -284,7 +284,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
         if (forceExecution)
         {
-            _ = jobWorker.InvokeJobWithSchedule(run, token);
+            _ = jobWorker.InvokeJob(run, token);
         }
         else
         {

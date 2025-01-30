@@ -223,9 +223,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.Completed, events[18].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[19].State);
-        Assert.Equal(20, events.Count);
+        Assert.Equal(ExecutionState.Completed, events[17].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[18].State);
+        Assert.Equal(19, events.Count);
     }
 
     [Fact]
