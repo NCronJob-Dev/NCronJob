@@ -84,6 +84,49 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 ## Priority
 Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).
 
+## Force a job run
+
+Sometimes you need to run a job immediately, regardless of any running jobs or concurrency settings. The `ForceRunInstantJob` methods allow you to bypass the job queue and execute a job directly.
+
+While regular instant jobs follow the same concurrency rules as CRON jobs, forced jobs ignore these restrictions:
+
+```csharp
+public class EmailJob : IJob 
+{
+    private readonly IEmailService emailService;
+    
+    public EmailJob(IEmailService emailService) => this.emailService = emailService;
+    
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token) =>
+        emailService.SendEmailAsync((EmailMessage)context.Parameter, token);
+}
+
+// Normal instant job - will wait if another EmailJob is running
+app.MapPost("/send-email", (EmailMessage msg, IInstantJobRegistry registry) => {
+    registry.RunInstantJob<EmailJob>(msg);
+    return Results.Accepted();
+});
+
+// Forced instant job - runs immediately even if other EmailJobs are active
+app.MapPost("/send-urgent-email", (EmailMessage msg, IInstantJobRegistry registry) => {
+    registry.ForceRunInstantJob<EmailJob>(msg); 
+    return Results.Accepted();
+});
+```
+
+The force option is also available for scheduled jobs:
+
+```csharp
+// Normal scheduled job - follows concurrency rules
+registry.RunScheduledJob<ReportJob>(TimeSpan.FromMinutes(5));
+
+// Forced scheduled job - bypasses queue and concurrency limits
+registry.ForceRunScheduledJob<ReportJob>(TimeSpan.FromMinutes(5));
+```
+
+!!! note
+    Use forced job execution carefully as it bypasses the built-in concurrency protection. This could lead to resource contention if multiple forced jobs run simultaneously.
+
 ## Minimal API
 Running instant jobs can also be done with the minimal API ([Minimal API](minimal-api.md)), which allows to create an anonymous lambda, that can also contain dependencies.
 
