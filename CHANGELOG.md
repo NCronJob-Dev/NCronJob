@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+- Fixing minor concurrency issues. By [@nulltoken](https://github.com/nulltoken).
+
 ## [v4.3.2] - 2025-01-27
 
 ### Fixed
