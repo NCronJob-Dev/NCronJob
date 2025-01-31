@@ -40,13 +40,14 @@ internal sealed partial class JobWorker
 
     public async Task WorkerAsync(string queueName, CancellationToken cancellationToken)
     {
-        var jobQueue = jobQueueManager.GetOrAddQueue(queueName);
         var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(queueName);
         var semaphore = jobQueueManager.GetOrAddSemaphore(queueName, concurrencyLimit);
         var runningTasks = new List<Task>();
 
         while (!cancellationToken.IsCancellationRequested)
         {
+            var jobQueue = jobQueueManager.GetOrAddQueue(queueName);
+
             runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
 
             if (jobQueue.TryPeek(out var nextJob, out var priorityTuple) && IsJobEligibleToStart(nextJob, jobQueue))
@@ -65,9 +66,8 @@ internal sealed partial class JobWorker
         await Task.WhenAll(runningTasks).ConfigureAwait(false);
     }
 
-    public async Task InvokeJobWithSchedule(JobRun jobRun, CancellationToken cancellationToken)
+    public async Task InvokeJob(JobRun jobRun, CancellationToken cancellationToken)
     {
-        jobRun.NotifyStateChange(JobStateType.Scheduled);
         await WaitForNextExecution(jobRun.RunAt, cancellationToken).ConfigureAwait(false);
         await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
@@ -84,7 +84,7 @@ internal sealed partial class JobWorker
 
         try
         {
-            var cts = jobQueueManager.GetOrAddCancellationTokenSource(queueName);
+            var cts = jobQueueManager.GetCancellationTokenSource(queueName);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
             var linkedToken = linkedCts.Token;
 
@@ -183,6 +183,8 @@ internal sealed partial class JobWorker
 
     public void ScheduleJob(JobDefinition job)
     {
+        var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
+
         if (job.CronExpression is null)
             return;
 
@@ -193,7 +195,6 @@ internal sealed partial class JobWorker
         {
             LogNextJobRun(job.Type, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
             var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
-            var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
             jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
             run.NotifyStateChange(JobStateType.Scheduled);
         }
@@ -201,54 +202,38 @@ internal sealed partial class JobWorker
 
     public void RemoveJobByName(string jobName)
     {
-        RemoveJobRunByName(jobName);
-        registry.RemoveByName(jobName);
+        RemoveJob(
+            registry.FindJobDefinition(jobName)?.JobFullName,
+            () => registry.RemoveByName(jobName));
     }
 
-    public void RemoveJobType(Type type)
+    public void RemoveJobByType(Type type)
     {
-        var fullName = registry.FindFirstJobDefinition(type)?.JobFullName;
-        if (fullName is null)
+        RemoveJob(
+            registry.FindFirstJobDefinition(type)?.JobFullName,
+            () => registry.RemoveByType(type));
+    }
+
+    private void RemoveJob(
+        string? jobDefinitionFullName,
+        Action unregistrator)
+    {
+        if (jobDefinitionFullName is null)
         {
             return;
         }
 
-        registry.RemoveByType(type);
-        jobQueueManager.RemoveQueue(fullName);
+        unregistrator();
+        jobQueueManager.RemoveQueue(jobDefinitionFullName);
+
     }
 
-    public void RescheduleJobWithJobName(JobDefinition jobDefinition)
-    {
-        ArgumentNullException.ThrowIfNull(jobDefinition);
-        ArgumentNullException.ThrowIfNull(jobDefinition.CustomName);
-
-        RemoveJobRunByName(jobDefinition.CustomName);
-        ScheduleJob(jobDefinition);
-        jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
-    }
-
-    public void RescheduleJobByType(JobDefinition jobDefinition)
+    public void RescheduleJob(JobDefinition jobDefinition)
     {
         ArgumentNullException.ThrowIfNull(jobDefinition);
 
         jobQueueManager.RemoveQueue(jobDefinition.JobFullName);
         ScheduleJob(jobDefinition);
         jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
-    }
-
-    private void RemoveJobRunByName(string jobName)
-    {
-        var jobType = registry.FindJobDefinition(jobName);
-        if (jobType is null)
-        {
-            return;
-        }
-
-        if (!jobQueueManager.TryGetQueue(jobType.JobFullName, out var jobQueue))
-        {
-            return;
-        }
-
-        jobQueue.RemoveByName(jobName);
     }
 }

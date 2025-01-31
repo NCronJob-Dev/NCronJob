@@ -20,6 +20,4 @@ internal sealed class JobQueue : ObservablePriorityQueue<JobRun>
     {
         Enqueue(job, (job.RunAt, (int)job.Priority));
     }
-
-    public void RemoveByName(string jobName) => RemoveByPredicate(t => t.JobDefinition.CustomName == jobName);
 }

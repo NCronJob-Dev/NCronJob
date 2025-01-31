@@ -44,15 +44,31 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(
             s => s.AddJob(async (ChannelWriter<object> writer) => await writer.WriteAsync(true, CancellationToken), Cron.AtEveryMinute, jobName: "Job"));
+
         var provider = CreateServiceProvider();
+
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+
+        Guid orchestrationId = events.First().CorrelationId;
 
         registry.RemoveJob("Job");
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var jobFinished = await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(200));
-        jobFinished.ShouldBeFalse();
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
+        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
+        Assert.Equal(ExecutionState.NotStarted, events[1].State);
+        Assert.Equal(ExecutionState.Scheduled, events[2].State);
+        Assert.Equal(ExecutionState.Cancelled, events[3].State);
+        Assert.Equal(ExecutionState.OrchestrationCompleted, events[4].State);
+        Assert.Equal(5, events.Count);
     }
 
     [Fact]
@@ -138,7 +154,11 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public async Task CanUpdateScheduleOfAJob()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));
+
         var provider = CreateServiceProvider();
+
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -150,8 +170,63 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         Assert.Equal(Cron.AtEveryMinute, jobDefinition.UserDefinedCronExpression);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var jobFinished = await WaitForJobsOrTimeout(1);
-        jobFinished.ShouldBeTrue();
+
+        // Initial scheduling
+        Guid firstOrchestrationId = events.First().CorrelationId;
+
+        // Rescheduling
+        Guid secondOrchestrationId = events.Skip(1).First(e => e.State == ExecutionState.OrchestrationStarted).CorrelationId;
+
+        Func<ExecutionProgress, bool> thirdExecutionFinder = e => e.State == ExecutionState.OrchestrationStarted &&
+            e.CorrelationId != firstOrchestrationId && e.CorrelationId != secondOrchestrationId;
+
+        await WaitUntilConditionIsMet(events, AThirdOrchestrationHasStarted);
+
+        await WaitForOrchestrationCompletion(events, secondOrchestrationId);
+
+        subscription.Dispose();
+
+        // Rescheduling (execution n+1)
+        Guid thirdOrchestrationId = events.First(thirdExecutionFinder).CorrelationId;
+
+        var firstOrchestrationEvents = events.Where(e => e.CorrelationId == firstOrchestrationId).ToList();
+        var secondOrchestrationEvents = events.Where(e => e.CorrelationId == secondOrchestrationId).ToList();
+        var thirdOrchestrationEvents = events.Where(e => e.CorrelationId == thirdOrchestrationId).ToList();
+
+        // Initial scheduling
+        AssertEvent(firstOrchestrationId, ExecutionState.OrchestrationStarted, firstOrchestrationEvents[0]);
+        AssertEvent(firstOrchestrationId, ExecutionState.NotStarted, firstOrchestrationEvents[1]);
+        AssertEvent(firstOrchestrationId, ExecutionState.Scheduled, firstOrchestrationEvents[2]);
+        AssertEvent(firstOrchestrationId, ExecutionState.Cancelled, firstOrchestrationEvents[3]);
+        AssertEvent(firstOrchestrationId, ExecutionState.OrchestrationCompleted, firstOrchestrationEvents[4]);
+
+        // Rescheduling
+        AssertEvent(secondOrchestrationId, ExecutionState.OrchestrationStarted, secondOrchestrationEvents[0]);
+        AssertEvent(secondOrchestrationId, ExecutionState.NotStarted, secondOrchestrationEvents[1]);
+        AssertEvent(secondOrchestrationId, ExecutionState.Scheduled, secondOrchestrationEvents[2]);
+        AssertEvent(secondOrchestrationId, ExecutionState.Initializing, secondOrchestrationEvents[3]);
+        AssertEvent(secondOrchestrationId, ExecutionState.Running, secondOrchestrationEvents[4]);
+        AssertEvent(secondOrchestrationId, ExecutionState.Completing, secondOrchestrationEvents[5]);
+        AssertEvent(secondOrchestrationId, ExecutionState.Completed, secondOrchestrationEvents[6]);
+        AssertEvent(secondOrchestrationId, ExecutionState.OrchestrationCompleted, secondOrchestrationEvents[7]);
+
+        // Rescheduling (execution n+1)
+        AssertEvent(thirdOrchestrationId, ExecutionState.OrchestrationStarted, thirdOrchestrationEvents[0]);
+        AssertEvent(thirdOrchestrationId, ExecutionState.NotStarted, thirdOrchestrationEvents[1]);
+        AssertEvent(thirdOrchestrationId, ExecutionState.Scheduled, thirdOrchestrationEvents[2]);
+
+        Assert.Equal(16, events.Count);
+
+        static void AssertEvent(Guid orchestrationId, ExecutionState state, ExecutionProgress executionProgress)
+        {
+            Assert.Equal(orchestrationId, executionProgress.CorrelationId);
+            Assert.Equal(state, executionProgress.State);
+        }
+
+        bool AThirdOrchestrationHasStarted(IList<ExecutionProgress> events)
+        {
+            return events.Any(thirdExecutionFinder);
+        }
     }
 
     [Fact]

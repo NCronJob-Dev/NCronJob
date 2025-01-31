@@ -213,7 +213,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     public void RemoveJob<TJob>() where TJob : IJob => RemoveJob(typeof(TJob));
 
     /// <inheritdoc />
-    public void RemoveJob(Type type) => jobWorker.RemoveJobType(type);
+    public void RemoveJob(Type type) => jobWorker.RemoveJobByType(type);
 
     /// <inheritdoc />
     public void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
@@ -229,7 +229,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         job.UserDefinedCronExpression = cronExpression;
         job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
 
-        jobWorker.RescheduleJobWithJobName(job);
+        jobWorker.RescheduleJob(job);
     }
 
     /// <inheritdoc />
@@ -240,7 +240,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
         job.Parameter = parameter;
 
-        jobWorker.RescheduleJobWithJobName(job);
+        jobWorker.RescheduleJob(job);
     }
 
     /// <inheritdoc />
@@ -277,7 +277,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindJobDefinition(jobName)
                   ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
-        EnableJob(job, jobName);
+        EnableJob(job);
     }
 
     /// <inheritdoc />
@@ -295,7 +295,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindJobDefinition(jobName)
                   ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
-        DisableJob(job, jobName);
+        DisableJob(job);
     }
 
     /// <inheritdoc />
@@ -317,7 +317,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         }
     }
 
-    private void EnableJob(JobDefinition job, string? customName = null)
+    private void EnableJob(JobDefinition job)
     {
         if (job.UserDefinedCronExpression is not null)
         {
@@ -328,25 +328,19 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             job.CronExpression = null;
         }
 
-        RescheduleJob(job, customName);
+        RescheduleJob(job);
     }
 
-    private void DisableJob(JobDefinition job, string? customName = null)
+    private void DisableJob(JobDefinition job)
     {
         // Scheduling on Feb, 31st is a sure way to never get it to run
         job.CronExpression = TheThirtyFirstOfFebruary;
 
-        RescheduleJob(job, customName);
+        RescheduleJob(job);
     }
 
-    private void RescheduleJob(JobDefinition job, string? customName = null)
+    private void RescheduleJob(JobDefinition job)
     {
-        if (customName is not null)
-        {
-            jobWorker.RescheduleJobWithJobName(job);
-            return;
-        }
-
-        jobWorker.RescheduleJobByType(job);
+        jobWorker.RescheduleJob(job);
     }
 }
