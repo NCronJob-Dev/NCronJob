@@ -124,7 +124,7 @@ registry.RunScheduledJob<ReportJob>(TimeSpan.FromMinutes(5));
 registry.ForceRunScheduledJob<ReportJob>(TimeSpan.FromMinutes(5));
 ```
 
-!!! note
+!!! warning
     Use forced job execution carefully as it bypasses the built-in concurrency protection. This could lead to resource contention if multiple forced jobs run simultaneously.
 
 ## Minimal API
