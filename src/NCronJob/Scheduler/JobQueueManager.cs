@@ -22,6 +22,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public JobQueue GetOrAddQueue(string queueName)
     {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
             var isCreating = false;
@@ -45,6 +46,7 @@ internal sealed class JobQueueManager : IDisposable
 
     public void RemoveQueue(string queueName)
     {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
             if (jobQueues.TryRemove(queueName, out var jobQueue))
@@ -66,17 +68,33 @@ internal sealed class JobQueueManager : IDisposable
         }
     }
 
-    public bool TryGetQueue(string queueName, [MaybeNullWhen(false)] out JobQueue jobQueue) => jobQueues.TryGetValue(queueName, out jobQueue);
+    public bool TryGetQueue(string queueName, [MaybeNullWhen(false)] out JobQueue jobQueue)
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        return jobQueues.TryGetValue(queueName, out jobQueue);
+    }
 
-    public IEnumerable<string> GetAllJobQueueNames() => jobQueues.Keys;
+    public IEnumerable<string> GetAllJobQueueNames()
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        return jobQueues.Keys;
+    }
 
-    public SemaphoreSlim GetOrAddSemaphore(string queueName, int concurrencyLimit) =>
-        semaphores.GetOrAdd(queueName, _ => new SemaphoreSlim(concurrencyLimit));
+    public SemaphoreSlim GetOrAddSemaphore(string queueName, int concurrencyLimit)
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        return semaphores.GetOrAdd(queueName, _ => new SemaphoreSlim(concurrencyLimit));
+    }
 
-    public CancellationTokenSource GetCancellationTokenSource(string queueName) => jobCancellationTokens[queueName];
+    public CancellationTokenSource GetCancellationTokenSource(string queueName)
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        return jobCancellationTokens[queueName];
+    }
 
     public void SignalJobQueue(string queueName)
     {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
             var cts = jobCancellationTokens[queueName];
