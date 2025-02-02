@@ -71,9 +71,9 @@ internal sealed partial class JobExecutor : IDisposable
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
             LogExceptionHandlerError(runContext.JobType);
-            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
+            runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
         }
     }
 

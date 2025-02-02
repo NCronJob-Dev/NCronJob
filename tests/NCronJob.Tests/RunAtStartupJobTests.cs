@@ -43,8 +43,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         await app.UseNCronJobAsync();
 
-        storage.Content.Count.ShouldBe(1);
-        storage.Content[0].ShouldBe("SimpleJob");
+        storage.Entries.Count.ShouldBe(1);
+        storage.Entries[0].ShouldBe("SimpleJob");
     }
 
     [Theory]
@@ -111,9 +111,9 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        storage.Content.Count.ShouldBe(2);
-        storage.Content[0].ShouldBe("SimpleJob");
-        storage.Content[1].ShouldBe("StartingService");
+        storage.Entries.Count.ShouldBe(2);
+        storage.Entries[0].ShouldBe("SimpleJob");
+        storage.Entries[1].ShouldBe("StartingService");
 
         Guid orchestrationId = events.First().CorrelationId;
 
@@ -154,8 +154,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        storage.Content.Count.ShouldBe(1);
-        storage.Content[0].ShouldBe("ExceptionHandler");
+        storage.Entries.Count.ShouldBe(1);
+        storage.Entries[0].ShouldBe("ExceptionHandler");
 
         Guid orchestrationId = events.First().CorrelationId;
 
@@ -197,8 +197,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
             exc.Message,
             StringComparison.Ordinal);
 
-        storage.Content.Count.ShouldBe(1);
-        storage.Content[0].ShouldBe("ExceptionHandler");
+        storage.Entries.Count.ShouldBe(1);
+        storage.Entries[0].ShouldBe("ExceptionHandler");
     }
 
     private IHost BuildApp(IHostBuilder builder)
@@ -221,24 +221,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
         }
         catch (OperationCanceledException)
         {
-        }
-    }
-
-    private sealed class Storage
-    {
-#if NET9_0_OR_GREATER
-        private readonly Lock locker = new();
-#else
-        private readonly object locker = new();
-#endif
-        public List<string> Content { get; private set; } = [];
-
-        public void Add(string content)
-        {
-            lock (locker)
-            {
-                Content.Add(content);
-            }
         }
     }
 

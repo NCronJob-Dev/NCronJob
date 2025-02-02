@@ -6,17 +6,21 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Ensure orchestration includes dependents of faulted jobs. Added in [#195](https://github.com/NCronJob-Dev/NCronJob/issues/195), by [@nulltoken](https://github.com/nulltoken).
+
 ## [v4.3.3] - 2025-01-31
 
 ### Fixed
 
-- Fixing minor concurrency issues. By [@nulltoken](https://github.com/nulltoken).
+- Fixing minor concurrency issues. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/issues/184).
 
 ## [v4.3.2] - 2025-01-27
 
 ### Fixed
 
-- Fixed an issue where exception handlers aren't called when a job can't be created. Reported by [@nulltoken](https://github.com/nulltoken) in #177. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+- Fixed an issue where exception handlers aren't called when a job can't be created. Reported by [@nulltoken](https://github.com/nulltoken) in [#177](https://github.com/NCronJob-Dev/NCronJob/issues/177). Fixed by [@linkdotnet](https://github.com/linkdotnet) in [#179](https://github.com/NCronJob-Dev/NCronJob/issues/179).
 
 ## [v4.3.1] - 2025-01-23
 
