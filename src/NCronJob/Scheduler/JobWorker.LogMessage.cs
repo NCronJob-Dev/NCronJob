@@ -24,4 +24,7 @@ internal sealed partial class JobWorker
 
     [LoggerMessage(LogLevel.Trace, "Dequeuing job {JobName} because it has exceeded the expiration period.")]
     private partial void LogDequeuingExpiredJob(string jobName);
+
+    [LoggerMessage(LogLevel.Trace, $"{nameof(JobQueueManager)} was disposed while awaiting next task execution.")]
+    private partial void LogJobQueueManagerDisposed();
 }

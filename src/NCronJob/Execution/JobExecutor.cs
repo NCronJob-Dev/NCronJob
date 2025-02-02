@@ -35,14 +35,10 @@ internal sealed partial class JobExecutor : IDisposable
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
 
-    private void OnApplicationStopping()
-    {
-        CancelJobs();
-        Dispose();
-    }
-
     public void CancelJobs()
     {
+        ObjectDisposedException.ThrowIf(isDisposed, this);
+
         if (!shutdown.IsCancellationRequested)
         {
             shutdown.Cancel();
@@ -51,6 +47,8 @@ internal sealed partial class JobExecutor : IDisposable
 
     public async Task RunJob(JobRun run, CancellationToken stoppingToken)
     {
+        ObjectDisposedException.ThrowIf(isDisposed, this);
+
         if (isDisposed)
         {
             LogSkipAsDisposed();
@@ -200,5 +198,11 @@ internal sealed partial class JobExecutor : IDisposable
                 LogExceptionHandlerError(exceptionHandler.GetType());
             }
         }
+    }
+
+    private void OnApplicationStopping()
+    {
+        CancelJobs();
+        Dispose();
     }
 }

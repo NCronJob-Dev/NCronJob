@@ -90,6 +90,13 @@ internal sealed partial class JobWorker
 
             await WaitForNextExecution(nextRunTime, linkedCts.Token).ConfigureAwait(false);
 
+            if (jobQueueManager.IsDisposed || linkedToken.IsCancellationRequested)
+            {
+                // We will most likely run into this, when the IHostApplicationLifetime is stopped
+                LogJobQueueManagerDisposed();
+                return;
+            }
+
             if (!jobQueueManager.TryGetQueue(queueName, out var jobQueue))
             {
                 throw new InvalidOperationException($"Job queue not found for {queueName}");
