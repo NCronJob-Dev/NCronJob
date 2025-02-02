@@ -65,8 +65,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         await Task.WhenAll(GetCompletionJobs(2, CancellationToken));
-        storage.Guids.Count.ShouldBe(2);
-        storage.Guids.Distinct().Count().ShouldBe(storage.Guids.Count);
+        storage.Entries.Count.ShouldBe(2);
+        storage.Entries.Distinct().Count().ShouldBe(storage.Entries.Count);
     }
 
     [Fact]
@@ -606,11 +606,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         public Guid NewGuid { get; } = Guid.NewGuid();
     }
 
-    private sealed class Storage
-    {
-        public ConcurrentBag<Guid> Guids { get; } = [];
-    }
-
     [SupportsConcurrency(2)]
     private sealed class SimpleJob(ChannelWriter<object> writer) : IJob
     {
@@ -657,7 +652,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            storage.Guids.Add(guidGenerator.NewGuid);
+            storage.Entries.Add(guidGenerator.NewGuid.ToString());
             await writer.WriteAsync(true, token);
         }
     }

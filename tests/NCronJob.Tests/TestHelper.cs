@@ -1,6 +1,5 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +20,7 @@ public abstract class JobIntegrationBase : IDisposable
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
+    protected Storage Storage { get; } = new();
 
     protected JobIntegrationBase()
     {
@@ -32,6 +32,7 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddSingleton<IRetryHandler>(sp =>
             new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
         ServiceCollection.AddSingleton<TimeProvider>(FakeTimer);
+        ServiceCollection.AddSingleton(Storage);
     }
 
     public void Dispose()
@@ -53,7 +54,10 @@ public abstract class JobIntegrationBase : IDisposable
         serviceProvider?.Dispose();
     }
 
-    protected ServiceProvider CreateServiceProvider() => serviceProvider ??= ServiceCollection.BuildServiceProvider();
+    // TODO: Replace calls to this method in the tests with `ServiceProvider`
+    protected ServiceProvider CreateServiceProvider() => ServiceProvider;
+
+    protected ServiceProvider ServiceProvider => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
     protected async Task<bool> WaitForJobsOrTimeout(int jobRuns, TimeSpan? timeOut = null)
     {
@@ -186,6 +190,26 @@ public abstract class JobIntegrationBase : IDisposable
             timeAdvancer();
             var jobResult = await CommunicationChannel.Reader.ReadAsync(cancellationToken);
             yield return jobResult;
+        }
+    }
+}
+
+public sealed class Storage
+{
+#if NET9_0_OR_GREATER
+        private readonly Lock locker = new();
+#else
+    private readonly object locker = new();
+#endif
+#pragma warning disable CA1002 // Do not expose generic lists
+    public List<string> Entries { get; private set; } = [];
+#pragma warning restore CA1002 // Do not expose generic lists
+
+    public void Add(string content)
+    {
+        lock (locker)
+        {
+            Entries.Add(content);
         }
     }
 }
