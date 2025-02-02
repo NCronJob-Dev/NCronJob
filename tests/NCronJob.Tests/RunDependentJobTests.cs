@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,16 +13,19 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("Message")));
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        List<string?> results = [];
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("DependentJob: Message Parent: Success");
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Success");
     }
 
     [Fact]
@@ -32,16 +34,19 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("Message")));
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false, token: CancellationToken);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        List<string?> results = [];
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.ShouldContain("PrincipalJob: Failed");
-        results.ShouldContain("DependentJob: Message Parent: Failed");
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Failed");
+        Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Failed");
     }
 
     [Fact]
@@ -50,74 +55,79 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<MainJob>()
             .ExecuteWhen(success: s => s.RunJob<SubMainJob>()));
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        var instantJobRegistry = provider.GetRequiredService<IInstantJobRegistry>();
-        instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        var result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        result.ShouldBe(nameof(MainJob));
-        result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        result.ShouldBe(nameof(SubMainJob));
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
 
-        var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
+        Guid orchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe(nameof(MainJob));
+        Storage.Entries[1].ShouldBe(nameof(SubMainJob));
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         registry.RemoveJob<MainJob>();
         registry.TryRegister(n => n.AddJob<MainJob>());
 
-        instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
+        Storage.Entries.Clear();
 
-        result = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        result.ShouldBe(nameof(MainJob));
+        Guid secondRunOrchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
 
-        (await WaitForJobsOrTimeout(1, TimeSpan.FromMilliseconds(500))).ShouldBe(false);
+        await WaitForOrchestrationCompletion(events, secondRunOrchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe(nameof(MainJob));
     }
 
     [Fact]
     public async Task CorrelationIdIsSharedByJobsAndTheirDependencies()
     {
-        ServiceCollection.AddSingleton(new Storage());
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        var correlationId = provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>(token: CancellationToken);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        var storage = provider.GetRequiredService<Storage>();
-        storage.Guids.Count.ShouldBe(2);
-        storage.Guids.Distinct().Count().ShouldBe(1);
-        storage.Guids.First().ShouldBe(correlationId);
-    }
-
-    [Fact]
-    public async Task SkipChildrenShouldPreventDependentJobsFromRunning()
-    {
-        ServiceCollection.AddSingleton(new Storage());
-        ServiceCollection.AddNCronJob(n =>
-        {
-            n.AddJob<PrincipalCorrelationIdJob>()
-                .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>())
-                .ExecuteWhen(success: s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1", CancellationToken)));
-        });
-
-        var provider = CreateServiceProvider();
-
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        Guid orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true, token: CancellationToken);
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>(token: CancellationToken);
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        var storage = provider.GetRequiredService<Storage>();
-        storage.Guids.Count.ShouldBe(1);
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries.Distinct().Count().ShouldBe(1);
+        Storage.Entries.First().ShouldBe(orchestrationId.ToString());
+    }
+
+    [Fact]
+    public async Task SkipChildrenShouldPreventDependentJobsFromRunning()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalCorrelationIdJob>()
+                .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>())
+                .ExecuteWhen(success: s => s.RunJob((Storage storage) => storage.Add("1")));
+        });
+
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(1);
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
@@ -147,22 +157,28 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasSuccessful_DependentAnonymousJobShouldRun()
     {
-        Func<ChannelWriter<object>, JobExecutionContext, Task> execution = async (writer, context)
-            => await writer.WriteAsync($"Parent: {context.ParentOutput}", CancellationToken);
+        Func<Storage, JobExecutionContext, Task> execution = (storage, context) =>
+        {
+            storage.Entries.Add($"Parent: {context.ParentOutput}");
+            return Task.CompletedTask;
+        };
 
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob(execution)));
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        List<string?> results = [];
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("Parent: Success");
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("Parent: Success");
     }
 
     [Fact]
@@ -172,23 +188,21 @@ public class RunDependentJobTests : JobIntegrationBase
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("1").RunJob<DependentJob>("2"))
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("3")));
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        List<string?> results = [];
-        using var timeoutToken = new CancellationTokenSource(2000);
-        using var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, CancellationToken);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(linkedToken.Token) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(linkedToken.Token) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(linkedToken.Token) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(linkedToken.Token) as string);
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("DependentJob: 1 Parent: Success");
-        results.ShouldContain("DependentJob: 2 Parent: Success");
-        results.ShouldContain("DependentJob: 3 Parent: Success");
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(4);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DependentJob: 1 Parent: Success");
+        Storage.Entries[2].ShouldBe("DependentJob: 2 Parent: Success");
+        Storage.Entries[3].ShouldBe("DependentJob: 3 Parent: Success");
     }
 
     [Fact]
@@ -200,26 +214,20 @@ public class RunDependentJobTests : JobIntegrationBase
             n.AddJob<DependentJob>().ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
         });
 
-        var provider = CreateServiceProvider();
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        Guid orchestrationId = provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
-
-        List<string?> results = [];
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("DependentJob:  Parent: Success");
-        results.ShouldContain("Dependent job did run");
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(3);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
+        Storage.Entries[2].ShouldBe("Dependent job did run");
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
@@ -239,19 +247,18 @@ public class RunDependentJobTests : JobIntegrationBase
                 .ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
         });
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        List<string?> results = [];
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
+        await WaitForOrchestrationCompletion(events, events.First().CorrelationId);
 
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("DependentJob:  Parent: Success");
-        results.ShouldContain("Dependent job did run");
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(3);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
+        Storage.Entries[2].ShouldBe("Dependent job did run");
     }
 
     [Fact]
@@ -260,29 +267,35 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob<PrincipalJob>(s => s.WithCronExpression("1 0 1 * *").WithParameter(true))
-                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("1", CancellationToken).AsTask()));
+                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Entries.Add("1")));
             n.AddJob<PrincipalJob>(s => s.WithCronExpression("1 0 2 * *").WithParameter(true))
-                .ExecuteWhen(s => s.RunJob((ChannelWriter<object> writer) => writer.WriteAsync("2", CancellationToken).AsTask()));
+                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Entries.Add("2")));
         });
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        List<string?> results = [];
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("1");
+        var firstOrchestrationId = events.First().CorrelationId;
 
-        results = [];
+        await WaitForOrchestrationCompletion(events, firstOrchestrationId);
+
+        Storage.Entries.ShouldContain("PrincipalJob: Success");
+        Storage.Entries.ShouldContain("1");
+
+        Storage.Entries.Clear();
         FakeTimer.Advance(TimeSpan.FromDays(1));
 
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.Add(await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string);
-        results.ShouldContain("PrincipalJob: Success");
-        results.ShouldContain("2");
+        await WaitUntilConditionIsMet(events, events => events.Any(e => e.State == ExecutionState.OrchestrationCompleted
+            && e.CorrelationId != firstOrchestrationId));
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("2");
     }
 
     [Fact]
@@ -290,19 +303,24 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<JobThatThrowsInCtor>()
             .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("After Exception")));
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        provider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(false, token: CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken) as string;
-        message.ShouldNotBeNull();
-        message.ShouldContain("DependentJob: After Exception Parent:");
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(false, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("DependentJob: After Exception Parent: ");
     }
 
-    private sealed class PrincipalJob(ChannelWriter<object> writer) : IJob
+    private sealed class PrincipalJob(Storage storage) : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             Action maybeThrow = () => { };
 
@@ -316,62 +334,71 @@ public class RunDependentJobTests : JobIntegrationBase
                 maybeThrow = () => throw new InvalidOperationException("Failed");
             }
 
-            await writer.WriteAsync($"{nameof(PrincipalJob)}: {context.Output}", token);
+            storage.Add($"{nameof(PrincipalJob)}: {context.Output}");
 
             maybeThrow();
+
+            return Task.CompletedTask;
         }
     }
 
-    private sealed class DependentJob(ChannelWriter<object> writer) : IJob
+    private sealed class DependentJob(Storage storage) : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => await writer.WriteAsync($"{nameof(DependentJob)}: {context.Parameter} Parent: {context.ParentOutput}", token);
-    }
-
-
-    private sealed class DependentDependentJob(ChannelWriter<object> writer) : IJob
-    {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => await writer.WriteAsync("Dependent job did run", token);
-    }
-    private sealed class PrincipalCorrelationIdJob(Storage storage, ChannelWriter<object> writer) : IJob
-    {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            storage.Guids.Add(context.CorrelationId);
+            storage.Add($"{nameof(DependentJob)}: {context.Parameter} Parent: {context.ParentOutput}");
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class DependentDependentJob(Storage storage) : IJob
+    {
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        {
+            storage.Add("Dependent job did run");
+            return Task.CompletedTask;
+        }
+    }
+    private sealed class PrincipalCorrelationIdJob(Storage storage) : IJob
+    {
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        {
+            storage.Add(context.CorrelationId.ToString());
 
             if (context.Parameter is true)
             {
                 context.SkipChildren();
-                await writer.WriteAsync("done", token);
             }
+
+            return Task.CompletedTask;
         }
     }
 
-    private sealed class DependentCorrelationIdJob(Storage storage, ChannelWriter<object> writer) : IJob
+    private sealed class DependentCorrelationIdJob(Storage storage) : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            storage.Guids.Add(context.CorrelationId);
-            await writer.WriteAsync("done", token);
+            storage.Entries.Add(context.CorrelationId.ToString());
+            return Task.CompletedTask;
         }
     }
 
-    private sealed class MainJob(ChannelWriter<object> writer) : IJob
+    private sealed class MainJob(Storage storage) : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => await writer.WriteAsync(nameof(MainJob), token);
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        {
+            storage.Add(nameof(MainJob));
+            return Task.CompletedTask;
+        }
     }
 
-    private sealed class SubMainJob(ChannelWriter<object> writer) : IJob
+    private sealed class SubMainJob(Storage storage) : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => await writer.WriteAsync(nameof(SubMainJob), token);
-    }
-
-    private sealed class Storage
-    {
-        public ConcurrentBag<Guid> Guids { get; } = [];
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        {
+            storage.Add(nameof(SubMainJob));
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class JobThatThrowsInCtor : IJob
