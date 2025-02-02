@@ -116,7 +116,7 @@ public abstract class JobIntegrationBase : IDisposable
         IList<ExecutionProgress> events,
         Func<IList<ExecutionProgress>, bool> evaluator)
     {
-        // Note: Although this function could seem a bit over-engineered, it's sadly necessary. 
+        // Note: Although this function could seem a bit over-engineered, it's sadly necessary.
         // Indeed, events may actually be updated upstream while it's being enumerated
         // in here (which leads to a "Collection was modified; enumeration operation may not
         // execute." error message would we using any enumerating based (eg. Linq) traversal.
@@ -201,9 +201,7 @@ public sealed class Storage
 #else
     private readonly object locker = new();
 #endif
-#pragma warning disable CA1002 // Do not expose generic lists
-    public List<string> Entries { get; private set; } = [];
-#pragma warning restore CA1002 // Do not expose generic lists
+    public IList<string> Entries { get; private set; } = [];
 
     public void Add(string content)
     {

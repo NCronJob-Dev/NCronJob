@@ -17,7 +17,6 @@ internal sealed partial class JobWorker
     private int TotalRunningJobCount => runningJobCounts.Values.Sum();
     private readonly TaskFactory taskFactory;
 
-#pragma warning disable CA2008
     public JobWorker(
         JobQueueManager jobQueueManager,
         JobProcessor jobProcessor,
@@ -146,7 +145,9 @@ internal sealed partial class JobWorker
             {
                 UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, -1);
             }
-        }, cancellationToken).Unwrap().ContinueWith(task =>
+        }, cancellationToken, TaskCreationOptions.None, TaskScheduler.Default)
+            .Unwrap()
+            .ContinueWith(task =>
         {
             if (task.IsFaulted)
             {
