@@ -21,9 +21,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = builder.Build();
 
-#pragma warning disable IDISP013 // Await in using
-        Func<Task> act = () => RunApp(app);
-#pragma warning restore IDISP013 // Await in using
+        Func<Task> act = async () => await RunApp(app);
 
         await act.ShouldThrowAsync<InvalidOperationException>();
     }
