@@ -14,10 +14,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         {
             o.AddExceptionHandler<FirstTestExceptionHandler>();
             o.AddExceptionHandler<SecondTestExceptionHandler>();
-            o.AddJob(() =>
-            {
-                throw new InvalidOperationException();
-            }, Cron.AtEveryMinute);
+            o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
@@ -47,10 +44,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         {
             o.AddExceptionHandler<FirstHandlerThatStops>();
             o.AddExceptionHandler<SecondTestExceptionHandler>();
-            o.AddJob(() =>
-            {
-                throw new InvalidOperationException();
-            }, Cron.AtEveryMinute);
+            o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
@@ -79,10 +73,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         {
             o.AddExceptionHandler<ExceptionHandlerThatThrows>();
             o.AddExceptionHandler<SecondTestExceptionHandler>();
-            o.AddJob(() =>
-            {
-                throw new InvalidOperationException();
-            }, Cron.AtEveryMinute);
+            o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
