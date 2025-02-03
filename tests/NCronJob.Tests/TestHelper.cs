@@ -21,6 +21,8 @@ public abstract class JobIntegrationBase : IDisposable
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
     protected Storage Storage { get; } = new();
+    protected IList<ExecutionProgress> Events { get; private set; } = [];
+    private readonly List<Action> disposers = [];
 
     protected JobIntegrationBase()
     {
@@ -51,6 +53,12 @@ public abstract class JobIntegrationBase : IDisposable
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
         cancellationSignaled.TrySetCanceled();
+
+        foreach (Action disposer in disposers)
+        {
+            disposer();
+        }
+
         serviceProvider?.Dispose();
     }
 
@@ -167,6 +175,17 @@ public abstract class JobIntegrationBase : IDisposable
                 @event.CorrelationId == orchestrationId &&
                 @event.State == state);
         }
+    }
+
+    protected async Task StartAndMonitorEvents()
+    {
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Events = events;
+
+        disposers.Add(subscription.Dispose);    
     }
 
     protected static (IDisposable subscription, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
