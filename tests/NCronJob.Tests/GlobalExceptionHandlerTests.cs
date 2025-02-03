@@ -35,9 +35,9 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries[1].ShouldBe("2");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -68,8 +68,8 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
 
-        Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe("1");
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -100,9 +100,9 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe("boom");
         Storage.Entries[1].ShouldBe("2");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -129,8 +129,8 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
         filteredEvents[4].State.ShouldBe(ExecutionState.Faulted);
 
-        Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe("1");
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     private sealed class FirstTestExceptionHandler(Storage storage) : IExceptionHandler
