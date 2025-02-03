@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace NCronJob.Tests;
 
-public class NCronJobNotificationHandlerTests : JobIntegrationBase
+public class NotificationHandlerTests : JobIntegrationBase
 {
     [Fact]
     public async Task ShouldCallNotificationHandlerWhenJobIsDone()
@@ -14,13 +14,8 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
                 .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
                 .AddNotificationHandler<SimpleJobHandler>()
         );
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        message.ShouldBe("Foo");
+        await AssertSimpleJobWasProcessedAndNotified();
     }
 
     [Fact]
@@ -31,21 +26,18 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
                 .AddNotificationHandler<ExceptionHandler>()
         );
 
-        var provider = CreateServiceProvider();
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        message.ShouldBeOfType<InvalidOperationException>();
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         Guid orchestrationId = events.First().CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
+
+        Assert.Equal("InvalidOperationException", Storage.Entries[0]);
+        Assert.Single(Storage.Entries);
 
         var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
 
@@ -67,15 +59,9 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
                 .AddNotificationHandler<SimpleJobHandler>()
                 .AddJob<ExceptionJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
                 .AddNotificationHandler<HandlerThatThrowsException>()
-
         );
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        message.ShouldBe("Foo");
+        await AssertSimpleJobWasProcessedAndNotified();
     }
 
     [Fact]
@@ -87,13 +73,24 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
                 .AddJob<ExceptionJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
                 .AddNotificationHandler<HandlerThatThrowsInAsyncPartException>()
         );
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await AssertSimpleJobWasProcessedAndNotified();
+    }
 
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var message = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        message.ShouldBe("Foo");
+    private async Task AssertSimpleJobWasProcessedAndNotified()
+    {
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        Assert.Single(Storage.Entries);
+        Assert.Equal("Foo", Storage.Entries[0]);
     }
 
     private sealed class SimpleJob : IJob
@@ -105,22 +102,24 @@ public class NCronJobNotificationHandlerTests : JobIntegrationBase
         }
     }
 
-    private sealed class ExceptionJob : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => throw new InvalidOperationException();
-    }
-
-    private sealed class SimpleJobHandler(ChannelWriter<object> writer) : IJobNotificationHandler<SimpleJob>
+    private sealed class SimpleJobHandler(Storage storage) : IJobNotificationHandler<SimpleJob>
     {
         public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
-            => writer.WriteAsync(context.Output!, cancellationToken).AsTask();
+        {
+            storage.Add(context.Output!.ToString()!);
+            return Task.CompletedTask;
+        }
     }
 
-    private sealed class ExceptionHandler(ChannelWriter<object> writer) : IJobNotificationHandler<ExceptionJob>
+    private sealed class ExceptionHandler(Storage storage) : IJobNotificationHandler<ExceptionJob>
     {
         public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
-            => writer.WriteAsync(exception!, cancellationToken).AsTask();
+        {
+            Assert.NotNull(exception);
+
+            storage.Add(exception!.GetType().Name);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class HandlerThatThrowsException : IJobNotificationHandler<ExceptionJob>

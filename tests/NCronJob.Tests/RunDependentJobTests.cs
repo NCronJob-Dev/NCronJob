@@ -22,9 +22,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Success");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -43,9 +43,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe("PrincipalJob: Failed");
         Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Failed");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -64,9 +64,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe(nameof(MainJob));
         Storage.Entries[1].ShouldBe(nameof(SubMainJob));
+        Storage.Entries.Count.ShouldBe(2);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -81,8 +81,8 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe(nameof(MainJob));
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -101,9 +101,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries.Distinct().Count().ShouldBe(1);
         Storage.Entries.First().ShouldBe(orchestrationId.ToString());
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -175,9 +175,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("Parent: Success");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -197,11 +197,11 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(4);
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob: 1 Parent: Success");
         Storage.Entries[2].ShouldBe("DependentJob: 2 Parent: Success");
         Storage.Entries[3].ShouldBe("DependentJob: 3 Parent: Success");
+        Storage.Entries.Count.ShouldBe(4);
     }
 
     [Fact]
@@ -223,10 +223,10 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(3);
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
         Storage.Entries[2].ShouldBe("Dependent job did run");
+        Storage.Entries.Count.ShouldBe(3);
 
         Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
         Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
@@ -254,10 +254,10 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(3);
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
         Storage.Entries[2].ShouldBe("Dependent job did run");
+        Storage.Entries.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -292,9 +292,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("2");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -313,8 +313,8 @@ public class RunDependentJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe("DependentJob: After Exception Parent: ");
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     private sealed class PrincipalJob(Storage storage) : IJob
