@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
@@ -399,14 +398,5 @@ public class RunDependentJobTests : JobIntegrationBase
             storage.Add(nameof(SubMainJob));
             return Task.CompletedTask;
         }
-    }
-
-    private sealed class JobThatThrowsInCtor : IJob
-    {
-        public JobThatThrowsInCtor()
-            => throw new InvalidOperationException();
-
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => Task.CompletedTask;
     }
 }

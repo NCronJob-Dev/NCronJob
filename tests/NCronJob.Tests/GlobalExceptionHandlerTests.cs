@@ -20,14 +20,24 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             }, Cron.AtEveryMinute);
         });
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var firstMessage = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        firstMessage.ShouldBe(1);
-        var secondMessage = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        secondMessage.ShouldBe(2);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("1");
+        Storage.Entries[1].ShouldBe("2");
     }
 
     [Fact]
@@ -43,12 +53,23 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             }, Cron.AtEveryMinute);
         });
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var runs = await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(100));
-        runs.ShouldBeFalse();
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
+
+        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("1");
     }
 
     [Fact]
@@ -64,75 +85,87 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             }, Cron.AtEveryMinute);
         });
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var firstMessage = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        firstMessage.ShouldBe(2);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
+
+        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("boom");
+        Storage.Entries[1].ShouldBe("2");
     }
 
     [Fact]
-    public async Task JobThatThrowsWhenCreatedIsCatchedByGlobalExceptionHandler()
+    public async Task JobThatThrowsWhenCreatedIsCaughtByGlobalExceptionHandler()
     {
         ServiceCollection.AddNCronJob(o =>
         {
             o.AddExceptionHandler<FirstTestExceptionHandler>();
-            o.AddJob<JobThatThrowsInCtor>(b => b.WithCronExpression("* * * * *"));
+            o.AddJob<JobThatThrowsInCtor>(b => b.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        var provider = CreateServiceProvider();
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
 
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        var firstMessage = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        firstMessage.ShouldBe(1);
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
+        filteredEvents[4].State.ShouldBe(ExecutionState.Faulted);
+
+        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("1");
     }
 
-    private sealed class FirstTestExceptionHandler(ChannelWriter<object> writer) : IExceptionHandler
-    {
-        public async Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
-        {
-            await writer.WriteAsync(1, cancellationToken);
-            return false;
-        }
-    }
-
-    private sealed class SecondTestExceptionHandler(ChannelWriter<object> writer) : IExceptionHandler
-    {
-        public async Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
-        {
-            await writer.WriteAsync(2, cancellationToken);
-            return false;
-        }
-    }
-
-    private sealed class JobThatThrowsInCtor : IJob
-    {
-        public JobThatThrowsInCtor()
-            => throw new InvalidOperationException();
-
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => Task.CompletedTask;
-    }
-
-    private sealed class FirstHandlerThatStops : IExceptionHandler
-    {
-        private readonly ChannelWriter<object> writer;
-
-        public FirstHandlerThatStops(ChannelWriter<object> writer)
-            => this.writer = writer;
-
-        public async Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
-        {
-            await writer.WriteAsync(1, cancellationToken);
-            return true;
-        }
-    }
-
-    private sealed class ExceptionHandlerThatThrows : IExceptionHandler
+    private sealed class FirstTestExceptionHandler(Storage storage) : IExceptionHandler
     {
         public Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
-            => throw new InvalidOperationException();
+        {
+            storage.Add("1");
+            return Task.FromResult(false);
+        }
+    }
+
+    private sealed class SecondTestExceptionHandler(Storage storage) : IExceptionHandler
+    {
+        public Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
+        {
+            storage.Add("2");
+            return Task.FromResult(false);
+        }
+    }
+
+    private sealed class FirstHandlerThatStops(Storage storage) : IExceptionHandler
+    {
+        public Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
+        {
+            storage.Add("1");
+            return Task.FromResult(true);
+        }
+    }
+
+    private sealed class ExceptionHandlerThatThrows(Storage storage) : IExceptionHandler
+    {
+        public Task<bool> TryHandleAsync(IJobExecutionContext jobExecutionContext, Exception exception, CancellationToken cancellationToken)
+        {
+            storage.Add("boom");
+            throw new InvalidOperationException();
+        }
     }
 }
