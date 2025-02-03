@@ -303,15 +303,11 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<JobThatThrowsInCtor>()
             .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("After Exception")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(false, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe("DependentJob: After Exception Parent: ");
