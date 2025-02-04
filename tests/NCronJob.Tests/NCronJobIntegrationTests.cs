@@ -65,8 +65,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         await Task.WhenAll(GetCompletionJobs(2, CancellationToken));
-        storage.Entries.Count.ShouldBe(2);
+
         storage.Entries.Distinct().Count().ShouldBe(storage.Entries.Count);
+        storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]

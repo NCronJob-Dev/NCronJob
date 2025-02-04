@@ -41,8 +41,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         await app.UseNCronJobAsync();
 
-        storage.Entries.Count.ShouldBe(1);
         storage.Entries[0].ShouldBe("SimpleJob");
+        storage.Entries.Count.ShouldBe(1);
     }
 
     [Theory]
@@ -109,9 +109,9 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        storage.Entries.Count.ShouldBe(2);
         storage.Entries[0].ShouldBe("SimpleJob");
         storage.Entries[1].ShouldBe("StartingService");
+        storage.Entries.Count.ShouldBe(2);
 
         Guid orchestrationId = events.First().CorrelationId;
 
@@ -152,8 +152,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        storage.Entries.Count.ShouldBe(1);
         storage.Entries[0].ShouldBe("ExceptionHandler");
+        storage.Entries.Count.ShouldBe(1);
 
         Guid orchestrationId = events.First().CorrelationId;
 
@@ -195,8 +195,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
             exc.Message,
             StringComparison.Ordinal);
 
-        storage.Entries.Count.ShouldBe(1);
         storage.Entries[0].ShouldBe("ExceptionHandler");
+        storage.Entries.Count.ShouldBe(1);
     }
 
     private IHost BuildApp(IHostBuilder builder)
