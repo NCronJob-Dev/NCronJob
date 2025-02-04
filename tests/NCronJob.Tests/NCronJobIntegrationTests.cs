@@ -593,6 +593,32 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         exception.ShouldNotBeNull();
     }
 
+    [Fact]
+    public async Task RegisteringDuplicateDuringRuntimeLeadsToException2()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute5)));
+        var provider = CreateServiceProvider();
+
+        (var subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Guid orchestrationId = events.First().CorrelationId;
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(4).Add(TimeSpan.FromSeconds(50)));
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(4).Add(TimeSpan.FromSeconds(50)));
+
+        await WaitUntilConditionIsMet(events, events => events.Any(e => e.CorrelationId != orchestrationId && e.State == ExecutionState.OrchestrationCompleted));
+
+        subscription.Dispose();
+
+        Assert.Equal(1, events.Count(e => e.State == ExecutionState.Running));
+
+    }
+
     private static class JobMethods
     {
         public static async Task WriteTrueStaticAsync(ChannelWriter<object> writer, CancellationToken ct)
