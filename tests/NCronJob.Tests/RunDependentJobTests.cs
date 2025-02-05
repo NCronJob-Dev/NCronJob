@@ -128,29 +128,29 @@ public class RunDependentJobTests : JobIntegrationBase
 
         Storage.Entries.Count.ShouldBe(1);
 
-        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.NotStarted, events[1].State);
-        Assert.Equal(ExecutionState.Initializing, events[2].State);
-        Assert.Equal(ExecutionState.Running, events[3].State);
-        Assert.Equal(ExecutionState.Completing, events[4].State);
-        Assert.Equal(ExecutionState.WaitingForDependency, events[5].State);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Initializing);
+        events[3].State.ShouldBe(ExecutionState.Running);
+        events[4].State.ShouldBe(ExecutionState.Completing);
+        events[5].State.ShouldBe(ExecutionState.WaitingForDependency);
 
         // Assess the dependent jobs
-        Assert.Equal(events[1].RunId, events[6].ParentRunId);
-        Assert.Equal(ExecutionState.NotStarted, events[6].State);
-        Assert.Equal(events[1].RunId, events[7].ParentRunId);
-        Assert.Equal(ExecutionState.Skipped, events[7].State);
-        Assert.Equal(events[1].RunId, events[8].ParentRunId);
-        Assert.Equal(ExecutionState.NotStarted, events[8].State);
-        Assert.Equal(events[1].RunId, events[9].ParentRunId);
-        Assert.Equal(ExecutionState.Skipped, events[9].State);
+        events[1].RunId.ShouldBe(events[6].ParentRunId);
+        events[6].State.ShouldBe(ExecutionState.NotStarted);
+        events[1].RunId.ShouldBe(events[7].ParentRunId);
+        events[7].State.ShouldBe(ExecutionState.Skipped);
+        events[1].RunId.ShouldBe(events[8].ParentRunId);
+        events[8].State.ShouldBe(ExecutionState.NotStarted);
+        events[1].RunId.ShouldBe(events[9].ParentRunId);
+        events[9].State.ShouldBe(ExecutionState.Skipped);
 
-        Assert.NotEqual(events[6].RunId, events[8].RunId);
+        events[6].RunId.ShouldNotBe(events[8].RunId);
 
-        Assert.Equal(ExecutionState.Completed, events[10].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[11].State);
-        Assert.Equal(12, events.Count);
+        events[10].State.ShouldBe(ExecutionState.Completed);
+        events[11].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(12);
+        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -228,11 +228,11 @@ public class RunDependentJobTests : JobIntegrationBase
         Storage.Entries[2].ShouldBe("Dependent job did run");
         Storage.Entries.Count.ShouldBe(3);
 
-        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.Completed, events[17].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[18].State);
-        Assert.Equal(19, events.Count);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[17].State.ShouldBe(ExecutionState.Completed);
+        events[18].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(19);
+        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]

@@ -66,7 +66,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Assert.Equal(1, events.Count(e => e.State == ExecutionState.Running));
+        events.Count(e => e.State == ExecutionState.Running).ShouldBe(1);
     }
 
     public static TheoryData<Action<NCronJobOptionBuilder>> CronAndRunAtStartupBuilders = new()
@@ -119,15 +119,15 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.NotStarted, events[1].State);
-        Assert.Equal(ExecutionState.Initializing, events[2].State);
-        Assert.Equal(ExecutionState.Running, events[3].State);
-        Assert.Equal(ExecutionState.Completing, events[4].State);
-        Assert.Equal(ExecutionState.Completed, events[5].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[6].State);
-        Assert.Equal(7, events.Count);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Initializing);
+        events[3].State.ShouldBe(ExecutionState.Running);
+        events[4].State.ShouldBe(ExecutionState.Completing);
+        events[5].State.ShouldBe(ExecutionState.Completed);
+        events[6].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(7);
+        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -161,14 +161,14 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.NotStarted, events[1].State);
-        Assert.Equal(ExecutionState.Initializing, events[2].State);
-        Assert.Equal(ExecutionState.Running, events[3].State);
-        Assert.Equal(ExecutionState.Faulted, events[4].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[5].State);
-        Assert.Equal(6, events.Count);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Initializing);
+        events[3].State.ShouldBe(ExecutionState.Running );
+        events[4].State.ShouldBe(ExecutionState.Faulted);
+        events[5].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(6);
+        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -188,12 +188,11 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        var exc = await Assert.ThrowsAsync<InvalidOperationException>(app.UseNCronJobAsync);
+        var exc = await Should.ThrowAsync<InvalidOperationException>(app.UseNCronJobAsync);
 
-        Assert.StartsWith(
+        exc.Message.ShouldStartWith(
             $"At least one of the startup jobs failed{Environment.NewLine}- System.InvalidOperationException: Failed",
-            exc.Message,
-            StringComparison.Ordinal);
+            Case.Sensitive);
 
         storage.Entries[0].ShouldBe("ExceptionHandler");
         storage.Entries.Count.ShouldBe(1);

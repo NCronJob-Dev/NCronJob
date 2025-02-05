@@ -115,7 +115,7 @@ public class NotificationHandlerTests : JobIntegrationBase
     {
         public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
         {
-            Assert.NotNull(exception);
+            exception.ShouldNotBeNull();
 
             storage.Add(exception!.GetType().Name);
             return Task.CompletedTask;

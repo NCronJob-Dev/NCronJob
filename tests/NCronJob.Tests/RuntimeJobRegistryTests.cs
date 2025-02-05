@@ -62,13 +62,13 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.NotStarted, events[1].State);
-        Assert.Equal(ExecutionState.Scheduled, events[2].State);
-        Assert.Equal(ExecutionState.Cancelled, events[3].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[4].State);
-        Assert.Equal(5, events.Count);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Scheduled);
+        events[3].State.ShouldBe(ExecutionState.Cancelled);
+        events[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(5);
+        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
-        Assert.Empty(jobRegistry.GetAllJobs());
+        jobRegistry.GetAllJobs().ShouldBeEmpty();
 
         registry.RemoveJob("Nope");
         registry.RemoveJob<SimpleJob>();
@@ -116,38 +116,38 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
-        Assert.Equal(2, jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).Count);
+        jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).Count.ShouldBe(2);
 
         List<Guid> orchestrationIds = events.Select(e => e.CorrelationId).Distinct().ToList();
-        Assert.Equal(2, orchestrationIds.Count);
+        orchestrationIds.Count.ShouldBe(2);
 
         foreach (var orchestrationId in orchestrationIds)
         {
             List<ExecutionProgress> orchestrationEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
-            Assert.Equal(ExecutionState.OrchestrationStarted, orchestrationEvents[0].State);
-            Assert.Equal(ExecutionState.NotStarted, orchestrationEvents[1].State);
-            Assert.Equal(ExecutionState.Scheduled, orchestrationEvents[2].State);
-            Assert.Equal(3, orchestrationEvents.Count);
+            orchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+            orchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
+            orchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
+            orchestrationEvents.Count.ShouldBe(3);
         }
 
         registry.RemoveJob<SimpleJob>();
 
-        Assert.Empty(jobRegistry.FindAllJobDefinition(typeof(SimpleJob)));
+        jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).ShouldBeEmpty();
 
         subscription.Dispose();
 
         foreach (var orchestrationId in orchestrationIds)
         {
             List<ExecutionProgress> orchestrationEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
-            Assert.Equal(ExecutionState.OrchestrationStarted, orchestrationEvents[0].State);
-            Assert.Equal(ExecutionState.NotStarted, orchestrationEvents[1].State);
-            Assert.Equal(ExecutionState.Scheduled, orchestrationEvents[2].State);
-            Assert.Equal(ExecutionState.Cancelled, orchestrationEvents[3].State);
-            Assert.Equal(ExecutionState.OrchestrationCompleted, orchestrationEvents[4].State);
-            Assert.Equal(5, orchestrationEvents.Count);
+            orchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+            orchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
+            orchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
+            orchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
+            orchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+            orchestrationEvents.Count.ShouldBe(5);
         }
 
-        Assert.Equal(10, events.Count);
+        events.Count.ShouldBe(10);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
         var jobDefinition = jobRegistry.GetAllJobs().Single();
 
-        Assert.Equal(Cron.AtEveryMinute, jobDefinition.UserDefinedCronExpression);
+        jobDefinition.UserDefinedCronExpression.ShouldBe(Cron.AtEveryMinute);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -215,12 +215,12 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         AssertEvent(thirdOrchestrationId, ExecutionState.NotStarted, thirdOrchestrationEvents[1]);
         AssertEvent(thirdOrchestrationId, ExecutionState.Scheduled, thirdOrchestrationEvents[2]);
 
-        Assert.Equal(16, events.Count);
+        events.Count.ShouldBe(16);
 
         static void AssertEvent(Guid orchestrationId, ExecutionState state, ExecutionProgress executionProgress)
         {
-            Assert.Equal(orchestrationId, executionProgress.CorrelationId);
-            Assert.Equal(state, executionProgress.State);
+            executionProgress.CorrelationId.ShouldBe(orchestrationId);
+            executionProgress.State.ShouldBe(state);
         }
 
         bool AThirdOrchestrationHasStarted(IList<ExecutionProgress> events)
@@ -371,35 +371,24 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var jobRegistry = provider.GetRequiredService<JobRegistry>();
         var jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
-        Assert.Equal(2, jobs.Count);
+        jobs.Count.ShouldBe(2);
 
-        Assert.All(jobs, j =>
-        {
-            if (j.CronExpression is null)
-            {
-                return;
-            }
-
-            Assert.NotEqual(RuntimeJobRegistry.TheThirtyFirstOfFebruary, j.CronExpression);
-        });
+        jobs.ShouldAllBe(j => j.CronExpression == null || j.CronExpression != RuntimeJobRegistry.TheThirtyFirstOfFebruary);
 
         registry.DisableJob<SimpleJob>();
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
-        Assert.Equal(2, jobs.Count);
+        jobs.Count.ShouldBe(2);
 
-        Assert.All(jobs, j =>
-        {
-            Assert.Equal(RuntimeJobRegistry.TheThirtyFirstOfFebruary, j.CronExpression);
-        });
+        jobs.ShouldAllBe(j => j.CronExpression == RuntimeJobRegistry.TheThirtyFirstOfFebruary);
 
         registry.EnableJob<SimpleJob>();
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
-        Assert.Equal(2, jobs.Count);
+        jobs.Count.ShouldBe(2);
 
-        Assert.Single(jobs, j => j.CronExpression is null);
-        Assert.Single(jobs, j => j.CronExpression is not null && j.CronExpression.ToString() == Cron.AtMinute2);
+        jobs.Count(j => j.CronExpression is null).ShouldBe(1);
+        jobs.Count(j => j.CronExpression is not null && j.CronExpression.ToString() == Cron.AtMinute2).ShouldBe(1);
     }
 
     [Fact]

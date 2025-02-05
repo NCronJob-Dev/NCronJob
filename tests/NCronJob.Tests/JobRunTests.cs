@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Time.Testing;
+using Shouldly;
 
 namespace NCronJob.Tests;
 
@@ -27,7 +28,7 @@ public class JobRunStatesTests
     {
         List<JobStateType> expected = Enum.GetValues<JobStateType>().ToList();
         List<JobStateType> actual = AllPossibleStates.Keys.ToList();
-        Assert.Equal(expected, actual);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Theory]
@@ -39,20 +40,20 @@ public class JobRunStatesTests
         JobDefinition jd = new JobDefinition(typeof(DummyJob), null, null, null);
         var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
     
-        Assert.Equal(JobStateType.NotStarted, jobRun.CurrentState.Type);
-        Assert.Equal(1, howManyTimes);
+        jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
+        howManyTimes.ShouldBe(1);
 
         var fault = new Exception();
 
         jobRun.NotifyStateChange(value, fault);
-        Assert.Equal(value, jobRun.CurrentState.Type);
-        Assert.Equal(2, howManyTimes);
+        jobRun.CurrentState.Type.ShouldBe(value);
+        howManyTimes.ShouldBe(2);
 
         foreach (JobStateType state in AllPossibleStates.Keys)
         {
             jobRun.NotifyStateChange(state, fault);
-            Assert.Equal(value, jobRun.CurrentState.Type);
-            Assert.Equal(2, howManyTimes);
+            jobRun.CurrentState.Type.ShouldBe(value);
+            howManyTimes.ShouldBe(2);
         }
     }
 

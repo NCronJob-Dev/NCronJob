@@ -169,19 +169,19 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.NotStarted, events[1].State);
-        Assert.Equal(ExecutionState.Scheduled, events[2].State);
-        Assert.Equal(ExecutionState.Cancelled, events[3].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[4].State);
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[5].State);
-        Assert.Equal(ExecutionState.NotStarted, events[6].State);
-        Assert.Equal(ExecutionState.Initializing, events[7].State);
-        Assert.Equal(ExecutionState.Running, events[8].State);
-        Assert.Equal(ExecutionState.Completing, events[9].State);
-        Assert.Equal(ExecutionState.Completed, events[10].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[11].State);
-        Assert.Equal(12, events.Count);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Scheduled);
+        events[3].State.ShouldBe(ExecutionState.Cancelled);
+        events[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events[5].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[6].State.ShouldBe(ExecutionState.NotStarted);
+        events[7].State.ShouldBe(ExecutionState.Initializing);
+        events[8].State.ShouldBe(ExecutionState.Running);
+        events[9].State.ShouldBe(ExecutionState.Completing);
+        events[10].State.ShouldBe(ExecutionState.Completed);
+        events[11].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(12);
     }
 
     public static TheoryData<Func<IInstantJobRegistry, string, CancellationToken, Guid>> InstantJobRunners()
@@ -303,12 +303,12 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        Assert.All(events, e => Assert.Equal(orchestrationId, e.CorrelationId));
-        Assert.Equal(ExecutionState.OrchestrationStarted, events[0].State);
-        Assert.Equal(ExecutionState.NotStarted, events[1].State);
-        Assert.Equal(ExecutionState.Expired, events[2].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, events[3].State);
-        Assert.Equal(4, events.Count);
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Expired);
+        events[3].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(4);
+        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -332,27 +332,27 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var scheduledOrchestrationEvents = events.Where(e => e.CorrelationId == scheduledOrchestrationId).ToList();
         var instantOrchestrationEvents = events.Where(e => e.CorrelationId == instantOrchestrationId).ToList();
 
-        Assert.Equal(ExecutionState.OrchestrationStarted, scheduledOrchestrationEvents[0].State);
-        Assert.Equal(ExecutionState.NotStarted, scheduledOrchestrationEvents[1].State);
-        Assert.Equal(ExecutionState.Scheduled, scheduledOrchestrationEvents[2].State);
-        Assert.Equal(ExecutionState.Cancelled, scheduledOrchestrationEvents[3].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, scheduledOrchestrationEvents[4].State);
-        Assert.Equal(5, scheduledOrchestrationEvents.Count);
+        scheduledOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        scheduledOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
+        scheduledOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
+        scheduledOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
+        scheduledOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        scheduledOrchestrationEvents.Count.ShouldBe(5);
 
-        Assert.Equal(ExecutionState.OrchestrationStarted, instantOrchestrationEvents[0].State);
-        Assert.Equal(ExecutionState.NotStarted, instantOrchestrationEvents[1].State);
-        Assert.Equal(ExecutionState.Initializing, instantOrchestrationEvents[2].State);
-        Assert.Equal(ExecutionState.Running, instantOrchestrationEvents[3].State);
-        Assert.Equal(ExecutionState.Completing, instantOrchestrationEvents[4].State);
-        Assert.Equal(ExecutionState.Completed, instantOrchestrationEvents[5].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, instantOrchestrationEvents[6].State);
-        Assert.Equal(7, instantOrchestrationEvents.Count);
+        instantOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        instantOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
+        instantOrchestrationEvents[2].State.ShouldBe(ExecutionState.Initializing);
+        instantOrchestrationEvents[3].State.ShouldBe(ExecutionState.Running);
+        instantOrchestrationEvents[4].State.ShouldBe(ExecutionState.Completing);
+        instantOrchestrationEvents[5].State.ShouldBe(ExecutionState.Completed);
+        instantOrchestrationEvents[6].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        instantOrchestrationEvents.Count.ShouldBe(7);
 
         // Scheduled orchestration should have started before the instant job related one...
-        Assert.True(scheduledOrchestrationEvents[0].Timestamp < instantOrchestrationEvents[0].Timestamp);
+        scheduledOrchestrationEvents[0].Timestamp.ShouldBeLessThan(instantOrchestrationEvents[0].Timestamp);
 
         // ...and cancelled before the initialization of the instant job related one.
-        Assert.True(scheduledOrchestrationEvents[3].Timestamp < instantOrchestrationEvents[2].Timestamp);
+        scheduledOrchestrationEvents[3].Timestamp.ShouldBeLessThan(instantOrchestrationEvents[2].Timestamp);
     }
 
     [Fact]
@@ -394,8 +394,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var runningJobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
 
-        Assert.Equal(2, runningJobs.Count);
-        Assert.NotEqual(runningJobs[0].CorrelationId, runningJobs[1].CorrelationId);
+        runningJobs.Count.ShouldBe(2);
+        runningJobs[0].CorrelationId.ShouldNotBe(runningJobs[1].CorrelationId);
 
         static bool AtLeastTwoJobsAreInitializing(IList<ExecutionProgress> events)
         {
