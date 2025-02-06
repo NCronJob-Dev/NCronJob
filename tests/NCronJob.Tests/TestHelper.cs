@@ -20,7 +20,9 @@ public abstract class JobIntegrationBase : IDisposable
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
-    protected Storage Storage { get; } = new();
+    protected Storage Storage { get; }
+    protected IList<ExecutionProgress> Events { get; private set; } = [];
+    private readonly List<IDisposable> disposables = [];
 
     protected JobIntegrationBase()
     {
@@ -32,6 +34,8 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddSingleton<IRetryHandler>(sp =>
             new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
         ServiceCollection.AddSingleton<TimeProvider>(FakeTimer);
+
+        Storage = new(FakeTimer);
         ServiceCollection.AddSingleton(Storage);
     }
 
@@ -51,11 +55,14 @@ public abstract class JobIntegrationBase : IDisposable
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
         cancellationSignaled.TrySetCanceled();
+
+        foreach (IDisposable disposable in disposables)
+        {
+            disposable.Dispose();
+        }
+
         serviceProvider?.Dispose();
     }
-
-    // TODO: Replace calls to this method in the tests with `ServiceProvider`
-    protected ServiceProvider CreateServiceProvider() => ServiceProvider;
 
     protected ServiceProvider ServiceProvider => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
@@ -112,9 +119,8 @@ public abstract class JobIntegrationBase : IDisposable
         }
     }
 
-    protected async Task WaitUntilConditionIsMet(
-        IList<ExecutionProgress> events,
-        Func<IList<ExecutionProgress>, bool> evaluator)
+    protected IList<ExecutionProgress> FilterEventsWhere(
+        Func<ExecutionProgress, bool> evaluator)
     {
         // Note: Although this function could seem a bit over-engineered, it's sadly necessary.
         // Indeed, events may actually be updated upstream while it's being enumerated
@@ -123,7 +129,35 @@ public abstract class JobIntegrationBase : IDisposable
 
         int index = 0;
 
-        List<ExecutionProgress> tmp = [];
+        List<ExecutionProgress> filtered = [];
+
+        int count = Events.Count;
+
+        while (index < count)
+        {
+            var entry = Events[index];
+
+            if (evaluator(entry))
+            {
+                filtered.Add(entry);
+            }
+
+            index++;
+        }
+
+        return filtered;
+    }
+
+    protected async Task WaitUntilConditionIsMet(
+        IList<ExecutionProgress> events,
+        Func<ExecutionProgress, bool> evaluator)
+    {
+        // Note: Although this function could seem a bit over-engineered, it's sadly necessary.
+        // Indeed, events may actually be updated upstream while it's being enumerated
+        // in here (which leads to a "Collection was modified; enumeration operation may not
+        // execute." error message would we using any enumerating based (eg. Linq) traversal.
+
+        int index = 0;
 
         while (true)
         {
@@ -131,13 +165,12 @@ public abstract class JobIntegrationBase : IDisposable
 
             while (index < count)
             {
-                tmp.Add(events[index]);
-                index++;
-            }
+                if (evaluator(events[index]))
+                {
+                    return;
+                }
 
-            if (evaluator(tmp))
-            {
-                return;
+                index++;
             }
 
             FakeTimer.Advance(TimeSpan.FromSeconds(1));
@@ -160,12 +193,21 @@ public abstract class JobIntegrationBase : IDisposable
     {
         await WaitUntilConditionIsMet(events, OrchestrationHasReachedExpectedState);
 
-        bool OrchestrationHasReachedExpectedState(IList<ExecutionProgress> events)
+        bool OrchestrationHasReachedExpectedState(ExecutionProgress @event)
         {
-            return events.Any(@event =>
-                @event.CorrelationId == orchestrationId &&
-                @event.State == state);
+            return @event.CorrelationId == orchestrationId && @event.State == state;
         }
+    }
+
+    protected async Task StartAndMonitorEvents()
+    {
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        Events = events;
+
+        disposables.Add(subscription);
     }
 
     protected static (IDisposable subscription, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
@@ -193,7 +235,7 @@ public abstract class JobIntegrationBase : IDisposable
     }
 }
 
-public sealed class Storage
+public sealed class Storage(TimeProvider timeProvider)
 {
 #if NET9_0_OR_GREATER
     private readonly Lock locker = new();
@@ -201,12 +243,14 @@ public sealed class Storage
     private readonly object locker = new();
 #endif
     public IList<string> Entries { get; private set; } = [];
+    public IList<(string, string)> TimedEntries { get; private set; } = [];
 
     public void Add(string content)
     {
         lock (locker)
         {
             Entries.Add(content);
+            TimedEntries.Add((timeProvider.GetUtcNow().ToString("o"), content));
         }
     }
 }

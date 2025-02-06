@@ -7,16 +7,15 @@ using Shouldly;
 
 namespace NCronJob.Tests;
 
-public sealed class NCronJobRetryTests : JobIntegrationBase
+public sealed class RetryTests : JobIntegrationBase
 {
     [Fact]
     public async Task JobShouldRetryOnFailure()
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -31,9 +30,8 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(3));
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -48,9 +46,8 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -67,10 +64,10 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
-        var jobExecutor = provider.GetRequiredService<JobExecutor>();
+        
+        var jobExecutor = ServiceProvider.GetRequiredService<JobExecutor>();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
@@ -90,27 +87,23 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        var provider = CreateServiceProvider();
-        var jobExecutor = provider.GetRequiredService<JobExecutor>();
+        var jobExecutor = ServiceProvider.GetRequiredService<JobExecutor>();
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
+        await StartAndMonitorEvents();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events.First().CorrelationId;
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.Retrying);
+        await WaitForOrchestrationState(Events, orchestrationId, ExecutionState.Retrying);
 
         jobExecutor.CancelJobs();
 
-        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.Cancelled);
+        await WaitForOrchestrationState(Events, orchestrationId, ExecutionState.Cancelled);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = FilterEventsWhere((e) => e.CorrelationId == orchestrationId);
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
@@ -128,10 +121,10 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     {
         ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
-        var hostAppLifeTime = provider.GetRequiredService<IHostApplicationLifetime>();
+        
+        var hostAppLifeTime = ServiceProvider.GetRequiredService<IHostApplicationLifetime>();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);

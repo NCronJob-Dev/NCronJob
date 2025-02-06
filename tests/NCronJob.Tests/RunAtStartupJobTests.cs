@@ -15,9 +15,10 @@ public class RunAtStartupJobTests : JobIntegrationBase
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
+            services.AddSingleton(_ => Storage);
         });
 
-        using var app = BuildApp(builder);
+        using var app = builder.Build();
 
         Func<Task> act = async () => await RunApp(app);
 

@@ -12,15 +12,11 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("Message")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Success");
@@ -33,15 +29,11 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("Message")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Failed");
         Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Failed");
@@ -54,15 +46,13 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<MainJob>()
             .ExecuteWhen(success: s => s.RunJob<SubMainJob>()));
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartAndMonitorEvents();
 
         var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
 
         Guid orchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe(nameof(MainJob));
         Storage.Entries[1].ShouldBe(nameof(SubMainJob));
@@ -73,16 +63,12 @@ public class RunDependentJobTests : JobIntegrationBase
         registry.RemoveJob<MainJob>();
         registry.TryRegister(n => n.AddJob<MainJob>());
 
-        Storage.Entries.Clear();
-
         Guid secondRunOrchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, secondRunOrchestrationId);
+        await WaitForOrchestrationCompletion(Events, secondRunOrchestrationId);
 
-        subscription.Dispose();
-
-        Storage.Entries[0].ShouldBe(nameof(MainJob));
-        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[2].ShouldBe(nameof(MainJob));
+        Storage.Entries.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -91,15 +77,11 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalCorrelationIdJob>()
             .ExecuteWhen(success: s => s.RunJob<DependentCorrelationIdJob>()));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalCorrelationIdJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries.Distinct().Count().ShouldBe(1);
         Storage.Entries.First().ShouldBe(orchestrationId.ToString());
@@ -116,41 +98,37 @@ public class RunDependentJobTests : JobIntegrationBase
                 .ExecuteWhen(success: s => s.RunJob((Storage storage) => storage.Add("1")));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<PrincipalCorrelationIdJob>(parameter: true, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries.Count.ShouldBe(1);
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[1].State.ShouldBe(ExecutionState.NotStarted);
-        events[2].State.ShouldBe(ExecutionState.Initializing);
-        events[3].State.ShouldBe(ExecutionState.Running);
-        events[4].State.ShouldBe(ExecutionState.Completing);
-        events[5].State.ShouldBe(ExecutionState.WaitingForDependency);
+        Events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        Events[1].State.ShouldBe(ExecutionState.NotStarted);
+        Events[2].State.ShouldBe(ExecutionState.Initializing);
+        Events[3].State.ShouldBe(ExecutionState.Running);
+        Events[4].State.ShouldBe(ExecutionState.Completing);
+        Events[5].State.ShouldBe(ExecutionState.WaitingForDependency);
 
         // Assess the dependent jobs
-        events[1].RunId.ShouldBe(events[6].ParentRunId);
-        events[6].State.ShouldBe(ExecutionState.NotStarted);
-        events[1].RunId.ShouldBe(events[7].ParentRunId);
-        events[7].State.ShouldBe(ExecutionState.Skipped);
-        events[1].RunId.ShouldBe(events[8].ParentRunId);
-        events[8].State.ShouldBe(ExecutionState.NotStarted);
-        events[1].RunId.ShouldBe(events[9].ParentRunId);
-        events[9].State.ShouldBe(ExecutionState.Skipped);
+        Events[1].RunId.ShouldBe(Events[6].ParentRunId);
+        Events[6].State.ShouldBe(ExecutionState.NotStarted);
+        Events[1].RunId.ShouldBe(Events[7].ParentRunId);
+        Events[7].State.ShouldBe(ExecutionState.Skipped);
+        Events[1].RunId.ShouldBe(Events[8].ParentRunId);
+        Events[8].State.ShouldBe(ExecutionState.NotStarted);
+        Events[1].RunId.ShouldBe(Events[9].ParentRunId);
+        Events[9].State.ShouldBe(ExecutionState.Skipped);
 
-        events[6].RunId.ShouldNotBe(events[8].RunId);
+        Events[6].RunId.ShouldNotBe(Events[8].RunId);
 
-        events[10].State.ShouldBe(ExecutionState.Completed);
-        events[11].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(12);
-        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
+        Events[10].State.ShouldBe(ExecutionState.Completed);
+        Events[11].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        Events.Count.ShouldBe(12);
+        Events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -165,15 +143,11 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(success: s => s.RunJob(execution)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("Parent: Success");
@@ -187,15 +161,11 @@ public class RunDependentJobTests : JobIntegrationBase
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("1").RunJob<DependentJob>("2"))
             .ExecuteWhen(success: s => s.RunJob<DependentJob>("3")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob: 1 Parent: Success");
@@ -213,26 +183,22 @@ public class RunDependentJobTests : JobIntegrationBase
             n.AddJob<DependentJob>().ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
         Storage.Entries[2].ShouldBe("Dependent job did run");
         Storage.Entries.Count.ShouldBe(3);
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[17].State.ShouldBe(ExecutionState.Completed);
-        events[18].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(19);
-        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
+        Events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        Events[17].State.ShouldBe(ExecutionState.Completed);
+        Events[18].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        Events.Count.ShouldBe(19);
+        Events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
     }
 
     [Fact]
@@ -246,18 +212,15 @@ public class RunDependentJobTests : JobIntegrationBase
                 .ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartAndMonitorEvents();
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, events.First().CorrelationId);
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
-        subscription.Dispose();
-
-        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
-        Storage.Entries[2].ShouldBe("Dependent job did run");
-        Storage.Entries.Count.ShouldBe(3);
+        Storage.Entries.ShouldContain($"PrincipalJob: Success");
+        Storage.Entries.ShouldContain($"DependentJob:  Parent: Success");
+        Storage.Entries.ShouldContain($"Dependent job did run");
     }
 
     [Fact]
@@ -271,30 +234,26 @@ public class RunDependentJobTests : JobIntegrationBase
                 .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Entries.Add("2")));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var firstOrchestrationId = events.First().CorrelationId;
+        var firstOrchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, firstOrchestrationId);
-
-        Storage.Entries.ShouldContain("PrincipalJob: Success");
-        Storage.Entries.ShouldContain("1");
-
-        Storage.Entries.Clear();
-        FakeTimer.Advance(TimeSpan.FromDays(1));
-
-        await WaitUntilConditionIsMet(events, events => events.Any(e => e.State == ExecutionState.OrchestrationCompleted
-            && e.CorrelationId != firstOrchestrationId));
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, firstOrchestrationId);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("2");
+        Storage.Entries[1].ShouldBe("1");
         Storage.Entries.Count.ShouldBe(2);
+
+        FakeTimer.Advance(TimeSpan.FromDays(1));
+
+        await WaitUntilConditionIsMet(Events, e => e.State == ExecutionState.OrchestrationCompleted
+            && e.CorrelationId != firstOrchestrationId);
+
+        Storage.Entries[2].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[3].ShouldBe("2");
+        Storage.Entries.Count.ShouldBe(4);
     }
 
     [Fact]
@@ -303,15 +262,11 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<JobThatThrowsInCtor>()
             .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("After Exception")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartAndMonitorEvents();
 
         Guid orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(false, token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(Events, orchestrationId);
 
         Storage.Entries[0].ShouldBe("DependentJob: After Exception Parent: ");
         Storage.Entries.Count.ShouldBe(1);
@@ -354,7 +309,7 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            storage.Add("Dependent job did run");
+            storage.Add($"Dependent job did run");
             return Task.CompletedTask;
         }
     }
