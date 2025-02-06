@@ -112,15 +112,15 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
 
         var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
 
-        Assert.Equal(ExecutionState.OrchestrationStarted, filteredEvents[0].State);
-        Assert.Equal(ExecutionState.NotStarted, filteredEvents[1].State);
-        Assert.Equal(ExecutionState.Scheduled, filteredEvents[2].State);
-        Assert.Equal(ExecutionState.Initializing, filteredEvents[3].State);
-        Assert.Equal(ExecutionState.Running, filteredEvents[4].State);
-        Assert.Equal(ExecutionState.Retrying, filteredEvents[5].State);
-        Assert.Equal(ExecutionState.Cancelled, filteredEvents[6].State);
-        Assert.Equal(ExecutionState.OrchestrationCompleted, filteredEvents[7].State);
-        Assert.Equal(8, filteredEvents.Count);
+        filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
+        filteredEvents[2].State.ShouldBe(ExecutionState.Scheduled);
+        filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[6].State.ShouldBe(ExecutionState.Cancelled);
+        filteredEvents[7].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        filteredEvents.Count.ShouldBe(8);
     }
 
     [Fact]
