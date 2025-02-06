@@ -140,10 +140,9 @@ public abstract class JobIntegrationBase : IDisposable
                 return;
             }
 
-            var delay = TimeSpan.FromMicroseconds(10);
-            FakeTimer.Advance(delay);
+            FakeTimer.Advance(TimeSpan.FromSeconds(1));
 
-            await Task.Delay(delay, CancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(20), CancellationToken);
         }
     }
 
