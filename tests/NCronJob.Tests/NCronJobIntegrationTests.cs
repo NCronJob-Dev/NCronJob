@@ -51,8 +51,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task EachJobRunHasItsOwnScope()
     {
-        var storage = new Storage();
-        ServiceCollection.AddSingleton(storage);
         ServiceCollection.AddScoped<GuidGenerator>();
         ServiceCollection.AddNCronJob(n => n.AddJob<ScopedServiceJob>(
             p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("null")
@@ -66,8 +64,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await Task.WhenAll(GetCompletionJobs(2, CancellationToken));
 
-        storage.Entries.Distinct().Count().ShouldBe(storage.Entries.Count);
-        storage.Entries.Count.ShouldBe(2);
+        Storage.Entries.Distinct().Count().ShouldBe(Storage.Entries.Count);
+        Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]

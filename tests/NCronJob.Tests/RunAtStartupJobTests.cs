@@ -12,14 +12,12 @@ public class RunAtStartupJobTests : JobIntegrationBase
     public async Task UseNCronJobIsMandatoryWhenStartupJobsAreDefined()
     {
         var builder = Host.CreateDefaultBuilder();
-        var storage = new Storage();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
-            services.AddSingleton(_ => storage);
         });
 
-        using var app = builder.Build();
+        using var app = BuildApp(builder);
 
         Func<Task> act = async () => await RunApp(app);
 
@@ -30,19 +28,17 @@ public class RunAtStartupJobTests : JobIntegrationBase
     public async Task UseNCronJobShouldTriggerStartupJobs()
     {
         var builder = Host.CreateDefaultBuilder();
-        var storage = new Storage();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
-            services.AddSingleton(_ => storage);
         });
 
         using var app = BuildApp(builder);
 
         await app.UseNCronJobAsync();
 
-        storage.Entries[0].ShouldBe("SimpleJob");
-        storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("SimpleJob");
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     [Theory]
@@ -50,10 +46,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
     public async Task StartupJobsShouldOnlyRunOnceWhenAlsoConfiguredAsCron(Action<NCronJobOptionBuilder> nBuilder)
     {
         var builder = Host.CreateDefaultBuilder();
-        var storage = new Storage();
         builder.ConfigureServices(services =>
         {
-            services.AddSingleton(_ => storage);
             services.AddNCronJob(nBuilder);
         });
 
@@ -94,11 +88,9 @@ public class RunAtStartupJobTests : JobIntegrationBase
     public async Task ShouldStartStartupJobsBeforeApplicationIsSpunUp()
     {
         var builder = Host.CreateDefaultBuilder();
-        var storage = new Storage();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
-            services.AddSingleton(_ => storage);
             services.AddHostedService<StartingService>();
         });
 
@@ -109,9 +101,9 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        storage.Entries[0].ShouldBe("SimpleJob");
-        storage.Entries[1].ShouldBe("StartingService");
-        storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[0].ShouldBe("SimpleJob");
+        Storage.Entries[1].ShouldBe("StartingService");
+        Storage.Entries.Count.ShouldBe(2);
 
         Guid orchestrationId = events.First().CorrelationId;
 
@@ -134,7 +126,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
     public async Task StartupJobThatThrowsShouldNotPreventHostFromStarting()
     {
         var builder = Host.CreateDefaultBuilder();
-        var storage = new Storage();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s =>
@@ -142,7 +133,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
                 s.AddJob<FailingJob>().RunAtStartup();
                 s.AddExceptionHandler<ExceptionHandler>();
             });
-            services.AddSingleton(_ => storage);
         });
 
         using var app = BuildApp(builder);
@@ -152,8 +142,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        storage.Entries[0].ShouldBe("ExceptionHandler");
-        storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("ExceptionHandler");
+        Storage.Entries.Count.ShouldBe(1);
 
         Guid orchestrationId = events.First().CorrelationId;
 
@@ -175,7 +165,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
     public async Task StartupJobCanBeConfiguredToPreventHostFromStartingOnFailure()
     {
         var builder = Host.CreateDefaultBuilder();
-        var storage = new Storage();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s =>
@@ -183,7 +172,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
                 s.AddJob<FailingJob>().RunAtStartup(shouldCrashOnFailure: true);
                 s.AddExceptionHandler<ExceptionHandler>();
             });
-            services.AddSingleton(_ => storage);
         });
 
         using var app = BuildApp(builder);
@@ -194,14 +182,15 @@ public class RunAtStartupJobTests : JobIntegrationBase
             $"At least one of the startup jobs failed{Environment.NewLine}- System.InvalidOperationException: Failed",
             Case.Sensitive);
 
-        storage.Entries[0].ShouldBe("ExceptionHandler");
-        storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("ExceptionHandler");
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     private IHost BuildApp(IHostBuilder builder)
     {
         builder.ConfigureServices(services =>
         {
+            services.AddSingleton(Storage);
             services.Replace(new ServiceDescriptor(typeof(TimeProvider), FakeTimer));
         });
 
