@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+using System.Globalization;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,40 +7,71 @@ using Shouldly;
 
 namespace NCronJob.Tests;
 
-public sealed class NCronJobRetryTests : JobIntegrationBase
+public sealed class RetryTests : JobIntegrationBase
 {
     [Fact]
     public async Task JobShouldRetryOnFailure()
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
+        Guid orchestrationId = events[0].CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[6].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[7].State.ShouldBe(ExecutionState.Completing);
+        filteredEvents.Count.ShouldBe(10);
+
         // Validate that the job was retried the correct number of times
-        // Total = 2 retries + 1 success
-        var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        attempts.ShouldBe(3);
+        Storage.Entries[0].ShouldBe("3"); // 2 retries + 1 success
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     [Fact]
     public async Task JobWithCustomPolicyShouldRetryOnFailure()
     {
-        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(3));
+        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(5));
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
+        Guid orchestrationId = events[0].CorrelationId;
+
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[6].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[7].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[8].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[9].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[10].State.ShouldBe(ExecutionState.Completing);
+        filteredEvents.Count.ShouldBe(13);
+
         // Validate that the job was retried the correct number of times
-        // Fail 3 times = 3 retries + 1 success
-        var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        attempts.ShouldBe(4);
+        Storage.Entries[0].ShouldBe("6"); // 5 retries + 1 success
+        Storage.Entries.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -150,10 +181,10 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
     private sealed record MaxFailuresWrapper(int MaxFailuresBeforeSuccess = 3);
 
     [RetryPolicy(retryCount: 3, PolicyType.FixedInterval)]
-    private sealed class FailingJob(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
+    private sealed class FailingJob(Storage storage, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -164,7 +195,9 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
                 throw new InvalidOperationException("Job Failed");
             }
 
-            await writer.WriteAsync(attemptCount, token);
+            storage.Add(attemptCount.ToString(CultureInfo.InvariantCulture));
+
+            return Task.CompletedTask;
         }
     }
 
@@ -245,11 +278,11 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
         }
     }
 
-    [RetryPolicy<MyCustomPolicyCreator>(3, 1)]
-    private sealed class JobUsingCustomPolicy(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
+    [RetryPolicy<MyCustomPolicyCreator>(retryCount: 5, delayFactor: 1)]
+    private sealed class JobUsingCustomPolicy(Storage storage, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -260,7 +293,9 @@ public sealed class NCronJobRetryTests : JobIntegrationBase
                 throw new InvalidOperationException("Job Failed");
             }
 
-            await writer.WriteAsync(attemptCount, token);
+            storage.Add(attemptCount.ToString(CultureInfo.InvariantCulture));
+
+            return Task.CompletedTask;
         }
     }
 

@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Fixed
 
 - Ensure orchestration includes dependents of faulted jobs. Added in [#195](https://github.com/NCronJob-Dev/NCronJob/issues/195), by [@nulltoken](https://github.com/nulltoken).
+- Honor custom retry policies. Fixed in [#204](https://github.com/NCronJob-Dev/NCronJob/issues/204), by [@nulltoken](https://github.com/nulltoken).
 
 ## [v4.3.3] - 2025-01-31
 
