@@ -124,7 +124,7 @@ internal class JobRun
 
     public void NotifyStateChange(JobStateType type, Exception? fault = default)
     {
-        if (CurrentState.Type == type || IsCompleted)
+        if ((CurrentState.Type == type && type != JobStateType.Retrying) || IsCompleted)
         {
             return;
         }

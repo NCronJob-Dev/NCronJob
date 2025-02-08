@@ -39,7 +39,7 @@ public class JobRunStatesTests
 
         JobDefinition jd = new JobDefinition(typeof(DummyJob), null, null, null);
         var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
-    
+
         jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
         howManyTimes.ShouldBe(1);
 
@@ -57,11 +57,52 @@ public class JobRunStatesTests
         }
     }
 
+    [Theory]
+    [ClassData(typeof(AllJobStateTypeTestData))]
+    internal void OnlyRetryingJobRunsCanTriggerMoreThanOnceTheProgressReporter(JobStateType value)
+    {
+        int howManyTimes = 0;
+
+        JobDefinition jd = new JobDefinition(typeof(DummyJob), null, null, null);
+        var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
+
+        jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
+        howManyTimes.ShouldBe(1);
+
+        var fault = new Exception();
+
+        jobRun.NotifyStateChange(value, fault);
+        jobRun.CurrentState.Type.ShouldBe(value);
+
+        var expectedNumberOfFinalInvocations = value switch
+        {
+            JobStateType.NotStarted => 1, // Resetting to NotStarted shouldn't do anything
+            JobStateType.Retrying => 3,
+            _ => 2
+        };
+
+        jobRun.NotifyStateChange(value, fault);
+        jobRun.CurrentState.Type.ShouldBe(value);
+
+        howManyTimes.ShouldBe(expectedNumberOfFinalInvocations);
+    }
+
     internal sealed class FinalJobStateTypeTestData : TheoryData<JobStateType>
     {
         public FinalJobStateTypeTestData()
         {
             foreach (var kvp in AllPossibleStates.Where(x => x.Value))
+            {
+                Add(kvp.Key);
+            }
+        }
+    }
+
+    internal sealed class AllJobStateTypeTestData : TheoryData<JobStateType>
+    {
+        public AllJobStateTypeTestData()
+        {
+            foreach (var kvp in AllPossibleStates)
             {
                 Add(kvp.Key);
             }
