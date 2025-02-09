@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Polly;
@@ -15,19 +14,15 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -46,19 +41,15 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(5));
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -80,19 +71,15 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -115,25 +102,21 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob(jobAndState.jobType, p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var service = context.serviceRetriever(ServiceProvider);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationState(events, orchestrationId, jobAndState.state);
+        await WaitForOrchestrationState(orchestrationId, jobAndState.state);
 
         context.serviceTriggerer(service);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.Where((e) => e.CorrelationId == orchestrationId).ToList();
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);

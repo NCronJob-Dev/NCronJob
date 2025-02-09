@@ -108,7 +108,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
         var fakeTimer = new FakeTimeProvider(baseTime);
         ServiceCollection.AddSingleton<TimeProvider>(fakeTimer);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: false);
 
         var cronRegistryEntries = ServiceProvider.GetRequiredService<JobRegistry>().GetAllCronJobs();
 
