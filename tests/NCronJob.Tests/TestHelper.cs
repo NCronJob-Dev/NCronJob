@@ -28,9 +28,6 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddLogging();
         ServiceCollection.AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
         ServiceCollection.AddSingleton<IHostApplicationLifetime, MockHostApplicationLifetime>();
-        ServiceCollection.AddSingleton<IRetryHandler, TestRetryHandler>();
-        ServiceCollection.AddSingleton<IRetryHandler>(sp =>
-            new TestRetryHandler(sp, sp.GetRequiredService<ChannelWriter<object>>(), cancellationSignaled));
         ServiceCollection.AddSingleton<TimeProvider>(FakeTimer);
         ServiceCollection.AddSingleton(Storage);
     }

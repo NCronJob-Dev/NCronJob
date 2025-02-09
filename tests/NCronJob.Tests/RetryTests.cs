@@ -79,63 +79,55 @@ public sealed class RetryTests : JobIntegrationBase
     {
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        // 1 initial + 2 retries, all 3 failed; 20 seconds timeout because retries take time
-        var jobFinished = await WaitForJobsOrTimeout(3, TimeSpan.FromSeconds(20));
-        jobFinished.ShouldBeTrue();
+        Guid orchestrationId = events[0].CorrelationId;
 
-        FailingJobRetryTwice.Success.ShouldBeFalse();
-        FailingJobRetryTwice.AttemptCount.ShouldBe(3);
+        await WaitForOrchestrationCompletion(events, orchestrationId);
+
+        subscription.Dispose();
+
+        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+
+        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[6].State.ShouldBe(ExecutionState.Retrying);
+        filteredEvents[7].State.ShouldBe(ExecutionState.Faulted);
+        filteredEvents.Count.ShouldBe(9);
+
+        // 1 initial + 2 retries, all 3 failed
+        Storage.Entries[0].ShouldBe($"{orchestrationId} Failed - 1");
+        Storage.Entries[1].ShouldBe($"{orchestrationId} Failed - 2");
+        Storage.Entries[2].ShouldBe($"{orchestrationId} Failed - 3");
     }
 
-    [Fact]
-    public async Task JobShouldHonorJobCancellationDuringRetry()
+    [Theory]
+    [ClassData(typeof(CancellingContextTestData))]
+    internal async Task JobShouldHonorCancellation(
+        (Type jobType, ExecutionState state) jobAndState,
+        (Func<IServiceProvider, object> serviceRetriever, Action<object> serviceTriggerer) context)
     {
-        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
-        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
-        var jobExecutor = provider.GetRequiredService<JobExecutor>();
+        ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
+        ServiceCollection.AddNCronJob(n => n.AddJob(jobAndState.jobType, p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        var service = context.serviceRetriever(ServiceProvider);
+
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        attempts.ShouldBe("Job retrying");
+        Guid orchestrationId = events[0].CorrelationId;
 
-        jobExecutor.CancelJobs();
+        await WaitForOrchestrationState(events, orchestrationId, jobAndState.state);
 
-        var cancellationMessageTask = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        cancellationMessageTask.ShouldBe("Job was canceled");
-
-        CancelRetryingJob.Success.ShouldBeFalse();
-        CancelRetryingJob.AttemptCount.ShouldBe(1);
-    }
-
-    [Fact]
-    public async Task CancelledJobIsStillAValidExecution()
-    {
-        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob2>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-
-        var provider = CreateServiceProvider();
-        var jobExecutor = provider.GetRequiredService<JobExecutor>();
-
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(provider);
-
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-
-        Guid orchestrationId = events.First().CorrelationId;
-
-        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.Retrying);
-
-        jobExecutor.CancelJobs();
-
-        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.Cancelled);
+        context.serviceTriggerer(service);
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
@@ -148,34 +140,30 @@ public sealed class RetryTests : JobIntegrationBase
         filteredEvents[2].State.ShouldBe(ExecutionState.Scheduled);
         filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[6].State.ShouldBe(ExecutionState.Cancelled);
-        filteredEvents[7].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        filteredEvents.Count.ShouldBe(8);
+
+        filteredEvents[filteredEvents.Count - 3].State.ShouldBe(jobAndState.state);
+        filteredEvents[filteredEvents.Count - 2].State.ShouldBe(ExecutionState.Cancelled);
+        filteredEvents[filteredEvents.Count - 1].State.ShouldBe(ExecutionState.OrchestrationCompleted);
     }
 
-    [Fact]
-    public async Task JobShouldHonorApplicationCancellationDuringRetry()
+    internal sealed class CancellingContextTestData
+        : MatrixTheoryData<(Type jobType, ExecutionState state), (Func<IServiceProvider, object> serviceRetriever, Action<object> serviceTriggerer)>
     {
-        ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
-        ServiceCollection.AddNCronJob(n => n.AddJob<CancelRetryingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-        var provider = CreateServiceProvider();
-        var hostAppLifeTime = provider.GetRequiredService<IHostApplicationLifetime>();
+        private static readonly (Type jobType, ExecutionState state)[] JobAndStateTypes =
+        [
+            (typeof(FailingJob), ExecutionState.Retrying),
+            (typeof(LongRunningJob), ExecutionState.Running),
+        ];
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        private static readonly (Func<IServiceProvider, object> serviceRetriever, Action<object> serviceTriggerer)[] Actions =
+        [
+            ((sp) => sp.GetRequiredService<JobExecutor>(), (s) => ((JobExecutor)s).CancelJobs()),
+            ((sp) => sp.GetRequiredService<IHostApplicationLifetime>(), (s) => ((IHostApplicationLifetime)s).StopApplication())
+        ];
 
-        var attempts = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
-        attempts.ShouldBe("Job retrying");
-
-        hostAppLifeTime.StopApplication();
-        await Task.Delay(100, CancellationToken); // allow some time for cancellation to propagate
-
-        var cancellationMessageTask = CommunicationChannel.Reader.ReadAsync(CancellationToken.None).AsTask();
-        var winnerTask = await Task.WhenAny(cancellationMessageTask, Task.Delay(5000, CancellationToken));
-        winnerTask.ShouldBe(cancellationMessageTask);
-        CancelRetryingJob.Success.ShouldBeFalse();
-        CancelRetryingJob.AttemptCount.ShouldBe(1);
+        public CancellingContextTestData() : base(JobAndStateTypes, Actions)
+        {
+        }
     }
 
     private sealed record MaxFailuresWrapper(int MaxFailuresBeforeSuccess = 3);
@@ -202,79 +190,33 @@ public sealed class RetryTests : JobIntegrationBase
     }
 
     [RetryPolicy(retryCount: 2, PolicyType.FixedInterval)]
-    private sealed class FailingJobRetryTwice(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
+    private sealed class FailingJobRetryTwice(Storage storage, MaxFailuresWrapper maxFailuresWrapper)
         : IJob
     {
-        public static int AttemptCount { get; private set; }
-        public static bool Success { get; private set; }
-
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            AttemptCount = context.Attempts;
-
-            try
+            if (context.Attempts <= maxFailuresWrapper.MaxFailuresBeforeSuccess)
             {
-                Success = true;
-                if (AttemptCount <= maxFailuresWrapper.MaxFailuresBeforeSuccess)
-                {
-                    Success = false;
-                    throw new InvalidOperationException("Job Failed");
-                }
+                storage.Add($"{context.CorrelationId} Failed - {context.Attempts}");
+                throw new InvalidOperationException("Job Failed");
             }
-            finally
-            {
-                await writer.WriteAsync(AttemptCount, token);
-            }
-        }
-    }
 
-    [RetryPolicy(retryCount: 4, PolicyType.FixedInterval)]
-    private sealed class CancelRetryingJob(ChannelWriter<object> writer, MaxFailuresWrapper maxFailuresWrapper)
-        : IJob
-    {
-        public static int AttemptCount { get; private set; }
-        public static bool Success { get; private set; }
+            storage.Add($"{context.CorrelationId} Succeeded - {context.Attempts}");
 
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            ArgumentNullException.ThrowIfNull(context);
-
-            AttemptCount = context.Attempts;
-
-            try
-            {
-                token.ThrowIfCancellationRequested();
-
-                if (AttemptCount <= maxFailuresWrapper.MaxFailuresBeforeSuccess)
-                {
-                    Success = false;
-                    throw new InvalidOperationException("Job Failed");
-                }
-
-                Success = true;
-                await writer.WriteAsync("Job completed successfully", CancellationToken.None);
-            }
-            catch (Exception)
-            {
-                Success = false;
-                if (!token.IsCancellationRequested)
-                {
-                    await writer.WriteAsync("Job retrying", CancellationToken.None);
-                }
-                throw;
-            }
+            return Task.CompletedTask;
         }
     }
 
     [RetryPolicy(retryCount: 2, PolicyType.FixedInterval)]
-    private sealed class CancelRetryingJob2 : IJob
+    private sealed class LongRunningJob : IJob
     {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            token.ThrowIfCancellationRequested();
-            throw new InvalidOperationException("Job Failed");
+            await Task.Delay(TimeSpan.FromHours(1), token);
+
+            throw new InvalidOperationException("I should never be reached");
         }
     }
 
