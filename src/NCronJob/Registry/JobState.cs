@@ -22,8 +22,31 @@ internal readonly struct JobState
     }
 
     private string DebuggerDisplay => $"Type = {Type}, Timestamp = {Timestamp}";
+}
 
-    public static implicit operator JobStateType(JobState jobState) => jobState.Type;
+internal static class JobStateExtensions
+{
+    public static bool IsUnchangedAndNotRetrying(this JobState current, JobStateType nextState)
+        => current.Type == nextState && nextState != JobStateType.Retrying;
+
+    public static bool IsFinalState(this JobState current) =>
+       current.Type is
+       JobStateType.Skipped or
+       JobStateType.Completed or
+       JobStateType.Cancelled or
+       JobStateType.Faulted or
+       JobStateType.Expired;
+
+    public static bool CanInitiateRun(this JobState current) =>
+        current.Type is
+        JobStateType.Initializing or
+        JobStateType.Retrying;
+
+    public static bool CanBeCancelled(this JobState current) =>
+        current.Type is
+        JobStateType.NotStarted or
+        JobStateType.Scheduled ||
+        current.CanInitiateRun();
 }
 
 internal enum JobStateType
