@@ -109,9 +109,9 @@ public abstract class JobIntegrationBase : IDisposable
         }
     }
 
-    protected async Task WaitUntilConditionIsMet(
+    protected async Task<ExecutionProgress> WaitUntilConditionIsMet(
         IList<ExecutionProgress> events,
-        Func<IList<ExecutionProgress>, bool> evaluator)
+        Func<IList<ExecutionProgress>, ExecutionProgress?> evaluator)
     {
         // Note: Although this function could seem a bit over-engineered, it's sadly necessary.
         // Indeed, events may actually be updated upstream while it's being enumerated
@@ -132,9 +132,11 @@ public abstract class JobIntegrationBase : IDisposable
                 index++;
             }
 
-            if (evaluator(tmp))
+            var entry = evaluator(tmp);
+
+            if (entry is not null)
             {
-                return;
+                return entry;
             }
 
             FakeTimer.Advance(TimeSpan.FromSeconds(1));
@@ -157,9 +159,9 @@ public abstract class JobIntegrationBase : IDisposable
     {
         await WaitUntilConditionIsMet(events, OrchestrationHasReachedExpectedState);
 
-        bool OrchestrationHasReachedExpectedState(IList<ExecutionProgress> events)
+        ExecutionProgress? OrchestrationHasReachedExpectedState(IList<ExecutionProgress> events)
         {
-            return events.Any(@event =>
+            return events.FirstOrDefault(@event =>
                 @event.CorrelationId == orchestrationId &&
                 @event.State == state);
         }
