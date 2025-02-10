@@ -325,7 +325,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        var scheduledOrchestrationId = events.First().CorrelationId;
+        var scheduledOrchestrationId = events[0].CorrelationId;
 
         var scheduledOrchestrationEvents = events.Where(e => e.CorrelationId == scheduledOrchestrationId).ToList();
         var instantOrchestrationEvents = events.Where(e => e.CorrelationId == instantOrchestrationId).ToList();

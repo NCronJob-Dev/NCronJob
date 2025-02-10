@@ -30,7 +30,7 @@ public class NotificationHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events.First().CorrelationId;
+        Guid orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
@@ -83,7 +83,7 @@ public class NotificationHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events.First().CorrelationId;
+        Guid orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 

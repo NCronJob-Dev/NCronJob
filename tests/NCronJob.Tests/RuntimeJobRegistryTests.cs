@@ -52,7 +52,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
         var registry = provider.GetRequiredService<IRuntimeJobRegistry>();
 
-        Guid orchestrationId = events.First().CorrelationId;
+        Guid orchestrationId = events[0].CorrelationId;
 
         registry.RemoveJob("Job");
 
@@ -172,7 +172,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // Initial scheduling
-        Guid firstOrchestrationId = events.First().CorrelationId;
+        Guid firstOrchestrationId = events[0].CorrelationId;
 
         // Rescheduling
         Guid secondOrchestrationId = events.Skip(1).First(e => e.State == ExecutionState.OrchestrationStarted).CorrelationId;

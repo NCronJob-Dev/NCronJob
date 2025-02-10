@@ -102,7 +102,7 @@ public class RunDependentJobTests : JobIntegrationBase
         subscription.Dispose();
 
         Storage.Entries.Distinct().Count().ShouldBe(1);
-        Storage.Entries.First().ShouldBe(orchestrationId.ToString());
+        Storage.Entries[0].ShouldBe(orchestrationId.ToString());
         Storage.Entries.Count.ShouldBe(2);
     }
 
@@ -250,7 +250,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, events.First().CorrelationId);
+        await WaitForOrchestrationCompletion(events, events[0].CorrelationId);
 
         subscription.Dispose();
 
@@ -277,7 +277,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var firstOrchestrationId = events.First().CorrelationId;
+        var firstOrchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, firstOrchestrationId);
 
