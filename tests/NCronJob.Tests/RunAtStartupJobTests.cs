@@ -105,7 +105,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[1].ShouldBe("StartingService");
         Storage.Entries.Count.ShouldBe(2);
 
-        Guid orchestrationId = events.First().CorrelationId;
+        Guid orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
@@ -145,7 +145,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[0].ShouldBe("ExceptionHandler");
         Storage.Entries.Count.ShouldBe(1);
 
-        Guid orchestrationId = events.First().CorrelationId;
+        Guid orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
