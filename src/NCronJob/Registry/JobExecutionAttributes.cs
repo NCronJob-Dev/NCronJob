@@ -20,7 +20,7 @@ internal sealed class JobExecutionAttributes
     /// The <see cref="RetryPolicyAttribute"/> that defines the retry behavior for the job.
     /// This may be <c>null</c> if no retry policy has been explicitly defined.
     /// </value>
-    public RetryPolicyAttribute? RetryPolicy { get; }
+    public RetryPolicyBaseAttribute? RetryPolicy { get; }
 
     /// <summary>
     /// Gets the concurrency policy associated with the job, if any.
@@ -59,7 +59,7 @@ internal sealed class JobExecutionAttributes
         ConcurrencyPolicy = cachedAttributes.ConcurrencyPolicy;
     }
 
-    private JobExecutionAttributes(RetryPolicyAttribute? retryPolicy, SupportsConcurrencyAttribute? concurrencyPolicy)
+    private JobExecutionAttributes(RetryPolicyBaseAttribute? retryPolicy, SupportsConcurrencyAttribute? concurrencyPolicy)
     {
         RetryPolicy = retryPolicy;
         ConcurrencyPolicy = concurrencyPolicy;
@@ -68,14 +68,15 @@ internal sealed class JobExecutionAttributes
     // Internal factory methods for cache usage
     internal static JobExecutionAttributes CreateFromType(Type jobType)
     {
-        var retryPolicy = jobType.GetCustomAttribute<RetryPolicyAttribute>();
+        var retryPolicy = jobType.GetCustomAttribute<RetryPolicyBaseAttribute>();
+        
         var concurrencyPolicy = jobType.GetCustomAttribute<SupportsConcurrencyAttribute>();
         return new JobExecutionAttributes(retryPolicy, concurrencyPolicy);
     }
 
     internal static JobExecutionAttributes CreateFromMethodInfo(MethodInfo methodInfo)
     {
-        var retryPolicy = methodInfo.GetCustomAttribute<RetryPolicyAttribute>();
+        var retryPolicy = methodInfo.GetCustomAttribute<RetryPolicyBaseAttribute>();
         var concurrencyPolicy = methodInfo?.GetCustomAttribute<SupportsConcurrencyAttribute>();
         return new JobExecutionAttributes(retryPolicy, concurrencyPolicy);
     }

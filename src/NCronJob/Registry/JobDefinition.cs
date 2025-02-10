@@ -45,6 +45,6 @@ internal sealed record JobDefinition(
         : $"{typeof(DynamicJobFactory).Namespace}.{JobName}";
 
     private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
-    public RetryPolicyAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
+    public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 }

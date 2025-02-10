@@ -111,9 +111,9 @@ internal class JobRun
     public bool RootJobIsCompleted => rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
 
     // State change logic
-    public bool IsCompleted => IsFinalState(CurrentState);
-    public bool CanRun => CanInitiateRun(CurrentState);
-    public bool IsCancellable => CanBeCancelled(CurrentState);
+    public bool IsCompleted => CurrentState.IsFinalState();
+    public bool CanRun => CurrentState.CanInitiateRun();
+    public bool IsCancellable => CurrentState.CanBeCancelled();
     public JobState CurrentState { get; private set; }
 
     private void SetState(JobState state)
@@ -124,7 +124,7 @@ internal class JobRun
 
     public void NotifyStateChange(JobStateType type, Exception? fault = default)
     {
-        if (CurrentState.Type == type || IsCompleted)
+        if (CurrentState.IsUnchangedAndNotRetrying(type) || CurrentState.IsFinalState())
         {
             return;
         }
@@ -132,25 +132,6 @@ internal class JobRun
         var state = new JobState(type, timeProvider.GetUtcNow(), fault);
         SetState(state);
     }
-
-    private static bool IsFinalState(JobStateType stateType) =>
-        stateType is
-        JobStateType.Skipped or
-        JobStateType.Completed or
-        JobStateType.Cancelled or
-        JobStateType.Faulted or
-        JobStateType.Expired;
-
-    private static bool CanInitiateRun(JobStateType stateType) =>
-        stateType is
-        JobStateType.Initializing or
-        JobStateType.Retrying;
-
-    private static bool CanBeCancelled(JobStateType stateType) =>
-        stateType is
-        JobStateType.NotStarted or
-        JobStateType.Scheduled ||
-        CanInitiateRun(stateType);
 
     private bool HasPendingDependentJobs()
     {
