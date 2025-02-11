@@ -386,7 +386,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        await WaitUntilConditionIsMet(events, AtLeastTwoJobsAreInitializing);
+        await WaitUntilConditionIsMet(events, LatestOfAtLEastTwoInitializingJobs);
 
         subscription.Dispose();
 
@@ -395,10 +395,15 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         runningJobs.Count.ShouldBe(2);
         runningJobs[0].CorrelationId.ShouldNotBe(runningJobs[1].CorrelationId);
 
-        static bool AtLeastTwoJobsAreInitializing(IList<ExecutionProgress> events)
+        static ExecutionProgress? LatestOfAtLEastTwoInitializingJobs(IList<ExecutionProgress> events)
         {
             var jobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
-            return jobs.Count >= 2;
+            if (jobs.Count < 2)
+            {
+                return null;
+            }
+
+            return jobs.Last();
         }
     }
 

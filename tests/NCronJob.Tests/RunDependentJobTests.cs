@@ -287,7 +287,7 @@ public class RunDependentJobTests : JobIntegrationBase
         Storage.Entries.Clear();
         FakeTimer.Advance(TimeSpan.FromDays(1));
 
-        await WaitUntilConditionIsMet(events, events => events.Any(e => e.State == ExecutionState.OrchestrationCompleted
+        await WaitUntilConditionIsMet(events, events => events.FirstOrDefault(e => e.State == ExecutionState.OrchestrationCompleted
             && e.CorrelationId != firstOrchestrationId));
 
         subscription.Dispose();
