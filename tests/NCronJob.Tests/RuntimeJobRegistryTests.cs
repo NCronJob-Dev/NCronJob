@@ -33,8 +33,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-
-        filteredEvents[6].State.ShouldBe(ExecutionState.Completed);
+        filteredEvents.ShouldBeScheduledThenCompleted();
 
         Storage.Entries[0].ShouldBe("true");
         Storage.Entries.Count.ShouldBe(1);
@@ -70,10 +69,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         subscription.Dispose();
 
         var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
+        firstOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
-        firstOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
-        secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
         Storage.Entries.ShouldContain("one");
         Storage.Entries.ShouldContain("two");
@@ -225,14 +224,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         // Rescheduling
         var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
-        secondOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        secondOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        secondOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        secondOrchestrationEvents[3].State.ShouldBe(ExecutionState.Initializing);
-        secondOrchestrationEvents[4].State.ShouldBe(ExecutionState.Running);
-        secondOrchestrationEvents[5].State.ShouldBe(ExecutionState.Completing);
-        secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
-        secondOrchestrationEvents[7].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
         // Rescheduling (execution n+1)
         var thirdOrchestrationEvents = events.FilterByOrchestrationId(thirdOrchestrationId);
@@ -334,8 +326,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
-
-        secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
         Storage.Entries[0].ShouldBe("Bar");
         Storage.Entries.Count.ShouldBe(1);
@@ -473,9 +464,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
-
-        secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
-        secondOrchestrationEvents.Count.ShouldBe(8);
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
         ExecutionProgress? ASecondOrchestrationHasCompleted(IList<ExecutionProgress> events)
         {
