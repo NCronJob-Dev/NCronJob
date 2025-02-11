@@ -27,9 +27,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
 
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries[1].ShouldBe("2");
@@ -57,9 +55,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
 
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries.Count.ShouldBe(1);
@@ -86,9 +82,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
 
         Storage.Entries[0].ShouldBe("boom");
         Storage.Entries[1].ShouldBe("2");
@@ -115,9 +109,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-
-        filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
-        filteredEvents[4].State.ShouldBe(ExecutionState.Faulted);
+        filteredEvents.ShouldBeScheduledThenFaultedDuringInitialization();
 
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries.Count.ShouldBe(1);

@@ -39,15 +39,7 @@ public class NotificationHandlerTests : JobIntegrationBase
         Storage.Entries.Count.ShouldBe(1);
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-
-        filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        filteredEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
-        filteredEvents[6].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        filteredEvents.Count.ShouldBe(7);
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
     }
 
     [Fact]

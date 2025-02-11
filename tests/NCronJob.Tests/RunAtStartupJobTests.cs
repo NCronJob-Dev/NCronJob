@@ -144,14 +144,8 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[1].State.ShouldBe(ExecutionState.NotStarted);
-        events[2].State.ShouldBe(ExecutionState.Initializing);
-        events[3].State.ShouldBe(ExecutionState.Running );
-        events[4].State.ShouldBe(ExecutionState.Faulted);
-        events[5].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(6);
-        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeInstantThenFaultedDuringRun();
     }
 
     [Fact]
