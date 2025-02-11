@@ -22,7 +22,7 @@ public sealed class RetryTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        var filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -49,7 +49,7 @@ public sealed class RetryTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        var filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -79,7 +79,7 @@ public sealed class RetryTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        var filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -116,7 +116,7 @@ public sealed class RetryTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        var filteredEvents = Events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);

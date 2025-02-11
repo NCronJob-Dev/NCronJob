@@ -300,8 +300,8 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         var scheduledOrchestrationId = Events[0].CorrelationId;
 
-        var scheduledOrchestrationEvents = Events.Where(e => e.CorrelationId == scheduledOrchestrationId).ToList();
-        var instantOrchestrationEvents = Events.Where(e => e.CorrelationId == instantOrchestrationId).ToList();
+        var scheduledOrchestrationEvents = Events.WithOrchestrationId(scheduledOrchestrationId);
+        var instantOrchestrationEvents = Events.WithOrchestrationId(instantOrchestrationId);
 
         scheduledOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         scheduledOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
@@ -356,14 +356,14 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         Guid orchestrationId = Events[0].CorrelationId;
 
-        await WaitUntilConditionIsMet(SecondOrchestrationIsInitializing, stopMonitoringEvents: true);
+        await WaitUntilConditionIsMet(ASecondOrchestrationIsInitializing, stopMonitoringEvents: true);
 
         var runningJobs = Events.Where(e => e.State == ExecutionState.Initializing).ToList();
 
         runningJobs.Count.ShouldBe(2);
         runningJobs[0].CorrelationId.ShouldNotBe(runningJobs[1].CorrelationId);
 
-        bool SecondOrchestrationIsInitializing(ExecutionProgress @event)
+        bool ASecondOrchestrationIsInitializing(ExecutionProgress @event)
         {
             return @event.State == ExecutionState.Initializing &&
                 @event.CorrelationId != orchestrationId;

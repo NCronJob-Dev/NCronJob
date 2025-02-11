@@ -23,7 +23,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        List<ExecutionProgress> filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -49,7 +49,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        List<ExecutionProgress> filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -74,7 +74,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        List<ExecutionProgress> filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -99,7 +99,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        List<ExecutionProgress> filteredEvents = Events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
         filteredEvents[4].State.ShouldBe(ExecutionState.Faulted);

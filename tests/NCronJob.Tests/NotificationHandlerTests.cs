@@ -37,7 +37,7 @@ public class NotificationHandlerTests : JobIntegrationBase
         Storage.Entries[0].ShouldBe("InvalidOperationException");
         Storage.Entries.Count.ShouldBe(1);
 
-        var filteredEvents = Events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
