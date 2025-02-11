@@ -385,7 +385,9 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        await WaitUntilConditionIsMet(events, LatestOfAtLEastTwoInitializingJobs);
+        var orchestrationId = events[0].CorrelationId;
+
+        await WaitUntilConditionIsMet(events, ASecondOrchestrationIsInitializing);
 
         subscription.Dispose();
 
@@ -394,15 +396,10 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         runningJobs.Count.ShouldBe(2);
         runningJobs[0].CorrelationId.ShouldNotBe(runningJobs[1].CorrelationId);
 
-        static ExecutionProgress? LatestOfAtLEastTwoInitializingJobs(IList<ExecutionProgress> events)
+        ExecutionProgress? ASecondOrchestrationIsInitializing(IList<ExecutionProgress> events)
         {
-            var jobs = events.Where(e => e.State == ExecutionState.Initializing).ToList();
-            if (jobs.Count < 2)
-            {
-                return null;
-            }
-
-            return jobs.Last();
+            return events.FirstOrDefault(e => e.State == ExecutionState.Initializing &&
+                e.CorrelationId != orchestrationId);
         }
     }
 
