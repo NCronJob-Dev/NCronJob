@@ -20,7 +20,9 @@ public abstract class JobIntegrationBase : IDisposable
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
-    protected Storage Storage { get; } = new();
+    protected Storage Storage { get; }
+    protected IList<ExecutionProgress> Events { get; private set; } = [];
+    private IDisposable? subscription;
 
     protected JobIntegrationBase()
     {
@@ -29,6 +31,8 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
         ServiceCollection.AddSingleton<IHostApplicationLifetime, MockHostApplicationLifetime>();
         ServiceCollection.AddSingleton<TimeProvider>(FakeTimer);
+
+        Storage = new(FakeTimer);
         ServiceCollection.AddSingleton(Storage);
     }
 
@@ -48,11 +52,45 @@ public abstract class JobIntegrationBase : IDisposable
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
         cancellationSignaled.TrySetCanceled();
-        serviceProvider?.Dispose();
-    }
 
-    // TODO: Replace calls to this method in the tests with `ServiceProvider`
-    protected ServiceProvider CreateServiceProvider() => ServiceProvider;
+#pragma warning disable IDISP023 // Don't use reference types in finalizer context
+        // False positive (cf. https://github.com/DotNetAnalyzers/IDisposableAnalyzers/issues/176)
+
+        StopMonitoringEvents();
+#pragma warning restore IDISP023 // Don't use reference types in finalizer context
+
+        serviceProvider?.Dispose();
+
+        var current = TestContext.Current;
+
+        if (current.Warnings is not null)
+        {
+            current.TestOutputHelper!.WriteLine("** Warnings:");
+
+            foreach (string warning in current.Warnings)
+            {
+                current.TestOutputHelper!.WriteLine(warning);
+            }
+        }
+
+        if (current.TestState is not null && current.TestState.Result == TestResult.Failed)
+        {
+            current.TestOutputHelper!.WriteLine("** Events:");
+
+            foreach (ExecutionProgress @event in Events)
+            {
+                current.TestOutputHelper!.WriteLine($"{@event.Timestamp:o} {@event.CorrelationId} {@event.State}");
+            }
+
+            current.TestOutputHelper!.WriteLine("");
+            current.TestOutputHelper!.WriteLine("** Storage:");
+
+            foreach ((string timestamp, string content) in Storage.TimedEntries)
+            {
+                current.TestOutputHelper!.WriteLine($"{timestamp} {content}");
+            }
+        }
+    }
 
     protected ServiceProvider ServiceProvider => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
@@ -110,8 +148,18 @@ public abstract class JobIntegrationBase : IDisposable
     }
 
     protected async Task<ExecutionProgress> WaitUntilConditionIsMet(
+        Func<ExecutionProgress, bool> evaluator,
+        bool stopMonitoringEvents = false)
+    {
+        AssertEventsAreBeingMonitored();
+
+        return await WaitUntilConditionIsMet(Events, evaluator, stopMonitoringEvents);
+    }
+
+    protected async Task<ExecutionProgress> WaitUntilConditionIsMet(
         IList<ExecutionProgress> events,
-        Func<IList<ExecutionProgress>, ExecutionProgress?> evaluator)
+        Func<ExecutionProgress, bool> evaluator,
+        bool stopMonitoringEvents = false)
     {
         // Note: Although this function could seem a bit over-engineered, it's sadly necessary.
         // Indeed, events may actually be updated upstream while it's being enumerated
@@ -120,23 +168,23 @@ public abstract class JobIntegrationBase : IDisposable
 
         int index = 0;
 
-        List<ExecutionProgress> tmp = [];
-
         while (true)
         {
             int count = events.Count;
 
             while (index < count)
             {
-                tmp.Add(events[index]);
+                if (evaluator(events[index]))
+                {
+                    if (stopMonitoringEvents)
+                    {
+                        StopMonitoringEvents();
+                    }
+
+                    return events[index];
+                }
+
                 index++;
-            }
-
-            var entry = evaluator(tmp);
-
-            if (entry is not null)
-            {
-                return entry;
             }
 
             FakeTimer.Advance(TimeSpan.FromSeconds(1));
@@ -146,25 +194,82 @@ public abstract class JobIntegrationBase : IDisposable
     }
 
     protected async Task WaitForOrchestrationCompletion(
-        IList<ExecutionProgress> events,
-        Guid orchestrationId)
+        Guid orchestrationId,
+        bool stopMonitoringEvents = false)
     {
-        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.OrchestrationCompleted);
+        AssertEventsAreBeingMonitored();
+
+        await WaitForOrchestrationCompletion(Events, orchestrationId, stopMonitoringEvents);
+    }
+
+    protected async Task WaitForOrchestrationCompletion(
+        IList<ExecutionProgress> events,
+        Guid orchestrationId,
+        bool stopMonitoringEvents = false)
+    {
+        await WaitForOrchestrationState(
+            events,
+            orchestrationId,
+            ExecutionState.OrchestrationCompleted,
+            stopMonitoringEvents);
+    }
+
+    protected async Task WaitForOrchestrationState(
+        Guid orchestrationId,
+        ExecutionState state,
+        bool stopMonitoringEvents = false)
+    {
+        AssertEventsAreBeingMonitored();
+
+        await WaitForOrchestrationState(Events, orchestrationId, state, stopMonitoringEvents);
     }
 
     protected async Task WaitForOrchestrationState(
         IList<ExecutionProgress> events,
         Guid orchestrationId,
-        ExecutionState state)
+        ExecutionState state,
+        bool stopMonitoringEvents = false)
     {
-        await WaitUntilConditionIsMet(events, OrchestrationHasReachedExpectedState);
+        await WaitUntilConditionIsMet(
+            events,
+            OrchestrationHasReachedExpectedState,
+            stopMonitoringEvents);
 
-        ExecutionProgress? OrchestrationHasReachedExpectedState(IList<ExecutionProgress> events)
+        bool OrchestrationHasReachedExpectedState(ExecutionProgress @event)
         {
-            return events.FirstOrDefault(@event =>
-                @event.CorrelationId == orchestrationId &&
-                @event.State == state);
+            return @event.CorrelationId == orchestrationId && @event.State == state;
         }
+    }
+
+    private void AssertEventsAreBeingMonitored()
+    {
+        if (subscription is not null)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Events aren't monitored.
+            Invoke '{nameof(StartNCronJob)}' and explicitly set the appropriate parameter to do so.
+            """);
+    }
+
+    protected async Task StartNCronJob(
+        bool startMonitoringEvents = false)
+    {
+        if (startMonitoringEvents)
+        {
+            (subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+            Events = events;
+        }
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+    }
+
+    protected void StopMonitoringEvents()
+    {
+        subscription?.Dispose();
     }
 
     protected static (IDisposable subscription, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
@@ -192,7 +297,7 @@ public abstract class JobIntegrationBase : IDisposable
     }
 }
 
-public sealed class Storage
+public sealed class Storage(TimeProvider timeProvider)
 {
 #if NET9_0_OR_GREATER
     private readonly Lock locker = new();
@@ -200,12 +305,14 @@ public sealed class Storage
     private readonly object locker = new();
 #endif
     public IList<string> Entries { get; private set; } = [];
+    public IList<(string, string)> TimedEntries { get; private set; } = [];
 
     public void Add(string content)
     {
         lock (locker)
         {
             Entries.Add(content);
+            TimedEntries.Add((timeProvider.GetUtcNow().ToString("o"), content));
         }
     }
 }

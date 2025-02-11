@@ -17,17 +17,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        Guid orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -47,17 +43,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        Guid orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -76,17 +68,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        Guid orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -105,17 +93,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<JobThatThrowsInCtor>(b => b.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        Guid orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
         filteredEvents[4].State.ShouldBe(ExecutionState.Faulted);

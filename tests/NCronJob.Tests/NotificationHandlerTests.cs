@@ -26,20 +26,18 @@ public class NotificationHandlerTests : JobIntegrationBase
                 .AddNotificationHandler<ExceptionHandler>()
         );
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        Guid orchestrationId = events[0].CorrelationId;
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("InvalidOperationException");
         Storage.Entries.Count.ShouldBe(1);
 
-        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = Events.WithOrchestrationId(orchestrationId);
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
@@ -79,15 +77,13 @@ public class NotificationHandlerTests : JobIntegrationBase
 
     private async Task StartNCronJobAndAssertSimpleJobWasProcessedAndNotified()
     {
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        Guid orchestrationId = Events[0].CorrelationId;
 
-        Guid orchestrationId = events[0].CorrelationId;
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("Foo");
         Storage.Entries.Count.ShouldBe(1);
