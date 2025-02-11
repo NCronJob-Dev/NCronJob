@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Polly;
@@ -21,13 +20,13 @@ public sealed class RetryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -52,13 +51,13 @@ public sealed class RetryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -86,13 +85,13 @@ public sealed class RetryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
@@ -123,7 +122,7 @@ public sealed class RetryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationState(events, orchestrationId, jobAndState.state);
 
@@ -133,7 +132,7 @@ public sealed class RetryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);

@@ -24,7 +24,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         Delegate jobDelegate = (Storage storage) => storage.Add("true");
         registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out _).ShouldBe(true);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
@@ -32,7 +32,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        var filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[6].State.ShouldBe(ExecutionState.Completed);
 
@@ -59,18 +59,18 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         registry.TryRegister(s => s.AddJob(jobDelegateOne, Cron.AtEveryMinute), out _).ShouldBe(true);
         registry.TryRegister(s => s.AddJob(jobDelegateTwo, Cron.AtEveryMinute), out _).ShouldBe(true);
 
-        Guid firstOrchestrationId = events[0].CorrelationId;
+        var firstOrchestrationId = events[0].CorrelationId;
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid secondOrchestrationId = (await WaitUntilConditionIsMet(
+        var secondOrchestrationId = (await WaitUntilConditionIsMet(
             events,
             ASecondOrchestrationHasCompleted)).CorrelationId;
 
         subscription.Dispose();
 
-        var firstOrchestrationEvents = events.Where(e => e.CorrelationId == firstOrchestrationId).ToList();
-        var secondOrchestrationEvents = events.Where(e => e.CorrelationId == secondOrchestrationId).ToList();
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
 
         firstOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
         secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
@@ -97,7 +97,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         registry.RemoveJob("Job");
 
@@ -139,7 +139,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -217,21 +217,21 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         // Initial scheduling
-        Guid firstOrchestrationId = events[0].CorrelationId;
+        var firstOrchestrationId = events[0].CorrelationId;
 
         // Rescheduling
-        Guid secondOrchestrationId = events.Skip(1).First(e => e.State == ExecutionState.OrchestrationStarted).CorrelationId;
+        var secondOrchestrationId = events.Skip(1).First(e => e.State == ExecutionState.OrchestrationStarted).CorrelationId;
 
         // Rescheduling (execution n+1)
-        Guid thirdOrchestrationId = (await WaitUntilConditionIsMet(events, AThirdOrchestrationHasStarted)).CorrelationId;
+        var thirdOrchestrationId = (await WaitUntilConditionIsMet(events, AThirdOrchestrationHasStarted)).CorrelationId;
 
         await WaitForOrchestrationCompletion(events, secondOrchestrationId);
 
         subscription.Dispose();
 
-        var firstOrchestrationEvents = events.Where(e => e.CorrelationId == firstOrchestrationId).ToList();
-        var secondOrchestrationEvents = events.Where(e => e.CorrelationId == secondOrchestrationId).ToList();
-        var thirdOrchestrationEvents = events.Where(e => e.CorrelationId == thirdOrchestrationId).ToList();
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
+        var thirdOrchestrationEvents = events.FilterByOrchestrationId(thirdOrchestrationId);
 
         // Initial scheduling
         AssertEvent(firstOrchestrationId, ExecutionState.OrchestrationStarted, firstOrchestrationEvents[0]);
@@ -338,7 +338,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid firstOrchestrationId = events[0].CorrelationId;
+        var firstOrchestrationId = events[0].CorrelationId;
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -348,15 +348,15 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(events, firstOrchestrationId);
 
-        Guid secondOrchestrationId = (await WaitUntilConditionIsMet(events, ASecondOrchestrationHasCompleted)).CorrelationId;
+        var secondOrchestrationId = (await WaitUntilConditionIsMet(events, ASecondOrchestrationHasCompleted)).CorrelationId;
 
         subscription.Dispose();
 
-        var firstOrchestrationEvents = events.Where(e => e.CorrelationId == firstOrchestrationId).ToList();
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
 
         firstOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
 
-        var secondOrchestrationEvents = events.Where(e => e.CorrelationId == secondOrchestrationId).ToList();
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
 
         secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
 
@@ -416,7 +416,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -483,7 +483,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid firstOrchestrationId = events[0].CorrelationId;
+        var firstOrchestrationId = events[0].CorrelationId;
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         registry.DisableJob("JobName");
@@ -492,11 +492,11 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        Guid secondOrchestrationId = (await WaitUntilConditionIsMet(events, ASecondOrchestrationHasCompleted)).CorrelationId;
+        var secondOrchestrationId = (await WaitUntilConditionIsMet(events, ASecondOrchestrationHasCompleted)).CorrelationId;
 
         subscription.Dispose();
 
-        var firstOrchestrationEvents = events.Where(e => e.CorrelationId == firstOrchestrationId).ToList();
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
 
         firstOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         firstOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
@@ -505,7 +505,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         firstOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
         firstOrchestrationEvents.Count.ShouldBe(5);
 
-        var secondOrchestrationEvents = events.Where(e => e.CorrelationId == secondOrchestrationId).ToList();
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
 
         secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.Completed);
         secondOrchestrationEvents.Count.ShouldBe(8);

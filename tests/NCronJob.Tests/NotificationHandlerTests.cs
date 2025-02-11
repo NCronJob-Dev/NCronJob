@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
@@ -30,7 +29,7 @@ public class NotificationHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
@@ -39,7 +38,7 @@ public class NotificationHandlerTests : JobIntegrationBase
         Storage.Entries[0].ShouldBe("InvalidOperationException");
         Storage.Entries.Count.ShouldBe(1);
 
-        var filteredEvents = events.Where((e) => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
@@ -83,7 +82,7 @@ public class NotificationHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 

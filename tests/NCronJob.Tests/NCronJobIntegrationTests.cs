@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
@@ -327,8 +326,8 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var scheduledOrchestrationId = events[0].CorrelationId;
 
-        var scheduledOrchestrationEvents = events.Where(e => e.CorrelationId == scheduledOrchestrationId).ToList();
-        var instantOrchestrationEvents = events.Where(e => e.CorrelationId == instantOrchestrationId).ToList();
+        var scheduledOrchestrationEvents = events.FilterByOrchestrationId(scheduledOrchestrationId);
+        var instantOrchestrationEvents = events.FilterByOrchestrationId(instantOrchestrationId);
 
         scheduledOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         scheduledOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);

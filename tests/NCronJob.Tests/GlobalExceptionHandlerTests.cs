@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
@@ -21,13 +20,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -51,13 +50,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -80,13 +79,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[4].State.ShouldBe(ExecutionState.Running);
         filteredEvents[5].State.ShouldBe(ExecutionState.Faulted);
@@ -109,13 +108,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
 
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        List<ExecutionProgress> filteredEvents = events.Where(e => e.CorrelationId == orchestrationId).ToList();
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
 
         filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
         filteredEvents[4].State.ShouldBe(ExecutionState.Faulted);
