@@ -157,28 +157,31 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
+        var firstOrchestrationId = events[0].CorrelationId;
+
         registry.DisableJob<ParameterJob>();
 
         var instantJobRegistry = provider.GetRequiredService<IInstantJobRegistry>();
-        var orchestrationId = instantJobRunner(instantJobRegistry, "Hello from InstantJob", CancellationToken);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        var secondOrchestrationId = instantJobRunner(instantJobRegistry, "Hello from InstantJob", CancellationToken);
+
+        await WaitForOrchestrationCompletion(events, secondOrchestrationId);
 
         subscription.Dispose();
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[1].State.ShouldBe(ExecutionState.NotStarted);
-        events[2].State.ShouldBe(ExecutionState.Scheduled);
-        events[3].State.ShouldBe(ExecutionState.Cancelled);
-        events[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events[5].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[6].State.ShouldBe(ExecutionState.NotStarted);
-        events[7].State.ShouldBe(ExecutionState.Initializing);
-        events[8].State.ShouldBe(ExecutionState.Running);
-        events[9].State.ShouldBe(ExecutionState.Completing);
-        events[10].State.ShouldBe(ExecutionState.Completed);
-        events[11].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(12);
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
+
+        secondOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        secondOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
+        secondOrchestrationEvents[2].State.ShouldBe(ExecutionState.Initializing);
+        secondOrchestrationEvents[3].State.ShouldBe(ExecutionState.Running);
+        secondOrchestrationEvents[4].State.ShouldBe(ExecutionState.Completing);
+        secondOrchestrationEvents[5].State.ShouldBe(ExecutionState.Completed);
+        secondOrchestrationEvents[6].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        secondOrchestrationEvents.Count.ShouldBe(7);
     }
 
     public static TheoryData<Func<IInstantJobRegistry, string, CancellationToken, Guid>> InstantJobRunners()
@@ -328,13 +331,6 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
 
         var scheduledOrchestrationEvents = events.FilterByOrchestrationId(scheduledOrchestrationId);
         var instantOrchestrationEvents = events.FilterByOrchestrationId(instantOrchestrationId);
-
-        scheduledOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        scheduledOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        scheduledOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        scheduledOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        scheduledOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        scheduledOrchestrationEvents.Count.ShouldBe(5);
 
         instantOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         instantOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);

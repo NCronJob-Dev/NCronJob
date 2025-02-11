@@ -107,14 +107,8 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        var filteredEvents = events.WithOrchestrationId(orchestrationId);
-
-        filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        filteredEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        filteredEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        filteredEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        filteredEvents.Count.ShouldBe(5);
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeScheduledThenCancelled();
     }
 
     [Fact]
@@ -150,13 +144,8 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[1].State.ShouldBe(ExecutionState.NotStarted);
-        events[2].State.ShouldBe(ExecutionState.Scheduled);
-        events[3].State.ShouldBe(ExecutionState.Cancelled);
-        events[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(5);
-        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeScheduledThenCancelled();
     }
 
     [Fact]
@@ -185,23 +174,11 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).ShouldBeEmpty();
 
-        var firstOrchestrationEvents = events.WithOrchestrationId(firstOrchestrationId);
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
-        firstOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        firstOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        firstOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        firstOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        firstOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        firstOrchestrationEvents.Count.ShouldBe(5);
-
-        var secondOrchestrationEvents = events.WithOrchestrationId(secondOrchestrationId);
-
-        secondOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        secondOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        secondOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        secondOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        secondOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        secondOrchestrationEvents.Count.ShouldBe(5);
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
+        secondOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         ExecutionProgress? ASecondOrchestrationHasCompleted(IList<ExecutionProgress> events)
         {
@@ -242,18 +219,12 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
-        var thirdOrchestrationEvents = events.FilterByOrchestrationId(thirdOrchestrationId);
-
         // Initial scheduling
-        firstOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        firstOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        firstOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        firstOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        firstOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         // Rescheduling
+        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
         secondOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         secondOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
         secondOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
@@ -264,6 +235,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         secondOrchestrationEvents[7].State.ShouldBe(ExecutionState.OrchestrationCompleted);
 
         // Rescheduling (execution n+1)
+        var thirdOrchestrationEvents = events.FilterByOrchestrationId(thirdOrchestrationId);
         thirdOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         thirdOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
         thirdOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
@@ -359,8 +331,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         subscription.Dispose();
 
         var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
-
-        firstOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
 
@@ -432,14 +403,8 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         subscription.Dispose();
 
-        var filteredEvents = events.WithOrchestrationId(orchestrationId);
-
-        filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        filteredEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        filteredEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        filteredEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        filteredEvents.Count.ShouldBe(5);
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeScheduledThenCancelled();
     }
 
     [Fact]
@@ -505,13 +470,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         subscription.Dispose();
 
         var firstOrchestrationEvents = events.FilterByOrchestrationId(firstOrchestrationId);
-
-        firstOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        firstOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        firstOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        firstOrchestrationEvents[3].State.ShouldBe(ExecutionState.Cancelled);
-        firstOrchestrationEvents[4].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        firstOrchestrationEvents.Count.ShouldBe(5);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
 
