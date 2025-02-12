@@ -79,4 +79,13 @@ public static class EventsHelper
         events[5].State.ShouldBe(ExecutionState.OrchestrationCompleted);
         events.Count.ShouldBe(6);
     }
+
+    public static void ShouldBeInstantThenExpired(this IList<ExecutionProgress> events)
+    {
+        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
+        events[1].State.ShouldBe(ExecutionState.NotStarted);
+        events[2].State.ShouldBe(ExecutionState.Expired);
+        events[3].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+        events.Count.ShouldBe(4);
+    }
 }
