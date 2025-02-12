@@ -105,21 +105,14 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[1].ShouldBe("StartingService");
         Storage.Entries.Count.ShouldBe(2);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[1].State.ShouldBe(ExecutionState.NotStarted);
-        events[2].State.ShouldBe(ExecutionState.Initializing);
-        events[3].State.ShouldBe(ExecutionState.Running);
-        events[4].State.ShouldBe(ExecutionState.Completing);
-        events[5].State.ShouldBe(ExecutionState.Completed);
-        events[6].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(7);
-        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeInstantThenCompleted();
     }
 
     [Fact]
@@ -145,20 +138,14 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[0].ShouldBe("ExceptionHandler");
         Storage.Entries.Count.ShouldBe(1);
 
-        Guid orchestrationId = events[0].CorrelationId;
+        var orchestrationId = events[0].CorrelationId;
 
         await WaitForOrchestrationCompletion(events, orchestrationId);
 
         subscription.Dispose();
 
-        events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        events[1].State.ShouldBe(ExecutionState.NotStarted);
-        events[2].State.ShouldBe(ExecutionState.Initializing);
-        events[3].State.ShouldBe(ExecutionState.Running );
-        events[4].State.ShouldBe(ExecutionState.Faulted);
-        events[5].State.ShouldBe(ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(6);
-        events.ShouldAllBe(e => e.CorrelationId == orchestrationId);
+        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeInstantThenFaultedDuringRun();
     }
 
     [Fact]
