@@ -99,7 +99,6 @@ internal sealed class JobQueueManager : IDisposable
         {
             var cts = jobCancellationTokens[queueName];
             cts.Cancel();
-            Task.Delay(10).GetAwaiter().GetResult();
             jobCancellationTokens[queueName] = new CancellationTokenSource();
         }
     }
