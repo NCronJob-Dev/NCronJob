@@ -134,6 +134,34 @@ public abstract class JobIntegrationBase : IDisposable
         }
     }
 
+    protected async Task<IList<ExecutionProgress>> WaitForNthOrchestrationState(
+        IList<ExecutionProgress> events,
+        ExecutionState state,
+        int howMany)
+    {
+        List<ExecutionProgress> seen = new();
+
+        await WaitUntilConditionIsMet(events, LastOfNthCompletedOrchestration);
+
+        return seen;
+
+        ExecutionProgress? LastOfNthCompletedOrchestration(IList<ExecutionProgress> events)
+        {
+            var unseen = events
+                .Where(@event => @event.State == state && !seen.Contains(@event))
+                .ToList();
+
+            seen.AddRange(unseen.Take(Math.Min(unseen.Count, howMany - seen.Count)));
+
+            if (seen.Count != howMany)
+            {
+                return null;
+            }
+
+            return seen.Last();
+        }
+    }
+
     protected async Task<ExecutionProgress> WaitUntilConditionIsMet(
         IList<ExecutionProgress> events,
         Func<IList<ExecutionProgress>, ExecutionProgress?> evaluator)

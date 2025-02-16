@@ -284,8 +284,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromDays(1));
 
-        await WaitUntilConditionIsMet(events, events => events.FirstOrDefault(e => e.State == ExecutionState.OrchestrationCompleted
-            && e.CorrelationId != firstOrchestrationId));
+        await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationCompleted, 2);
 
         subscription.Dispose();
 
