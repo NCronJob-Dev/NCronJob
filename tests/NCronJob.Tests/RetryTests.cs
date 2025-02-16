@@ -151,7 +151,7 @@ public sealed class RetryTests : JobIntegrationBase
         private static readonly (Type jobType, ExecutionState state)[] JobAndStateTypes =
         [
             (typeof(FailingJob), ExecutionState.Retrying),
-            (typeof(LongRunningJob), ExecutionState.Running),
+            (typeof(RetryingLongRunningJob), ExecutionState.Running),
         ];
 
         private static readonly (Func<IServiceProvider, object> serviceRetriever, Action<object> serviceTriggerer)[] Actions =
@@ -209,13 +209,11 @@ public sealed class RetryTests : JobIntegrationBase
     }
 
     [RetryPolicy(retryCount: 2, PolicyType.FixedInterval)]
-    private sealed class LongRunningJob : IJob
+    private sealed class RetryingLongRunningJob : LongRunningJob
     {
-        public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public RetryingLongRunningJob(Storage storage, TimeProvider timeProvider)
+            : base(storage, timeProvider)
         {
-            await Task.Delay(TimeSpan.FromHours(1), token);
-
-            throw new InvalidOperationException("I should never be reached");
         }
     }
 
