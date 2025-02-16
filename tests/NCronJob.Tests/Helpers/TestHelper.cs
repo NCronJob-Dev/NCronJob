@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,7 @@ public abstract class JobIntegrationBase : IDisposable
     protected Channel<object> CommunicationChannel { get; } = Channel.CreateUnbounded<object>();
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
-    protected Storage Storage { get; } = new();
+    protected Storage Storage { get; }
 
     protected JobIntegrationBase()
     {
@@ -29,6 +30,8 @@ public abstract class JobIntegrationBase : IDisposable
         ServiceCollection.AddScoped<ChannelWriter<object>>(_ => CommunicationChannel.Writer);
         ServiceCollection.AddSingleton<IHostApplicationLifetime, MockHostApplicationLifetime>();
         ServiceCollection.AddSingleton<TimeProvider>(FakeTimer);
+
+        Storage = new(FakeTimer);
         ServiceCollection.AddSingleton(Storage);
     }
 
@@ -49,6 +52,28 @@ public abstract class JobIntegrationBase : IDisposable
         cancellationTokenSource.Dispose();
         cancellationSignaled.TrySetCanceled();
         serviceProvider?.Dispose();
+
+        var current = TestContext.Current;
+
+        if (current.Warnings is not null)
+        {
+            current.TestOutputHelper!.WriteLine("** Warnings:");
+
+            foreach (string warning in current.Warnings)
+            {
+                current.TestOutputHelper!.WriteLine(warning);
+            }
+        }
+
+        if (current.TestState is not null && current.TestState.Result == TestResult.Failed)
+        {
+            current.TestOutputHelper!.WriteLine("** Storage:");
+
+            foreach ((string timestamp, string content) in Storage.TimedEntries)
+            {
+                current.TestOutputHelper!.WriteLine($"{timestamp} {content}");
+            }
+        }
     }
 
     // TODO: Replace calls to this method in the tests with `ServiceProvider`
@@ -192,20 +217,21 @@ public abstract class JobIntegrationBase : IDisposable
     }
 }
 
-public sealed class Storage
+public sealed class Storage(TimeProvider timeProvider)
 {
 #if NET9_0_OR_GREATER
     private readonly Lock locker = new();
 #else
     private readonly object locker = new();
 #endif
-    public IList<string> Entries { get; private set; } = [];
+    public IList<string> Entries => new ReadOnlyCollection<string>(TimedEntries.Select(e => e.Item2).ToList());
+    public IList<(string, string)> TimedEntries { get; } = [];
 
     public void Add(string content)
     {
         lock (locker)
         {
-            Entries.Add(content);
+            TimedEntries.Add((timeProvider.GetUtcNow().ToString("o"), content));
         }
     }
 }
