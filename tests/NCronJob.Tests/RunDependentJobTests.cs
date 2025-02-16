@@ -73,16 +73,14 @@ public class RunDependentJobTests : JobIntegrationBase
         registry.RemoveJob<MainJob>();
         registry.TryRegister(n => n.AddJob<MainJob>());
 
-        Storage.Entries.Clear();
-
         Guid secondRunOrchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
 
         await WaitForOrchestrationCompletion(events, secondRunOrchestrationId);
 
         subscription.Dispose();
 
-        Storage.Entries[0].ShouldBe(nameof(MainJob));
-        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[2].ShouldBe(nameof(MainJob));
+        Storage.Entries.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -158,7 +156,7 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         Func<Storage, JobExecutionContext, Task> execution = (storage, context) =>
         {
-            storage.Entries.Add($"Parent: {context.ParentOutput}");
+            storage.Add($"Parent: {context.ParentOutput}");
             return Task.CompletedTask;
         };
 
@@ -266,9 +264,9 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob<PrincipalJob>(s => s.WithCronExpression("1 0 1 * *").WithParameter(true))
-                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Entries.Add("1")));
+                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Add("1")));
             n.AddJob<PrincipalJob>(s => s.WithCronExpression("1 0 2 * *").WithParameter(true))
-                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Entries.Add("2")));
+                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Add("2")));
         });
 
         (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
@@ -284,17 +282,15 @@ public class RunDependentJobTests : JobIntegrationBase
         Storage.Entries.ShouldContain("PrincipalJob: Success");
         Storage.Entries.ShouldContain("1");
 
-        Storage.Entries.Clear();
         FakeTimer.Advance(TimeSpan.FromDays(1));
 
-        await WaitUntilConditionIsMet(events, events => events.FirstOrDefault(e => e.State == ExecutionState.OrchestrationCompleted
-            && e.CorrelationId != firstOrchestrationId));
+        await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationCompleted, 2);
 
         subscription.Dispose();
 
-        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("2");
-        Storage.Entries.Count.ShouldBe(2);
+        Storage.Entries[2].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[3].ShouldBe("2");
+        Storage.Entries.Count.ShouldBe(4);
     }
 
     [Fact]
@@ -377,7 +373,7 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            storage.Entries.Add(context.CorrelationId.ToString());
+            storage.Add(context.CorrelationId.ToString());
             return Task.CompletedTask;
         }
     }

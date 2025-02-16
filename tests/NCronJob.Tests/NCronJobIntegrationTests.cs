@@ -634,7 +634,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     {
         public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            storage.Entries.Add(guidGenerator.NewGuid.ToString());
+            storage.Add(guidGenerator.NewGuid.ToString());
             await writer.WriteAsync(true, token);
         }
     }
