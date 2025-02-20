@@ -58,8 +58,8 @@ public sealed class TimeZoneTests : JobIntegrationBase
     public async Task ShouldCorrectlyHandleDaylightSavingTimeSpringForward()
     {
         var baseTime = new DateTimeOffset(2024, 3, 9, 23, 59, 59, TimeSpan.Zero); // Just before the spring forward
-        SetupJobWithTimeZone<SimpleJob>("0 2 * * *", "Eastern Standard Time");
-        var jobEntry = await InitializeService<SimpleJob>(baseTime);
+        SetupJobWithTimeZone<DummyJob>("0 2 * * *", "Eastern Standard Time");
+        var jobEntry = await InitializeService<DummyJob>(baseTime);
 
         var expectedRunTime = new DateTimeOffset(2024, 3, 10, 7, 0, 0, TimeSpan.Zero); // 3 AM EDT is 7 AM UTC
         var nextRunTime = GetNextRunTime(jobEntry, baseTime.AddMinutes(2), jobEntry.TimeZone!);
@@ -71,8 +71,8 @@ public sealed class TimeZoneTests : JobIntegrationBase
     public async Task ShouldCalculateNextRunTimeBasedOnTimeZone()
     {
         var baseTime = new DateTimeOffset(2024, 1, 1, 11, 0, 0, TimeSpan.Zero); // This is 6 AM EST on Jan 1, 2024
-        SetupJobWithTimeZone<SimpleJob>("0 12 * * *", "Eastern Standard Time");
-        var jobEntry = await InitializeService<SimpleJob>(baseTime);
+        SetupJobWithTimeZone<DummyJob>("0 12 * * *", "Eastern Standard Time");
+        var jobEntry = await InitializeService<DummyJob>(baseTime);
 
         var expectedRunTime = new DateTimeOffset(2024, 1, 1, 17, 0, 0, TimeSpan.Zero); // Noon EST is 5 PM UTC
         var nextRunTime = GetNextRunTime(jobEntry, baseTime, jobEntry.TimeZone!);
@@ -84,8 +84,8 @@ public sealed class TimeZoneTests : JobIntegrationBase
     public async Task ShouldHandleCrossTimezoneSchedulingCorrectly()
     {
         var baseTime = new DateTimeOffset(2024, 1, 1, 11, 0, 0, TimeSpan.Zero); // This is 3 AM PST, 6 AM EST
-        SetupJobWithTimeZone<SimpleJob>("0 8 * * *", "Pacific Standard Time");
-        var jobEntry = await InitializeService<SimpleJob>(baseTime);
+        SetupJobWithTimeZone<DummyJob>("0 8 * * *", "Pacific Standard Time");
+        var jobEntry = await InitializeService<DummyJob>(baseTime);
 
         var expectedRunTime = new DateTimeOffset(2024, 1, 1, 16, 0, 0, TimeSpan.Zero); // 8 AM PST is 11 AM EST, which is 4 PM UTC
         var nextRunTime = GetNextRunTime(jobEntry, baseTime, jobEntry.TimeZone!);
@@ -112,13 +112,5 @@ public sealed class TimeZoneTests : JobIntegrationBase
         var cronRegistryEntries = ServiceProvider.GetRequiredService<JobRegistry>().GetAllCronJobs();
 
         return cronRegistryEntries.First(entry => entry.Type == typeof(T));
-    }
-
-    private sealed class SimpleJob() : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            return Task.CompletedTask;
-        }
     }
 }
