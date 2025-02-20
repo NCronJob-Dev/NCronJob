@@ -9,8 +9,8 @@ public class NotificationHandlerTests : JobIntegrationBase
     public async Task ShouldCallNotificationHandlerWhenJobIsDone()
     {
         ServiceCollection.AddNCronJob(n => n
-                .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
-                .AddNotificationHandler<SimpleJobHandler>()
+                .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .AddNotificationHandler<DummyJobHandler>()
         );
 
         await StartNCronJobAndAssertSimpleJobWasProcessedAndNotified();
@@ -30,7 +30,7 @@ public class NotificationHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[0].ShouldBe("InvalidOperationException");
+        Storage.Entries[0].ShouldBe("ExceptionHandler - Exception: InvalidOperationException");
         Storage.Entries.Count.ShouldBe(1);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
@@ -41,8 +41,8 @@ public class NotificationHandlerTests : JobIntegrationBase
     public async Task HandlerThatThrowsExceptionShouldNotInfluenceOtherHandlers()
     {
         ServiceCollection.AddNCronJob(n => n
-                .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
-                .AddNotificationHandler<SimpleJobHandler>()
+                .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .AddNotificationHandler<DummyJobHandler>()
                 .AddJob<ExceptionJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
                 .AddNotificationHandler<HandlerThatThrowsException>()
         );
@@ -54,8 +54,8 @@ public class NotificationHandlerTests : JobIntegrationBase
     public async Task HandlerThatThrowsExceptionInAsyncPartShouldNotInfluenceOtherHandlers()
     {
         ServiceCollection.AddNCronJob(n => n
-                .AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
-                .AddNotificationHandler<SimpleJobHandler>()
+                .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .AddNotificationHandler<DummyJobHandler>()
                 .AddJob<ExceptionJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
                 .AddNotificationHandler<HandlerThatThrowsInAsyncPartException>()
         );
@@ -71,24 +71,16 @@ public class NotificationHandlerTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[0].ShouldBe("Foo");
-        Storage.Entries.Count.ShouldBe(1);
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
+        Storage.Entries[1].ShouldBe("DummyJobHandler - Output: ");
+        Storage.Entries.Count.ShouldBe(2);
     }
 
-    private sealed class SimpleJob : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            context.Output = "Foo";
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class SimpleJobHandler(Storage storage) : IJobNotificationHandler<SimpleJob>
+    private sealed class DummyJobHandler(Storage storage) : IJobNotificationHandler<DummyJob>
     {
         public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
         {
-            storage.Add(context.Output!.ToString()!);
+            storage.Add($"{GetType().Name} - Output: {context.Output?.ToString()}");
             return Task.CompletedTask;
         }
     }
@@ -99,7 +91,7 @@ public class NotificationHandlerTests : JobIntegrationBase
         {
             exception.ShouldNotBeNull();
 
-            storage.Add(exception!.GetType().Name);
+            storage.Add($"{GetType().Name} - Exception: {exception!.GetType().Name}");
             return Task.CompletedTask;
         }
     }

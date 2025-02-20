@@ -12,7 +12,7 @@ public class NCronJobTests
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
         var builder = new NCronJobOptionBuilder(collection, settings, new());
 
-        Action act = () => builder.AddJob<FakeJob>(o => o.WithCronExpression("not-valid"));
+        Action act = () => builder.AddJob<DummyJob>(o => o.WithCronExpression("not-valid"));
 
         act.ShouldThrow<ArgumentException>();
     }
@@ -24,7 +24,7 @@ public class NCronJobTests
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
         var builder = new NCronJobOptionBuilder(collection, settings, new());
 
-        Action act = () => builder.AddJob<FakeJob>(o =>
+        Action act = () => builder.AddJob<DummyJob>(o =>
         {
             o.WithCronExpression(Cron.AtEverySecond);
         });
@@ -45,7 +45,7 @@ public class NCronJobTests
         var collection = new ServiceCollection();
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
         var builder = new NCronJobOptionBuilder(collection, settings, new());
-        Should.Throw<ArgumentException>(() => builder.AddJob<FakeJob>(p => p.WithCronExpression("* * *")));
+        Should.Throw<ArgumentException>(() => builder.AddJob<DummyJob>(p => p.WithCronExpression("* * *")));
     }
 
     [Fact]
@@ -73,11 +73,5 @@ public class NCronJobTests
         builder.WithCronExpression("0 1 * * *");
         options = builder.GetJobOptions();
         options.ShouldContain(o => o.CronExpression == "0 1 * * *");
-    }
-
-    private sealed class FakeJob : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-            => throw new NotImplementedException();
     }
 }

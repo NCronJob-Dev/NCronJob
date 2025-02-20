@@ -14,7 +14,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         var builder = Host.CreateDefaultBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
         });
 
         using var app = BuildApp(builder);
@@ -30,14 +30,14 @@ public class RunAtStartupJobTests : JobIntegrationBase
         var builder = Host.CreateDefaultBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
         });
 
         using var app = BuildApp(builder);
 
         await app.UseNCronJobAsync();
 
-        Storage.Entries[0].ShouldBe("SimpleJob");
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(1);
     }
 
@@ -68,19 +68,19 @@ public class RunAtStartupJobTests : JobIntegrationBase
         {
             s =>
             {
-                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
-                s.AddJob<SimpleJob>().RunAtStartup();
+                s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
+                s.AddJob<DummyJob>().RunAtStartup();
             }
         },
         {
             s =>
             {
-                s.AddJob<SimpleJob>().RunAtStartup();
-                s.AddJob<SimpleJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
+                s.AddJob<DummyJob>().RunAtStartup();
+                s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
             }
         },
         {
-            s => s.AddJob<SimpleJob>(jo => jo.WithCronExpression(Cron.AtMinute5)).RunAtStartup()
+            s => s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5)).RunAtStartup()
         },
     };
 
@@ -90,7 +90,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         var builder = Host.CreateDefaultBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<SimpleJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
             services.AddHostedService<StartingService>();
         });
 
@@ -101,7 +101,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        Storage.Entries[0].ShouldBe("SimpleJob");
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries[1].ShouldBe("StartingService");
         Storage.Entries.Count.ShouldBe(2);
 
@@ -210,19 +210,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
         }
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    private sealed class SimpleJob : IJob
-    {
-        private readonly Storage storage;
-
-        public SimpleJob(Storage storage) => this.storage = storage;
-
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add("SimpleJob");
-            return Task.CompletedTask;
-        }
     }
 
     private sealed class FailingJob : IJob
