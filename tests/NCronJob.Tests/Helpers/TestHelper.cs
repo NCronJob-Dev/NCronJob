@@ -1,11 +1,7 @@
-using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Time.Testing;
-using Shouldly;
+using System.Collections.ObjectModel;
 
 namespace NCronJob.Tests;
 
@@ -21,6 +17,8 @@ public abstract class JobIntegrationBase : IDisposable
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; } = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
     protected Storage Storage { get; }
+    protected IList<ExecutionProgress> Events { get; private set; } = [];
+    private IDisposable? subscription;
 
     protected JobIntegrationBase()
     {
@@ -49,6 +47,13 @@ public abstract class JobIntegrationBase : IDisposable
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
         cancellationSignaled.TrySetCanceled();
+
+#pragma warning disable IDISP023 // Don't use reference types in finalizer context
+        // False positive (cf. https://github.com/DotNetAnalyzers/IDisposableAnalyzers/issues/176)
+
+        StopMonitoringEvents();
+#pragma warning restore IDISP023 // Don't use reference types in finalizer context
+
         serviceProvider?.Dispose();
 
         var current = TestContext.Current;
@@ -65,6 +70,14 @@ public abstract class JobIntegrationBase : IDisposable
 
         if (current.TestState is not null && current.TestState.Result == TestResult.Failed)
         {
+            current.TestOutputHelper!.WriteLine("** Events:");
+
+            foreach (ExecutionProgress @event in Events)
+            {
+                current.TestOutputHelper!.WriteLine($"{@event.Timestamp:o} {@event.CorrelationId} {@event.State}");
+            }
+
+            current.TestOutputHelper!.WriteLine("");
             current.TestOutputHelper!.WriteLine("** Storage:");
 
             foreach ((string timestamp, string content) in Storage.TimedEntries)
@@ -77,57 +90,95 @@ public abstract class JobIntegrationBase : IDisposable
     protected ServiceProvider ServiceProvider => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
     protected async Task<IList<ExecutionProgress>> WaitForNthOrchestrationState(
-        IList<ExecutionProgress> events,
         ExecutionState state,
         int howMany,
-        Action? onAnyFoundButLast = null)
+        Action? onAnyFoundButLast = null,
+        bool stopMonitoringEvents = false)
     {
         List<ExecutionProgress> seen = new();
 
-        await WaitUntilConditionIsMet(events, LastOfNthCompletedOrchestration);
+        await WaitUntilConditionIsMet(LastOfNthCompletedOrchestration, stopMonitoringEvents);
 
         return seen;
 
-        ExecutionProgress? LastOfNthCompletedOrchestration(IList<ExecutionProgress> executionProgresses)
+        bool LastOfNthCompletedOrchestration(ExecutionProgress @event)
         {
-            var matches = executionProgresses.Where(e => e.State == state).ToList();
+            if (@event.State != state)
+            {
+                return false;
+            }
 
-            if (onAnyFoundButLast is not null && matches.Count > 0 && matches.Count < howMany)
+            seen.Add(@event);
+
+            if (onAnyFoundButLast is not null && seen.Count < howMany)
             {
                 onAnyFoundButLast();
             }
 
-            if (matches.Count < howMany)
-            {
-                return null;
-            }
-
-            seen.AddRange(matches.Take(howMany));
-
-            return seen.Last();
+            return seen.Count == howMany;
         }
     }
 
     protected async Task WaitForOrchestrationCompletion(
-        IList<ExecutionProgress> events,
-        Guid orchestrationId)
+        Guid orchestrationId,
+        bool stopMonitoringEvents = false)
     {
-        await WaitForOrchestrationState(events, orchestrationId, ExecutionState.OrchestrationCompleted);
+        await WaitForOrchestrationState(
+            Events,
+            orchestrationId,
+            ExecutionState.OrchestrationCompleted,
+            stopMonitoringEvents);
+    }
+
+    protected async Task WaitForOrchestrationCompletion(
+        IList<ExecutionProgress> events,
+        Guid orchestrationId,
+        bool stopMonitoringEvents = false)
+    {
+        await WaitForOrchestrationState(
+            events,
+            orchestrationId,
+            ExecutionState.OrchestrationCompleted,
+            stopMonitoringEvents);
+    }
+
+    protected async Task WaitForOrchestrationState(
+        Guid orchestrationId,
+        ExecutionState state,
+        bool stopMonitoringEvents = false)
+    {
+        AssertEventsAreBeingMonitored();
+
+        await WaitForOrchestrationState(Events, orchestrationId, state, stopMonitoringEvents);
     }
 
     protected async Task WaitForOrchestrationState(
         IList<ExecutionProgress> events,
         Guid orchestrationId,
-        ExecutionState state)
+        ExecutionState state,
+        bool stopMonitoringEvents = false)
     {
-        await WaitUntilConditionIsMet(events, OrchestrationHasReachedExpectedState);
+        await WaitUntilConditionIsMet(
+            events,
+            OrchestrationHasReachedExpectedState,
+            stopMonitoringEvents);
 
-        ExecutionProgress? OrchestrationHasReachedExpectedState(IList<ExecutionProgress> events)
+        bool OrchestrationHasReachedExpectedState(ExecutionProgress @event)
         {
-            return events.FirstOrDefault(@event =>
-                @event.CorrelationId == orchestrationId &&
-                @event.State == state);
+            return @event.CorrelationId == orchestrationId && @event.State == state;
         }
+    }
+
+    protected async Task StartNCronJob(
+        bool startMonitoringEvents = false)
+    {
+        if (startMonitoringEvents)
+        {
+            (subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+            Events = events;
+        }
+
+        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
     }
 
     protected static (IDisposable subscription, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(IServiceProvider serviceProvider)
@@ -145,8 +196,18 @@ public abstract class JobIntegrationBase : IDisposable
     }
 
     private async Task<ExecutionProgress> WaitUntilConditionIsMet(
+        Func<ExecutionProgress, bool> evaluator,
+        bool stopMonitoringEvents = false)
+    {
+        AssertEventsAreBeingMonitored();
+
+        return await WaitUntilConditionIsMet(Events, evaluator, stopMonitoringEvents);
+    }
+
+    private async Task<ExecutionProgress> WaitUntilConditionIsMet(
         IList<ExecutionProgress> events,
-        Func<IList<ExecutionProgress>, ExecutionProgress?> evaluator)
+        Func<ExecutionProgress, bool> evaluator,
+        bool stopMonitoringEvents = false)
     {
         // Note: Although this function could seem a bit over-engineered, it's sadly necessary.
         // Indeed, events may actually be updated upstream while it's being enumerated
@@ -155,29 +216,48 @@ public abstract class JobIntegrationBase : IDisposable
 
         int index = 0;
 
-        List<ExecutionProgress> tmp = [];
-
         while (true)
         {
             int count = events.Count;
 
             while (index < count)
             {
-                tmp.Add(events[index]);
+                if (evaluator(events[index]))
+                {
+                    if (stopMonitoringEvents)
+                    {
+                        StopMonitoringEvents();
+                    }
+
+                    return events[index];
+                }
+
                 index++;
-            }
-
-            var entry = evaluator(tmp);
-
-            if (entry is not null)
-            {
-                return entry;
             }
 
             FakeTimer.Advance(TimeSpan.FromSeconds(1));
 
             await Task.Delay(TimeSpan.FromMilliseconds(20), CancellationToken);
         }
+    }
+
+    private void StopMonitoringEvents()
+    {
+        subscription?.Dispose();
+    }
+
+    private void AssertEventsAreBeingMonitored()
+    {
+        if (subscription is not null)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Events aren't monitored.
+            Invoke '{nameof(StartNCronJob)}' and explicitly set the appropriate parameter to do so.
+            """);
     }
 }
 
@@ -188,6 +268,7 @@ public sealed class Storage(TimeProvider timeProvider)
 #else
     private readonly object locker = new();
 #endif
+
     public IList<string> Entries => new ReadOnlyCollection<string>(TimedEntries.Select(e => e.Item2).ToList());
     public IList<(string, string)> TimedEntries { get; } = [];
 

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -11,26 +10,22 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob();
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        events.Count.ShouldBe(0);
+        Events.Count.ShouldBe(0);
 
         Delegate jobDelegate = (Storage storage) => storage.Add("true");
         registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out _).ShouldBe(true);
 
-        var orchestrationId = events[0].CorrelationId;
+        var orchestrationId = Events[0].CorrelationId;
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenCompleted();
 
         Storage.Entries[0].ShouldBe("true");
@@ -42,13 +37,11 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob();
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        events.Count.ShouldBe(0);
+        Events.Count.ShouldBe(0);
 
         Delegate jobDelegateOne = (Storage storage) => storage.Add("one");
         Delegate jobDelegateTwo = (Storage storage) => storage.Add("two");
@@ -58,14 +51,15 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var completedOrchestrationEvents = await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationCompleted, 2);
+        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
+            ExecutionState.OrchestrationCompleted,
+            2,
+            stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var firstOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
         secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
         Storage.Entries.ShouldContain("one");
@@ -79,23 +73,19 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(
             s => s.AddJob((Storage storage) => storage.Add("true"), Cron.AtEveryMinute, jobName: "Job"));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var orchestrationId = events[0].CorrelationId;
+        var orchestrationId = Events[0].CorrelationId;
 
         registry.RemoveJob("Job");
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenCancelled();
     }
 
@@ -110,70 +100,63 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         jobRegistry.GetAllJobs().ShouldBeEmpty();
 
         registry.RemoveJob("Nope");
-        registry.RemoveJob<SimpleJob>();
+        registry.RemoveJob<DummyJob>();
     }
 
     [Fact]
     public async Task CanRemoveByJobType()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        var orchestrationId = events[0].CorrelationId;
+        var orchestrationId = Events[0].CorrelationId;
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.RemoveJob<SimpleJob>();
+        registry.RemoveJob<DummyJob>();
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenCancelled();
     }
 
     [Fact]
     public async Task RemovingByJobTypeAccountsForAllJobs()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("1 * * * *")));
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute2)));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression("1 * * * *")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2)));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).Count.ShouldBe(2);
+        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).Count.ShouldBe(2);
 
-        registry.RemoveJob<SimpleJob>();
+        registry.RemoveJob<DummyJob>();
 
-        var completedOrchestrationEvents = await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationCompleted, 2);
+        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
+            ExecutionState.OrchestrationCompleted,
+            2,
+            stopMonitoringEvents: true);
 
-        subscription.Dispose();
+        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
 
-        jobRegistry.FindAllJobDefinition(typeof(SimpleJob)).ShouldBeEmpty();
-
-        var firstOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
         secondOrchestrationEvents.ShouldBeScheduledThenCancelled();
     }
 
     [Fact]
     public async Task CanUpdateScheduleOfAJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -186,29 +169,27 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var startedOrchestrationEvents = await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationStarted, 3);
+        var startedOrchestrationEvents = await WaitForNthOrchestrationState(ExecutionState.OrchestrationStarted, 3);
 
         var secondOrchestrationId = startedOrchestrationEvents[1].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, secondOrchestrationId);
-
-        subscription.Dispose();
+        await WaitForOrchestrationCompletion(secondOrchestrationId, stopMonitoringEvents: true);
 
         // Initial scheduling
-        var firstOrchestrationEvents = events.FilterByOrchestrationId(startedOrchestrationEvents[0].CorrelationId);
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(startedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
         // Rescheduling
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(secondOrchestrationId);
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(secondOrchestrationId);
         secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
         // Rescheduling (execution n+1)
-        var thirdOrchestrationEvents = events.FilterByOrchestrationId(startedOrchestrationEvents[2].CorrelationId);
+        var thirdOrchestrationEvents = Events.FilterByOrchestrationId(startedOrchestrationEvents[2].CorrelationId);
         thirdOrchestrationEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         thirdOrchestrationEvents[1].State.ShouldBe(ExecutionState.NotStarted);
         thirdOrchestrationEvents[2].State.ShouldBe(ExecutionState.Scheduled);
 
-        events.Count.ShouldBe(16);
+        Events.Count.ShouldBe(16);
     }
 
     [Fact]
@@ -224,7 +205,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void ShouldRetrieveScheduleForCronJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -254,7 +235,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(s =>
         {
-            s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Job1"))
+            s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Job1"))
                 .ExecuteWhen(r => r.RunJob(() => { }, "Job2"));
         });
 
@@ -269,14 +250,12 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task UpdatingParameterHasImmediateEffect()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
             .WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo")
             .WithName("JobName")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -284,17 +263,18 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var completedOrchestrationEvents = await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationCompleted, 2);
+        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
+            ExecutionState.OrchestrationCompleted,
+            2,
+            stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var firstOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
         secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
-        Storage.Entries[0].ShouldBe("Bar");
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: Bar");
         Storage.Entries.Count.ShouldBe(1);
     }
 
@@ -302,7 +282,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     public void ShouldRetrieveAllSchedules()
     {
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
             .WithCronExpression(Cron.AtEvery2ndMinute, timeZoneInfo: timeZone)
             .WithName("JobName")));
 
@@ -323,10 +303,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void AddingJobDuringRuntimeIsRetrieved()
     {
-        ServiceCollection.AddNCronJob(p => p.AddJob<SimpleJob>());
+        ServiceCollection.AddNCronJob(p => p.AddJob<DummyJob>());
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.TryRegister(n => n.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        registry.TryRegister(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
 
         var allSchedules = registry.GetAllRecurringJobs();
 
@@ -339,50 +319,46 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldDisableJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
-
-        var orchestrationId = events[0].CorrelationId;
+        var orchestrationId = Events[0].CorrelationId;
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         registry.DisableJob("JobName");
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenCancelled();
     }
 
     [Fact]
     public void DisablingAndEnablingByJobTypeAccountsForAllJobs()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>());
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtMinute2)));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>());
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2)));
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        var jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+        var jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
         jobs.ShouldAllBe(j => j.CronExpression == null || j.CronExpression != RuntimeJobRegistry.TheThirtyFirstOfFebruary);
 
-        registry.DisableJob<SimpleJob>();
+        registry.DisableJob<DummyJob>();
 
-        jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+        jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
         jobs.ShouldAllBe(j => j.CronExpression == RuntimeJobRegistry.TheThirtyFirstOfFebruary);
 
-        registry.EnableJob<SimpleJob>();
+        registry.EnableJob<DummyJob>();
 
-        jobs = jobRegistry.FindAllJobDefinition(typeof(SimpleJob));
+        jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
         jobs.Count(j => j.CronExpression is null).ShouldBe(1);
@@ -402,11 +378,9 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public async Task ShouldEnableJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        await StartNCronJob(startMonitoringEvents: true);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         registry.DisableJob("JobName");
@@ -415,14 +389,15 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
-        var completedOrchestrationEvents = await WaitForNthOrchestrationState(events, ExecutionState.OrchestrationCompleted, 2);
+        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
+            ExecutionState.OrchestrationCompleted,
+            2,
+            stopMonitoringEvents: true);
 
-        subscription.Dispose();
-
-        var firstOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
 
-        var secondOrchestrationEvents = events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
         secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
 
     }
@@ -430,7 +405,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void ShouldThrowWhenDuplicateJobNamesDuringRegistration()
     {
-        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")
+        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")
             .And.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
 
         act.ShouldThrow<InvalidOperationException>();
@@ -439,7 +414,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     [Fact]
     public void ShouldThrowRuntimeExceptionWithDuplicateJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
         var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var successful = runtimeJobRegistry.TryRegister(s => s.AddJob(() =>
@@ -456,9 +431,9 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob();
         var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
-        runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+        runtimeJobRegistry.TryRegister(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
 
         successful.ShouldBeFalse();
         exception.ShouldNotBeNull();
@@ -470,18 +445,9 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         ServiceCollection.AddNCronJob();
         var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<SimpleJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
+        var successful = runtimeJobRegistry.TryRegister(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
 
         successful.ShouldBeTrue();
         exception.ShouldBeNull();
-    }
-
-    private sealed class SimpleJob(Storage storage) : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add(context.Parameter?.ToString() ?? string.Empty);
-            return Task.CompletedTask;
-        }
     }
 }
