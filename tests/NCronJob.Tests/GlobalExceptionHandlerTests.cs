@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -16,17 +15,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var orchestrationId = Events[0].CorrelationId;
 
-        var orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
 
         Storage.Entries[0].ShouldBe("1");
@@ -44,17 +39,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var orchestrationId = Events[0].CorrelationId;
 
-        var orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
 
         Storage.Entries[0].ShouldBe("1");
@@ -71,17 +62,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var orchestrationId = Events[0].CorrelationId;
 
-        var orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
 
         Storage.Entries[0].ShouldBe("boom");
@@ -98,17 +85,13 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<JobThatThrowsInCtor>(b => b.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+        await StartNCronJob(startMonitoringEvents: true);
 
-        await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var orchestrationId = Events[0].CorrelationId;
 
-        var orchestrationId = events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
-
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringInitialization();
 
         Storage.Entries[0].ShouldBe("1");
