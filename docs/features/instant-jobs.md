@@ -82,7 +82,8 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 ```
 
 ## Priority
-Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).
+
+Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, only the instant job will be executed).
 
 ## Force a job run
 
@@ -145,6 +146,30 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
         await httpClient.PostAsync("https://api.example.com/send-email", new StringContent(JsonSerializer.Serialize(parameterDto)));
     });
     return TypedResults.Ok();
+});
+```
+
+## Precautions of use
+
+Depending of the way jobs are designed and registered, it may happen that **NCronJob** cannot uniquely identify the intended target of a instant run.
+
+In that case, rather than accidently running the wrong job, a runtime exception will be thrown stating that than an ambiguity has been detected.
+
+```csharp
+Services.AddNCronJob(options =>
+{
+    options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 * * *")) // Every day at midnight
+                .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
+
+    options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 1 * *")) // Every first of the month at midnight
+                .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
+});
+
+app.MapPost("/on-demand-report", (IInstantJobRegistry registry) => {
+
+    registry.RunInstantJob<GatherDataJob>(); // Ambiguous reference. This will throw :-/
+
+    return Results.Accepted();
 });
 ```
 

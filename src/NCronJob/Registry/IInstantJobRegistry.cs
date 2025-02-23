@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace NCronJob;
 
@@ -250,7 +249,17 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     {
         using (logger.BeginScope("Triggering RunScheduledJob:"))
         {
-            var jobDefinition = jobRegistry.FindFirstJobDefinition(typeof(TJob));
+            var jobDefinitions = jobRegistry.FindAllJobDefinition(typeof(TJob));
+
+            if (jobDefinitions.Count > 1)
+            {
+                throw new InvalidOperationException(
+                $"""
+                Ambiguous job reference for type '{typeof(TJob).Name}' detected.
+                """);
+            }
+
+            var jobDefinition = jobDefinitions.FirstOrDefault();
 
             if (jobDefinition is null)
             {

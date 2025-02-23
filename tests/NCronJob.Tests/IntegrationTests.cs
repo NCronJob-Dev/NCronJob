@@ -146,7 +146,8 @@ public sealed class IntegrationTests : JobIntegrationBase
 
     [Theory]
     [MemberData(nameof(InstantJobRunners))]
-    public async Task InstantJobCanStartADisabledJob(Func<IInstantJobRegistry, string, CancellationToken, Guid> instantJobRunner)
+    public async Task InstantJobCanStartADisabledJob(
+        Func<IInstantJobRegistry, TimeProvider, string, CancellationToken, Guid> instantJobRunner)
     {
         ServiceCollection.AddNCronJob(
             n => n.AddJob<DummyJob>((jo) => jo.WithCronExpression(Cron.AtEveryMinute)));
@@ -161,7 +162,7 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
 
-        var instantOrchestrationId = instantJobRunner(instantJobRegistry, "Hello from InstantJob", CancellationToken);
+        var instantOrchestrationId = instantJobRunner(instantJobRegistry, FakeTimer, "Hello from InstantJob", CancellationToken);
 
         await WaitForOrchestrationCompletion(instantOrchestrationId, stopMonitoringEvents: true);
 
@@ -172,11 +173,36 @@ public sealed class IntegrationTests : JobIntegrationBase
         instantOrchestrationEvents.ShouldBeInstantThenCompleted();
     }
 
-    public static TheoryData<Func<IInstantJobRegistry, string, CancellationToken, Guid>> InstantJobRunners()
+    [Theory]
+    [MemberData(nameof(InstantJobRunners))]
+    public async Task ShouldThrowRuntimeExceptionWhenTriggeringThroughTheInstantJobRegistryAnAmbiguousTypeReference(
+        Func<IInstantJobRegistry, TimeProvider, string, CancellationToken, Guid> instantJobRunner)
     {
-        var t = new TheoryData<Func<IInstantJobRegistry, string, CancellationToken, Guid>>();
-        t.Add((i, p, t) => i.RunInstantJob<DummyJob>(p, t));
-        t.Add((i, p, t) => i.ForceRunInstantJob<DummyJob>(p, t));
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DummyJob>(s => s.WithCronExpression(Cron.AtMinute5))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+            n.AddJob<DummyJob>(s => s.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<ExceptionJob>());
+        });
+
+        await StartNCronJob(startMonitoringEvents: false);
+
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        Action act = () => instantJobRunner(instantJobRegistry, FakeTimer, "Hello from InstantJob", CancellationToken);
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain($"Ambiguous job reference for type 'DummyJob' detected.");
+    }
+
+    public static TheoryData<Func<IInstantJobRegistry, TimeProvider, string, CancellationToken, Guid>> InstantJobRunners()
+    {
+        var t = new TheoryData<Func<IInstantJobRegistry, TimeProvider, string, CancellationToken, Guid>>();
+        t.Add((i, f, p, t) => i.RunInstantJob<DummyJob>(p, t));
+        t.Add((i, f, p, t) => i.RunScheduledJob<DummyJob>(f.GetUtcNow(), p, t));
+        t.Add((i, f, p, t) => i.ForceRunInstantJob<DummyJob>(p, t));
+        t.Add((i, f, p, t) => i.ForceRunScheduledJob<DummyJob>(TimeSpan.Zero, p, t));
         return t;
     }
 
