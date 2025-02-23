@@ -9,7 +9,7 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task WhenJobWasSuccessful_DependentJobShouldRun()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("Message")));
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")));
 
         await StartNCronJob(startMonitoringEvents: true);
 
@@ -18,7 +18,7 @@ public class RunDependentJobTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
         Storage.Entries.Count.ShouldBe(2);
     }
 
@@ -26,7 +26,7 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task WhenJobWasFailed_DependentJobShouldRun()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("Message")));
+            .ExecuteWhen(faulted: s => s.RunJob<DummyJob>("Message")));
 
         await StartNCronJob(startMonitoringEvents: true);
 
@@ -35,38 +35,38 @@ public class RunDependentJobTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Failed");
-        Storage.Entries[1].ShouldBe("DependentJob: Message Parent: Failed");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
         Storage.Entries.Count.ShouldBe(2);
     }
 
     [Fact]
     public async Task RemovingAJobShouldAlsoRemoveItsDependencies()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<MainJob>()
-            .ExecuteWhen(success: s => s.RunJob<SubMainJob>()));
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>()
+            .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>()));
 
         await StartNCronJob(startMonitoringEvents: true);
 
         var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
 
-        var orchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
+        var orchestrationId = instantJobRegistry.ForceRunInstantJob<DummyJob>(token: CancellationToken);
 
         await WaitForOrchestrationCompletion(orchestrationId);
 
-        Storage.Entries[0].ShouldBe(nameof(MainJob));
-        Storage.Entries[1].ShouldBe(nameof(SubMainJob));
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
+        Storage.Entries[1].ShouldBe("AnotherDummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(2);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        registry.RemoveJob<MainJob>();
-        registry.TryRegister(n => n.AddJob<MainJob>());
+        registry.RemoveJob<DummyJob>();
+        registry.TryRegister(n => n.AddJob<DummyJob>());
 
-        var secondRunOrchestrationId = instantJobRegistry.ForceRunInstantJob<MainJob>(token: CancellationToken);
+        var secondRunOrchestrationId = instantJobRegistry.ForceRunInstantJob<DummyJob>(token: CancellationToken);
 
         await WaitForOrchestrationCompletion(secondRunOrchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[2].ShouldBe(nameof(MainJob));
+        Storage.Entries[2].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(3);
     }
 
@@ -157,8 +157,8 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task CanBuildAChainOfDependentJobsThatRunAfterOneJob()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("1").RunJob<DependentJob>("2"))
-            .ExecuteWhen(success: s => s.RunJob<DependentJob>("3")));
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("1").RunJob<DummyJob>("2"))
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("3")));
 
         await StartNCronJob(startMonitoringEvents: true);
 
@@ -167,9 +167,9 @@ public class RunDependentJobTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("DependentJob: 1 Parent: Success");
-        Storage.Entries[2].ShouldBe("DependentJob: 2 Parent: Success");
-        Storage.Entries[3].ShouldBe("DependentJob: 3 Parent: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: 1");
+        Storage.Entries[2].ShouldBe("DummyJob - Parameter: 2");
+        Storage.Entries[3].ShouldBe("DummyJob - Parameter: 3");
         Storage.Entries.Count.ShouldBe(4);
     }
 
@@ -178,8 +178,8 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n =>
         {
-            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DependentJob>());
-            n.AddJob<DependentJob>().ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>().ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
         });
 
         await StartNCronJob(startMonitoringEvents: true);
@@ -189,8 +189,8 @@ public class RunDependentJobTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
-        Storage.Entries[2].ShouldBe("Dependent job did run");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: ");
+        Storage.Entries[2].ShouldBe("AnotherDummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(3);
 
         Events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
@@ -206,9 +206,9 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob<PrincipalJob>(o => o.WithCronExpression(Cron.AtEveryMinute).WithParameter(true))
-                .ExecuteWhen(success: s => s.RunJob<DependentJob>());
-            n.AddJob<DependentJob>(o => o.WithCronExpression(Cron.Never))
-                .ExecuteWhen(success: s => s.RunJob<DependentDependentJob>());
+                .ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>(o => o.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
         });
 
         await StartNCronJob(startMonitoringEvents: true);
@@ -216,8 +216,8 @@ public class RunDependentJobTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(Events[0].CorrelationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
-        Storage.Entries[1].ShouldBe("DependentJob:  Parent: Success");
-        Storage.Entries[2].ShouldBe("Dependent job did run");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: ");
+        Storage.Entries[2].ShouldBe("AnotherDummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(3);
     }
 
@@ -256,7 +256,7 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task WhenJobIsNotCreated_DependentFailureJobShouldRun()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<JobThatThrowsInCtor>()
-            .ExecuteWhen(faulted: s => s.RunJob<DependentJob>("After Exception")));
+            .ExecuteWhen(faulted: s => s.RunJob<DummyJob>("After Exception")));
 
         await StartNCronJob(startMonitoringEvents: true);
 
@@ -264,7 +264,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[0].ShouldBe("DependentJob: After Exception Parent: ");
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: After Exception");
         Storage.Entries.Count.ShouldBe(1);
     }
 
@@ -292,23 +292,6 @@ public class RunDependentJobTests : JobIntegrationBase
         }
     }
 
-    private sealed class DependentJob(Storage storage) : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add($"{nameof(DependentJob)}: {context.Parameter} Parent: {context.ParentOutput}");
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class DependentDependentJob(Storage storage) : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add("Dependent job did run");
-            return Task.CompletedTask;
-        }
-    }
     private sealed class PrincipalCorrelationIdJob(Storage storage) : IJob
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
@@ -329,24 +312,6 @@ public class RunDependentJobTests : JobIntegrationBase
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             storage.Add(context.CorrelationId.ToString());
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class MainJob(Storage storage) : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add(nameof(MainJob));
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class SubMainJob(Storage storage) : IJob
-    {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add(nameof(SubMainJob));
             return Task.CompletedTask;
         }
     }
