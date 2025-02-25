@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.3.4] - 2025-02-25
+
 ### Fixed
 
 - Ensure orchestration includes dependents of faulted jobs. Added in [#195](https://github.com/NCronJob-Dev/NCronJob/issues/195), by [@nulltoken](https://github.com/nulltoken).
@@ -497,7 +499,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.3...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.4...HEAD
+[v4.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.3...v4.3.4
 [v4.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.2...v4.3.3
 [v4.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.1...v4.3.2
 [v4.3.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.2.0...v4.3.1
