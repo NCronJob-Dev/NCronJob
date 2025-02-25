@@ -71,6 +71,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#minimal-api">Minimal API</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#precautions-of-use">Precautions of use</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#instrumentation">Instrumentation</a>
     </li>
     </ul>
@@ -204,7 +206,7 @@ So also CRON jobs can be triggered instantly.</p>
 </code></pre></div>
 
 <h2 id="priority">Priority<a class="headerlink" href="#priority" title="Permanent link">&para;</a></h2>
-<p>Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, the instant job will be executed).</p>
+<p>Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, only the instant job will be executed).</p>
 <h2 id="force-a-job-run">Force a job run<a class="headerlink" href="#force-a-job-run" title="Permanent link">&para;</a></h2>
 <p>Sometimes you need to run a job immediately, regardless of any running jobs or concurrency settings. The <code>ForceRunInstantJob</code> methods allow you to bypass the job queue and execute a job directly.</p>
 <p>While regular instant jobs follow the same concurrency rules as CRON jobs, forced jobs ignore these restrictions:</p>
@@ -259,6 +261,26 @@ So also CRON jobs can be triggered instantly.</p>
 <span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="n">PostAsync</span><span class="p">(</span><span class="s">&quot;https://api.example.com/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StringContent</span><span class="p">(</span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">parameterDto</span><span class="p">)));</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TypedResults</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h2 id="precautions-of-use">Precautions of use<a class="headerlink" href="#precautions-of-use" title="Permanent link">&para;</a></h2>
+<p>Depending of the way jobs are designed and registered, it may happen that <strong>NCronJob</strong> cannot uniquely identify the intended target of a instant run.</p>
+<p>In that case, rather than accidently running the wrong job, a runtime exception will be thrown stating that than an ambiguity has been detected.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 * * *&quot;</span><span class="p">))</span><span class="w"> </span><span class="c1">// Every day at midnight</span>
+<span class="w">                </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SendReportToStaffJob</span><span class="o">&gt;</span><span class="p">());</span>
+
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 1 * *&quot;</span><span class="p">))</span><span class="w"> </span><span class="c1">// Every first of the month at midnight</span>
+<span class="w">                </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SendReportToManagementJob</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">});</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/on-demand-report&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">RunInstantJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// Ambiguous reference. This will throw :-/</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Accepted</span><span class="p">();</span>
 <span class="p">});</span>
 </code></pre></div>
 
