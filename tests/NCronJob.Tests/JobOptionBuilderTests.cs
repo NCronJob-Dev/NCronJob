@@ -72,4 +72,45 @@ public class JobOptionBuilderTests
         options[1].CronExpression.ShouldBe(Cron.AtMinute0);
         options[1].Parameter.ShouldBe("bar");
     }
+
+    [Fact]
+    public void ShouldCreateMultipleNamedJobsWithAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder
+            .WithName("name1")
+            .WithParameter("foo")
+            .And
+            .WithName("name2")
+            .WithParameter("bar");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].Name.ShouldBe("name1");
+        options[0].Parameter.ShouldBe("foo");
+        options[1].Name.ShouldBe("name2");
+        options[1].Parameter.ShouldBe("bar");
+    }
+
+    [Fact]
+    public void ShouldCreateMultipleNamedJobsWithoutAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder
+            .WithName("name1")
+            .WithParameter("foo");
+
+        builder
+            .WithName("name2")
+            .WithParameter("bar");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].Name.ShouldBe("name1");
+        options[0].Parameter.ShouldBe("foo");
+        options[1].Name.ShouldBe("name2");
+        options[1].Parameter.ShouldBe("bar");
+    }
 }
