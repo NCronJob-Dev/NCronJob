@@ -133,7 +133,7 @@ public class RunDependentJobTests : JobIntegrationBase
     [Fact]
     public async Task WhenJobWasSuccessful_DependentAnonymousJobShouldRun()
     {
-        Func<Storage, JobExecutionContext, Task> execution = (storage, context) =>
+        Func<Storage, IJobExecutionContext, Task> execution = (storage, context) =>
         {
             storage.Add($"Parent: {context.ParentOutput}");
             return Task.CompletedTask;

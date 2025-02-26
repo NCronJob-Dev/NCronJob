@@ -60,7 +60,7 @@ internal class DynamicJobFactory : IJob
         var arguments = new object[parameters.Length];
         for (var i = 0; i < parameters.Length; i++)
         {
-            if (parameters[i].ParameterType == typeof(JobExecutionContext))
+            if (parameters[i].ParameterType == typeof(IJobExecutionContext))
                 arguments[i] = context;
             else if (parameters[i].ParameterType == typeof(CancellationToken))
                 arguments[i] = token;
