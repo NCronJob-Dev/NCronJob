@@ -185,10 +185,10 @@ In that case, rather than accidently running the wrong job, a runtime exception 
 Services.AddNCronJob(options =>
 {
     options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 * * *")) // Every day at midnight
-                .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
+        .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
 
     options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 1 * *")) // Every first of the month at midnight
-                .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
+        .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
 });
 
 app.MapPost("/on-demand-report", (IInstantJobRegistry registry) => {

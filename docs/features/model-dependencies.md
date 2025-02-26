@@ -131,9 +131,10 @@ builder.Services.AddNCronJob(options => {
 ## Run mutliple jobs after the completion of a job
 
 You can run multiple jobs after the completion of a job:
-```no-class
-Job A -- successful --> Job B
-      |- successful --> Job C
+
+```text
+Job A ─┬─ (successful) ──> Job B
+       └─ (successful) ──> Job C
 ```
 
 Can be achieved in two ways:
@@ -168,10 +169,10 @@ Services.AddNCronJob(options =>
     If you need to ensure the order of execution, see the next section.
 
 ## Construct complex dependencies
-You can construct complex dependencies by using a combination of `AddJob` and `ExecuteWhen` methods. Here an example:
+You can construct complex dependencies by using a combination of `AddJob` and `ExecuteWhen` methods. Below an example:
 
-```
-Job A -> Job B -> Job C
+```text
+Job A ──> Job B ──> Job C
 ```
 
 This can be achieved by:
