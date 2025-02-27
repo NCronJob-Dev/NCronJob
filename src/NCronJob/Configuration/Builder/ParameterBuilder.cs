@@ -1,14 +1,14 @@
 namespace NCronJob;
 
 /// <summary>
-/// Represents a builder to create parameters for a job.
+/// Represents a builder to configure a job with a name or a parameter.
 /// </summary>
-public sealed class ParameterBuilder
+public sealed class ParameterBuilder : IOptionChainerBuilder
 {
     private readonly JobOption jobOption;
 
     /// <summary>
-    /// Chains another cron expression to the job.
+    /// Chains another option to the job.
     /// </summary>
     public JobOptionBuilder And { get; }
 

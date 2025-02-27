@@ -6,6 +6,14 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Make IInstantJobRegistry accept job names. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/215).
+
+### Fixed
+
+- Fix injection of context in dynamic jobs. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/215).
+
 ## [v4.3.4] - 2025-02-25
 
 ### Fixed

@@ -149,6 +149,32 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 });
 ```
 
+## Triggering executions of named orchestrations
+
+While registering jobs, one can give them names (See [*"Defining job names"*](../advanced/dynamic-job-control.md#defining-job-names).).
+
+Similarly, the `IInstantJobRegistry` methods expose overloads to target a job through its name.
+
+This capability provides an escape hatch to situations as described in [*"Precautions of use"*](#precautions-of-use) below.
+
+```csharp
+Services.AddNCronJob(options =>
+{
+    options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 * * *").WithName("nightly"))
+        .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
+
+    options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 1 * *").WithName("monthly"))
+        .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
+});
+
+app.MapPost("/on-demand-report", (IInstantJobRegistry registry) => {
+
+    registry.RunInstantJob("nightly");
+
+    return Results.Accepted();
+});
+```
+
 ## Precautions of use
 
 Depending of the way jobs are designed and registered, it may happen that **NCronJob** cannot uniquely identify the intended target of a instant run.
@@ -159,10 +185,10 @@ In that case, rather than accidently running the wrong job, a runtime exception 
 Services.AddNCronJob(options =>
 {
     options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 * * *")) // Every day at midnight
-                .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
+        .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
 
     options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 1 * *")) // Every first of the month at midnight
-                .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
+        .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
 });
 
 app.MapPost("/on-demand-report", (IInstantJobRegistry registry) => {
