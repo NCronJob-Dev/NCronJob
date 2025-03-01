@@ -10,7 +10,7 @@
 
     <ItemGroup Label="NCronJob dependencies">
         <PackageVersion Include="Cronos" Version="0.9.0"/>
-        <PackageVersion Include="Polly" Version="8.5.1"/>
+        <PackageVersion Include="Polly" Version="8.5.2"/>
     </ItemGroup>
 
     <ItemGroup Label="NCronJob NET8 dependencies" Condition="'$(TargetFramework)' == 'net8.0'">
