@@ -176,7 +176,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void ScheduleInitialJobs()
     {
-        foreach (var job in jobRegistry.GetAllCronJobs())
+        foreach (var job in jobRegistry.GetAllCronJobs().Where(j => j.IsEnabled))
         {
             jobWorker.ScheduleJob(job);
         }
