@@ -191,21 +191,20 @@ internal sealed partial class JobWorker
 
     public void ScheduleJob(JobDefinition job)
     {
+        var utcNow = timeProvider.GetUtcNow();
+        var nextRunTime = job.GetNextCronOccurrence(utcNow, job.TimeZone);
+
+        if (!nextRunTime.HasValue)
+        {
+            return;
+        }
+
         var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
 
-        if (job.CronExpression is null)
-            return;
-
-        var utcNow = timeProvider.GetUtcNow();
-        var nextRunTime = job.CronExpression.GetNextOccurrence(utcNow, job.TimeZone);
-
-        if (nextRunTime.HasValue)
-        {
-            LogNextJobRun(job.Type, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
-            var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
-            jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
-            run.NotifyStateChange(JobStateType.Scheduled);
-        }
+        LogNextJobRun(job.Type, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
+        var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
+        jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
+        run.NotifyStateChange(JobStateType.Scheduled);
     }
 
     public void RemoveJobByName(string jobName)

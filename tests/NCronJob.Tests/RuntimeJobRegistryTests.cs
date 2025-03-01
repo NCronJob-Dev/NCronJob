@@ -152,6 +152,36 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task RemovingByJobTypeDisabledTypeJobsAccountsForAllJobs()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression("1 * * * *")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).Count.ShouldBe(2);
+
+        registry.DisableJob<DummyJob>();
+        registry.RemoveJob<DummyJob>();
+
+        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
+            ExecutionState.OrchestrationCompleted,
+            2,
+            stopMonitoringEvents: true);
+
+        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
+
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
+        secondOrchestrationEvents.ShouldBeScheduledThenCancelled();
+    }
+
+    [Fact]
     public async Task CanUpdateScheduleOfAJob()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));
@@ -347,16 +377,18 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
-        jobs.ShouldAllBe(j => j.CronExpression == null || j.CronExpression != RuntimeJobRegistry.TheThirtyFirstOfFebruary);
+        jobs.ShouldAllBe(j => j.IsEnabled);
 
         registry.DisableJob<DummyJob>();
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
-        jobs.ShouldAllBe(j => j.CronExpression == RuntimeJobRegistry.TheThirtyFirstOfFebruary);
+        jobs.ShouldAllBe(j => !j.IsEnabled);
 
         registry.EnableJob<DummyJob>();
+
+        jobs.ShouldAllBe(j => j.IsEnabled);
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
@@ -380,12 +412,20 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
 
+        var jobQueueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+
         await StartNCronJob(startMonitoringEvents: true);
+
+        jobQueueManager.GetAllJobQueueNames().Count().ShouldBe(1);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         registry.DisableJob("JobName");
 
+        jobQueueManager.GetAllJobQueueNames().Count().ShouldBe(0);
+
         registry.EnableJob("JobName");
+
+        jobQueueManager.GetAllJobQueueNames().Count().ShouldBe(1);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 

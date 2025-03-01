@@ -4,8 +4,7 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
-    private readonly HashSet<JobDefinition> allJobs
-        = new(JobDefinitionEqualityComparer.Instance);
+    private readonly List<JobDefinition> allJobs = [];
     public List<DynamicJobRegistration> DynamicJobRegistrations { get; } = [];
     private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
         = new(DependentJobDefinitionEqualityComparer.Instance);
@@ -29,7 +28,7 @@ internal sealed class JobRegistry
     {
         AssertNoDuplicateJobNames(jobDefinition.CustomName);
 
-        if (!allJobs.Add(jobDefinition))
+        if (allJobs.Contains(jobDefinition, JobDefinitionEqualityComparer.Instance))
         {
             throw new InvalidOperationException(
                 $"""
@@ -37,6 +36,8 @@ internal sealed class JobRegistry
                 Please either remove the duplicate job, change its parameters, or assign a unique name to it if duplication is intended.
                 """);
         }
+
+        allJobs.Add(jobDefinition);
     }
 
     public int GetJobTypeConcurrencyLimit(string jobTypeName)

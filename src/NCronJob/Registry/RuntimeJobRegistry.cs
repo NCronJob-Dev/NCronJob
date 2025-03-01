@@ -149,9 +149,6 @@ public sealed record RecurringJobSchedule(string? JobName, string CronExpression
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
-    // https://crontab.guru/#*_*_31_2_*
-    internal static readonly CronExpression TheThirtyFirstOfFebruary = CronExpression.Parse("* * 31 2 *");
-
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
@@ -319,22 +316,14 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
     private void EnableJob(JobDefinition job)
     {
-        if (job.UserDefinedCronExpression is not null)
-        {
-            job.CronExpression = CronExpression.Parse(job.UserDefinedCronExpression);
-        }
-        else
-        {
-            job.CronExpression = null;
-        }
+        job.Enable();
 
         RescheduleJob(job);
     }
 
     private void DisableJob(JobDefinition job)
     {
-        // Scheduling on Feb, 31st is a sure way to never get it to run
-        job.CronExpression = TheThirtyFirstOfFebruary;
+        job.Disable();
 
         RescheduleJob(job);
     }
