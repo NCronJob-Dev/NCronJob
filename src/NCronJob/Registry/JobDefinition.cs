@@ -47,4 +47,24 @@ internal sealed record JobDefinition(
     private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
+
+    public void Disable()
+    {
+        // Scheduling a job on Feb, 31st is a sure way to never get it to run
+        CronExpression = TheThirtyFirstOfFebruary;
+    }
+
+    public void Enable()
+    {
+        if (UserDefinedCronExpression is not null)
+        {
+            CronExpression = CronExpression.Parse(UserDefinedCronExpression);
+            return;
+        }
+
+        CronExpression = null;
+    }
+
+    // https://crontab.guru/#*_*_31_2_*
+    private static readonly CronExpression TheThirtyFirstOfFebruary = CronExpression.Parse("* * 31 2 *");
 }
