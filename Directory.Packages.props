@@ -14,16 +14,16 @@
     </ItemGroup>
 
     <ItemGroup Label="NCronJob NET8 dependencies" Condition="'$(TargetFramework)' == 'net8.0'">
-        <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.1"/>
+        <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2"/>
     </ItemGroup>
 
     <ItemGroup Label="NCronJob NET9 dependencies" Condition="'$(TargetFramework)' == 'net9.0'">
-        <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.1"/>
+        <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2"/>
     </ItemGroup>
 
     <ItemGroup Label="Samples">
         <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.13"/>
-        <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1"/>
+        <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.1"/>
         <PackageVersion Include="Swashbuckle.AspNetCore" Version="7.3.1"/>
     </ItemGroup>
 
