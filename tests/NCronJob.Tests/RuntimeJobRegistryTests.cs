@@ -319,14 +319,30 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "JobName2"), out _);
 
-        var allSchedules = registry.GetAllRecurringJobs();
+        var initialSchedules = registry.GetAllRecurringJobs();
 
-        allSchedules.Count.ShouldBe(2);
-        allSchedules.ShouldContain(s => s.JobName == "JobName"
+        initialSchedules.Count.ShouldBe(2);
+        initialSchedules.ShouldContain(s => s.JobName == "JobName"
                                         && s.CronExpression == Cron.AtEvery2ndMinute
+                                        && s.IsEnabled
                                         && s.TimeZone == timeZone);
-        allSchedules.ShouldContain(s => s.JobName == "JobName2"
+        initialSchedules.ShouldContain(s => s.JobName == "JobName2"
                                         && s.CronExpression == Cron.AtEveryMinute
+                                        && s.IsEnabled
+                                        && s.TimeZone == TimeZoneInfo.Utc);
+
+        registry.DisableJob("JobName");
+
+        var newSchedules = registry.GetAllRecurringJobs();
+
+        newSchedules.Count.ShouldBe(2);
+        newSchedules.ShouldContain(s => s.JobName == "JobName"
+                                        && s.CronExpression == Cron.AtEvery2ndMinute
+                                        && !s.IsEnabled
+                                        && s.TimeZone == timeZone);
+        newSchedules.ShouldContain(s => s.JobName == "JobName2"
+                                        && s.CronExpression == Cron.AtEveryMinute
+                                        && s.IsEnabled
                                         && s.TimeZone == TimeZoneInfo.Utc);
     }
 

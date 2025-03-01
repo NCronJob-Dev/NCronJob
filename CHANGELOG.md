@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 
 - Make IInstantJobRegistry accept job names. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/215).
+- Expose whether a scheduled job is enabled or not. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/231).
 
 ### Fixed
 
