@@ -143,8 +143,9 @@ public interface IRuntimeJobRegistry
 /// </summary>
 /// <param name="JobName">The job name given by the user.</param>
 /// <param name="CronExpression">The cron expression that defines when the job should be executed.</param>
+/// <param name="IsEnabled">Whether the job is enabled or not.</param>
 /// <param name="TimeZone">The timezone that is used to evaluate the cron expression.</param>
-public sealed record RecurringJobSchedule(string? JobName, string CronExpression, TimeZoneInfo TimeZone);
+public sealed record RecurringJobSchedule(string? JobName, string CronExpression, bool IsEnabled, TimeZoneInfo TimeZone);
 
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
@@ -265,6 +266,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             .Select(s => new RecurringJobSchedule(
                 s.CustomName,
                 s.UserDefinedCronExpression!,
+                s.IsEnabled,
                 s.TimeZone!))
             .ToArray();
 
