@@ -382,12 +382,20 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
 
+        var jobQueueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+
         await StartNCronJob(startMonitoringEvents: true);
+
+        jobQueueManager.GetAllJobQueueNames().Count().ShouldBe(1);
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         registry.DisableJob("JobName");
 
+        jobQueueManager.GetAllJobQueueNames().Count().ShouldBe(0);
+
         registry.EnableJob("JobName");
+
+        jobQueueManager.GetAllJobQueueNames().Count().ShouldBe(1);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 

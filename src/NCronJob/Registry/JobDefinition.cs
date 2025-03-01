@@ -69,6 +69,9 @@ internal sealed record JobDefinition(
         CronExpression = null;
     }
 
+    public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow, TimeZoneInfo? timeZone)
+        => CronExpression?.GetNextOccurrence(utcNow, timeZone);
+
     // https://crontab.guru/#*_*_31_2_*
     private static readonly CronExpression TheThirtyFirstOfFebruary = CronExpression.Parse("* * 31 2 *");
 }

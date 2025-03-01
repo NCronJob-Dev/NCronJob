@@ -97,6 +97,11 @@ internal sealed class JobQueueManager : IDisposable
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
+            if (!jobQueues.ContainsKey(queueName))
+            {
+                return;
+            }
+
             var cts = jobCancellationTokens[queueName];
             cts.Cancel();
             jobCancellationTokens[queueName] = new CancellationTokenSource();
