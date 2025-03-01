@@ -13,6 +13,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Fixed
 
 - Fix injection of context in dynamic jobs. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/215).
+- Teach `IRuntimeJobRegistry.RemoveJob()` to cope with disabled jobs. By [@nulltoken](https://github.com/nulltoken) in [#230](https://github.com/NCronJob-Dev/NCronJob/pull/230).
 
 ## [v4.3.4] - 2025-02-25
 
