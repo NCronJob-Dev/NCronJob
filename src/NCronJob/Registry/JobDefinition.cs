@@ -48,6 +48,10 @@ internal sealed record JobDefinition(
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
+    private bool IsDisabled => CronExpression == TheThirtyFirstOfFebruary;
+
+    public bool IsEnabled => CronExpression is null || !IsDisabled;
+
     public void Disable()
     {
         // Scheduling a job on Feb, 31st is a sure way to never get it to run

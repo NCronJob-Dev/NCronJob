@@ -347,16 +347,18 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
-        jobs.ShouldAllBe(j => j.CronExpression == null || j.CronExpression != RuntimeJobRegistry.TheThirtyFirstOfFebruary);
+        jobs.ShouldAllBe(j => j.IsEnabled);
 
         registry.DisableJob<DummyJob>();
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
-        jobs.ShouldAllBe(j => j.CronExpression == RuntimeJobRegistry.TheThirtyFirstOfFebruary);
+        jobs.ShouldAllBe(j => !j.IsEnabled);
 
         registry.EnableJob<DummyJob>();
+
+        jobs.ShouldAllBe(j => j.IsEnabled);
 
         jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
