@@ -49,6 +49,9 @@ internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReport
                 State = ExecutionState.OrchestrationStarted,
                 RunId = null,
                 ParentRunId = null,
+                Name = null,
+                Type = null,
+                IsTypedJob = null,
             };
 
             progresses.Insert(0, orchestrationStarted);
@@ -61,6 +64,9 @@ internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReport
                 State = ExecutionState.OrchestrationCompleted,
                 RunId = null,
                 ParentRunId = null,
+                Name = null,
+                Type = null,
+                IsTypedJob = null,
             };
 
             progresses.Add(orchestrationCompleted);

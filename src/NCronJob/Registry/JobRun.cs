@@ -136,11 +136,14 @@ internal class JobRun
     public ExecutionProgress ToExecutionProgress()
     {
         return new ExecutionProgress(
+            timeProvider.GetUtcNow(),
             CorrelationId,
+            MapFrom(CurrentState.Type),
             JobRunId,
             ParentJobRunId,
-            MapFrom(CurrentState.Type),
-            timeProvider.GetUtcNow());
+            JobDefinition.CustomName,
+            JobDefinition.ExposedType,
+            JobDefinition.IsTypedJob);
     }
 
     private static ExecutionState MapFrom(JobStateType currentState)

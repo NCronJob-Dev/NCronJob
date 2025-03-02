@@ -55,9 +55,45 @@ IDisposable Register(Action<ExecutionProgress> callback);
     The registration returns the subscription as a `IDisposable` object.
     In order to stop the callback from receiving notifications anymore, invoke the `Dispose()` method of it.
 
-Subscribers to the reporting service will receive an immutable instance of the `ExecutionProgress`. This type will expose every meaningful change to any job or orchestration handled by NCronJob.
+Subscribers to the reporting service will receive an immutable instance of the `ExecutionProgress`. This type will expose every meaningful change to any job or orchestration handled by **NCronJob**.
 
-### Sample usage
+### Described ExecutionProgress
+
+An `ExecutionProgress` instance exposes the following properties:
+
+- **Timestamp**: The instant this `ExecutionProgress` instance was created.
+  
+  Will be `null` when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+- **CorrelationId**: The correlation identifier of an orchestration run. 
+  
+  Will decorate every reported progress of the root job and all of its dependencies.
+
+- **RunId**: The identifier of a job run within an orchestration. 
+  
+  Will be `null` when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+- **ParentRunId**: The identifier of the parent job run.
+  
+  Will be `null` when the reported instance is the root job of an orchestration, or when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+- **State**: The reported state.
+  
+  Will either relate to an orchestration, describing its start or completion or to a job belonging to an orchestration.
+
+- **Name**: The optional custom name given to the job.
+  
+  Will be `null` when no name was specified or when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+- **Type**: The type of the job.
+  
+  Will be `null` if the job is an anonymous function based job or when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+- **IsTypedJob**: Whether the job is a class based job (implementing `IJob`) or not. 
+  
+  Will be `null` when the reported instance is the root job of an orchestration, or when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+## Sample usage
 
 Considering the following orchestration
 
@@ -178,14 +214,16 @@ public class Program
             {
                 logger.LogWarning(
                     "Orchestration {CorrelationId} - {Status}",
-                    progress.CorrelationId,
+                    progress.CorrelationId.ToString()[1..8],
                     progress.State);
 
                 return;
             }
 
-            logger.LogWarning("Job {JobRunId} - {Status}",
-                progress.RunId,
+            logger.LogWarning("Job {CorrelationId}/{JobRunId} - {Type} - {Status}",
+                progress.CorrelationId.ToString()[1..8],
+                progress.RunId.ToString()[1..8],
+                progress.Type,
                 progress.State);
         }
     }
@@ -195,39 +233,51 @@ public class Program
 Given the orchestration defined above, with jobs of varying durations, the generated output log may look like this:
 
 ```text
-10:46:47 warn: Program[0] Orchestration d36e2b62-6997-44c5-a9f9-de442b8a1807 - OrchestrationStarted
-10:46:50 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - NotStarted
-10:46:50 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Scheduled
-10:47:00 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Initializing
-10:47:00 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Running
-10:47:00 info: A[0] [A]: Starting processing...
-10:47:01 info: A[0] [A]: Processing is done.
-10:47:01 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Completing
-10:47:01 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - WaitingForDependency
-10:47:01 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - NotStarted
-10:47:01 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - NotStarted
-10:47:01 warn: Program[0] Job d751f2eb-9f8d-46e3-b863-6dadc6498468 - Completed
-10:47:01 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Initializing
-10:47:01 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Running
-10:47:01 info: B[0] [B]: Starting processing...
-10:47:01 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Initializing
-10:47:01 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Running
-10:47:01 info: C[0] [C]: Starting processing...
-10:47:02 info: C[0] [C]: Processing is done.
-10:47:02 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Completing
-10:47:02 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - WaitingForDependency
-10:47:02 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - NotStarted
-10:47:02 warn: Program[0] Job f28acd5e-cd3e-445e-979c-59a160035ef2 - Completed
-10:47:03 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Initializing
-10:47:03 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Running
-10:47:03 info: D[0] [D]: Starting processing...
-10:47:04 info: D[0] [D]: Processing is done.
-10:47:04 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Completing
-10:47:04 warn: Program[0] Job f4a8ef3b-4848-4363-a3b7-f847562598b3 - Completed
-10:47:07 info: B[0] [B]: Processing is done.
-10:47:07 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Completing
-10:47:07 warn: Program[0] Job 27509f28-d84b-4d50-8f9d-e5500bbc17fa - Completed
-10:47:07 warn: Program[0] Orchestration d36e2b62-6997-44c5-a9f9-de442b8a1807 - OrchestrationCompleted
+23:15:25 warn: Orchestration 1798344 - OrchestrationStarted
+23:15:25 warn: Job 1798344/3ffcf52 - A - NotStarted
+23:15:25 warn: Job 1798344/3ffcf52 - A - Scheduled
+23:16:00 warn: Orchestration c92cbfa - OrchestrationStarted
+23:16:00 warn: Job c92cbfa/b93b29e - A - NotStarted
+23:16:00 warn: Job c92cbfa/b93b29e - A - Scheduled
+23:16:00 warn: Job 1798344/3ffcf52 - A - Initializing
+23:16:00 warn: Job 1798344/3ffcf52 - A - Running
+23:16:00 info: [A]: Starting processing...
+23:16:01 info: [A]: Processing is done.
+23:16:01 warn: Job 1798344/3ffcf52 - A - Completing
+23:16:01 warn: Job 1798344/3ffcf52 - A - WaitingForDependency
+23:16:01 warn: Job 1798344/6624e8d - B - NotStarted
+23:16:01 warn: Job 1798344/cc4d75c - C - NotStarted
+23:16:01 warn: Job 1798344/3ffcf52 - A - Completed
+23:16:01 warn: Job 1798344/6624e8d - B - Initializing
+23:16:01 warn: Job 1798344/6624e8d - B - Running
+23:16:01 warn: Job 1798344/cc4d75c - C - Initializing
+23:16:01 warn: Job 1798344/cc4d75c - C - Running
+23:16:01 info: [B]: Starting processing...
+23:16:01 info: [C]: Starting processing...
+23:16:02 info: [C]: Processing is done.
+23:16:02 warn: Job 1798344/cc4d75c - C - Completing
+23:16:02 warn: Job 1798344/cc4d75c - C - WaitingForDependency
+23:16:02 warn: Job 1798344/938f4ea - D - NotStarted
+23:16:02 warn: Job 1798344/cc4d75c - C - Completed
+23:16:03 warn: Job 1798344/938f4ea - D - Initializing
+23:16:03 warn: Job 1798344/938f4ea - D - Running
+23:16:03 info: [D]: Starting processing...
+23:16:04 info: [D]: Processing is done.
+23:16:04 warn: Job 1798344/938f4ea - D - Completing
+23:16:04 warn: Job 1798344/938f4ea - D - Completed
+23:16:07 info: [B]: Processing is done.
+23:16:07 warn: Job 1798344/6624e8d - B - Completing
+23:16:07 warn: Job 1798344/6624e8d - B - Completed
+23:16:07 warn: Orchestration 1798344 - OrchestrationCompleted
+23:17:00 warn: Job c92cbfa/b93b29e - A - Initializing
+23:17:00 warn: Orchestration d29d000 - OrchestrationStarted
+23:17:00 warn: Job d29d000/9e6a217 - A - NotStarted
+23:17:00 warn: Job c92cbfa/b93b29e - A - Running
+23:17:00 info: [A]: Starting processing...
+23:17:00 warn: Job d29d000/9e6a217 - A - Scheduled
+23:17:01 info: [A]: Processing is done.
+
+[...]
 ```
 
 ## Known limitations

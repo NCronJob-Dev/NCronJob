@@ -31,10 +31,28 @@ namespace NCronJob;
 /// or when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
 /// </param>
 ///
+/// <param name="Name">
+/// The optional custom name given to the job.
+/// Will be <c>null</c> when no name was specified or when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
+/// </param>
+///
+/// <param name="Type">
+/// The type of the job.
+/// Will be <c>null</c> if the job is an anonymous function based job or when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
+/// </param>
+///
+/// <param name="IsTypedJob">
+/// Whether the job is a class based job (implementing <see cref="IJob"/>) or not.
+/// Will be <c>null</c> when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
+/// </param>
+///
 [Experimental("NCRONJOB_OBSERVER")]
 public record ExecutionProgress(
     DateTimeOffset Timestamp,
     Guid CorrelationId,
     ExecutionState State,
     Guid? RunId,
-    Guid? ParentRunId);
+    Guid? ParentRunId,
+    string? Name,
+    Type? Type,
+    bool? IsTypedJob);
