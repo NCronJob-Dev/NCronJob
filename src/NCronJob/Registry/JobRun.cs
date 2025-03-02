@@ -133,6 +133,36 @@ internal class JobRun
         SetState(state);
     }
 
+    public ExecutionProgress ToExecutionProgress()
+    {
+        return new ExecutionProgress(
+            CorrelationId,
+            JobRunId,
+            ParentJobRunId,
+            MapFrom(CurrentState.Type),
+            timeProvider.GetUtcNow());
+    }
+
+    private static ExecutionState MapFrom(JobStateType currentState)
+    {
+        return currentState switch
+        {
+            JobStateType.NotStarted => ExecutionState.NotStarted,
+            JobStateType.Scheduled => ExecutionState.Scheduled,
+            JobStateType.Initializing => ExecutionState.Initializing,
+            JobStateType.Running => ExecutionState.Running,
+            JobStateType.Retrying => ExecutionState.Retrying,
+            JobStateType.Completing => ExecutionState.Completing,
+            JobStateType.WaitingForDependency => ExecutionState.WaitingForDependency,
+            JobStateType.Skipped => ExecutionState.Skipped,
+            JobStateType.Completed => ExecutionState.Completed,
+            JobStateType.Faulted => ExecutionState.Faulted,
+            JobStateType.Cancelled => ExecutionState.Cancelled,
+            JobStateType.Expired => ExecutionState.Expired,
+            _ => ExecutionState.Undetermined,
+        };
+    }
+
     private bool HasPendingDependentJobs()
     {
         return !pendingDependents.IsEmpty && pendingDependents.Any(j => !j.IsCompleted || j.HasPendingDependentJobs());
