@@ -48,6 +48,8 @@ internal sealed record JobDefinition(
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
+    public Type? ExposedType => IsTypedJob ? Type : null;
+
     public bool IsTypedJob => Type != typeof(DynamicJobFactory);
 
     private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
@@ -77,7 +79,7 @@ internal sealed record JobDefinition(
     {
         return new RecurringJobSchedule(
             JobName: CustomName,
-            Type: IsTypedJob ? Type : null,
+            Type: ExposedType,
             IsTypedJob: IsTypedJob,
             CronExpression: UserDefinedCronExpression!,
             IsEnabled: IsEnabled,
