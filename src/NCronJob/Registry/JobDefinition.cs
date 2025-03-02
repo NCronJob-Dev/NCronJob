@@ -73,5 +73,16 @@ internal sealed record JobDefinition(
     public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow, TimeZoneInfo? timeZone)
         => CronExpression?.GetNextOccurrence(utcNow, timeZone);
 
+    public RecurringJobSchedule ToRecurringJobSchedule()
+    {
+        return new RecurringJobSchedule(
+            JobName: CustomName,
+            Type: IsAnonymousJob ? null: Type,
+            IsAnonymousJob: IsAnonymousJob,
+            CronExpression: UserDefinedCronExpression!,
+            IsEnabled: IsEnabled,
+            TimeZone: TimeZone!);
+    }
+
     private static readonly CronExpression NotReacheableCronDefinition = CronExpression.Parse("* * 31 2 *");
 }

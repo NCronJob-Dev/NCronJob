@@ -313,8 +313,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     {
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
-            .WithCronExpression(Cron.AtEvery2ndMinute, timeZoneInfo: timeZone)
-            .WithName("JobName")));
+            .WithCronExpression(Cron.AtEvery2ndMinute, timeZoneInfo: timeZone)));
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "JobName2"), out _);
@@ -322,27 +321,35 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var initialSchedules = registry.GetAllRecurringJobs();
 
         initialSchedules.Count.ShouldBe(2);
-        initialSchedules.ShouldContain(s => s.JobName == "JobName"
+        initialSchedules.ShouldContain(s => s.JobName == null
+                                        && s.Type == typeof(DummyJob)
+                                        && !s.IsAnonymousJob
                                         && s.CronExpression == Cron.AtEvery2ndMinute
                                         && s.IsEnabled
                                         && s.TimeZone == timeZone);
         initialSchedules.ShouldContain(s => s.JobName == "JobName2"
+                                        && s.Type == null
+                                        && s.IsAnonymousJob
                                         && s.CronExpression == Cron.AtEveryMinute
                                         && s.IsEnabled
                                         && s.TimeZone == TimeZoneInfo.Utc);
 
-        registry.DisableJob("JobName");
+        registry.DisableJob("JobName2");
 
         var newSchedules = registry.GetAllRecurringJobs();
 
         newSchedules.Count.ShouldBe(2);
-        newSchedules.ShouldContain(s => s.JobName == "JobName"
+        newSchedules.ShouldContain(s => s.JobName == null
+                                        && s.Type == typeof(DummyJob)
+                                        && !s.IsAnonymousJob
                                         && s.CronExpression == Cron.AtEvery2ndMinute
-                                        && !s.IsEnabled
+                                        && s.IsEnabled
                                         && s.TimeZone == timeZone);
         newSchedules.ShouldContain(s => s.JobName == "JobName2"
+                                        && s.Type == null
+                                        && s.IsAnonymousJob
                                         && s.CronExpression == Cron.AtEveryMinute
-                                        && s.IsEnabled
+                                        && !s.IsEnabled
                                         && s.TimeZone == TimeZoneInfo.Utc);
     }
 

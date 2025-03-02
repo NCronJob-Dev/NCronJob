@@ -22,7 +22,7 @@ public interface IRuntimeJobRegistry
     /// <param name="jobBuilder">The job builder that configures the job.</param>
     /// <param name="exception">The exception that occurred during the registration process. Or <c>null</c> if the registration was successful.</param>
     /// <returns>Returns <c>true</c> if the registration was successful, otherwise <c>false</c>.</returns>
-    bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)]out Exception? exception);
+    bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception);
 
     /// <summary>
     /// Removes the job with the given name.
@@ -141,11 +141,13 @@ public interface IRuntimeJobRegistry
 /// <summary>
 /// Represents a recurring job schedule.
 /// </summary>
-/// <param name="JobName">The job name given by the user.</param>
+/// <param name="JobName">The job name given by the user; <c>null</c> otherwise.</param>
+/// <param name="Type">The type of the job; <c>null</c> if the job is an anonymous job.</param>
+/// <param name="IsAnonymousJob">Whether the job is a dynamic job or not.</param>
 /// <param name="CronExpression">The cron expression that defines when the job should be executed.</param>
 /// <param name="IsEnabled">Whether the job is enabled or not.</param>
 /// <param name="TimeZone">The timezone that is used to evaluate the cron expression.</param>
-public sealed record RecurringJobSchedule(string? JobName, string CronExpression, bool IsEnabled, TimeZoneInfo TimeZone);
+public sealed record RecurringJobSchedule(string? JobName, Type? Type, bool IsAnonymousJob, string CronExpression, bool IsEnabled, TimeZoneInfo TimeZone);
 
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
@@ -175,7 +177,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         => TryRegister(jobBuilder, out _);
 
     /// <inheritdoc />
-    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)]out Exception? exception)
+    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception)
     {
         try
         {
@@ -263,11 +265,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     public IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs()
         => jobRegistry
             .GetAllCronJobs()
-            .Select(s => new RecurringJobSchedule(
-                s.CustomName,
-                s.UserDefinedCronExpression!,
-                s.IsEnabled,
-                s.TimeZone!))
+            .Select(jd => jd.ToRecurringJobSchedule())
             .ToArray();
 
     /// <inheritdoc />
@@ -303,7 +301,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     /// <inheritdoc />
     public void DisableJob(Type type)
     {
-        ProcessAllJobDefinitionsOfType(type, j=> DisableJob(j));
+        ProcessAllJobDefinitionsOfType(type, j => DisableJob(j));
     }
 
     private void ProcessAllJobDefinitionsOfType(Type type, Action<JobDefinition> processor)
