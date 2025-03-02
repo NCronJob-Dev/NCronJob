@@ -86,7 +86,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenCancelled();
+        filteredEvents.ShouldBeScheduledThenCancelled("Job");
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenCancelled();
+        filteredEvents.ShouldBeScheduledThenCancelled<DummyJob>();
     }
 
     [Fact]
@@ -145,10 +145,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         jobRegistry.FindAllJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
 
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
-        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
 
         var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
-        secondOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        secondOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
     }
 
     [Fact]
@@ -175,10 +175,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         jobRegistry.FindAllJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
 
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
-        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
 
         var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
-        secondOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        secondOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
     }
 
     [Fact]
@@ -207,11 +207,11 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         // Initial scheduling
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(startedOrchestrationEvents[0].CorrelationId);
-        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>("JobName");
 
         // Rescheduling
         var secondOrchestrationEvents = Events.FilterByOrchestrationId(secondOrchestrationId);
-        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>("JobName");
 
         // Rescheduling (execution n+1)
         var thirdOrchestrationEvents = Events.FilterByOrchestrationId(startedOrchestrationEvents[2].CorrelationId);
@@ -299,10 +299,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             stopMonitoringEvents: true);
 
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
-        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>("JobName");
 
         var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
-        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>("JobName");
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: Bar");
         Storage.Entries.Count.ShouldBe(1);
@@ -385,7 +385,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenCancelled();
+        filteredEvents.ShouldBeScheduledThenCancelled<DummyJob>("JobName");
     }
 
     [Fact]
@@ -458,10 +458,10 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             stopMonitoringEvents: true);
 
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
-        firstOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>("JobName");
 
         var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
-        secondOrchestrationEvents.ShouldBeScheduledThenCompleted();
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>("JobName");
 
     }
 

@@ -11,6 +11,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 - Make IInstantJobRegistry accept job names. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/215).
 - Expose whether a scheduled job is enabled or not. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/231).
 - Make IRuntimeJobRegistry.GetAllRecurringJobs() return the job type. By [@nulltoken](https://github.com/nulltoken) in [#184](https://github.com/NCronJob-Dev/NCronJob/pull/232).
+- Surface job name and type through `ExecutionProgress`. By [@nulltoken](https://github.com/nulltoken) in [#234](https://github.com/NCronJob-Dev/NCronJob/pull/234).
 
 ### Fixed
 

@@ -140,6 +140,9 @@ internal class JobRun
             JobRunId,
             ParentJobRunId,
             MapFrom(CurrentState.Type),
+            JobDefinition.CustomName,
+            JobDefinition.ExposedType,
+            JobDefinition.IsTypedJob,
             timeProvider.GetUtcNow());
     }
 

@@ -34,7 +34,7 @@ public class NotificationHandlerTests : JobIntegrationBase
         Storage.Entries.Count.ShouldBe(1);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
     }
 
     [Fact]

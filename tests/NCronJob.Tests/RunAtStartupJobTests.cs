@@ -112,7 +112,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeInstantThenCompleted();
+        filteredEvents.ShouldBeInstantThenCompleted<DummyJob>();
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         subscription.Dispose();
 
         var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeInstantThenFaultedDuringRun();
+        filteredEvents.ShouldBeInstantThenFaultedDuringRun<FailingJob>();
     }
 
     [Fact]
