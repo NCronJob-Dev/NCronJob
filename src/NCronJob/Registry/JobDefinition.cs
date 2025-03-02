@@ -48,13 +48,15 @@ internal sealed record JobDefinition(
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
-    private bool IsDisabled => CronExpression == NotReacheableCronDefinition ;
+    public bool IsAnonymousJob => Type == typeof(DynamicJobFactory);
+
+    private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
 
     public bool IsEnabled => CronExpression is null || !IsDisabled;
 
     public void Disable()
     {
-        CronExpression = NotReacheableCronDefinition ;
+        CronExpression = NotReacheableCronDefinition;
     }
 
     public void Enable()
@@ -71,5 +73,5 @@ internal sealed record JobDefinition(
     public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow, TimeZoneInfo? timeZone)
         => CronExpression?.GetNextOccurrence(utcNow, timeZone);
 
-    private static readonly CronExpression NotReacheableCronDefinition  = CronExpression.Parse("* * 31 2 *");
+    private static readonly CronExpression NotReacheableCronDefinition = CronExpression.Parse("* * 31 2 *");
 }

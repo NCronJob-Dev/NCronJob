@@ -21,7 +21,7 @@ internal sealed record JobExecutionContext : IJobExecutionContext
     public string? JobName => JobRun.JobDefinition.CustomName;
 
     Type? IJobExecutionContext.JobType
-        => JobRun.JobDefinition.Type == typeof(DynamicJobFactory)
+        => JobRun.JobDefinition.IsAnonymousJob
             ? null
             : JobRun.JobDefinition.Type;
 
