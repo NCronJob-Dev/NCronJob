@@ -21,9 +21,9 @@ internal sealed record JobExecutionContext : IJobExecutionContext
     public string? JobName => JobRun.JobDefinition.CustomName;
 
     Type? IJobExecutionContext.JobType
-        => JobRun.JobDefinition.IsAnonymousJob
-            ? null
-            : JobRun.JobDefinition.Type;
+        => JobRun.JobDefinition.IsTypedJob
+            ? JobRun.JobDefinition.Type
+            : null;
 
     /// <summary>The Job Run instance.</summary>
     internal JobRun JobRun { get; }

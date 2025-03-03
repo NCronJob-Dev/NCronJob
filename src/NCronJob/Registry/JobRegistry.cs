@@ -166,7 +166,7 @@ internal sealed class JobRegistry
 
         public bool Equals(JobDefinition? x, JobDefinition? y) =>
             (x is null && y is null) || (x is not null && y is not null
-                                         && x.Type == y.Type && !x.IsAnonymousJob
+                                         && x.Type == y.Type && x.IsTypedJob
                                          && x.Parameter == y.Parameter
                                          && x.CronExpression == y.CronExpression
                                          && x.TimeZone == y.TimeZone
@@ -197,7 +197,7 @@ internal sealed class JobRegistry
 
         public bool Equals(JobDefinition? x, JobDefinition? y) =>
             (x is null && y is null) || (x is not null && y is not null
-                                         && x.Type == y.Type && !x.IsAnonymousJob
+                                         && x.Type == y.Type && x.IsTypedJob
                                          && x.Parameter == y.Parameter
                                          && x.CustomName == y.CustomName);
 
