@@ -323,13 +323,13 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         initialSchedules.Count.ShouldBe(2);
         initialSchedules.ShouldContain(s => s.JobName == null
                                         && s.Type == typeof(DummyJob)
-                                        && !s.IsAnonymousJob
+                                        && s.IsTypedJob
                                         && s.CronExpression == Cron.AtEvery2ndMinute
                                         && s.IsEnabled
                                         && s.TimeZone == timeZone);
         initialSchedules.ShouldContain(s => s.JobName == "JobName2"
                                         && s.Type == null
-                                        && s.IsAnonymousJob
+                                        && !s.IsTypedJob
                                         && s.CronExpression == Cron.AtEveryMinute
                                         && s.IsEnabled
                                         && s.TimeZone == TimeZoneInfo.Utc);
@@ -341,13 +341,13 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         newSchedules.Count.ShouldBe(2);
         newSchedules.ShouldContain(s => s.JobName == null
                                         && s.Type == typeof(DummyJob)
-                                        && !s.IsAnonymousJob
+                                        && s.IsTypedJob
                                         && s.CronExpression == Cron.AtEvery2ndMinute
                                         && s.IsEnabled
                                         && s.TimeZone == timeZone);
         newSchedules.ShouldContain(s => s.JobName == "JobName2"
                                         && s.Type == null
-                                        && s.IsAnonymousJob
+                                        && !s.IsTypedJob
                                         && s.CronExpression == Cron.AtEveryMinute
                                         && !s.IsEnabled
                                         && s.TimeZone == TimeZoneInfo.Utc);
