@@ -20,7 +20,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenCompleted();
+        filteredEvents.ShouldBeScheduledThenCompleted<DummyJob>();
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class IntegrationTests : JobIntegrationBase
             AdvanceTime,
             stopMonitoringEvents: true);
 
-        completedOrchestrationEvents.ShouldAllBe(e => OrchestrationIsScheduledThenCompleted(Events, e));
+        completedOrchestrationEvents.ShouldAllBe(e => OrchestrationIsScheduledThenCompleted<DummyJob>(Events, e));
 
         Storage.Entries.ShouldAllBe(e => e == "DummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(10);
@@ -100,7 +100,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenCompleted();
+        filteredOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: Hello from AddNCronJob");
         Storage.Entries.Count.ShouldBe(1);
@@ -119,7 +119,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenCompleted();
+        filteredOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: Hello from InstantJob");
         Storage.Entries.Count.ShouldBe(1);
@@ -138,7 +138,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenCompleted();
+        filteredOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: Hello from InstantJob");
         Storage.Entries.Count.ShouldBe(1);
@@ -167,10 +167,10 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(instantOrchestrationId, stopMonitoringEvents: true);
 
         var scheduledOrchestrationEvents = Events.FilterByOrchestrationId(scheduledOrchestrationId);
-        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
 
         var instantOrchestrationEvents = Events.FilterByOrchestrationId(instantOrchestrationId);
-        instantOrchestrationEvents.ShouldBeInstantThenCompleted();
+        instantOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
     }
 
     [Theory]
@@ -352,7 +352,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeScheduledThenCompleted();
+        filteredOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: Hello from AddNCronJob");
         Storage.Entries.Count.ShouldBe(1);
@@ -370,7 +370,7 @@ public sealed class IntegrationTests : JobIntegrationBase
             10,
             stopMonitoringEvents: true);
 
-        completedOrchestrationEvents.ShouldAllBe(e => OrchestrationIsScheduledThenCompleted(Events, e));
+        completedOrchestrationEvents.ShouldAllBe(e => OrchestrationIsScheduledThenCompleted<DummyJob>(Events, e));
 
         Storage.Entries.ShouldAllBe(e => e == "DummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(10);
@@ -437,7 +437,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenCompleted();
+        filteredOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(1);
@@ -459,7 +459,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenCompleted();
+        filteredOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(1);
@@ -481,7 +481,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenExpired();
+        filteredOrchestrationEvents.ShouldBeInstantThenExpired<DummyJob>();
 
         Storage.Entries.Count.ShouldBe(0);
     }
@@ -500,10 +500,10 @@ public sealed class IntegrationTests : JobIntegrationBase
         var scheduledOrchestrationId = Events[0].CorrelationId;
 
         var scheduledOrchestrationEvents = Events.FilterByOrchestrationId(scheduledOrchestrationId);
-        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
 
         var instantOrchestrationEvents = Events.FilterByOrchestrationId(instantOrchestrationId);
-        instantOrchestrationEvents.ShouldBeInstantThenCompleted();
+        instantOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         // Scheduled orchestration should have started before the instant job related one...
         scheduledOrchestrationEvents[0].Timestamp.ShouldBeLessThan(instantOrchestrationEvents[0].Timestamp);
@@ -572,10 +572,10 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(instantOrchestrationId, stopMonitoringEvents: true);
 
         var scheduledOrchestrationEvents = Events.FilterByOrchestrationId(scheduledOrchestrationId);
-        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled();
+        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
 
         var instantOrchestrationEvents = Events.FilterByOrchestrationId(instantOrchestrationId);
-        instantOrchestrationEvents.ShouldBeInstantThenCompleted();
+        instantOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: INSTANT");
         Storage.Entries.Count.ShouldBe(1);
@@ -806,7 +806,14 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeInstantThenCompleted();
+        filteredEvents.ShouldBeInstantThenCompleted<DummyJob>();
+    }
+
+    private static bool OrchestrationIsScheduledThenCompleted<T>(IList<ExecutionProgress> events, ExecutionProgress executionProgress)
+    {
+        var filteredEvents = events.FilterByOrchestrationId(executionProgress.CorrelationId);
+        filteredEvents.ShouldBeScheduledThenCompleted<T>();
+        return true;
     }
 
     private static bool OrchestrationIsScheduledThenCompleted(IList<ExecutionProgress> events, ExecutionProgress executionProgress)

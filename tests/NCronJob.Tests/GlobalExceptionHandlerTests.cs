@@ -22,7 +22,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
 
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries[1].ShouldBe("2");
@@ -46,7 +46,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
 
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries.Count.ShouldBe(1);
@@ -69,7 +69,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenFaultedDuringRun();
+        filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
 
         Storage.Entries[0].ShouldBe("boom");
         Storage.Entries[1].ShouldBe("2");
@@ -92,7 +92,7 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredEvents.ShouldBeScheduledThenFaultedDuringInitialization();
+        filteredEvents.ShouldBeScheduledThenFaultedDuringInitialization<JobThatThrowsInCtor>();
 
         Storage.Entries[0].ShouldBe("1");
         Storage.Entries.Count.ShouldBe(1);
