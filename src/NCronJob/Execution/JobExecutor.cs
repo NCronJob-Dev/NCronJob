@@ -82,13 +82,13 @@ internal sealed partial class JobExecutor : IDisposable
         if (!definition.IsTypedJob)
             return jobRegistry.GetDynamicJobInstance(scopedServiceProvider, definition);
 
-        var job = scopedServiceProvider.GetService(definition.Type);
+        var job = scopedServiceProvider.GetService(definition.ExposedType);
         if (job != null)
             return (IJob)job;
 
-        LogUnregisteredJob(definition.Type);
+        LogUnregisteredJob(definition.ExposedType);
 
-        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
+        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.ExposedType);
 
         return (IJob)job;
     }

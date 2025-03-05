@@ -1,4 +1,5 @@
 using Cronos;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCronJob;
 
@@ -40,8 +41,8 @@ internal sealed record JobDefinition(
     /// <summary>
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
     /// </summary>
-    public string JobFullName => JobName == Type.Name
-        ? Type.FullName ?? JobName
+    public string JobFullName => IsTypedJob
+        ? ExposedType.FullName!
         : $"{typeof(DynamicJobFactory).Namespace}.{JobName}";
 
     private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
@@ -50,6 +51,7 @@ internal sealed record JobDefinition(
 
     public Type? ExposedType => IsTypedJob ? Type : null;
 
+    [MemberNotNullWhen(true, nameof(ExposedType))]
     public bool IsTypedJob => Type != typeof(DynamicJobFactory);
 
     private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
