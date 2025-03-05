@@ -111,6 +111,6 @@ public sealed class TimeZoneTests : JobIntegrationBase
 
         var cronRegistryEntries = ServiceProvider.GetRequiredService<JobRegistry>().GetAllCronJobs();
 
-        return cronRegistryEntries.First(entry => entry.Type == typeof(T));
+        return cronRegistryEntries.First(entry => entry.ExposedType == typeof(T));
     }
 }

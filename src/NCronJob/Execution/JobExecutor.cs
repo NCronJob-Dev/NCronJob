@@ -70,7 +70,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            LogExceptionHandlerError(runContext.JobType);
+            LogExceptionHandlerError(runContext.JobRun.JobDefinition.Type);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
             runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
@@ -82,13 +82,13 @@ internal sealed partial class JobExecutor : IDisposable
         if (!definition.IsTypedJob)
             return jobRegistry.GetDynamicJobInstance(scopedServiceProvider, definition);
 
-        var job = scopedServiceProvider.GetService(definition.Type);
+        var job = scopedServiceProvider.GetService(definition.ExposedType);
         if (job != null)
             return (IJob)job;
 
-        LogUnregisteredJob(definition.Type);
+        LogUnregisteredJob(definition.ExposedType);
 
-        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
+        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.ExposedType);
 
         return (IJob)job;
     }
@@ -133,7 +133,7 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
-        var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobType);
+        var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobRun.JobDefinition.Type);
 
         if (serviceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
         {
