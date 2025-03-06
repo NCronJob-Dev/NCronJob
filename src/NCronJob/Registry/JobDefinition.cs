@@ -41,7 +41,7 @@ internal sealed record JobDefinition(
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
     /// </summary>
     public string JobFullName => JobName == Type.Name
-        ? Type.FullName ?? JobName
+        ? Type.FullName!
         : $"{typeof(DynamicJobFactory).Namespace}.{JobName}";
 
     private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
