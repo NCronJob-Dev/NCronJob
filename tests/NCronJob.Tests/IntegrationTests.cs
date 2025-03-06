@@ -727,6 +727,18 @@ public sealed class IntegrationTests : JobIntegrationBase
         Storage.Entries.Count.ShouldBe(1);
     }
 
+    [Theory]
+    [InlineData(typeof(IList<>))]
+    [InlineData(typeof(string[]))]
+    [InlineData(typeof(GuidGenerator))]
+    [SuppressMessage("Usage", "CA2263: Prefer generic overload", Justification = "Needed for the test")]
+    public void AddJobWithTypeDoesNotSupportAnyRandomTypes(Type type)
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n => n.AddJob(type, p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        act.ShouldThrow<InvalidOperationException>();
+    }
+
     [Fact]
     public async Task AddingRuntimeJobsWillNotCauseDuplicatedExecution()
     {

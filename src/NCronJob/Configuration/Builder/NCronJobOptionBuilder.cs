@@ -59,6 +59,8 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     /// </example>
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
     {
+        ArgumentNullException.ThrowIfNull(jobType);
+
         var jobDefinitions = AddJobInternal(jobType, options);
         return new StartupStage<IJob>(services, jobDefinitions, settings, jobRegistry);
     }
@@ -147,6 +149,12 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         Type jobType,
         Action<JobOptionBuilder>? options)
     {
+        if (jobType.FullName is null // FullName is later required to properly identify the JobDefinition
+            || !jobType.GetInterfaces().Contains(typeof(IJob)))
+        {
+            throw new InvalidOperationException($"Type '{jobType}' doesn't implement '{nameof(IJob)}'.");
+        }
+
         ValidateConcurrencySetting(jobType);
 
         var jobDefinitions = new List<JobDefinition>();
