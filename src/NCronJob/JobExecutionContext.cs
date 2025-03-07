@@ -26,9 +26,6 @@ internal sealed record JobExecutionContext : IJobExecutionContext
     /// <summary>The Job Run instance.</summary>
     internal JobRun JobRun { get; }
 
-    /// <summary>The Type that represents the Job</summary>
-    internal Type JobType => JobRun.JobDefinition.Type;
-
     /// <inheritdoc />
     public object? Parameter => JobRun.Parameter;
 

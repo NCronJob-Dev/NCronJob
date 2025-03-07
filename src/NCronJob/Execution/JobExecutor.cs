@@ -70,7 +70,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            LogJobFailed(runContext.JobType, runContext.CorrelationId);
+            LogJobFailed(runContext.JobRun.JobDefinition.Type, runContext.CorrelationId);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
             runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
@@ -133,7 +133,7 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
-        var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobType);
+        var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobRun.JobDefinition.Type);
 
         if (serviceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
         {
