@@ -12,7 +12,6 @@ internal sealed record JobDefinition
         Type = type;
         IsTypedJob = true;
         JobFullName = type.FullName!;
-        JobName = type.Name;
 
         Parameter = parameter;
         JobPolicyMetadata = new JobExecutionAttributes(type);
@@ -22,21 +21,19 @@ internal sealed record JobDefinition
         string dynamicHash,
         JobExecutionAttributes jobPolicyMetadata)
     {
-        Type = typeof(DynamicJobFactory);
         IsTypedJob = false;
-        JobFullName = $"{typeof(DynamicJobFactory).Namespace}.{dynamicHash}";
-        JobName = dynamicHash;
+        JobFullName = $"Untyped job {typeof(DynamicJobFactory).Namespace}.{dynamicHash}";
 
         JobPolicyMetadata = jobPolicyMetadata;
     }
 
-    public Type Type { get; }
+    public string Name => CustomName is not null ? $"{CustomName} ({JobFullName})" : JobFullName;
+
+    public Type? Type { get; }
 
     public bool IsStartupJob => ShouldCrashOnStartupFailure is not null;
 
     public bool? ShouldCrashOnStartupFailure { get; set; }
-
-    public string JobName { get; }
 
     public string? CustomName { get; set; }
 
@@ -68,9 +65,7 @@ internal sealed record JobDefinition
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
-    public Type? ExposedType => IsTypedJob ? Type : null;
-
-    [MemberNotNullWhen(true, nameof(ExposedType))]
+    [MemberNotNullWhen(true, nameof(Type))]
     public bool IsTypedJob { get; }
 
     private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
@@ -118,7 +113,7 @@ internal sealed record JobDefinition
     {
         return new RecurringJobSchedule(
             JobName: CustomName,
-            Type: ExposedType,
+            Type: Type,
             IsTypedJob: IsTypedJob,
             CronExpression: UserDefinedCronExpression!,
             IsEnabled: IsEnabled,

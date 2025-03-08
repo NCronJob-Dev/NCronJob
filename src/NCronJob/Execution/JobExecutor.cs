@@ -70,7 +70,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
         catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
         {
-            LogJobFailed(runContext.JobRun.JobDefinition.Type, runContext.CorrelationId);
+            LogJobFailed(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
             runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
@@ -86,7 +86,7 @@ internal sealed partial class JobExecutor : IDisposable
         if (job != null)
             return (IJob)job;
 
-        LogUnregisteredJob(definition.Type);
+        LogUnregisteredJob(definition.Name);
 
         job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
 
@@ -111,7 +111,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
 
         runContext.JobRun.NotifyStateChange(JobStateType.Running);
-        LogRunningJob(job.GetType(), runContext.CorrelationId);
+        LogRunningJob(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
 
         await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
 
@@ -133,6 +133,18 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
+        await TriggerNotifications(runContext, exc, ct);
+
+        InformDependentJobs(runContext, exc is null);
+    }
+
+    private async Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct)
+    {
+        if (!runContext.JobRun.JobDefinition.IsTypedJob)
+        {
+            return;
+        }
+
         var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobRun.JobDefinition.Type);
 
         if (serviceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
@@ -146,8 +158,6 @@ internal sealed partial class JobExecutor : IDisposable
                 // We don't want to throw exceptions from the notification service
             }
         }
-
-        InformDependentJobs(runContext, exc is null);
     }
 
     public void InformDependentJobs(JobExecutionContext context, bool success)

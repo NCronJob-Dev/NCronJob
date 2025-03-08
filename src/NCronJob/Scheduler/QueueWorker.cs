@@ -195,13 +195,13 @@ internal sealed partial class QueueWorker : BackgroundService
             case NotifyCollectionChangedAction.Add:
                 foreach (JobRun job in e.NewItems!)
                 {
-                    LogJobAddedToQueue(job.JobDefinition.Type.Name, job.RunAt);
+                    LogJobAddedToQueue(job.JobDefinition.Name, job.RunAt);
                 }
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (JobRun job in e.OldItems!)
                 {
-                    LogJobRemovedFromQueue(job.JobDefinition.Type.Name, job.RunAt);
+                    LogJobRemovedFromQueue(job.JobDefinition.Name, job.RunAt);
                 }
                 break;
             case NotifyCollectionChangedAction.Replace:

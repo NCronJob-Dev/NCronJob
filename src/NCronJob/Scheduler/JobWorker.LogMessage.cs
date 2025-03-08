@@ -4,17 +4,17 @@ namespace NCronJob;
 
 internal sealed partial class JobWorker
 {
-    [LoggerMessage(LogLevel.Trace, "Next run of job '{JobType}' is at {NextRun:o}")]
-    private partial void LogNextJobRun(Type jobType, DateTimeOffset nextRun);
+    [LoggerMessage(LogLevel.Trace, "Next run of job '{JobName}' is at {NextRun:o}")]
+    private partial void LogNextJobRun(string jobName, DateTimeOffset nextRun);
 
-    [LoggerMessage(LogLevel.Debug, "Running job '{JobType}'.")]
-    private partial void LogRunningJob(Type jobType);
+    [LoggerMessage(LogLevel.Debug, "Running job '{JobName}'.")]
+    private partial void LogRunningJob(string jobName);
 
-    [LoggerMessage(LogLevel.Debug, "Job completed successfully: '{JobType}'.")]
-    private partial void LogCompletedJob(Type jobType);
+    [LoggerMessage(LogLevel.Debug, "Job '{JobName}' completed successfully")]
+    private partial void LogCompletedJob(string jobName);
 
-    [LoggerMessage(LogLevel.Warning, "Exception occurred in job {JobType}: {Message}")]
-    private partial void LogExceptionInJob(string message, Type jobType);
+    [LoggerMessage(LogLevel.Warning, "Exception occurred in job '{JobName}': {Message}")]
+    private partial void LogExceptionInJob(string message, string jobName);
 
     [LoggerMessage(LogLevel.Trace, "Cancellation requested for CronScheduler from stopToken.")]
     private partial void LogCancellationRequestedInJob();

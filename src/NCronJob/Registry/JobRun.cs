@@ -142,7 +142,7 @@ internal class JobRun
             JobRunId,
             ParentJobRunId,
             JobDefinition.CustomName,
-            JobDefinition.ExposedType,
+            JobDefinition.Type,
             JobDefinition.IsTypedJob);
     }
 
