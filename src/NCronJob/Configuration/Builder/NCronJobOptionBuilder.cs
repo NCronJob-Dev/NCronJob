@@ -149,12 +149,6 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         Type jobType,
         Action<JobOptionBuilder>? options)
     {
-        if (jobType.FullName is null // FullName is later required to properly identify the JobDefinition
-            || !jobType.GetInterfaces().Contains(typeof(IJob)))
-        {
-            throw new InvalidOperationException($"Type '{jobType}' doesn't implement '{nameof(IJob)}'.");
-        }
-
         ValidateConcurrencySetting(jobType);
 
         var jobDefinitions = new List<JobDefinition>();
@@ -171,12 +165,16 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             var cron = option.CronExpression is not null
                 ? GetCronExpression(option.CronExpression)
                 : null;
-            var entry = new JobDefinition(jobType, option.Parameter, cron, option.TimeZoneInfo)
+
+            var entry = JobDefinition.CreateTyped(jobType, option.Parameter) with
             {
-                ShouldCrashOnStartupFailure = option.ShouldCrashOnStartupFailure,
                 CustomName = option.Name,
+                CronExpression = cron,
+                TimeZone = option.TimeZoneInfo,
+                ShouldCrashOnStartupFailure = option.ShouldCrashOnStartupFailure,
                 UserDefinedCronExpression = option.CronExpression
             };
+
             jobRegistry.Add(entry);
             jobDefinitions.Add(entry);
         }

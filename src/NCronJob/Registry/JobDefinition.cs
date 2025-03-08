@@ -1,24 +1,46 @@
 using Cronos;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCronJob;
 
-internal sealed record JobDefinition(
-    Type Type,
-    object? Parameter,
-    CronExpression? CronExpression,
-    TimeZoneInfo? TimeZone,
-    string? JobName = null,
-    JobExecutionAttributes? JobPolicyMetadata = null)
+internal sealed record JobDefinition
 {
+    private JobDefinition(
+        Type type,
+        object? parameter)
+    {
+        Type = type;
+        IsTypedJob = true;
+        JobFullName = type.FullName!;
+        JobName = type.Name;
+
+        Parameter = parameter;
+        JobPolicyMetadata = new JobExecutionAttributes(type);
+    }
+
+    private JobDefinition(
+        string dynamicHash,
+        JobExecutionAttributes jobPolicyMetadata)
+    {
+        Type = typeof(DynamicJobFactory);
+        IsTypedJob = false;
+        JobFullName = $"{typeof(DynamicJobFactory).Namespace}.{dynamicHash}";
+        JobName = dynamicHash;
+
+        JobPolicyMetadata = jobPolicyMetadata;
+    }
+
+    public Type Type { get; }
+
     public bool IsStartupJob => ShouldCrashOnStartupFailure is not null;
 
     public bool? ShouldCrashOnStartupFailure { get; set; }
 
-    public string JobName { get; } = JobName ?? Type.Name;
+    public string JobName { get; }
 
     public string? CustomName { get; set; }
 
-    public CronExpression? CronExpression { get; set; } = CronExpression;
+    public CronExpression? CronExpression { get; set; }
 
     /// <summary>
     /// This is the unhandled cron expression from the user. Using <see cref="CronExpression.ToString"/> will alter the expression.
@@ -33,28 +55,45 @@ internal sealed record JobDefinition(
     /// </summary>
     public string? UserDefinedCronExpression { get; set; }
 
-    public object? Parameter { get; set; } = Parameter;
+    public object? Parameter { get; set; }
 
-    public TimeZoneInfo? TimeZone { get; set; } = TimeZone;
+    public TimeZoneInfo? TimeZone { get; set; }
 
     /// <summary>
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
     /// </summary>
-    public string JobFullName => JobName == Type.Name
-        ? Type.FullName!
-        : $"{typeof(DynamicJobFactory).Namespace}.{JobName}";
+    public string JobFullName { get; }
 
-    private JobExecutionAttributes JobPolicyMetadata { get; } = JobPolicyMetadata ?? new JobExecutionAttributes(Type);
+    private JobExecutionAttributes JobPolicyMetadata { get; }
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
     public Type? ExposedType => IsTypedJob ? Type : null;
 
-    public bool IsTypedJob => Type != typeof(DynamicJobFactory);
+    [MemberNotNullWhen(true, nameof(ExposedType))]
+    public bool IsTypedJob { get; }
 
     private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
 
     public bool IsEnabled => CronExpression is null || !IsDisabled;
+
+    public static JobDefinition CreateTyped(
+        Type type,
+        object? parameter)
+    {
+        if (type.FullName is null // FullName is later required to properly identify the JobDefinition
+            || !type.GetInterfaces().Contains(typeof(IJob)))
+        {
+            throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.");
+        }
+
+        return new(type, parameter);
+    }
+
+    public static JobDefinition CreateUntyped(
+        string dynamicHash,
+        JobExecutionAttributes jobPolicyMetadata)
+    => new(dynamicHash, jobPolicyMetadata);
 
     public void Disable()
     {

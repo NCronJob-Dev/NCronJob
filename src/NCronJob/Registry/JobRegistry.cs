@@ -64,9 +64,10 @@ internal sealed class JobRegistry
     {
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
 
-        var entry = new JobDefinition(typeof(DynamicJobFactory), null, null, null,
-                JobName: DynamicJobNameGenerator.GenerateJobName(jobDelegate),
-                JobPolicyMetadata: jobPolicyMetadata) { CustomName = jobName };
+        var entry = JobDefinition.CreateUntyped(DynamicJobNameGenerator.GenerateJobName(jobDelegate), jobPolicyMetadata) with
+        {
+            CustomName = jobName
+        };
 
         if (jobOption is not null)
         {

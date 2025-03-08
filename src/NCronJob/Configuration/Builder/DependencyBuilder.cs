@@ -20,7 +20,7 @@ public sealed class DependencyBuilder<TPrincipalJob>
     public DependencyBuilder<TPrincipalJob> RunJob<TJob>(object? parameter = null)
         where TJob : IJob
     {
-        dependentJobOptions.Add(new JobDefinition(typeof(TJob), parameter, null, null));
+        dependentJobOptions.Add(JobDefinition.CreateTyped(typeof(TJob), parameter));
         return this;
     }
 
