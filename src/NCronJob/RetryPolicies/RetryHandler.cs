@@ -58,14 +58,14 @@ internal sealed partial class RetryHandler : IRetryHandler
                 if (runContext.Attempts > 1)
                 {
                     runContext.JobRun.NotifyStateChange(JobStateType.Retrying);
-                    LogRetryAttempt(runContext.Attempts, jobDefinition.JobName);
+                    LogRetryAttempt(runContext.Attempts, jobDefinition.Name);
                 }
                 return operation(ct);
             }, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            var jobName = runContext.JobRun.JobDefinition.JobName;
+            var jobName = runContext.JobRun.JobDefinition.Name;
             LogCancellationOperationInJob(jobName);
         }
         catch (Exception ex)
@@ -78,9 +78,9 @@ internal sealed partial class RetryHandler : IRetryHandler
     [LoggerMessage(LogLevel.Error, "Error occurred during an operation with retries. {Message}")]
     private partial void LogRetryHandlerException(string message);
 
-    [LoggerMessage(LogLevel.Debug, "Attempt {RetryCount} for {JobName}")]
+    [LoggerMessage(LogLevel.Debug, "Attempt {RetryCount} for job '{JobName}'")]
     private partial void LogRetryAttempt(int retryCount, string jobName);
 
-    [LoggerMessage(LogLevel.Trace, "Operation was cancelled for {JobName}.")]
+    [LoggerMessage(LogLevel.Trace, "Operation was cancelled for job '{JobName}'.")]
     private partial void LogCancellationOperationInJob(string jobName);
 }

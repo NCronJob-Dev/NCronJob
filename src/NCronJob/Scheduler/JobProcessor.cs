@@ -21,7 +21,7 @@ internal sealed partial class JobProcessor
         {
             if (jobRun.IsExpired)
             {
-                LogDequeuingExpiredJob(jobRun.JobDefinition.JobName);
+                LogDequeuingExpiredJob(jobRun.JobDefinition.Name);
                 jobRun.NotifyStateChange(JobStateType.Expired);
                 return;
             }
@@ -46,6 +46,6 @@ internal sealed partial class JobProcessor
         }
     }
 
-    [LoggerMessage(LogLevel.Trace, "Dequeuing job {JobName} because it has exceeded the expiration period.")]
+    [LoggerMessage(LogLevel.Trace, "Dequeuing job '{JobName}' because it has exceeded the expiration period.")]
     private partial void LogDequeuingExpiredJob(string jobName);
 }

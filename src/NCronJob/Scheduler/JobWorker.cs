@@ -121,7 +121,7 @@ internal sealed partial class JobWorker
         }
         catch (Exception ex)
         {
-            LogExceptionInJob(ex.Message, nextJob.JobDefinition.Type);
+            LogExceptionInJob(ex.Message, nextJob.JobDefinition.Name);
             nextJob.NotifyStateChange(JobStateType.Faulted, ex);
         }
         finally
@@ -201,7 +201,7 @@ internal sealed partial class JobWorker
 
         var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
 
-        LogNextJobRun(job.Type, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
+        LogNextJobRun(job.Name, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
         var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
         jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
         run.NotifyStateChange(JobStateType.Scheduled);
