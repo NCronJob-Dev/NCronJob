@@ -12,6 +12,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 - Expose whether a scheduled job is enabled or not. By [@nulltoken](https://github.com/nulltoken) in [#231](https://github.com/NCronJob-Dev/NCronJob/pull/231).
 - Make `IRuntimeJobRegistry.GetAllRecurringJobs()` return the job type. By [@nulltoken](https://github.com/nulltoken) in [#232](https://github.com/NCronJob-Dev/NCronJob/pull/232).
 - Surface job name and type through `ExecutionProgress`. By [@nulltoken](https://github.com/nulltoken) in [#234](https://github.com/NCronJob-Dev/NCronJob/pull/234).
+- Teach `JobOptionBuilder` to only accept parameters. By [@nulltoken](https://github.com/nulltoken) in [#241](https://github.com/NCronJob-Dev/NCronJob/pull/241).
 
 ### Fixed
 
