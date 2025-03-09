@@ -875,6 +875,20 @@ public sealed class IntegrationTests : JobIntegrationBase
                     .And
                     .WithCronExpression(Cron.AtEveryMinute))
         },
+        {
+            // No way to invoke DummyJob inambiguously
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one")
+                    .And
+                    .WithParameter("two"))
+        },
+        {
+            // Pure duplicate registration
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one")
+                    .And
+                    .WithParameter("one")).RunAtStartup()
+        },
     };
 
     public static TheoryData<Action<NCronJobOptionBuilder>> ValidRegistrations = new()
@@ -890,6 +904,16 @@ public sealed class IntegrationTests : JobIntegrationBase
                     .WithCronExpression(Cron.AtEveryMinute).WithParameter("one")
                     .And
                     .WithCronExpression(Cron.AtEveryMinute).WithParameter("two"))
+        },
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one"))
+        },
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one")
+                    .And
+                    .WithParameter("two")).RunAtStartup()
         },
         {
             s => {

@@ -30,6 +30,7 @@ internal sealed class JobRegistry
     public void Add(JobDefinition jobDefinition)
     {
         AssertNoDuplicateJobNames(jobDefinition.CustomName);
+        AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(jobDefinition);
 
         if (allRootJobs.Contains(jobDefinition, JobDefinitionEqualityComparer.Instance))
         {
@@ -151,6 +152,25 @@ internal sealed class JobRegistry
         throw new InvalidOperationException(
             $"""
             Job registration conflict detected. A job has already been registered with the name '{additionalJobName}'.
+            Please use a different name for each job.
+            """);
+    }
+
+    private void AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(JobDefinition jobDefinition)
+    {
+        if (jobDefinition.IsUnnamedOrUnscheduledOrParameterlessTypedJob)
+        {
+            return;
+        }
+
+        if (!allRootJobs.Any(jd => jd.Type == jobDefinition.Type))
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Job registration conflict detected. An unscheduled typed job '{jobDefinition.Name}' has already been registered with a parameter.
             Please use a different name for each job.
             """);
     }

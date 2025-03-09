@@ -3,9 +3,9 @@
 Often a job needs some kind of configuration or parameter to run. Imagine you have a job that generates a report and can run daily, weekly or monthly. You could create three different jobs for each frequency, but that would be a lot of duplicated code. Instead, you can pass in parameters to the job.
 
 ```csharp
-Services.AddNCronJob(options => 
+Services.AddNCronJob(options =>
 {
-    options.AddJob<ReportJob>(j => 
+    options.AddJob<ReportJob>(j =>
     {
         // Runs every day at midnight and passes in the string "daily"
         j.WithCronExpression("0 0 * * *").WithParameter("daily")
@@ -43,7 +43,41 @@ public class ReportJob : IJob
 }
 ```
 
+It's also possible to configure a job with only a parameter and no cron expression.
+
+```csharp
+Services.AddNCronJob(options =>
+{
+    options.AddJob<MaintenanceJob>(j =>
+    {
+        j.WithParameter("lightMode");
+    });
+});
+```
+
+This can later be triggered through the `IInstantJobRegistry` in a preconfigured mode (See [_"Instant jobs"_](./instant-jobs.md)).
+
+```csharp
+app.MapPost("/maintenance/light", (IInstantJobRegistry jobRegistry) =>
+{
+    // "lightMode" will be passed as a parameter to the job
+    jobRegistry.RunInstantJob<MaintenanceJob>();
+    return Results.Ok();
+});
+```
+
+Of course, the preconfigured parameter can also be overriden when triggering the job.
+
+```csharp
+app.MapPost("/maintenance/thorough", (IInstantJobRegistry jobRegistry) =>
+{
+    jobRegistry.RunInstantJob<MaintenanceJob>("thoroughMode");
+    return Results.Ok();
+});
+```
+
 ## Parameters are not immutable
+
 Passed in parameters are not immutable by default or cloned throughout the job execution. This means that if you change the parameter in the job, it will also change in the next execution. If you need to keep the parameter unchanged, you should clone it in the job.
 
 ```csharp

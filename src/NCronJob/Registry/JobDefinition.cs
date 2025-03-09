@@ -175,6 +175,13 @@ internal sealed record JobDefinition
         return new DynamicJobFactory(scopedServiceProvider, Delegate);
     }
 
+    public bool IsUnnamedOrUnscheduledOrParameterlessTypedJob =>
+        (CustomName is not null
+            || CronExpression is not null
+            || IsStartupJob
+            || !IsTypedJob
+            || Parameter is null);
+
     private Delegate? Delegate { get; }
 
     private static CronExpression GetCronExpression(string expression)
