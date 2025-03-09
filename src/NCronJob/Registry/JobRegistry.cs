@@ -142,23 +142,23 @@ internal sealed class JobRegistry
         dependentJobsPerJobDefinition.Remove(jobDefinition);
     }
 
-    private void AssertNoDuplicateJobNames(string? additionalJobName = null)
+    private void AssertNoDuplicateJobNames(string? additionalJobName)
     {
-        var duplicateJobName = allJobs
-            .Select(c => c.CustomName)
-            .Concat([additionalJobName])
-            .Where(s => s is not null)
-            .GroupBy(s => s)
-            .FirstOrDefault(g => g.Count() > 1);
-
-        if (duplicateJobName is not null)
+        if (additionalJobName is null)
         {
-            throw new InvalidOperationException(
-                $"""
-                Job registration conflict detected. Duplicate job names found: {duplicateJobName}.
-                Please use a different name for each job.
-                """);
+            return;
         }
+
+        if (!allJobs.Any(jd => jd.CustomName == additionalJobName))
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+            Job registration conflict detected. A job has already been registered with the name '{additionalJobName}'.
+            Please use a different name for each job.
+            """);
     }
 
     private sealed class JobDefinitionEqualityComparer : IEqualityComparer<JobDefinition>
