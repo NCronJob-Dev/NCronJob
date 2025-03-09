@@ -34,9 +34,9 @@ public sealed class JobOptionBuilder
     /// Sets the job name. This can be used to identify the job.
     /// </summary>
     /// <param name="jobName">The job name associated with this job.</param>
-    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows further configuration.</returns>
+    /// <returns>Returns a <see cref="CronAndParameterBuilder"/> that allows further configuration.</returns>
     /// <remarks>The job name should be unique over all job instances.</remarks>
-    public ParameterOnlyBuilder WithName(string jobName)
+    public CronAndParameterBuilder WithName(string jobName)
     {
         var jobOption = new JobOption
         {
@@ -45,7 +45,7 @@ public sealed class JobOptionBuilder
 
         jobOptions.Add(jobOption);
 
-        return new ParameterOnlyBuilder(this, jobOption);
+        return new CronAndParameterBuilder(this, jobOption);
     }
 
     internal List<JobOption> GetJobOptions()
