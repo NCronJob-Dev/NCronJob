@@ -581,15 +581,6 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
-    public void ShouldThrowWhenDuplicateJobNamesDuringRegistration()
-    {
-        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")
-            .And.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
-
-        act.ShouldThrow<InvalidOperationException>();
-    }
-
-    [Fact]
     public void ShouldThrowRuntimeExceptionWithDuplicateJob()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
@@ -602,6 +593,19 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         successful.ShouldBeFalse();
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void RegisteringDuplicateDuringRuntimeLeadsToException()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        var runtimeRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var successful = runtimeRegistry.TryRegister(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
+
+        successful.ShouldBeFalse();
+        exception.ShouldNotBeNull();
     }
 
     [Fact]
