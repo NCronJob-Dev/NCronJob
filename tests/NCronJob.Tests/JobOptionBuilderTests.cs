@@ -79,6 +79,39 @@ public class JobOptionBuilderTests
         var builder = new JobOptionBuilder();
         builder
             .WithName("name1")
+            .And
+            .WithName("name2");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].Name.ShouldBe("name1");
+        options[1].Name.ShouldBe("name2");
+    }
+
+    [Fact]
+    public void ShouldCreateMultipleNamedJobsWithoutAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder
+            .WithName("name1");
+
+        builder
+            .WithName("name2");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].Name.ShouldBe("name1");
+        options[1].Name.ShouldBe("name2");
+    }
+
+    [Fact]
+    public void ShouldCreateMultipleNamedAndParameterizedJobsWithAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder
+            .WithName("name1")
             .WithParameter("foo")
             .And
             .WithName("name2")
@@ -94,7 +127,7 @@ public class JobOptionBuilderTests
     }
 
     [Fact]
-    public void ShouldCreateMultipleNamedJobsWithoutAnd()
+    public void ShouldCreateMultipleNamedAndParameterizedJobsWithoutAnd()
     {
         var builder = new JobOptionBuilder();
         builder
