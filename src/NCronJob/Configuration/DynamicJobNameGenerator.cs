@@ -21,6 +21,6 @@ internal static class DynamicJobNameGenerator
             jobNameBuilder.Append(param.ParameterType.Name);
         }
         var jobHash = jobNameBuilder.ToString().GenerateConsistentShortHash();
-        return $"AnonymousJob_{jobHash}";
+        return $"UntypedJob_{jobHash}";
     }
 }
