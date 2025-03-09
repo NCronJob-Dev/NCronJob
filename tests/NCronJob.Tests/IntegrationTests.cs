@@ -797,16 +797,12 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public void RegisteringDuplicateDuringRuntimeLeadsToException()
+    public void ShouldThrowWhenDuplicateJobNamesDuringRegistration()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+        var act = () => ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")
+            .And.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
 
-        var runtimeRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
-
-        var successful = runtimeRegistry.TryRegister(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
-
-        successful.ShouldBeFalse();
-        exception.ShouldNotBeNull();
+        act.ShouldThrow<InvalidOperationException>();
     }
 
     private async Task StartNCronJobAndExecuteInstantSimpleJob()
