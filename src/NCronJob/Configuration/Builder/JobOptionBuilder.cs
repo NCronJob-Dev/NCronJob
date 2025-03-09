@@ -46,6 +46,23 @@ public sealed class JobOptionBuilder
         return new CronAndParameterBuilder(this, jobOption);
     }
 
+    /// <summary>
+    /// The parameter that can be passed down to the job.<br/>
+    /// When an instant job is triggered a parameter can be passed down via the <see cref="IInstantJobRegistry"/> interface.
+    /// </summary>
+    /// <param name="parameter">The parameter to add that will be passed to the cron job.</param>
+    /// <returns>Returns a <see cref="IOptionChainerBuilder"/> that allows chaining new options.</returns>
+    public IOptionChainerBuilder WithParameter(object? parameter)
+    {
+        var jobOption = new JobOption
+        {
+            Parameter = parameter,
+        };
+
+        jobOptions.Add(jobOption);
+        return new ParameterOnlyBuilder(this, jobOption);
+    }
+
     internal List<JobOption> GetJobOptions()
     {
         if (jobOptions.Count == 0)
