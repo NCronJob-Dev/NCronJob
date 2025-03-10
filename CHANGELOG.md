@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.4.0] - 2025-03-10
+
 ### Added
 
 - Make `IInstantJobRegistry` accept job names. By [@nulltoken](https://github.com/nulltoken) in [#215](https://github.com/NCronJob-Dev/NCronJob/pull/215).
@@ -512,7 +514,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.4...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.0...HEAD
+[v4.4.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.4...v4.4.0
 [v4.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.3...v4.3.4
 [v4.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.2...v4.3.3
 [v4.3.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.1...v4.3.2
