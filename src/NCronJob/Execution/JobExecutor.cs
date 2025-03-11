@@ -145,9 +145,10 @@ internal sealed partial class JobExecutor : IDisposable
             return;
         }
 
+        await using var scope = serviceProvider.CreateAsyncScope();
         var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobRun.JobDefinition.Type);
 
-        if (serviceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
+        if (scope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
         {
             try
             {

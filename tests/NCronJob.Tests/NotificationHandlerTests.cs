@@ -80,7 +80,7 @@ public class NotificationHandlerTests : JobIntegrationBase
     {
         public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
         {
-            storage.Add($"{GetType().Name} - Output: {context.Output?.ToString()}");
+            storage.Add($"{GetType().Name} - Output: {context.Output}");
             return Task.CompletedTask;
         }
     }
@@ -91,7 +91,7 @@ public class NotificationHandlerTests : JobIntegrationBase
         {
             exception.ShouldNotBeNull();
 
-            storage.Add($"{GetType().Name} - Exception: {exception!.GetType().Name}");
+            storage.Add($"{GetType().Name} - Exception: {exception.GetType().Name}");
             return Task.CompletedTask;
         }
     }
