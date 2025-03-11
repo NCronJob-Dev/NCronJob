@@ -43,7 +43,7 @@ internal sealed record JobDefinition
     /// This is the unhandled cron expression from the user. Using <see cref="CronExpression.ToString"/> will alter the expression.
     /// For example:
     /// <code>
-    /// var cron = CronExpression.Parse("0  0 1 * *"); // Extra whitespace
+    /// var cron = CronExpression.Parse("  0 0 1 * *"); // Extra whitespace
     /// cron.ToString(); // No extra whitespace: 0 0 1 * *
     /// var cron = CronExpression.Parse("*/2 * * *");
     /// cron.ToString(); // 0,2,4,6,8,10,12,... * * * *

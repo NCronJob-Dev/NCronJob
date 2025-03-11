@@ -223,7 +223,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
-        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression);
+        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression.Trim());
 
         job.CronExpression = cron;
         job.UserDefinedCronExpression = cronExpression;
