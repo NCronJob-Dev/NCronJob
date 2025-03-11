@@ -66,14 +66,14 @@ internal sealed class JobRegistry
 
         var entry = JobDefinition.CreateUntyped(DynamicJobNameGenerator.GenerateJobName(jobDelegate), jobPolicyMetadata) with
         {
-            CustomName = jobName
+            CustomName = jobName,
         };
 
         if (jobOption is not null)
         {
             Debug.Assert(jobOption.CronExpression is not null);
 
-            var cron = NCronJobOptionBuilder.GetCronExpression(jobOption.CronExpression);
+            var cron = NCronJobOptionBuilder.GetCronExpression(jobOption.CronExpression.Trim());
             entry.CronExpression = cron;
             entry.TimeZone = jobOption.TimeZoneInfo;
             entry.UserDefinedCronExpression = jobOption.CronExpression;

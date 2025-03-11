@@ -809,6 +809,21 @@ public sealed class IntegrationTests : JobIntegrationBase
         exception.ShouldNotBeNull();
     }
 
+    [Fact]
+    public async Task PassedInExpressionShouldBePassedOn()
+    {
+        const string expression = "     0 0 1 * *";
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob(() => { }, expression)
+            .AddJob<DummyJob>(p => p.WithCronExpression(expression)));
+        await StartNCronJob();
+
+        var jobs = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().GetAllRecurringJobs();
+
+        jobs.First().CronExpression.ShouldBe(expression);
+        jobs.Last().CronExpression.ShouldBe(expression);
+    }
+
     private async Task StartNCronJobAndExecuteInstantSimpleJob()
     {
         await StartNCronJob(startMonitoringEvents: true);
@@ -835,7 +850,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         return true;
     }
 
-    private readonly Delegate dynamicJob = (IJobExecutionContext context, Storage storage, CancellationToken token) 
+    private readonly Delegate dynamicJob = (IJobExecutionContext context, Storage storage, CancellationToken token)
         => { storage.Add($"Done - Parameter : {context.Parameter}"); };
 
     private static class JobMethods

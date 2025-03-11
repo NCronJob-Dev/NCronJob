@@ -41,8 +41,6 @@ public sealed class CronAndParameterBuilder : IOptionChainerBuilder
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        cronExpression = cronExpression.Trim();
-
         jobOption.CronExpression = cronExpression;
         jobOption.TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc;
 

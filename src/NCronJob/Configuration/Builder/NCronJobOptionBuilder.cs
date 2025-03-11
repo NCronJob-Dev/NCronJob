@@ -88,7 +88,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         var jobOption = new JobOption
         {
             CronExpression = cronExpression,
-            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
+            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc,
         };
 
         jobRegistry.AddDynamicJob(jobDelegate, jobName, jobOption);
@@ -163,7 +163,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         foreach (var option in jobOptions)
         {
             var cron = option.CronExpression is not null
-                ? GetCronExpression(option.CronExpression)
+                ? GetCronExpression(option.CronExpression.Trim())
                 : null;
 
             var entry = JobDefinition.CreateTyped(jobType, option.Parameter) with
