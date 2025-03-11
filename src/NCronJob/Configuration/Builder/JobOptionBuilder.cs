@@ -17,8 +17,6 @@ public sealed class JobOptionBuilder
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        cronExpression = cronExpression.Trim();
-
         var jobOption = new JobOption
         {
             CronExpression = cronExpression,

@@ -809,6 +809,29 @@ public sealed class IntegrationTests : JobIntegrationBase
         exception.ShouldNotBeNull();
     }
 
+    [Fact]
+    public async Task PassedInExpressionShouldBePassedOn()
+    {
+        const string expression = "     0 0 1 * *";
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob(() => { }, expression, jobName: "job1")
+            .AddJob<DummyJob>(p => p.WithName("job2").WithCronExpression(expression)));
+        await StartNCronJob();
+
+        var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var jobs = runtimeJobRegistry.GetAllRecurringJobs();
+
+        jobs.First().CronExpression.ShouldBe(expression);
+        jobs.Last().CronExpression.ShouldBe(expression);
+
+        runtimeJobRegistry.TryGetSchedule("job1", out string? cron1, out _).ShouldBeTrue();
+        cron1.ShouldBe(expression);
+
+        runtimeJobRegistry.TryGetSchedule("job2", out string? cron2, out _).ShouldBeTrue();
+        cron2.ShouldBe(expression);
+    }
+
     private async Task StartNCronJobAndExecuteInstantSimpleJob()
     {
         await StartNCronJob(startMonitoringEvents: true);
