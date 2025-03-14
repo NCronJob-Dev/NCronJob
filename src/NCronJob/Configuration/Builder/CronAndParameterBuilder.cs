@@ -1,4 +1,4 @@
-﻿namespace NCronJob;
+namespace NCronJob;
 
 /// <summary>
 /// Represents a builder to refine a job with a cron expression or a parameter.
@@ -44,7 +44,7 @@ public sealed class CronAndParameterBuilder : IOptionChainerBuilder
         cronExpression = cronExpression.Trim();
 
         jobOption.CronExpression = cronExpression;
-        jobOption.TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc;
+        jobOption.TimeZoneInfo = timeZoneInfo;
 
         return new ParameterOnlyBuilder(optionBuilder, jobOption);
     }

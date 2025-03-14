@@ -22,7 +22,7 @@ public sealed class JobOptionBuilder
         var jobOption = new JobOption
         {
             CronExpression = cronExpression,
-            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
+            TimeZoneInfo = timeZoneInfo
         };
 
         jobOptions.Add(jobOption);

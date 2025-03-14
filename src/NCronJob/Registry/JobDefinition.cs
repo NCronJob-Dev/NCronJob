@@ -6,9 +6,12 @@ namespace NCronJob;
 internal sealed record JobDefinition
 {
     private JobDefinition(
+        string? customName,
         Type type,
         object? parameter)
     {
+        CustomName = customName;
+
         Type = type;
         IsTypedJob = true;
         JobFullName = type.FullName!;
@@ -18,9 +21,12 @@ internal sealed record JobDefinition
     }
 
     private JobDefinition(
+        string? customName,
         string dynamicHash,
         JobExecutionAttributes jobPolicyMetadata)
     {
+        CustomName = customName;
+
         IsTypedJob = false;
         JobFullName = $"Untyped job {typeof(DynamicJobFactory).Namespace}.{dynamicHash}";
 
@@ -33,11 +39,11 @@ internal sealed record JobDefinition
 
     public bool IsStartupJob => ShouldCrashOnStartupFailure is not null;
 
-    public bool? ShouldCrashOnStartupFailure { get; set; }
+    public bool? ShouldCrashOnStartupFailure { get; private set; }
 
-    public string? CustomName { get; set; }
+    public string? CustomName { get; }
 
-    public CronExpression? CronExpression { get; set; }
+    public CronExpression? CronExpression { get; private set; }
 
     /// <summary>
     /// This is the unhandled cron expression from the user. Using <see cref="CronExpression.ToString"/> will alter the expression.
@@ -50,11 +56,11 @@ internal sealed record JobDefinition
     /// </code>
     /// If the user wants to compare the schedule by its string representation, this property should be used.
     /// </summary>
-    public string? UserDefinedCronExpression { get; set; }
+    public string? UserDefinedCronExpression { get; private set; }
 
-    public object? Parameter { get; set; }
+    public object? Parameter { get; private set; }
 
-    public TimeZoneInfo? TimeZone { get; set; }
+    public TimeZoneInfo? TimeZone { get; private set; }
 
     /// <summary>
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
@@ -76,19 +82,28 @@ internal sealed record JobDefinition
         Type type,
         object? parameter)
     {
+        return CreateTyped(null, type, parameter);
+    }
+
+    public static JobDefinition CreateTyped(
+        string? name,
+        Type type,
+        object? parameter)
+    {
         if (type.FullName is null // FullName is later required to properly identify the JobDefinition
             || !type.GetInterfaces().Contains(typeof(IJob)))
         {
             throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.");
         }
 
-        return new(type, parameter);
+        return new(name, type, parameter);
     }
 
     public static JobDefinition CreateUntyped(
+        string? name,
         string dynamicHash,
         JobExecutionAttributes jobPolicyMetadata)
-    => new(dynamicHash, jobPolicyMetadata);
+    => new(name, dynamicHash, jobPolicyMetadata);
 
     public void Disable()
     {
@@ -106,8 +121,11 @@ internal sealed record JobDefinition
         CronExpression = null;
     }
 
-    public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow, TimeZoneInfo? timeZone)
-        => CronExpression?.GetNextOccurrence(utcNow, timeZone);
+    public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow)
+        => CronExpression?.GetNextOccurrence(utcNow, TimeZone ?? TimeZoneInfo.Utc);
+
+    public (string? UserDefinedCronExpression, TimeZoneInfo? TimeZone) GetSchedule()
+        => (UserDefinedCronExpression, UserDefinedCronExpression is null ? null : TimeZone ?? TimeZoneInfo.Utc);
 
     public RecurringJobSchedule ToRecurringJobSchedule()
     {
@@ -117,7 +135,59 @@ internal sealed record JobDefinition
             IsTypedJob: IsTypedJob,
             CronExpression: UserDefinedCronExpression!,
             IsEnabled: IsEnabled,
-            TimeZone: TimeZone!);
+            TimeZone: TimeZone ?? TimeZoneInfo.Utc);
+    }
+
+    public void UpdateWith(JobOption? jobOption)
+    {
+        if (jobOption is null)
+        {
+            return;
+        }
+
+        if (jobOption.CronExpression is not null)
+        {
+            UserDefinedCronExpression = jobOption.CronExpression;
+            CronExpression = GetCronExpression(jobOption.CronExpression);
+
+            TimeZone = jobOption.TimeZoneInfo;
+        }
+
+        if (jobOption.Parameter is not null)
+        {
+            Parameter = jobOption.Parameter;
+        }
+
+        if (jobOption.ShouldCrashOnStartupFailure is not null)
+        {
+            ShouldCrashOnStartupFailure = jobOption.ShouldCrashOnStartupFailure;
+        }
+    }
+
+    private static CronExpression GetCronExpression(string expression)
+    {
+        var precisionRequired = DetermineAndValidatePrecision(expression);
+
+        var cf = precisionRequired ? CronFormat.IncludeSeconds : CronFormat.Standard;
+
+        return CronExpression.TryParse(expression, cf, out var cronExpression)
+            ? cronExpression
+            : throw new InvalidOperationException("Invalid cron expression");
+    }
+
+    private static bool DetermineAndValidatePrecision(string cronExpression)
+    {
+        var parts = cronExpression.Split(' ');
+        var precisionRequired = parts.Length == 6;
+
+        var expectedLength = precisionRequired ? 6 : 5;
+        if (parts.Length != expectedLength)
+        {
+            var precisionText = precisionRequired ? "second precision" : "minute precision";
+            throw new ArgumentException($"Invalid cron expression format for {precisionText}.", nameof(cronExpression));
+        }
+
+        return precisionRequired;
     }
 
     private static readonly CronExpression NotReacheableCronDefinition = CronExpression.Parse("* * 31 2 *");
