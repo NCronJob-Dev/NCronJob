@@ -57,7 +57,7 @@ internal sealed class JobRegistry
         }
     }
 
-    public JobDefinition AddDynamicJob(
+    public static JobDefinition BuildDynamicJob(
         Delegate jobDelegate,
         string? jobName = null,
         JobOption? jobOption = null)
@@ -65,8 +65,6 @@ internal sealed class JobRegistry
 
         var entry = JobDefinition.CreateUntyped(jobName, jobDelegate);
         entry.UpdateWith(jobOption);
-
-        Add(entry);
 
         return entry;
     }
