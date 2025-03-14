@@ -384,7 +384,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         if (jobDefinition is null)
         {
             LogJobNotRegistered(jobType.Name);
-            jobDefinition = JobDefinition.CreateTyped(jobType, parameter);
+            jobDefinition = JobDefinition.CreateTyped(null, jobType, parameter);
         }
 
         return jobDefinition;

@@ -64,20 +64,8 @@ internal sealed class JobRegistry
     {
         var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
 
-        var entry = JobDefinition.CreateUntyped(DynamicJobNameGenerator.GenerateJobName(jobDelegate), jobPolicyMetadata) with
-        {
-            CustomName = jobName
-        };
-
-        if (jobOption is not null)
-        {
-            Debug.Assert(jobOption.CronExpression is not null);
-
-            var cron = NCronJobOptionBuilder.GetCronExpression(jobOption.CronExpression);
-            entry.CronExpression = cron;
-            entry.TimeZone = jobOption.TimeZoneInfo;
-            entry.UserDefinedCronExpression = jobOption.CronExpression;
-        }
+        var entry = JobDefinition.CreateUntyped(jobName, DynamicJobNameGenerator.GenerateJobName(jobDelegate), jobPolicyMetadata);
+        entry.UpdateWith(jobOption);
 
         Add(entry);
         AddDynamicJobRegistration(entry, jobDelegate);
@@ -119,7 +107,7 @@ internal sealed class JobRegistry
     {
         foreach (var jobDefinition in jobDefinitions)
         {
-            jobDefinition.ShouldCrashOnStartupFailure = shouldCrashOnFailure;
+            jobDefinition.UpdateWith(new JobOption() { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
         }
     }
 
