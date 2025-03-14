@@ -222,12 +222,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(cronExpression);
 
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-
-        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression);
-
-        job.CronExpression = cron;
-        job.UserDefinedCronExpression = cronExpression;
-        job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
+        job.UpdateWith(new JobOption() { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo});
 
         jobWorker.RescheduleJob(job);
     }
@@ -238,7 +233,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(jobName);
 
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-        job.Parameter = parameter;
+        job.UpdateWith(new JobOption() { Parameter = parameter });
 
         jobWorker.RescheduleJob(job);
     }
