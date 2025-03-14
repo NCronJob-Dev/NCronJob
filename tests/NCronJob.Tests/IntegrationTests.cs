@@ -76,7 +76,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         await StartNCronJobAndExecuteInstantSimpleJob();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        jobRegistry.FindFirstJobDefinition(typeof(DummyJob)).ShouldBeNull();
+        jobRegistry.FindFirstRootJobDefinition(typeof(DummyJob)).ShouldBeNull();
     }
 
     [Fact]

@@ -32,8 +32,12 @@ public static class NCronJobExtensions
         // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
 
-        var builder = new NCronJobOptionBuilder(services, settings, jobRegistry);
+        var jdc = new JobDefinitionCollector();
+
+        var builder = new NCronJobOptionBuilder(services, settings, jdc);
         options?.Invoke(builder);
+
+        jobRegistry.FeedFrom(jdc);
 
         services.TryAddSingleton(settings);
         services.AddHostedService<QueueWorker>();

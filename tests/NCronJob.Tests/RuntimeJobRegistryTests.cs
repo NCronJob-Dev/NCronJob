@@ -96,7 +96,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "another"), out _).ShouldBe(true);
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        jobRegistry.GetAllJobs().Select(jd => jd.JobFullName).ShouldBe(["Untyped job NCronJob.UntypedJob_I2s40FrC", "Untyped job one", "Untyped job another"]);
+        jobRegistry.GetAllRootJobs().Select(jd => jd.JobFullName).ShouldBe(["Untyped job NCronJob.UntypedJob_I2s40FrC", "Untyped job one", "Untyped job another"]);
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        jobRegistry.GetAllJobs().ShouldBeEmpty();
+        jobRegistry.GetAllRootJobs().ShouldBeEmpty();
 
         registry.RemoveJob("Nope");
         registry.RemoveJob<DummyJob>();
@@ -195,7 +195,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).Count.ShouldBe(2);
+        jobRegistry.FindAllRootJobDefinition(typeof(DummyJob)).Count.ShouldBe(2);
 
         registry.RemoveJob<DummyJob>();
 
@@ -204,7 +204,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             2,
             stopMonitoringEvents: true);
 
-        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
+        jobRegistry.FindAllRootJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
 
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
@@ -224,7 +224,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).Count.ShouldBe(2);
+        jobRegistry.FindAllRootJobDefinition(typeof(DummyJob)).Count.ShouldBe(2);
 
         registry.DisableJob<DummyJob>();
         registry.RemoveJob<DummyJob>();
@@ -234,7 +234,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
             2,
             stopMonitoringEvents: true);
 
-        jobRegistry.FindAllJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
+        jobRegistry.FindAllRootJobDefinition(typeof(DummyJob)).ShouldBeEmpty();
 
         var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
         firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
@@ -255,7 +255,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         registry.UpdateSchedule("JobName", Cron.AtEveryMinute);
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        var jobDefinition = jobRegistry.GetAllJobs().Single();
+        var jobDefinition = jobRegistry.GetAllRootJobs().Single();
 
         jobDefinition.UserDefinedCronExpression.ShouldBe(Cron.AtEveryMinute);
 
@@ -335,6 +335,14 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var successful = registry.TryGetSchedule("Job2", out var _, out var _);
         successful.ShouldBeFalse();
+
+        var act1 = () => registry.DisableJob("Job2");
+        act1.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldBe("Root job with name 'Job2' not found.");
+
+        var act2 = () => registry.EnableJob("Job2");
+        act2.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldBe("Root job with name 'Job2' not found.");
     }
 
     [Fact]
@@ -504,14 +512,14 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        var jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
+        var jobs = jobRegistry.FindAllRootJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
         jobs.ShouldAllBe(j => j.IsEnabled);
 
         registry.DisableJob<DummyJob>();
 
-        jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
+        jobs = jobRegistry.FindAllRootJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
         jobs.ShouldAllBe(j => !j.IsEnabled);
@@ -520,7 +528,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         jobs.ShouldAllBe(j => j.IsEnabled);
 
-        jobs = jobRegistry.FindAllJobDefinition(typeof(DummyJob));
+        jobs = jobRegistry.FindAllRootJobDefinition(typeof(DummyJob));
         jobs.Count.ShouldBe(2);
 
         jobs.Count(j => j.CronExpression is null).ShouldBe(1);

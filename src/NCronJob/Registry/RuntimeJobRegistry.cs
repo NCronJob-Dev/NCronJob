@@ -181,11 +181,14 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         try
         {
-            var oldJobs = jobRegistry.GetAllJobs();
-            var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
+            var oldJobs = jobRegistry.GetAllRootJobs();
+            var jdc = new JobDefinitionCollector();
+            var builder = new NCronJobOptionBuilder(services, concurrencySettings, jdc);
             jobBuilder(builder);
 
-            var newJobs = jobRegistry.GetAllJobs().Except(oldJobs);
+            jobRegistry.FeedFrom(jdc);
+
+            var newJobs = jobRegistry.GetAllRootJobs().Except(oldJobs);
             foreach (var jobDefinition in newJobs)
             {
                 jobWorker.ScheduleJob(jobDefinition);
@@ -217,7 +220,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(jobName);
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+        var job = jobRegistry.FindRootJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
         job.UpdateWith(new JobOption() { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
 
         jobWorker.RescheduleJob(job);
@@ -228,7 +231,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         ArgumentNullException.ThrowIfNull(jobName);
 
-        var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+        var job = jobRegistry.FindRootJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
         job.UpdateWith(new JobOption() { Parameter = parameter });
 
         jobWorker.RescheduleJob(job);
@@ -240,7 +243,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         cronExpression = null;
         timeZoneInfo = null;
 
-        var job = jobRegistry.FindJobDefinition(jobName);
+        var job = jobRegistry.FindRootJobDefinition(jobName);
         if (job is null)
         {
             return false;
@@ -261,8 +264,8 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     /// <inheritdoc />
     public void EnableJob(string jobName)
     {
-        var job = jobRegistry.FindJobDefinition(jobName)
-                  ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+        var job = jobRegistry.FindRootJobDefinition(jobName)
+                  ?? throw new InvalidOperationException($"Root job with name '{jobName}' not found.");
 
         EnableJob(job);
     }
@@ -279,8 +282,8 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     /// <inheritdoc />
     public void DisableJob(string jobName)
     {
-        var job = jobRegistry.FindJobDefinition(jobName)
-                  ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
+        var job = jobRegistry.FindRootJobDefinition(jobName)
+                  ?? throw new InvalidOperationException($"Root job with name '{jobName}' not found.");
 
         DisableJob(job);
     }
@@ -296,7 +299,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
     private void ProcessAllJobDefinitionsOfType(Type type, Action<JobDefinition> processor)
     {
-        var jobDefinitions = jobRegistry.FindAllJobDefinition(type);
+        var jobDefinitions = jobRegistry.FindAllRootJobDefinition(type);
 
         foreach (var jobDefinition in jobDefinitions)
         {

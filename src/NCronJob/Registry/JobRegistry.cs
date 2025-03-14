@@ -4,7 +4,7 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
-    private readonly List<JobDefinition> allJobs = [];
+    private readonly List<JobDefinition> allRootJobs = [];
 
     private IEnumerable<JobDefinition> AllDependentJobDefinitions => dependentJobsPerJobDefinition.Values
             .SelectMany(v => v).SelectMany(v => v.RunWhenSuccess.Union(v.RunWhenFaulted));
@@ -12,26 +12,26 @@ internal sealed class JobRegistry
     private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
         = new(DependentJobDefinitionEqualityComparer.Instance);
 
-    public IReadOnlyCollection<JobDefinition> GetAllJobs() => [.. allJobs];
+    public IReadOnlyCollection<JobDefinition> GetAllRootJobs() => [.. allRootJobs];
 
-    public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => allJobs.Where(c => c.CronExpression is not null).ToList();
+    public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => allRootJobs.Where(c => c.CronExpression is not null).ToList();
 
-    public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => allJobs.Where(c => c.IsStartupJob).ToList();
+    public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => allRootJobs.Where(c => c.IsStartupJob).ToList();
 
-    public IReadOnlyCollection<JobDefinition> FindAllJobDefinition(Type type)
-        => allJobs.Where(j => j.Type == type).ToList();
+    public IReadOnlyCollection<JobDefinition> FindAllRootJobDefinition(Type type)
+        => allRootJobs.Where(j => j.Type == type).ToList();
 
-    public JobDefinition? FindFirstJobDefinition(Type type)
-        => allJobs.FirstOrDefault(j => j.Type == type);
+    public JobDefinition? FindFirstRootJobDefinition(Type type)
+        => allRootJobs.FirstOrDefault(j => j.Type == type);
 
-    public JobDefinition? FindJobDefinition(string jobName)
-        => allJobs.FirstOrDefault(j => j.CustomName == jobName);
+    public JobDefinition? FindRootJobDefinition(string jobName)
+        => allRootJobs.FirstOrDefault(j => j.CustomName == jobName);
 
     public void Add(JobDefinition jobDefinition)
     {
         AssertNoDuplicateJobNames(jobDefinition.CustomName);
 
-        if (allJobs.Contains(jobDefinition, JobDefinitionEqualityComparer.Instance))
+        if (allRootJobs.Contains(jobDefinition, JobDefinitionEqualityComparer.Instance))
         {
             throw new InvalidOperationException(
                 $"""
@@ -40,11 +40,11 @@ internal sealed class JobRegistry
                 """);
         }
 
-        allJobs.Add(jobDefinition);
+        allRootJobs.Add(jobDefinition);
     }
 
     public int GetJobTypeConcurrencyLimit(string jobTypeName)
-        => allJobs.FirstOrDefault(j => j.JobFullName == jobTypeName)
+        => allRootJobs.FirstOrDefault(j => j.JobFullName == jobTypeName)
             ?.ConcurrencyPolicy
             ?.MaxDegreeOfParallelism ?? 1;
 
@@ -52,14 +52,14 @@ internal sealed class JobRegistry
     {
         EnsureCanBeRemoved(j => j.CustomName == jobName);
 
-        var jobDefinitionFullName = FindJobDefinition(jobName)?.JobFullName;
+        var jobDefinitionFullName = FindRootJobDefinition(jobName)?.JobFullName;
 
         if (jobDefinitionFullName is null)
         {
             return null;
         }
 
-        Remove(allJobs.FirstOrDefault(j => j.CustomName == jobName));
+        Remove(allRootJobs.FirstOrDefault(j => j.CustomName == jobName));
 
         return jobDefinitionFullName;
     }
@@ -68,14 +68,14 @@ internal sealed class JobRegistry
     {
         EnsureCanBeRemoved(j => j.Type == type);
 
-        var jobDefinitionFullName = FindFirstJobDefinition(type)?.JobFullName;
+        var jobDefinitionFullName = FindFirstRootJobDefinition(type)?.JobFullName;
 
         if (jobDefinitionFullName is null)
         {
             return null;
         }
 
-        var jobDefinitions = FindAllJobDefinition(type);
+        var jobDefinitions = FindAllRootJobDefinition(type);
 
         foreach (var jobDefinition in jobDefinitions)
         {
@@ -136,7 +136,7 @@ internal sealed class JobRegistry
             return;
         }
 
-        allJobs.Remove(jobDefinition);
+        allRootJobs.Remove(jobDefinition);
 
         dependentJobsPerJobDefinition.Remove(jobDefinition);
     }
@@ -148,7 +148,7 @@ internal sealed class JobRegistry
             return;
         }
 
-        if (!allJobs.Any(jd => jd.CustomName == additionalJobName))
+        if (!allRootJobs.Any(jd => jd.CustomName == additionalJobName))
         {
             return;
         }
@@ -158,6 +158,21 @@ internal sealed class JobRegistry
             Job registration conflict detected. A job has already been registered with the name '{additionalJobName}'.
             Please use a different name for each job.
             """);
+    }
+
+    public void FeedFrom(JobDefinitionCollector jdc)
+    {
+        foreach (var (jobDefinition, dependentJobs) in jdc.Entries)
+        {
+            Add(jobDefinition);
+
+            List<JobDefinition> value = [jobDefinition];
+
+            foreach (var entry in dependentJobs)
+            {
+                RegisterJobDependency(value, entry);
+            }
+        }
     }
 
     private sealed class JobDefinitionEqualityComparer : IEqualityComparer<JobDefinition>
