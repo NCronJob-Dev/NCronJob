@@ -20,14 +20,14 @@ public sealed class TimeZoneTests : JobIntegrationBase
     }
 
     [Fact]
-    public void ShouldDefaultToUtcIfTimeZoneNotSpecified()
+    public void ShouldNotInferAnythingIfTimeZoneNotSpecified()
     {
         var builder = new JobOptionBuilder();
         builder.WithCronExpression(Cron.AtEveryMinute);
 
         var options = builder.GetJobOptions();
 
-        options.Single().TimeZoneInfo.ShouldBe(TimeZoneInfo.Utc);
+        options.Single().TimeZoneInfo.ShouldBeNull();
     }
 
     [Fact]

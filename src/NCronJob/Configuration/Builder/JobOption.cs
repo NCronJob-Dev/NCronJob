@@ -3,7 +3,7 @@ namespace NCronJob;
 /// <summary>
 /// A configuration option for a job.
 /// </summary>
-internal sealed class JobOption
+internal class JobOption
 {
     /// <summary>
     /// Set's the cron expression for the job. If set to null, the job is added to the container but will not be scheduled.
@@ -17,7 +17,7 @@ internal sealed class JobOption
     /// <summary>
     /// The timezone that is used to evaluate the cron expression. Defaults to UTC.
     /// </summary>
-    public TimeZoneInfo TimeZoneInfo { get; set; } = TimeZoneInfo.Utc;
+    public TimeZoneInfo? TimeZoneInfo { get; set; }
 
     /// <summary>
     /// The parameter that can be passed down to the job. This only applies to cron jobs.<br/>

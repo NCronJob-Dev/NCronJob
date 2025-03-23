@@ -17,12 +17,10 @@ public sealed class JobOptionBuilder
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        cronExpression = cronExpression.Trim();
-
         var jobOption = new JobOption
         {
             CronExpression = cronExpression,
-            TimeZoneInfo = timeZoneInfo ?? TimeZoneInfo.Utc
+            TimeZoneInfo = timeZoneInfo
         };
 
         jobOptions.Add(jobOption);

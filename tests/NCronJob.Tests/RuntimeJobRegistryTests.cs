@@ -309,6 +309,37 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task UpdatingParameterDoesNotSupportNullifying()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
+            .WithCronExpression(Cron.AtEveryMinute)
+            .WithParameter("foo")
+            .WithName("JobName")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        registry.UpdateParameter("JobName", null);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
+            ExecutionState.OrchestrationCompleted,
+            2,
+            stopMonitoringEvents: true);
+
+        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
+        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>("JobName");
+
+        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
+        secondOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>("JobName");
+
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: foo");
+        Storage.Entries.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public void ShouldRetrieveAllSchedules()
     {
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");

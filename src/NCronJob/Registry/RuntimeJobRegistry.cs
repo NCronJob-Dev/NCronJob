@@ -71,7 +71,7 @@ public interface IRuntimeJobRegistry
     /// </summary>
     /// <param name="jobName">The given job name.</param>
     /// <param name="cronExpression">The associated cron expression. If the job has none, or couldn't be found this will be <c>null</c>.</param>
-    /// <param name="timeZoneInfo">The associated time zone. If the job has none, or couldn't be found this will be <c>null</c>.</param>
+    /// <param name="timeZoneInfo">The associated time zone. If the job has no schedule, or couldn't be found this will be <c>null</c>.</param>
     /// <returns>Returns <c>true</c> if the job was found, otherwise <c>false</c>.</returns>
     bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo);
 
@@ -222,12 +222,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(cronExpression);
 
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-
-        var cron = NCronJobOptionBuilder.GetCronExpression(cronExpression);
-
-        job.CronExpression = cron;
-        job.UserDefinedCronExpression = cronExpression;
-        job.TimeZone = timeZoneInfo ?? TimeZoneInfo.Utc;
+        job.UpdateWith(new JobOption() { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
 
         jobWorker.RescheduleJob(job);
     }
@@ -238,7 +233,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(jobName);
 
         var job = jobRegistry.FindJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-        job.Parameter = parameter;
+        job.UpdateWith(new JobOption() { Parameter = parameter });
 
         jobWorker.RescheduleJob(job);
     }
@@ -255,8 +250,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
             return false;
         }
 
-        cronExpression = job.UserDefinedCronExpression;
-        timeZoneInfo = job.TimeZone;
+        (cronExpression, timeZoneInfo) = job.GetSchedule();
 
         return true;
     }

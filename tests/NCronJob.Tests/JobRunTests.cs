@@ -26,8 +26,8 @@ public class JobRunStatesTests
     [Fact]
     public void TestValuesAreInSyncWithCurrentEnumValues()
     {
-        List<JobStateType> expected = Enum.GetValues<JobStateType>().ToList();
-        List<JobStateType> actual = AllPossibleStates.Keys.ToList();
+        var expected = Enum.GetValues<JobStateType>().ToList();
+        var actual = AllPossibleStates.Keys.ToList();
         actual.ShouldBeEquivalentTo(expected);
     }
 
@@ -35,9 +35,9 @@ public class JobRunStatesTests
     [ClassData(typeof(FinalJobStateTypeTestData))]
     internal void CompletedJobRunsCannotChangeTheirStateFurther(JobStateType value)
     {
-        int howManyTimes = 0;
+        var howManyTimes = 0;
 
-        JobDefinition jd = JobDefinition.CreateTyped(typeof(DummyJob), null);
+        var jd = JobDefinition.CreateTyped(typeof(DummyJob), null);
         var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
 
         jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
@@ -49,7 +49,7 @@ public class JobRunStatesTests
         jobRun.CurrentState.Type.ShouldBe(value);
         howManyTimes.ShouldBe(2);
 
-        foreach (JobStateType state in AllPossibleStates.Keys)
+        foreach (var state in AllPossibleStates.Keys)
         {
             jobRun.NotifyStateChange(state, fault);
             jobRun.CurrentState.Type.ShouldBe(value);
@@ -61,9 +61,9 @@ public class JobRunStatesTests
     [ClassData(typeof(AllJobStateTypeTestData))]
     internal void OnlyRetryingJobRunsCanTriggerMoreThanOnceTheProgressReporter(JobStateType value)
     {
-        int howManyTimes = 0;
+        var howManyTimes = 0;
 
-        JobDefinition jd = JobDefinition.CreateTyped(typeof(DummyJob), null);
+        var jd = JobDefinition.CreateTyped(typeof(DummyJob), null);
         var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
 
         jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
