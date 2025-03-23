@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ internal sealed partial class JobExecutor : IDisposable
         this.retryHandler = retryHandler;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
-        this.exceptionHandlers = [..exceptionHandlers];
+        this.exceptionHandlers = [.. exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -79,18 +80,17 @@ internal sealed partial class JobExecutor : IDisposable
 
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
     {
-        if (!definition.IsTypedJob)
-            return jobRegistry.GetDynamicJobInstance(scopedServiceProvider, definition);
-
-        var job = scopedServiceProvider.GetService(definition.Type);
+        IJob? job = definition.ResolveJob(scopedServiceProvider);
         if (job != null)
-            return (IJob)job;
+        {
+            return job;
+        }
+
+        Debug.Assert(definition.IsTypedJob);
 
         LogUnregisteredJob(definition.Name);
 
-        job = ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
-
-        return (IJob)job;
+        return (IJob)ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
     }
 
     public void Dispose()

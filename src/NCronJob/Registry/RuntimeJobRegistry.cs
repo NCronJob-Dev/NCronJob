@@ -192,10 +192,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
                 jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
             }
 
-            foreach (var entry in jobRegistry.DynamicJobRegistrations)
-            {
-                jobQueueManager.SignalJobQueue(entry.JobDefinition.JobFullName);
-            }
             exception = null;
             return true;
         }
