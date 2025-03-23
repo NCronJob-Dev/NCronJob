@@ -75,9 +75,8 @@ internal sealed record JobDefinition
     [MemberNotNullWhen(false, nameof(Delegate))]
     public bool IsTypedJob { get; }
 
-    private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
-
-    public bool IsEnabled => CronExpression is null || !IsDisabled;
+    public bool IsEnabled => CronExpression is null
+        || CronExpression != NotReacheableCronDefinition;
 
     public static JobDefinition CreateTyped(
         Type type,

@@ -80,7 +80,7 @@ internal sealed partial class JobExecutor : IDisposable
 
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
     {
-        IJob? job = definition.ResolveJob(scopedServiceProvider);
+        var job = definition.ResolveJob(scopedServiceProvider);
         if (job != null)
         {
             return job;
