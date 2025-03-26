@@ -28,7 +28,9 @@ internal sealed record JobDefinition
 
         Delegate = jobDelegate;
         IsTypedJob = false;
-        JobFullName = $"Untyped job {typeof(DynamicJobFactory).Namespace}.{DynamicJobNameGenerator.GenerateJobName(jobDelegate)}";
+        JobFullName = customName is not null ?
+            $"Untyped job {customName}" :
+            $"Untyped job {typeof(DynamicJobFactory).Namespace}.{DynamicJobNameGenerator.GenerateJobName(jobDelegate)}";
 
         JobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
     }

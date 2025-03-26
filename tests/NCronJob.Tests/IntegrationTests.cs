@@ -663,13 +663,40 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public void AddingJobsWithTheSameCustomNameLeadsToException()
+    public void AddingUntypedJobsWithTheSameCustomNameLeadsToException()
     {
         Action act = () => ServiceCollection.AddNCronJob(
             n => n.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Job1")
                 .AddJob(() => { }, Cron.AtMinute0, jobName: "Job1"));
 
-        act.ShouldThrow<InvalidOperationException>();
+        var e = act.ShouldThrow<InvalidOperationException>();
+        e.Message.ShouldStartWith("Job registration conflict detected. A job has already been registered with the name 'Job1'.");
+    }
+
+    [Fact]
+    public void AddingUntypedJobsWithTheSameDelegateLeadsToException()
+    {
+        Delegate jobDelegate = () => { };
+
+        Action act = () => ServiceCollection.AddNCronJob(
+            n => n.AddJob(jobDelegate, Cron.AtEveryMinute)
+                .AddJob(jobDelegate, Cron.AtEveryMinute));
+
+        var e = act.ShouldThrow<InvalidOperationException>();
+        e.Message.ShouldStartWith("Job registration conflict for job 'Untyped job NCronJob.UntypedJob_2SdMu4GO' detected. ");
+    }
+
+    [Fact]
+    public void CanAddUntypedJobsWithTheSameDelegateWithDifferentNames()
+    {
+        Delegate jobDelegate = () => { };
+
+        Action act = () => ServiceCollection.AddNCronJob(
+            n => n.AddJob(jobDelegate, Cron.AtEveryMinute)
+                .AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one")
+                .AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "another"));
+
+        act.ShouldNotThrow();
     }
 
     [Fact]
