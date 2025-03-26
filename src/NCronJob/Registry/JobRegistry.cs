@@ -5,7 +5,7 @@ namespace NCronJob;
 internal sealed class JobRegistry
 {
     private readonly List<JobDefinition> allJobs = [];
-    public List<DynamicJobRegistration> DynamicJobRegistrations { get; } = [];
+
     private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
         = new(DependentJobDefinitionEqualityComparer.Instance);
 
@@ -62,21 +62,14 @@ internal sealed class JobRegistry
         string? jobName = null,
         JobOption? jobOption = null)
     {
-        var jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
 
-        var entry = JobDefinition.CreateUntyped(jobName, DynamicJobNameGenerator.GenerateJobName(jobDelegate), jobPolicyMetadata);
+        var entry = JobDefinition.CreateUntyped(jobName, jobDelegate);
         entry.UpdateWith(jobOption);
 
         Add(entry);
-        AddDynamicJobRegistration(entry, jobDelegate);
 
         return entry;
     }
-
-    public IJob GetDynamicJobInstance(IServiceProvider serviceProvider, JobDefinition jobDefinition)
-        => DynamicJobRegistrations
-            .Single(d => d.JobDefinition.JobFullName == jobDefinition.JobFullName)
-            .DynamicJobFactoryResolver(serviceProvider);
 
     public void RegisterJobDependency(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
     {
@@ -97,9 +90,6 @@ internal sealed class JobRegistry
 
     public IReadOnlyCollection<JobDefinition> GetDependentFaultedJobTypes(JobDefinition parentJobDefinition)
         => FilterByAndProject(parentJobDefinition, v => v.SelectMany(p => p.RunWhenFaulted));
-
-    private void AddDynamicJobRegistration(JobDefinition jobDefinition, Delegate jobDelegate)
-        => DynamicJobRegistrations.Add(new DynamicJobRegistration(jobDefinition, sp => new DynamicJobFactory(sp, jobDelegate)));
 
     public static void UpdateJobDefinitionsToRunAtStartup(
         IReadOnlyCollection<JobDefinition> jobDefinitions,

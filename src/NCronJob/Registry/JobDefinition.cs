@@ -22,15 +22,15 @@ internal sealed record JobDefinition
 
     private JobDefinition(
         string? customName,
-        string dynamicHash,
-        JobExecutionAttributes jobPolicyMetadata)
+        Delegate jobDelegate)
     {
         CustomName = customName;
 
+        Delegate = jobDelegate;
         IsTypedJob = false;
-        JobFullName = $"Untyped job {typeof(DynamicJobFactory).Namespace}.{dynamicHash}";
+        JobFullName = $"Untyped job {typeof(DynamicJobFactory).Namespace}.{DynamicJobNameGenerator.GenerateJobName(jobDelegate)}";
 
-        JobPolicyMetadata = jobPolicyMetadata;
+        JobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
     }
 
     public string Name => CustomName is not null ? $"{CustomName} ({JobFullName})" : JobFullName;
@@ -72,11 +72,11 @@ internal sealed record JobDefinition
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
     [MemberNotNullWhen(true, nameof(Type))]
+    [MemberNotNullWhen(false, nameof(Delegate))]
     public bool IsTypedJob { get; }
 
-    private bool IsDisabled => CronExpression == NotReacheableCronDefinition;
-
-    public bool IsEnabled => CronExpression is null || !IsDisabled;
+    public bool IsEnabled => CronExpression is null
+        || CronExpression != NotReacheableCronDefinition;
 
     public static JobDefinition CreateTyped(
         Type type,
@@ -101,9 +101,8 @@ internal sealed record JobDefinition
 
     public static JobDefinition CreateUntyped(
         string? name,
-        string dynamicHash,
-        JobExecutionAttributes jobPolicyMetadata)
-    => new(name, dynamicHash, jobPolicyMetadata);
+        Delegate jobDelegate)
+    => new(name, jobDelegate);
 
     public void Disable()
     {
@@ -163,6 +162,18 @@ internal sealed record JobDefinition
             ShouldCrashOnStartupFailure = jobOption.ShouldCrashOnStartupFailure;
         }
     }
+
+    public IJob? ResolveJob(IServiceProvider scopedServiceProvider)
+    {
+        if (IsTypedJob)
+        {
+            return (IJob?)scopedServiceProvider.GetService(Type);
+        }
+
+        return new DynamicJobFactory(scopedServiceProvider, Delegate);
+    }
+
+    private Delegate? Delegate { get; }
 
     private static CronExpression GetCronExpression(string expression)
     {
