@@ -68,6 +68,38 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task CanRegisterMultipleTimesTheSameDelegateWithDifferentNames()
+    {
+        ServiceCollection.AddNCronJob();
+
+        await StartNCronJob(startMonitoringEvents: false);
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        Events.Count.ShouldBe(0);
+
+        Delegate jobDelegate = () => { };
+
+        // Trying to register twice the same unnamed delegates fails
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out _).ShouldBe(true);
+
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out Exception? unNamedUntypedJobException).ShouldBe(false);
+        unNamedUntypedJobException.ShouldNotBeNull();
+        unNamedUntypedJobException.Message.ShouldStartWith("Job registration conflict for job 'Untyped job NCronJob.UntypedJob_I2s40FrC' detected.");
+
+        // Trying to register twice the same named delegates fails as well
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one"), out _).ShouldBe(true);
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one"), out Exception? namedUntypedJobException).ShouldBe(false);
+        namedUntypedJobException.ShouldNotBeNull();
+        namedUntypedJobException.Message.ShouldStartWith("Job registration conflict detected. A job has already been registered with the name 'one'.");
+
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "another"), out _).ShouldBe(true);
+
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        jobRegistry.GetAllJobs().Select(jd => jd.JobFullName).ShouldBe(["Untyped job NCronJob.UntypedJob_I2s40FrC", "Untyped job one", "Untyped job another"]);
+    }
+
+    [Fact]
     public async Task CanRemoveJobByName()
     {
         ServiceCollection.AddNCronJob(
