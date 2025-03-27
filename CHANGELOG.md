@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.4.1] - 2025-03-27
+
 - Allow the registration of the same untyped job with different names. Reported by [@Mangatome](https://github.com/Mangatome) in [#~253](https://github.com/NCronJob-Dev/NCronJob/issues/253). Fixed by [@nulltoken](https://github.com/nulltoken) in [#252](https://github.com/NCronJob-Dev/NCronJob/pull/252) and [#254](https://github.com/NCronJob-Dev/NCronJob/pull/254).
 
 ## [v4.4.0] - 2025-03-10
@@ -516,7 +518,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.1...HEAD
+[v4.4.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.0...v4.4.1
 [v4.4.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.4...v4.4.0
 [v4.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.3...v4.3.4
 [v4.3.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.2...v4.3.3
