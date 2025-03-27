@@ -89,12 +89,7 @@ internal sealed class JobRegistry
     {
         foreach (var jobDefinition in parentJobdefinitions)
         {
-            if (!dependentJobsPerJobDefinition.TryGetValue(jobDefinition, out var entries))
-            {
-                entries = [];
-                dependentJobsPerJobDefinition.Add(jobDefinition, entries);
-            }
-
+            var entries = dependentJobsPerJobDefinition.GetOrCreateList(jobDefinition);
             entries.Add(entry);
         }
     }
