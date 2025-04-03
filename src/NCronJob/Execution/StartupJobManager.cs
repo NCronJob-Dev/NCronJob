@@ -25,7 +25,7 @@ internal partial class StartupJobManager(
         List<JobRun> jobRuns = [];
         var startupTasks = startupJobs.Select(definition =>
         {
-            var jobRun = JobRun.Create(timeProvider, observer.Report, definition);
+            var jobRun = JobRun.CreateStartupJob(timeProvider, observer.Report, definition);
 
             jobRuns.Add(jobRun);
             return CreateExecutionTask(jobRun, stopToken);

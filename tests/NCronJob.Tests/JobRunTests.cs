@@ -38,7 +38,7 @@ public class JobRunStatesTests
         var howManyTimes = 0;
 
         var jd = JobDefinition.CreateTyped(typeof(DummyJob), null);
-        var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
+        var jobRun = JobRun.CreateStartupJob(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
 
         jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
         howManyTimes.ShouldBe(1);
@@ -64,7 +64,7 @@ public class JobRunStatesTests
         var howManyTimes = 0;
 
         var jd = JobDefinition.CreateTyped(typeof(DummyJob), null);
-        var jobRun = JobRun.Create(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
+        var jobRun = JobRun.CreateStartupJob(new FakeTimeProvider(), (jr) => { howManyTimes++; }, jd);
 
         jobRun.CurrentState.Type.ShouldBe(JobStateType.NotStarted);
         howManyTimes.ShouldBe(1);

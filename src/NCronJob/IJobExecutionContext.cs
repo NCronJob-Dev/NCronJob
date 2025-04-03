@@ -45,6 +45,11 @@ public interface IJobExecutionContext
     public Type? JobType { get; }
 
     /// <summary>
+    /// Gets the type of trigger that started the job.
+    /// </summary>
+    public TriggerType TriggerType { get; }
+
+    /// <summary>
     /// Prohibits the execution of dependent jobs.
     /// </summary>
     /// <remarks>
@@ -52,4 +57,30 @@ public interface IJobExecutionContext
     /// via <see cref="INotificationStage{TJob}.ExecuteWhen"/>.
     /// </remarks>
     public void SkipChildren();
+}
+
+/// <summary>
+/// Represents the type of trigger from which the job was started.
+/// </summary>
+public enum TriggerType
+{
+    /// <summary>
+    /// The job is triggered by a cron expression.
+    /// </summary>
+    Cron,
+
+    /// <summary>
+    /// The job is triggered by an instant job.
+    /// </summary>
+    Instant,
+
+    /// <summary>
+    /// The job is triggered by a startup job.
+    /// </summary>
+    Startup,
+
+    /// <summary>
+    /// The job is triggered by a dependency.
+    /// </summary>
+    Dependent
 }

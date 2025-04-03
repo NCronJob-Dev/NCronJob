@@ -409,7 +409,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         bool forceExecution,
         CancellationToken token)
     {
-        var run = JobRun.Create(
+        var run = JobRun.CreateInstant(
             timeProvider,
             observer.Report,
             jobDefinition,
