@@ -68,7 +68,7 @@ internal class JobRun
     public bool IsOneTimeJob { get; set; }
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
-    public TriggerType TriggerType { get; set; }
+    public TriggerType TriggerType { get; }
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     public static JobRun CreateStartupJob(
