@@ -63,18 +63,17 @@ public class TriggerTypeTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n =>
         {
-            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<TriggerTypeJob>());
+            n.AddJob<DummyJob>().ExecuteWhen(success: s => s.RunJob<TriggerTypeJob>());
         });
 
         await StartNCronJob(startMonitoringEvents: true);
 
         var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>()
-            .RunInstantJob<PrincipalJob>(token: CancellationToken);
+            .RunInstantJob<DummyJob>(token: CancellationToken);
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries.Count.ShouldBe(2);
-        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe($"TriggerType: {TriggerType.Dependent}");
     }
 
@@ -90,22 +89,6 @@ public class TriggerTypeTests : JobIntegrationBase
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
             storage.Add($"TriggerType: {context.TriggerType}");
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class PrincipalJob : IJob
-    {
-        private readonly Storage storage;
-
-        public PrincipalJob(Storage storage)
-        {
-            this.storage = storage;
-        }
-
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
-        {
-            storage.Add("PrincipalJob: Success");
             return Task.CompletedTask;
         }
     }
