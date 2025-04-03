@@ -6,7 +6,10 @@ internal sealed record JobExecutionContext : IJobExecutionContext
 {
     internal bool ExecuteChildren = true;
 
-    public JobExecutionContext(JobRun jobRun) => JobRun = jobRun;
+    public JobExecutionContext(JobRun jobRun)
+    {
+        JobRun = jobRun;
+    }
 
     /// <inheritdoc />
     public Guid Id { get; } = Guid.NewGuid();
@@ -22,6 +25,8 @@ internal sealed record JobExecutionContext : IJobExecutionContext
 
     Type? IJobExecutionContext.JobType
         => JobRun.JobDefinition.Type;
+
+    public TriggerType TriggerType => JobRun.TriggerType;
 
     /// <summary>The Job Run instance.</summary>
     internal JobRun JobRun { get; }

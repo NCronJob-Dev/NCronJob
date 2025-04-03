@@ -16,8 +16,9 @@ internal class JobRun
         JobDefinition jobDefinition,
         DateTimeOffset runAt,
         object? parameter,
-        Action<JobRun> progressReporter)
-    : this(timeProvider, null, jobDefinition, runAt, parameter, progressReporter)
+        Action<JobRun> progressReporter,
+        TriggerType triggerType)
+    : this(timeProvider, null, jobDefinition, runAt, parameter, progressReporter, triggerType)
     { }
 
     private JobRun(
@@ -26,18 +27,20 @@ internal class JobRun
         JobDefinition jobDefinition,
         DateTimeOffset runAt,
         object? parameter,
-        Action<JobRun> progressReporter)
+        Action<JobRun> progressReporter,
+        TriggerType triggerType)
     {
         var jobRunId = Guid.NewGuid();
 
         JobRunId = jobRunId;
-        ParentJobRunId = parentJob is not null ? parentJob.JobRunId : null;
+        ParentJobRunId = parentJob?.JobRunId;
         IsOrchestrationRoot = parentJob is null;
-        CorrelationId = parentJob is not null ? parentJob.CorrelationId : Guid.NewGuid();
+        CorrelationId = parentJob?.CorrelationId ?? Guid.NewGuid();
         this.timeProvider = timeProvider;
         JobDefinition = jobDefinition;
         RunAt = runAt;
         Parameter = parameter ?? jobDefinition.Parameter;
+        TriggerType = triggerType;
 
         this.progressReporter = progressReporter;
         rootJob = parentJob is not null ? parentJob.rootJob : this;
@@ -65,30 +68,30 @@ internal class JobRun
     public bool IsOneTimeJob { get; set; }
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
-    public int JobExecutionCount => Interlocked.CompareExchange(ref jobExecutionCount, 0, 0);
+    public TriggerType TriggerType { get; set; }
     public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
-    public static JobRun Create(
+    public static JobRun CreateStartupJob(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition)
-    => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), jobDefinition.Parameter, progressReporter);
+    => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), jobDefinition.Parameter, progressReporter, TriggerType.Startup);
 
     public static JobRun Create(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
         DateTimeOffset runAt)
-    => new(timeProvider, jobDefinition, runAt, jobDefinition.Parameter, progressReporter);
+    => new(timeProvider, jobDefinition, runAt, jobDefinition.Parameter, progressReporter, TriggerType.Cron);
 
-    public static JobRun Create(
+    public static JobRun CreateInstant(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
         DateTimeOffset runAt,
         object? parameter,
         CancellationToken token)
-    => new(timeProvider, jobDefinition, runAt, parameter, progressReporter)
+    => new(timeProvider, jobDefinition, runAt, parameter, progressReporter, TriggerType.Instant)
     {
         CancellationToken = token,
     };
@@ -98,7 +101,7 @@ internal class JobRun
         object? parameter,
         CancellationToken token)
     {
-        JobRun run = new(timeProvider, this, jobDefinition, timeProvider.GetUtcNow(), parameter, progressReporter)
+        JobRun run = new(timeProvider, this, jobDefinition, timeProvider.GetUtcNow(), parameter, progressReporter, TriggerType.Dependent)
         {
             CancellationToken = token,
         };
