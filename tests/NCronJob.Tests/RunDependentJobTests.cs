@@ -173,12 +173,6 @@ public class RunDependentJobTests : JobIntegrationBase
         Storage.Entries.Count.ShouldBe(4);
     }
 
-    // TODO: Add test with dependent job accepting a parameter
-    // and dependent job registration accepting another parameter one
-    // When trigerring the root job, the dependent job should receive the overriden parameter
-    // When triggering the dependent job, the dependent job should run with its own
-
-
     [Fact]
     public async Task CanTriggerAChainOfDependentJobs()
     {
