@@ -12,7 +12,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [v4.4.1] - 2025-03-27
 
-- Allow the registration of the same untyped job with different names. Reported by [@Mangatome](https://github.com/Mangatome) in [#~253](https://github.com/NCronJob-Dev/NCronJob/issues/253). Fixed by [@nulltoken](https://github.com/nulltoken) in [#252](https://github.com/NCronJob-Dev/NCronJob/pull/252) and [#254](https://github.com/NCronJob-Dev/NCronJob/pull/254).
+- Allow the registration of the same untyped job with different names. Reported by [@Mangatome](https://github.com/Mangatome) in [#253](https://github.com/NCronJob-Dev/NCronJob/issues/253). Fixed by [@nulltoken](https://github.com/nulltoken) in [#252](https://github.com/NCronJob-Dev/NCronJob/pull/252) and [#254](https://github.com/NCronJob-Dev/NCronJob/pull/254).
 
 ## [v4.4.0] - 2025-03-10
 
