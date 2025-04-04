@@ -268,6 +268,32 @@ public class RunDependentJobTests : JobIntegrationBase
         Storage.Entries.Count.ShouldBe(1);
     }
 
+    [Fact]
+    public async Task DependentJobShouldHandleParametersCorrectly()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>("overridden"));
+            n.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.Never).WithParameter("dependent"));
+        });
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        var rootOrchestrationId = instantJobRegistry.ForceRunInstantJob<DummyJob>(null, token: CancellationToken);
+        await WaitForOrchestrationCompletion(rootOrchestrationId);
+
+        var dependentOrchestrationId = instantJobRegistry.ForceRunInstantJob<AnotherDummyJob>(null, token: CancellationToken);
+        await WaitForOrchestrationCompletion(dependentOrchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
+        Storage.Entries[1].ShouldBe("AnotherDummyJob - Parameter: overridden");
+        Storage.Entries[2].ShouldBe("AnotherDummyJob - Parameter: dependent");
+        Storage.Entries.Count.ShouldBe(3);
+    }
+
     private sealed class PrincipalJob(Storage storage) : IJob
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
