@@ -14,17 +14,19 @@ internal class JobRun
     private JobRun(
         TimeProvider timeProvider,
         JobDefinition jobDefinition,
+        bool isOneTimeJob,
         DateTimeOffset runAt,
         object? parameter,
         Action<JobRun> progressReporter,
         TriggerType triggerType)
-    : this(timeProvider, null, jobDefinition, runAt, parameter, progressReporter, triggerType)
+    : this(timeProvider, null, jobDefinition, isOneTimeJob, runAt, parameter, progressReporter, triggerType)
     { }
 
     private JobRun(
         TimeProvider timeProvider,
         JobRun? parentJob,
         JobDefinition jobDefinition,
+        bool isOneTimeJob,
         DateTimeOffset runAt,
         object? parameter,
         Action<JobRun> progressReporter,
@@ -65,7 +67,7 @@ internal class JobRun
     /// </summary>
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
     public bool IsExpired => timeProvider.GetUtcNow() - RunAt > Expiry;
-    public bool IsOneTimeJob { get; set; }
+    public bool IsOneTimeJob { get; }
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
     public TriggerType TriggerType { get; }
@@ -75,14 +77,14 @@ internal class JobRun
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition)
-    => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), jobDefinition.Parameter, progressReporter, TriggerType.Startup);
+    => new(timeProvider, jobDefinition, true, timeProvider.GetUtcNow(), jobDefinition.Parameter, progressReporter, TriggerType.Startup);
 
     public static JobRun Create(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
         DateTimeOffset runAt)
-    => new(timeProvider, jobDefinition, runAt, jobDefinition.Parameter, progressReporter, TriggerType.Cron);
+    => new(timeProvider, jobDefinition, false, runAt, jobDefinition.Parameter, progressReporter, TriggerType.Cron);
 
     public static JobRun CreateInstant(
         TimeProvider timeProvider,
@@ -91,7 +93,7 @@ internal class JobRun
         DateTimeOffset runAt,
         object? parameter,
         CancellationToken token)
-    => new(timeProvider, jobDefinition, runAt, parameter, progressReporter, TriggerType.Instant)
+    => new(timeProvider, jobDefinition, true, runAt, parameter, progressReporter, TriggerType.Instant)
     {
         CancellationToken = token,
     };
@@ -101,7 +103,7 @@ internal class JobRun
         object? parameter,
         CancellationToken token)
     {
-        JobRun run = new(timeProvider, this, jobDefinition, timeProvider.GetUtcNow(), parameter, progressReporter, TriggerType.Dependent)
+        JobRun run = new(timeProvider, this, jobDefinition, true, timeProvider.GetUtcNow(), parameter, progressReporter, TriggerType.Dependent)
         {
             CancellationToken = token,
         };

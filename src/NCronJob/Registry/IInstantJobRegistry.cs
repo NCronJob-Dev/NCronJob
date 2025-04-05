@@ -418,7 +418,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
             token);
 
         run.Priority = JobPriority.High;
-        run.IsOneTimeJob = true;
 
         if (forceExecution)
         {

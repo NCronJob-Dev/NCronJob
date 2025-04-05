@@ -179,7 +179,6 @@ internal sealed partial class JobExecutor : IDisposable
                 jobRun.CancellationToken);
 
             newRun.ParentOutput = context.Output;
-            newRun.IsOneTimeJob = true;
 
             if (!context.ExecuteChildren)
             {
