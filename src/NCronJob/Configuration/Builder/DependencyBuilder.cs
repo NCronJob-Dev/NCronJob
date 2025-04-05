@@ -30,7 +30,7 @@ public sealed class DependencyBuilder<TPrincipalJob>
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
-        dependentJobOptions.Add(JobRegistry.BuildDynamicJob(jobDelegate, jobName));
+        dependentJobOptions.Add(JobRegistry.CreateDynamicJob(jobDelegate, jobName));
         return this;
     }
 

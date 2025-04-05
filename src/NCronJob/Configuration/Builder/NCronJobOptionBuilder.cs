@@ -97,7 +97,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             TimeZoneInfo = timeZoneInfo
         };
 
-        JobDefinition jobDefinition = JobRegistry.BuildDynamicJob(jobDelegate, jobName, jobOption);
+        JobDefinition jobDefinition = JobRegistry.CreateDynamicJob(jobDelegate, jobName, jobOption);
 
         Feed([jobDefinition]);
 

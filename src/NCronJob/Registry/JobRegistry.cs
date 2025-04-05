@@ -57,7 +57,7 @@ internal sealed class JobRegistry
         }
     }
 
-    public static JobDefinition BuildDynamicJob(
+    public static JobDefinition CreateDynamicJob(
         Delegate jobDelegate,
         string? jobName = null,
         JobOption? jobOption = null)

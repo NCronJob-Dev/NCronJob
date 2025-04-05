@@ -324,7 +324,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
     private Guid RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {
-        JobDefinition jobDefinition = JobRegistry.BuildDynamicJob(jobDelegate);
+        JobDefinition jobDefinition = JobRegistry.CreateDynamicJob(jobDelegate);
 
         return RunInternal(jobDefinition, null, startDate, forceExecution, token);
     }
