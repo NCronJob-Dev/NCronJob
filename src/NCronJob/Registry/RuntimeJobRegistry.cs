@@ -182,7 +182,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         try
         {
             var oldJobs = jobRegistry.GetAllJobs();
-            var builder = new NCronJobOptionBuilder(services, concurrencySettings, jobRegistry);
+            var builder = new NCronJobOptionBuilder(services, Feed, concurrencySettings);
             jobBuilder(builder);
 
             var newJobs = jobRegistry.GetAllJobs().Except(oldJobs);
@@ -199,6 +199,18 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         {
             exception = ex;
             return false;
+        }
+
+        void Feed(JobDefinition jobDefinition, List<DependentJobRegistryEntry> list)
+        {
+            jobRegistry.Add(jobDefinition);
+
+            List<JobDefinition> value = [jobDefinition];
+
+            foreach (var entry in list)
+            {
+                jobRegistry.RegisterJobDependency(value, entry);
+            }
         }
     }
 

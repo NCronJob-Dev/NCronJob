@@ -57,7 +57,7 @@ internal sealed class JobRegistry
         }
     }
 
-    public JobDefinition AddDynamicJob(
+    public static JobDefinition CreateDynamicJob(
         Delegate jobDelegate,
         string? jobName = null,
         JobOption? jobOption = null)
@@ -66,8 +66,6 @@ internal sealed class JobRegistry
         var entry = JobDefinition.CreateUntyped(jobName, jobDelegate);
         entry.UpdateWith(jobOption);
 
-        Add(entry);
-
         return entry;
     }
 
@@ -75,13 +73,7 @@ internal sealed class JobRegistry
     {
         foreach (var jobDefinition in parentJobdefinitions)
         {
-            if (!dependentJobsPerJobDefinition.TryGetValue(jobDefinition, out var entries))
-            {
-                entries = [];
-                dependentJobsPerJobDefinition.Add(jobDefinition, entries);
-            }
-
-            entries.Add(entry);
+            dependentJobsPerJobDefinition.AddInto(jobDefinition, entry);
         }
     }
 

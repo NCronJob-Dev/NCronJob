@@ -11,17 +11,17 @@ namespace NCronJob;
 public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 {
     private readonly IServiceCollection services;
+    private readonly Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder;
     private readonly ConcurrencySettings settings;
-    private readonly JobRegistry jobRegistry;
 
     internal NCronJobOptionBuilder(
         IServiceCollection services,
-        ConcurrencySettings settings,
-        JobRegistry jobRegistry)
+        Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder,
+        ConcurrencySettings settings)
     {
         this.services = services;
+        this.jobRegistryFeeder = jobRegistryFeeder;
         this.settings = settings;
-        this.jobRegistry = jobRegistry;
     }
 
     /// <summary>
@@ -41,7 +41,10 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         where T : class, IJob
     {
         var jobDefinitions = AddJobInternal(typeof(T), options);
-        return new StartupStage<T>(services, jobDefinitions, settings, jobRegistry);
+
+        Feed(jobDefinitions);
+
+        return new StartupStage<T>(services, jobDefinitions, jobRegistryFeeder, settings);
     }
 
     /// <summary>
@@ -62,7 +65,10 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         ArgumentNullException.ThrowIfNull(jobType);
 
         var jobDefinitions = AddJobInternal(jobType, options);
-        return new StartupStage<IJob>(services, jobDefinitions, settings, jobRegistry);
+
+        Feed(jobDefinitions);
+
+        return new StartupStage<IJob>(services, jobDefinitions, jobRegistryFeeder, settings);
     }
 
     /// <summary>
@@ -91,7 +97,9 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             TimeZoneInfo = timeZoneInfo
         };
 
-        jobRegistry.AddDynamicJob(jobDelegate, jobName, jobOption);
+        JobDefinition jobDefinition = JobRegistry.CreateDynamicJob(jobDelegate, jobName, jobOption);
+
+        Feed([jobDefinition]);
 
         return this;
     }
@@ -154,14 +162,19 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             var entry = JobDefinition.CreateTyped(option.Name, jobType, option.Parameter);
             entry.UpdateWith(option);
 
-            jobRegistry.Add(entry);
             jobDefinitions.Add(entry);
         }
 
         return jobDefinitions;
     }
 
-
+    private void Feed(IEnumerable<JobDefinition> jobDefinitions)
+    {
+        foreach (var jobDefinition in jobDefinitions)
+        {
+            jobRegistryFeeder(jobDefinition, new List<DependentJobRegistryEntry>());
+        }
+    }
 }
 
 /// <summary>
@@ -172,19 +185,19 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
-    private readonly JobRegistry jobRegistry;
     private readonly IReadOnlyCollection<JobDefinition> jobDefinitions;
+    private readonly Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder;
 
     internal StartupStage(
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
-        ConcurrencySettings settings,
-        JobRegistry jobRegistry)
+        Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder,
+        ConcurrencySettings settings)
     {
         this.jobDefinitions = jobDefinitions;
+        this.jobRegistryFeeder = jobRegistryFeeder;
         this.services = services;
         this.settings = settings;
-        this.jobRegistry = jobRegistry;
     }
 
     /// <inheritdoc />
@@ -192,31 +205,31 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     {
         JobRegistry.UpdateJobDefinitionsToRunAtStartup(jobDefinitions, shouldCrashOnFailure);
 
-        return new NotificationStage<TJob>(services, jobDefinitions, settings, jobRegistry);
+        return new NotificationStage<TJob>(services, jobDefinitions, jobRegistryFeeder, settings);
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
     {
         services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return new NotificationStage<TJob>(services, jobDefinitions, settings, jobRegistry);
+        return new NotificationStage<TJob>(services, jobDefinitions, jobRegistryFeeder, settings);
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
     {
-        ExecuteWhenHelper.AddRegistration(jobRegistry, jobDefinitions, success, faulted);
+        ExecuteWhenHelper.AddRegistration(jobDefinitions, success, faulted, jobRegistryFeeder);
 
         return this;
     }
 
     /// <inheritdoc />
     public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob
-        => new NCronJobOptionBuilder(services, settings, jobRegistry).AddJob<TNewJob>(options);
+        => new NCronJobOptionBuilder(services, jobRegistryFeeder, settings).AddJob<TNewJob>(options);
 
     /// <inheritdoc />
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
-        => new NCronJobOptionBuilder(services, settings, jobRegistry).AddJob(jobType, options);
+        => new NCronJobOptionBuilder(services, jobRegistryFeeder, settings).AddJob(jobType, options);
 }
 
 /// <summary>
@@ -227,19 +240,19 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
-    private readonly JobRegistry jobRegistry;
     private readonly IReadOnlyCollection<JobDefinition> jobDefinitions;
+    private readonly Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder;
 
     internal NotificationStage(
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
-        ConcurrencySettings settings,
-        JobRegistry jobRegistry)
+        Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder,
+        ConcurrencySettings settings)
     {
         this.services = services;
         this.settings = settings;
-        this.jobRegistry = jobRegistry;
         this.jobDefinitions = jobDefinitions;
+        this.jobRegistryFeeder = jobRegistryFeeder;
     }
 
     /// <inheritdoc />
@@ -254,18 +267,18 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null,
         Action<DependencyBuilder<TJob>>? faulted = null)
     {
-        ExecuteWhenHelper.AddRegistration(jobRegistry, jobDefinitions, success, faulted);
+        ExecuteWhenHelper.AddRegistration(jobDefinitions, success, faulted, jobRegistryFeeder);
 
         return this;
     }
 
     /// <inheritdoc />
     public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob =>
-        new NCronJobOptionBuilder(services, settings, jobRegistry).AddJob<TNewJob>(options);
+        new NCronJobOptionBuilder(services, jobRegistryFeeder, settings).AddJob<TNewJob>(options);
 
     /// <inheritdoc />
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
-        => new NCronJobOptionBuilder(services, settings, jobRegistry).AddJob(jobType, options);
+        => new NCronJobOptionBuilder(services, jobRegistryFeeder, settings).AddJob(jobType, options);
 }
 
 /// <summary>
@@ -349,36 +362,58 @@ public interface INotificationStage<TJob> : IJobStage
 internal static class ExecuteWhenHelper
 {
     public static void AddRegistration<TJob>(
-        JobRegistry jobRegistry,
         IReadOnlyCollection<JobDefinition> parentJobDefinitions,
         Action<DependencyBuilder<TJob>>? success,
-        Action<DependencyBuilder<TJob>>? faulted)
+        Action<DependencyBuilder<TJob>>? faulted,
+        Action<JobDefinition, List<DependentJobRegistryEntry>> jobRegistryFeeder)
         where TJob : IJob
     {
+
         if (success is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>(jobRegistry);
+            var dependencyBuilder = new DependencyBuilder<TJob>();
             success(dependencyBuilder);
             var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
             var entry = new DependentJobRegistryEntry
             {
                 RunWhenSuccess = runWhenSuccess,
-
             };
-            jobRegistry.RegisterJobDependency(parentJobDefinitions, entry);
+
+            foreach (var jobDefinition in parentJobDefinitions)
+            {
+                Feed(jobDefinition, entry);
+            }
         }
 
         if (faulted is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>(jobRegistry);
+            var dependencyBuilder = new DependencyBuilder<TJob>();
             faulted(dependencyBuilder);
             var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
             var entry = new DependentJobRegistryEntry
             {
                 RunWhenFaulted = runWhenFaulted,
-
             };
-            jobRegistry.RegisterJobDependency(parentJobDefinitions, entry);
+
+            foreach (var jobDefinition in parentJobDefinitions)
+            {
+                Feed(jobDefinition, entry);
+            }
+        }
+
+        void Feed(JobDefinition jobDefinition, DependentJobRegistryEntry dependentJobs)
+        {
+            foreach (var job in dependentJobs.RunWhenSuccess ?? [])
+            {
+                jobRegistryFeeder(job, []);
+            }
+
+            foreach (var job in dependentJobs.RunWhenFaulted ?? [])
+            {
+                jobRegistryFeeder(job, []);
+            }
+
+            jobRegistryFeeder(jobDefinition, [dependentJobs]);
         }
     }
 }
