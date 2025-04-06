@@ -33,8 +33,8 @@ public sealed class DependencyBuilder<TPrincipalJob>
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
-        var entry = jobRegistry.AddDynamicJob(jobDelegate, jobName);
-        dependentJobOptions.Add(entry);
+        var jobDefinition = JobDefinition.CreateUntyped(jobName, jobDelegate);
+        dependentJobOptions.Add(jobDefinition);
 
         return this;
     }

@@ -122,6 +122,36 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public void CannotRemoveAUntypedDependentJobByName()
+    {
+        ServiceCollection.AddNCronJob(
+            s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob(() => { }, "Job"))
+        );
+
+        var jobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var act = () => jobRegistry.RemoveJob("Job");
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldBe("Cannot remove a job that is a dependency of another job.");
+    }
+
+    [Fact]
+    public void CannotRemoveATypedDependentJobByName()
+    {
+        ServiceCollection.AddNCronJob(
+            s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>())
+        );
+
+        var jobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var act = () => jobRegistry.RemoveJob<AnotherDummyJob>();
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldBe("Cannot remove a job that is a dependency of another job.");
+    }
+
+    [Fact]
     public void DoesNotCringeWhenRemovingNonExistingJobs()
     {
         ServiceCollection.AddNCronJob();
@@ -293,7 +323,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
-    public void ShouldFindDependentJobsWithAGivenName()
+    public void ADependentJobHasNoSchedule()
     {
         ServiceCollection.AddNCronJob(s =>
         {
@@ -303,7 +333,21 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
-        var successful = registry.TryGetSchedule("Job2", out var cronExpression, out var timeZoneInfo);
+        var successful = registry.TryGetSchedule("Job2", out var _, out var _);
+        successful.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ARootJobCanHaveNoSchedule()
+    {
+        ServiceCollection.AddNCronJob(s =>
+        {
+            s.AddJob<DummyJob>(p => p.WithName("Job1"));
+        });
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        var successful = registry.TryGetSchedule("Job1", out var cronExpression, out var timeZoneInfo);
         successful.ShouldBeTrue();
         cronExpression.ShouldBeNull();
         timeZoneInfo.ShouldBeNull();

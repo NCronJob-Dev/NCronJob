@@ -209,28 +209,24 @@ internal sealed partial class JobWorker
 
     public void RemoveJobByName(string jobName)
     {
-        RemoveJob(
-            registry.FindJobDefinition(jobName)?.JobFullName,
-            () => registry.RemoveByName(jobName));
+        RemoveJob(() => registry.RemoveByName(jobName));
     }
 
     public void RemoveJobByType(Type type)
     {
-        RemoveJob(
-            registry.FindFirstJobDefinition(type)?.JobFullName,
-            () => registry.RemoveByType(type));
+        RemoveJob(() => registry.RemoveByType(type));
     }
 
     private void RemoveJob(
-        string? jobDefinitionFullName,
-        Action unregistrator)
+        Func<string?> unregistrator)
     {
+        var jobDefinitionFullName = unregistrator();
+
         if (jobDefinitionFullName is null)
         {
             return;
         }
 
-        unregistrator();
         jobQueueManager.RemoveQueue(jobDefinitionFullName);
 
     }

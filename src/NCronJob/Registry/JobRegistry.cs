@@ -6,6 +6,9 @@ internal sealed class JobRegistry
 {
     private readonly List<JobDefinition> allJobs = [];
 
+    private IEnumerable<JobDefinition> AllDependentJobDefinitions => dependentJobsPerJobDefinition.Values
+            .SelectMany(v => v).SelectMany(v => v.RunWhenSuccess.Union(v.RunWhenFaulted));
+
     private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
         = new(DependentJobDefinitionEqualityComparer.Instance);
 
@@ -45,30 +48,41 @@ internal sealed class JobRegistry
             ?.ConcurrencyPolicy
             ?.MaxDegreeOfParallelism ?? 1;
 
-    public void RemoveByName(string jobName) => Remove(allJobs.FirstOrDefault(j => j.CustomName == jobName));
-
-    public void RemoveByType(Type type)
+    public string? RemoveByName(string jobName)
     {
+        EnsureCanBeRemoved(j => j.CustomName == jobName);
+
+        var jobDefinitionFullName = FindJobDefinition(jobName)?.JobFullName;
+
+        if (jobDefinitionFullName is null)
+        {
+            return null;
+        }
+
+        Remove(allJobs.FirstOrDefault(j => j.CustomName == jobName));
+
+        return jobDefinitionFullName;
+    }
+
+    public string? RemoveByType(Type type)
+    {
+        EnsureCanBeRemoved(j => j.Type == type);
+
+        var jobDefinitionFullName = FindFirstJobDefinition(type)?.JobFullName;
+
+        if (jobDefinitionFullName is null)
+        {
+            return null;
+        }
+
         var jobDefinitions = FindAllJobDefinition(type);
 
         foreach (var jobDefinition in jobDefinitions)
         {
             Remove(jobDefinition);
         }
-    }
 
-    public JobDefinition AddDynamicJob(
-        Delegate jobDelegate,
-        string? jobName = null,
-        JobOption? jobOption = null)
-    {
-
-        var entry = JobDefinition.CreateUntyped(jobName, jobDelegate);
-        entry.UpdateWith(jobOption);
-
-        Add(entry);
-
-        return entry;
+        return jobDefinitionFullName;
     }
 
     public void RegisterJobDependency(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
@@ -107,6 +121,18 @@ internal sealed class JobRegistry
     => !dependentJobsPerJobDefinition.TryGetValue(parentJobDefinition, out var types)
         ? []
         : transform(types).ToArray();
+
+    private void EnsureCanBeRemoved(Func<JobDefinition, bool> jobDefintionFinder)
+    {
+        var any = AllDependentJobDefinitions.Any(jobDefintionFinder);
+
+        if (!any)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException("Cannot remove a job that is a dependency of another job.");
+    }
 
     private void Remove(JobDefinition? jobDefinition)
     {
