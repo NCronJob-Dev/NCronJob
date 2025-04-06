@@ -369,7 +369,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
     private JobDefinition TypedJobfinder(Type jobType, object? parameter)
     {
-        var jobDefinitions = jobRegistry.FindAllJobDefinition(jobType);
+        var jobDefinitions = jobRegistry.FindAllRootJobDefinition(jobType);
 
         if (jobDefinitions.Count > 1)
         {
@@ -392,7 +392,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
 
     private JobDefinition NamedJobfinder(string jobName)
     {
-        var jobDefinition = jobRegistry.FindJobDefinition(jobName);
+        var jobDefinition = jobRegistry.FindRootJobDefinition(jobName);
 
         if (jobDefinition is null)
         {

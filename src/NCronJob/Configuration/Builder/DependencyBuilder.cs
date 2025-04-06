@@ -7,9 +7,6 @@ public sealed class DependencyBuilder<TPrincipalJob>
     where TPrincipalJob : IJob
 {
     private readonly List<JobDefinition> dependentJobOptions = [];
-    private readonly JobRegistry jobRegistry;
-
-    internal DependencyBuilder(JobRegistry jobRegistry) => this.jobRegistry = jobRegistry;
 
     /// <summary>
     /// Adds a job that runs after the principal job has finished with a given <paramref name="parameter"/>.
@@ -35,7 +32,6 @@ public sealed class DependencyBuilder<TPrincipalJob>
 
         var jobDefinition = JobDefinition.CreateUntyped(jobName, jobDelegate);
         dependentJobOptions.Add(jobDefinition);
-
         return this;
     }
 
