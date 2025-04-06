@@ -1,7 +1,10 @@
 [*.cs]
 
 # IDISP017: Prefer using
-dotnet_diagnostic.IDISP017.severity = none 
+dotnet_diagnostic.IDISP017.severity = none
 
 # CA2211: Non-constant fields should not be visible
 dotnet_diagnostic.CA2211.severity = suggestion
+
+ # CA0618: [Obsolete] compiler warnings.
+ dotnet_diagnostic.CS0618.severity = none
