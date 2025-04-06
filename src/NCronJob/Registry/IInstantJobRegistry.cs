@@ -10,6 +10,7 @@ public interface IInstantJobRegistry
 {
     /// <summary>
     /// Queues an instant job to the JobQueue. The instance is retrieved from the container.
+    /// <param name="jobType">The job type. Expected to implement the <see cref="IJob"/> interface.</param>
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// </summary>
@@ -21,11 +22,10 @@ public interface IInstantJobRegistry
     /// <example>
     /// Running a job with a parameter:
     /// <code>
-    /// instantJobRegistry.RunInstantJob&lt;MyJob&gt;(new MyParameterObject { Foo = "Bar" });
+    /// instantJobRegistry.RunInstantJob(typeof(MyJob), new MyParameterObject { Foo = "Bar" });
     /// </code>
     /// </example>
-    Guid RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
-        where TJob : IJob;
+    Guid RunInstantJob(Type jobType, object? parameter = null, CancellationToken token = default);
 
     /// <summary>
     /// Runs an instant job, which gets directly executed.
@@ -51,12 +51,12 @@ public interface IInstantJobRegistry
     /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>.
     /// </summary>
+    /// <param name="jobType">The job type. Expected to implement the <see cref="IJob"/> interface.</param>
     /// <param name="delay">The delay until the job will be executed.</param>
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <returns>The job correlation id.</returns>
-    Guid RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
-        where TJob : IJob;
+    Guid RunScheduledJob(Type jobType, TimeSpan delay, object? parameter = null, CancellationToken token = default);
 
     /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>.
@@ -75,6 +75,7 @@ public interface IInstantJobRegistry
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <returns>The job correlation id.</returns>
+    [Obsolete("Use RunScheduledJob<TJob>(TimeSpan, object?, CancellationToken) instead.")]
     Guid RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
 
@@ -86,6 +87,7 @@ public interface IInstantJobRegistry
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <returns>The job correlation id.</returns>
+    [Obsolete("Use RunScheduledJob(string, TimeSpan, object?, CancellationToken) instead.")]
     Guid RunScheduledJob(string jobName, DateTimeOffset startDate, object? parameter = null, CancellationToken token = default);
 
     /// <summary>
@@ -112,6 +114,7 @@ public interface IInstantJobRegistry
     /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
+    [Obsolete("Use RunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
     Guid RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
 
     /// <summary>
@@ -138,18 +141,19 @@ public interface IInstantJobRegistry
     /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
+    [Obsolete("Use ForceRunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
     Guid ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
 
     /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.
     /// The concurrency settings will be ignored.
     /// </summary>
+    /// <param name="jobType">The job type. Expected to implement the <see cref="IJob"/> interface.</param>
     /// <param name="delay">The delay until the job will be executed.</param>
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <returns>The job correlation id.</returns>
-    Guid ForceRunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
-        where TJob : IJob;
+    Guid ForceRunScheduledJob(Type jobType, TimeSpan delay, object? parameter = null, CancellationToken token = default);
 
     /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.
@@ -164,6 +168,7 @@ public interface IInstantJobRegistry
 
     /// <summary>
     /// Runs an instant job to the registry, which will be executed even if the job is not registered and the concurrency is exceeded.
+    /// <param name="jobType">The job type. Expected to implement the <see cref="IJob"/> interface.</param>
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// </summary>
@@ -175,11 +180,10 @@ public interface IInstantJobRegistry
     /// <example>
     /// Running a job with a parameter:
     /// <code>
-    /// instantJobRegistry.RunInstantJob&lt;MyJob&gt;(new MyParameterObject { Foo = "Bar" });
+    /// instantJobRegistry.ForceRunInstantJob(typeof(MyJob), new MyParameterObject { Foo = "Bar" });
     /// </code>
     /// </example>
-    Guid ForceRunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
-        where TJob : IJob;
+    Guid ForceRunInstantJob(Type jobType, object? parameter = null, CancellationToken token = default);
 
     /// <summary>
     /// Runs an instant job to the registry, which will be executed even if the job is not registered and the concurrency is exceeded.
@@ -239,8 +243,8 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     }
 
     /// <inheritdoc />
-    public Guid RunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
-        where TJob : IJob => RunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
+    public Guid RunInstantJob(Type jobType, object? parameter = null, CancellationToken token = default)
+        => RunScheduledJob(jobType, TimeSpan.Zero, parameter, token);
 
     /// <inheritdoc />
     public Guid RunInstantJob(string jobName, object? parameter = null, CancellationToken token = default)
@@ -250,11 +254,10 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     public Guid RunInstantJob(Delegate jobDelegate, CancellationToken token = default) => RunScheduledJob(jobDelegate, TimeSpan.Zero, token);
 
     /// <inheritdoc />
-    public Guid RunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
-        where TJob : IJob
+    public Guid RunScheduledJob(Type jobType, TimeSpan delay, object? parameter = null, CancellationToken token = default)
     {
         var utcNow = timeProvider.GetUtcNow();
-        return RunJob<TJob>(utcNow + delay, parameter, false, token);
+        return RunJob(jobType, utcNow + delay, parameter, false, token);
     }
 
     /// <inheritdoc />
@@ -267,7 +270,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     /// <inheritdoc />
     public Guid RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
         where TJob : IJob =>
-        RunJob<TJob>(startDate, parameter, false, token);
+        RunJob(typeof(TJob), startDate, parameter, false, token);
 
     /// <inheritdoc />
     public Guid RunScheduledJob(string jobName, DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
@@ -285,11 +288,10 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         RunDelegateJob(jobDelegate, startDate, false, token);
 
     /// <inheritdoc />
-    public Guid ForceRunScheduledJob<TJob>(TimeSpan delay, object? parameter = null, CancellationToken token = default)
-        where TJob : IJob
+    public Guid ForceRunScheduledJob(Type jobType, TimeSpan delay, object? parameter = null, CancellationToken token = default)
     {
         var utcNow = timeProvider.GetUtcNow();
-        return RunJob<TJob>(utcNow + delay, parameter, true, token);
+        return RunJob(jobType, utcNow + delay, parameter, true, token);
     }
 
     /// <inheritdoc />
@@ -315,8 +317,8 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         ForceRunScheduledJob(jobDelegate, TimeSpan.Zero, token);
 
     /// <inheritdoc />
-    public Guid ForceRunInstantJob<TJob>(object? parameter = null, CancellationToken token = default)
-        where TJob : IJob => ForceRunScheduledJob<TJob>(TimeSpan.Zero, parameter, token);
+    public Guid ForceRunInstantJob(Type jobType, object? parameter = null, CancellationToken token = default)
+        => ForceRunScheduledJob(jobType, TimeSpan.Zero, parameter, token);
 
     /// <inheritdoc />
     public Guid ForceRunInstantJob(string jobName, object? parameter = null, CancellationToken token = default)
@@ -329,11 +331,10 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         return RunInternal(jobDefinition, null, startDate, forceExecution, token);
     }
 
-    private Guid RunJob<TJob>(DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
-        where TJob : IJob
+    private Guid RunJob(Type jobType, DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
     {
         return RunJob(
-            () => TypedJobfinder(typeof(TJob), parameter),
+            () => TypedJobfinder(jobType, parameter),
             startDate,
             parameter,
             forceExecution,
