@@ -5,6 +5,40 @@ namespace NCronJob.Tests;
 public class JobOptionBuilderTests
 {
     [Fact]
+    public void AddingNullCronExpressionThrowsArgumentNullException()
+    {
+        var builder = new JobOptionBuilder();
+        Should.Throw<ArgumentNullException>(() => builder.WithCronExpression(null!));
+    }
+
+    [Fact]
+    public void AddingValidCronExpressionWithMinutePrecisionDoesNotThrowException()
+    {
+        var builder = new JobOptionBuilder();
+        Should.NotThrow(() => builder.WithCronExpression(Cron.AtMinute5));
+    }
+
+    [Fact]
+    public void AddingValidCronExpressionWithSecondPrecisionDoesNotThrowException()
+    {
+        var builder = new JobOptionBuilder();
+        Should.NotThrow(() => builder.WithCronExpression("30 5 * * * *"));
+    }
+
+    [Fact]
+    public void AutoDetectSecondPrecisionWhenNotSpecified()
+    {
+        var builder = new JobOptionBuilder();
+        builder.WithCronExpression("0 0 12 * * ?");
+        var options = builder.GetJobOptions();
+        options.ShouldContain(o => o.CronExpression == "0 0 12 * * ?");
+
+        builder.WithCronExpression("0 1 * * *");
+        options = builder.GetJobOptions();
+        options.ShouldContain(o => o.CronExpression == "0 1 * * *");
+    }
+
+    [Fact]
     public void ShouldCreateJobOptionsWithCronExpression()
     {
         var builder = new JobOptionBuilder();
