@@ -270,4 +270,37 @@ public class JobOptionBuilderTests
         options[1].Name.ShouldBe("name2");
         options[1].Parameter.ShouldBe("bar");
     }
+
+    [Fact]
+    public void ShouldCreateMultipleParameterizedJobsWithAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder
+            .WithParameter("foo")
+            .And
+            .WithParameter("bar");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].Parameter.ShouldBe("foo");
+        options[1].Parameter.ShouldBe("bar");
+    }
+
+    [Fact]
+    public void ShouldCreateMultipleParameterizedJobsWithoutAnd()
+    {
+        var builder = new JobOptionBuilder();
+        builder
+            .WithParameter("foo");
+
+        builder
+            .WithParameter("bar");
+
+        var options = builder.GetJobOptions();
+
+        options.Count.ShouldBe(2);
+        options[0].Parameter.ShouldBe("foo");
+        options[1].Parameter.ShouldBe("bar");
+    }
 }

@@ -6,6 +6,8 @@ namespace NCronJob.Tests;
 
 public sealed class IntegrationTests : JobIntegrationBase
 {
+    private readonly static Delegate JobDelegate = () => { };
+
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
     {
@@ -663,30 +665,6 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public void AddingUntypedJobsWithTheSameCustomNameLeadsToException()
-    {
-        Action act = () => ServiceCollection.AddNCronJob(
-            n => n.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Job1")
-                .AddJob(() => { }, Cron.AtMinute0, jobName: "Job1"));
-
-        var e = act.ShouldThrow<InvalidOperationException>();
-        e.Message.ShouldStartWith("Job registration conflict detected. A job has already been registered with the name 'Job1'.");
-    }
-
-    [Fact]
-    public void AddingUntypedJobsWithTheSameDelegateLeadsToException()
-    {
-        Delegate jobDelegate = () => { };
-
-        Action act = () => ServiceCollection.AddNCronJob(
-            n => n.AddJob(jobDelegate, Cron.AtEveryMinute)
-                .AddJob(jobDelegate, Cron.AtEveryMinute));
-
-        var e = act.ShouldThrow<InvalidOperationException>();
-        e.Message.ShouldStartWith("Job registration conflict for job 'Untyped job NCronJob.UntypedJob_2SdMu4GO' detected. ");
-    }
-
-    [Fact]
     public void CanAddUntypedJobsWithTheSameDelegateWithDifferentNames()
     {
         Delegate jobDelegate = () => { };
@@ -812,31 +790,6 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public void RegisteringDuplicatedJobsLeadToAnExceptionWhenRegistration()
-    {
-        Action act = () =>
-            ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p
-                .WithCronExpression(Cron.AtEveryMinute)
-                .And
-                .WithCronExpression(Cron.AtEveryMinute)));
-
-        act.ShouldThrow<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void RegisteringDuplicateDuringRuntimeLeadsToException()
-    {
-        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
-
-        var runtimeRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
-
-        var successful = runtimeRegistry.TryRegister(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)), out var exception);
-
-        successful.ShouldBeFalse();
-        exception.ShouldNotBeNull();
-    }
-
-    [Fact]
     public async Task PassedInExpressionShouldBePassedOn()
     {
         const string expression = "     0 0 1 * *";
@@ -858,6 +811,111 @@ public sealed class IntegrationTests : JobIntegrationBase
         runtimeJobRegistry.TryGetSchedule("job2", out string? cron2, out _).ShouldBeTrue();
         cron2.ShouldBe(expression);
     }
+
+    [Theory]
+    [MemberData(nameof(InvalidRegistrations))]
+    public void CanDetectInvalidRegistrations(Action<NCronJobOptionBuilder> register)
+    {
+        var act = () => ServiceCollection.AddNCronJob(register);
+
+        act.ShouldThrow<InvalidOperationException>();
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidRegistrations))]
+    public void SupportsValidRegistrations(Action<NCronJobOptionBuilder> register)
+    {
+        var act = () => ServiceCollection.AddNCronJob(register);
+
+        act.ShouldNotThrow();
+    }
+
+    public static TheoryData<Action<NCronJobOptionBuilder>> InvalidRegistrations = new()
+    {
+        {
+            // Names should be unique
+            s => s.AddJob<DummyJob>(p => p
+                    .WithName("JobName")
+                    .And
+                    .WithName("JobName"))
+        },
+        {
+            // Names should be unique
+            n => n.AddJob(() => { }, Cron.AtEveryMinute, jobName: "JobName")
+                  .AddJob(() => { }, Cron.AtMinute0, jobName: "JobName")
+        },
+        {
+            // Pure duplicate registration
+            s =>
+            {
+                s.AddJob<DummyJob>();
+                s.AddJob<DummyJob>();
+            }
+        },
+        {
+            // Pure duplicate registration
+            s =>
+            {
+                s.AddJob(JobDelegate, Cron.AtEveryMinute);
+                s.AddJob(JobDelegate, Cron.AtEveryMinute);
+            }
+        },
+        {
+            // Pure duplicate registration
+            s => s.AddJob<DummyJob>(p => p
+                    .WithCronExpression(Cron.AtEveryMinute)
+                    .And
+                    .WithCronExpression(Cron.AtEveryMinute))
+        },
+        {
+            // No way to invoke DummyJob inambiguously
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one")
+                    .And
+                    .WithParameter("two"))
+        },
+        {
+            // Pure duplicate registration
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one")
+                    .And
+                    .WithParameter("one")).RunAtStartup()
+        },
+    };
+
+    public static TheoryData<Action<NCronJobOptionBuilder>> ValidRegistrations = new()
+    {
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithCronExpression(Cron.AtEveryJanuaryTheFirst, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"))
+                    .And
+                    .WithCronExpression(Cron.AtEveryJanuaryTheFirst, TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+        },
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithCronExpression(Cron.AtEveryMinute).WithParameter("one")
+                    .And
+                    .WithCronExpression(Cron.AtEveryMinute).WithParameter("two"))
+        },
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one"))
+        },
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one")
+                    .And
+                    .WithParameter("two")).RunAtStartup()
+        },
+        {
+            s => {
+                s.AddJob<DummyJob>(p => p.WithName("Job1").WithCronExpression(Cron.AtEveryMinute))
+                    .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+                s.AddJob<DummyJob>(p => p.WithName("Job2").WithCronExpression(Cron.AtEveryMinute))
+                    .ExecuteWhen(success: s => s.RunJob<LongRunningJob>());
+            }
+        },
+    };
 
     private async Task StartNCronJobAndExecuteInstantSimpleJob()
     {
@@ -885,7 +943,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         return true;
     }
 
-    private readonly Delegate dynamicJob = (IJobExecutionContext context, Storage storage, CancellationToken token) 
+    private readonly Delegate dynamicJob = (IJobExecutionContext context, Storage storage, CancellationToken token)
         => { storage.Add($"Done - Parameter : {context.Parameter}"); };
 
     private static class JobMethods
