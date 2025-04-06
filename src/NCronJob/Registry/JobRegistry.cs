@@ -52,37 +52,37 @@ internal sealed class JobRegistry
     {
         EnsureCanBeRemoved(j => j.CustomName == jobName);
 
-        var jobDefinitionFullName = FindRootJobDefinition(jobName)?.JobFullName;
+        var jobDefinition = FindRootJobDefinition(jobName);
 
-        if (jobDefinitionFullName is null)
+        if (jobDefinition is null)
         {
             return null;
         }
 
-        Remove(allRootJobs.FirstOrDefault(j => j.CustomName == jobName));
+        Remove(jobDefinition);
 
-        return jobDefinitionFullName;
+        return jobDefinition.JobFullName;
     }
 
     public string? RemoveByType(Type type)
     {
         EnsureCanBeRemoved(j => j.Type == type);
 
-        var jobDefinitionFullName = FindFirstRootJobDefinition(type)?.JobFullName;
+        var jobDefinition = FindFirstRootJobDefinition(type);
 
-        if (jobDefinitionFullName is null)
+        if (jobDefinition is null)
         {
             return null;
         }
 
-        var jobDefinitions = FindAllRootJobDefinition(type);
+        var allJobDefinitions = FindAllRootJobDefinition(type);
 
-        foreach (var jobDefinition in jobDefinitions)
+        foreach (var oneJobDefinition in allJobDefinitions)
         {
-            Remove(jobDefinition);
+            Remove(oneJobDefinition);
         }
 
-        return jobDefinitionFullName;
+        return jobDefinition.JobFullName;
     }
 
     public void RegisterJobDependency(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
@@ -129,13 +129,8 @@ internal sealed class JobRegistry
         throw new InvalidOperationException("Cannot remove a job that is a dependency of another job.");
     }
 
-    private void Remove(JobDefinition? jobDefinition)
+    private void Remove(JobDefinition jobDefinition)
     {
-        if (jobDefinition is null)
-        {
-            return;
-        }
-
         allRootJobs.Remove(jobDefinition);
 
         dependentJobsPerJobDefinition.Remove(jobDefinition);
