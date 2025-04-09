@@ -465,6 +465,7 @@ dotnet_diagnostic.CA1812.severity = none # CA1812: Avoid uninstantiated internal
 dotnet_diagnostic.CA1822.severity = suggestion # CA1822: Mark members as static
 dotnet_diagnostic.CA2007.severity = none # CA2007: Consider calling ConfigureAwait on the awaited task
 dotnet_diagnostic.CA1849.severity = none # CA1849: Task synchrnously blocks. Use await instead.
+dotnet_diagnostic.CS0618.severity = none # CA0618: [Obsolete] compiler warnings.
 
 # Microsoft - FxCop
 # https://github.com/dotnet/roslyn-analyzers
