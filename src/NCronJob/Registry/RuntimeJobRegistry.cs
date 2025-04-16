@@ -35,12 +35,6 @@ public interface IRuntimeJobRegistry
     /// Removes all jobs of the given type.
     /// </summary>
     /// <remarks>If the given job is not found, no exception is thrown.</remarks>
-    void RemoveJob<TJob>() where TJob : IJob;
-
-    /// <summary>
-    /// Removes all jobs of the given type.
-    /// </summary>
-    /// <remarks>If the given job is not found, no exception is thrown.</remarks>
     void RemoveJob(Type type);
 
     /// <summary>
@@ -98,15 +92,6 @@ public interface IRuntimeJobRegistry
     /// If the job is already enabled, this method does nothing.
     /// If the job is not found, an exception is thrown.
     /// </remarks>
-    void EnableJob<TJob>() where TJob : IJob;
-
-    /// <summary>
-    /// Enables all jobs of the given type that were previously disabled.
-    /// </summary>
-    /// <remarks>
-    /// If the job is already enabled, this method does nothing.
-    /// If the job is not found, an exception is thrown.
-    /// </remarks>
     void EnableJob(Type type);
 
     /// <summary>
@@ -118,15 +103,6 @@ public interface IRuntimeJobRegistry
     /// If the job is not found, an exception is thrown.
     /// </remarks>
     void DisableJob(string jobName);
-
-    /// <summary>
-    /// Disables all jobs of the given type.
-    /// </summary>
-    /// <remarks>
-    /// If the job is already disabled, this method does nothing.
-    /// If the job is not found, an exception is thrown.
-    /// </remarks>
-    void DisableJob<TJob>() where TJob : IJob;
 
     /// <summary>
     /// Disables all jobs of the given type.
@@ -209,9 +185,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     public void RemoveJob(string jobName) => jobWorker.RemoveJobByName(jobName);
 
     /// <inheritdoc />
-    public void RemoveJob<TJob>() where TJob : IJob => RemoveJob(typeof(TJob));
-
-    /// <inheritdoc />
     public void RemoveJob(Type type) => jobWorker.RemoveJobByType(type);
 
     /// <inheritdoc />
@@ -271,9 +244,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
-    public void EnableJob<TJob>() where TJob : IJob => EnableJob(typeof(TJob));
-
-    /// <inheritdoc />
     public void EnableJob(Type type)
     {
         ProcessAllJobDefinitionsOfType(type, j => EnableJob(j));
@@ -287,9 +257,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
         DisableJob(job);
     }
-
-    /// <inheritdoc />
-    public void DisableJob<TJob>() where TJob : IJob => DisableJob(typeof(TJob));
 
     /// <inheritdoc />
     public void DisableJob(Type type)
