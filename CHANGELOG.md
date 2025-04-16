@@ -10,6 +10,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 - `IJobExecutionContext` exposes how the job was started. Reported by [@kikisaeba](https://github.com/kikisaeba) in [#261](https://github.com/NCronJob-Dev/NCronJob/issues/261). Fixed by [@linkdotnet](https://github.com/linkdotnet)
 
+### Changed
+
+- Deprecate `DateTimeOffset` based overloads in `IInstantJobRegistry`. By [@nulltoken](https://github.com/nulltoken) in [#272](https://github.com/NCronJob-Dev/NCronJob/pull/272).
+
 ## [v4.4.1] - 2025-03-27
 
 - Allow the registration of the same untyped job with different names. Reported by [@Mangatome](https://github.com/Mangatome) in [#253](https://github.com/NCronJob-Dev/NCronJob/issues/253). Fixed by [@nulltoken](https://github.com/nulltoken) in [#252](https://github.com/NCronJob-Dev/NCronJob/pull/252) and [#254](https://github.com/NCronJob-Dev/NCronJob/pull/254).
