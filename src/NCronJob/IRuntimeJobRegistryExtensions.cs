@@ -6,6 +6,21 @@
 public static class IRuntimeJobRegistryExtensions
 {
     /// <summary>
+    /// Tries to register a job with the given configuration.
+    /// </summary>/param>
+    /// <param name="runtimeJobRegistry"> The runtime job registry.</param>
+    /// <param name="jobBuilder">The job builder that configures the job.</param>
+    /// <returns>Returns <c>true</c> if the registration was successful, otherwise <c>false</c>.</returns>
+    public static bool TryRegister(
+        this IRuntimeJobRegistry runtimeJobRegistry,
+        Action<IRuntimeJobBuilder> jobBuilder)
+    {
+        ArgumentNullException.ThrowIfNull(runtimeJobRegistry);
+
+        return runtimeJobRegistry.TryRegister(jobBuilder, out _);
+    }
+
+    /// <summary>
     /// Removes all jobs of the given type.
     /// </summary>
     /// <remarks>If the given job is not found, no exception is thrown.</remarks>
