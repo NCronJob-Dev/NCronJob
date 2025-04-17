@@ -1,7 +1,7 @@
 ﻿namespace NCronJob;
 
 /// <summary>
-/// Extensions for InstantJobRegistry.
+/// Extensions for IInstantJobRegistry.
 /// </summary>
 public static class IInstantJobRegistryExtensions
 {
