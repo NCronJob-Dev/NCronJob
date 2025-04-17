@@ -118,8 +118,6 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         return this;
     }
 
-    void IRuntimeJobBuilder.AddJob<TJob>(Action<JobOptionBuilder>? options) => AddJob<TJob>(options);
-
     void IRuntimeJobBuilder.AddJob(Type jobType, Action<JobOptionBuilder>? options) => AddJob(jobType, options);
 
     void IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>

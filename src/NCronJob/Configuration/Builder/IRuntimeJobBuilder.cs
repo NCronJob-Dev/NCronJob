@@ -9,13 +9,6 @@ public interface IRuntimeJobBuilder
     /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// If a job with the same configuration is already registered, it will throw an exception.
     /// </summary>
-    /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
-    void AddJob<TJob>(Action<JobOptionBuilder>? options = null) where TJob : class, IJob;
-
-    /// <summary>
-    /// Adds a job to the service collection that gets executed based on the given cron expression.
-    /// If a job with the same configuration is already registered, it will throw an exception.
-    /// </summary>
     /// <param name="jobType">The type of the job to be added.</param>
     /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
     void AddJob(Type jobType, Action<JobOptionBuilder>? options = null);
