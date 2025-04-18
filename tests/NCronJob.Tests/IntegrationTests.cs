@@ -69,22 +69,32 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task ExecuteAnInstantJobWithoutPreviousRegistration()
+    public async Task ExecuteAnInstantTypedJobWithoutPreviousRegistration()
     {
         ServiceCollection.AddNCronJob();
 
-        await StartNCronJobAndExecuteInstantSimpleJob();
+        await StartNCronJobAndExecuteInstantTypedJob();
 
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
         jobRegistry.FindFirstRootJobDefinition(typeof(DummyJob)).ShouldBeNull();
     }
 
     [Fact]
-    public async Task ExecuteAnInstantJob()
+    public async Task ForceExecuteAnUntypedInstantJobWithoutPreviousRegistration()
+    {
+        ServiceCollection.AddNCronJob();
+
+        await StartNCronJobAndExecuteInstantUntypedJob((ijr, token) => IInstantJobRegistryExtensions.ForceRunInstantJob(ijr, untypedJob, token));
+
+        await StartNCronJobAndExecuteInstantUntypedJob((ijr, token) => ijr.ForceRunScheduledJob(untypedJob, TimeSpan.Zero, token));
+    }
+
+    [Fact]
+    public async Task ExecuteAnInstantTypedJob()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>());
 
-        await StartNCronJobAndExecuteInstantSimpleJob();
+        await StartNCronJobAndExecuteInstantTypedJob();
     }
 
     [Fact]
@@ -266,7 +276,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob(
-                dynamicJob,
+                untypedJob,
                 Cron.Never,
                 jobName: "good");
         });
@@ -291,7 +301,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob(
-                dynamicJob,
+                untypedJob,
                 Cron.Never,
                 jobName: "good");
         });
@@ -676,25 +686,21 @@ public sealed class IntegrationTests : JobIntegrationBase
     [Fact]
     public void AddingUntypedJobsWithTheSameDelegateLeadsToException()
     {
-        Delegate jobDelegate = () => { };
-
         Action act = () => ServiceCollection.AddNCronJob(
-            n => n.AddJob(jobDelegate, Cron.AtEveryMinute)
-                .AddJob(jobDelegate, Cron.AtEveryMinute));
+            n => n.AddJob(untypedJob, Cron.AtEveryMinute)
+                .AddJob(untypedJob, Cron.AtEveryMinute));
 
         var e = act.ShouldThrow<InvalidOperationException>();
-        e.Message.ShouldStartWith("Job registration conflict for job 'Untyped job NCronJob.UntypedJob_2SdMu4GO' detected. ");
+        e.Message.ShouldStartWith("Job registration conflict for job 'Untyped job NCronJob.UntypedJob_ofwkaPik' detected. ");
     }
 
     [Fact]
     public void CanAddUntypedJobsWithTheSameDelegateWithDifferentNames()
     {
-        Delegate jobDelegate = () => { };
-
         Action act = () => ServiceCollection.AddNCronJob(
-            n => n.AddJob(jobDelegate, Cron.AtEveryMinute)
-                .AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one")
-                .AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "another"));
+            n => n.AddJob(untypedJob, Cron.AtEveryMinute)
+                .AddJob(untypedJob, Cron.AtEveryMinute, jobName: "one")
+                .AddJob(untypedJob, Cron.AtEveryMinute, jobName: "another"));
 
         act.ShouldNotThrow();
     }
@@ -859,7 +865,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         cron2.ShouldBe(expression);
     }
 
-    private async Task StartNCronJobAndExecuteInstantSimpleJob()
+    private async Task StartNCronJobAndExecuteInstantTypedJob()
     {
         await StartNCronJob(startMonitoringEvents: true);
 
@@ -869,6 +875,20 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeInstantThenCompleted<DummyJob>();
+    }
+
+    private async Task StartNCronJobAndExecuteInstantUntypedJob(Func<IInstantJobRegistry, CancellationToken, Guid> jobRunner)
+    {
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        var orchestrationId = jobRunner(instantJobRegistry, CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldBeInstantThenCompleted();
     }
 
     private static bool OrchestrationIsScheduledThenCompleted<T>(IList<ExecutionProgress> events, ExecutionProgress executionProgress)
@@ -885,7 +905,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         return true;
     }
 
-    private readonly Delegate dynamicJob = (IJobExecutionContext context, Storage storage, CancellationToken token) 
+    private readonly Delegate untypedJob = (IJobExecutionContext context, Storage storage, CancellationToken token) 
         => { storage.Add($"Done - Parameter : {context.Parameter}"); };
 
     private static class JobMethods
