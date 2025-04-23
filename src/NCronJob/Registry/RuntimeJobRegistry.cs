@@ -13,13 +13,6 @@ public interface IRuntimeJobRegistry
     /// Tries to register a job with the given configuration.
     /// </summary>/param>
     /// <param name="jobBuilder">The job builder that configures the job.</param>
-    /// <returns>Returns <c>true</c> if the registration was successful, otherwise <c>false</c>.</returns>
-    bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder);
-
-    /// <summary>
-    /// Tries to register a job with the given configuration.
-    /// </summary>/param>
-    /// <param name="jobBuilder">The job builder that configures the job.</param>
     /// <param name="exception">The exception that occurred during the registration process. Or <c>null</c> if the registration was successful.</param>
     /// <returns>Returns <c>true</c> if the registration was successful, otherwise <c>false</c>.</returns>
     bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception);
@@ -30,12 +23,6 @@ public interface IRuntimeJobRegistry
     /// <param name="jobName">The name of the job to remove.</param>
     /// <remarks>If the given job is not found, no exception is thrown.</remarks>
     void RemoveJob(string jobName);
-
-    /// <summary>
-    /// Removes all jobs of the given type.
-    /// </summary>
-    /// <remarks>If the given job is not found, no exception is thrown.</remarks>
-    void RemoveJob<TJob>() where TJob : IJob;
 
     /// <summary>
     /// Removes all jobs of the given type.
@@ -98,15 +85,6 @@ public interface IRuntimeJobRegistry
     /// If the job is already enabled, this method does nothing.
     /// If the job is not found, an exception is thrown.
     /// </remarks>
-    void EnableJob<TJob>() where TJob : IJob;
-
-    /// <summary>
-    /// Enables all jobs of the given type that were previously disabled.
-    /// </summary>
-    /// <remarks>
-    /// If the job is already enabled, this method does nothing.
-    /// If the job is not found, an exception is thrown.
-    /// </remarks>
     void EnableJob(Type type);
 
     /// <summary>
@@ -118,15 +96,6 @@ public interface IRuntimeJobRegistry
     /// If the job is not found, an exception is thrown.
     /// </remarks>
     void DisableJob(string jobName);
-
-    /// <summary>
-    /// Disables all jobs of the given type.
-    /// </summary>
-    /// <remarks>
-    /// If the job is already disabled, this method does nothing.
-    /// If the job is not found, an exception is thrown.
-    /// </remarks>
-    void DisableJob<TJob>() where TJob : IJob;
 
     /// <summary>
     /// Disables all jobs of the given type.
@@ -173,10 +142,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
-    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder)
-        => TryRegister(jobBuilder, out _);
-
-    /// <inheritdoc />
     public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception)
     {
         try
@@ -207,9 +172,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
     /// <inheritdoc />
     public void RemoveJob(string jobName) => jobWorker.RemoveJobByName(jobName);
-
-    /// <inheritdoc />
-    public void RemoveJob<TJob>() where TJob : IJob => RemoveJob(typeof(TJob));
 
     /// <inheritdoc />
     public void RemoveJob(Type type) => jobWorker.RemoveJobByType(type);
@@ -271,9 +233,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
-    public void EnableJob<TJob>() where TJob : IJob => EnableJob(typeof(TJob));
-
-    /// <inheritdoc />
     public void EnableJob(Type type)
     {
         ProcessAllJobDefinitionsOfType(type, j => EnableJob(j));
@@ -287,9 +246,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
         DisableJob(job);
     }
-
-    /// <inheritdoc />
-    public void DisableJob<TJob>() where TJob : IJob => DisableJob(typeof(TJob));
 
     /// <inheritdoc />
     public void DisableJob(Type type)
