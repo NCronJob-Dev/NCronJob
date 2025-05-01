@@ -4,14 +4,14 @@
   </PropertyGroup>
   <ItemGroup Label="Analyzers">
     <GlobalPackageReference Include="IDisposableAnalyzers" Version="4.0.8" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
-    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.7.0.110445" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.9.0.115408" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
   </ItemGroup>
   <ItemGroup Label="NCronJob dependencies">
     <PackageVersion Include="Cronos" Version="0.9.0" />
     <PackageVersion Include="Polly" Version="8.5.2" />
   </ItemGroup>
   <ItemGroup Label="NCronJob NET8 dependencies" Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.3" />
   </ItemGroup>
   <ItemGroup Label="NCronJob NET9 dependencies" Condition="'$(TargetFramework)' == 'net9.0'">
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.3" />
