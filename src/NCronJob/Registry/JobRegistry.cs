@@ -174,14 +174,27 @@ internal sealed class JobRegistry
     {
         public static readonly JobDefinitionEqualityComparer Instance = new();
 
-        public bool Equals(JobDefinition? x, JobDefinition? y) =>
-            (x is null && y is null) || (x is not null && y is not null
-                                         && x.JobFullName == y.JobFullName
-                                         && x.Parameter == y.Parameter
-                                         && x.CronExpression == y.CronExpression
-                                         && x.TimeZone == y.TimeZone
-                                         && x.CustomName == y.CustomName
-                                         && x.IsStartupJob == y.IsStartupJob);
+        public bool Equals(JobDefinition? x, JobDefinition? y)
+        {
+            if (x is null && y is null)
+            {
+                return true;
+            }
+
+            if (x is null || y is null)
+            {
+                return false;
+            }
+
+            var expressionEquals = x.CronExpression?.Equals(y.CronExpression) ?? y.CronExpression is null;
+
+            return x.JobFullName == y.JobFullName
+                         && x.Parameter == y.Parameter
+                         && expressionEquals
+                         && x.TimeZone == y.TimeZone
+                         && x.CustomName == y.CustomName
+                         && x.IsStartupJob == y.IsStartupJob;
+        }
 
         public int GetHashCode(JobDefinition obj) => HashCode.Combine(
             obj.JobFullName,
