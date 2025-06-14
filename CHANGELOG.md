@@ -9,6 +9,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 
 - `IJobExecutionContext` exposes how the job was started. Reported by [@kikisaeba](https://github.com/kikisaeba) in [#261](https://github.com/NCronJob-Dev/NCronJob/issues/261). Fixed by [@linkdotnet](https://github.com/linkdotnet)
+- `net10.0` support.
 
 ### Changed
 
