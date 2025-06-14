@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.5.3] - 2025-06-14
+
 ### Added
 
 - `IJobExecutionContext` exposes how the job was started. Reported by [@kikisaeba](https://github.com/kikisaeba) in [#261](https://github.com/NCronJob-Dev/NCronJob/issues/261). Fixed by [@linkdotnet](https://github.com/linkdotnet)
@@ -527,7 +529,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.1...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.3...HEAD
+[v4.5.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.1...v4.5.3
 [v4.4.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.0...v4.4.1
 [v4.4.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.4...v4.4.0
 [v4.3.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.3.3...v4.3.4
