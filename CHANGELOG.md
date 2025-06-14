@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Removed `net10.0` support as it doesn't play well with NuGet and stable semantic versioning releases. Reported by [@nulltoken](https://github.com/nulltoken) in [#286](https://github.com/NCronJob-Dev/NCronJob/issues/286)
+
 ## [v4.5.3] - 2025-06-14
 
 ### Added
