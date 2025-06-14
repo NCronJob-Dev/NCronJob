@@ -16,6 +16,9 @@
   <ItemGroup Label="NCronJob NET9 dependencies" Condition="'$(TargetFramework)' == 'net9.0'">
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6" />
   </ItemGroup>
+  <ItemGroup Label="NCronJob NET9 dependencies" Condition="'$(TargetFramework)' == 'net10.0'">
+      <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0-preview.5.25277.114" />
+  </ItemGroup>
   <ItemGroup Label="Samples">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
