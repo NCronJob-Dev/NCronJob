@@ -191,6 +191,11 @@ internal sealed partial class JobWorker
 
     public void ScheduleJob(JobDefinition job)
     {
+        if (!job.IsEnabled)
+        {
+            return;
+        }
+
         var utcNow = timeProvider.GetUtcNow();
         var nextRunTime = job.GetNextCronOccurrence(utcNow);
 
