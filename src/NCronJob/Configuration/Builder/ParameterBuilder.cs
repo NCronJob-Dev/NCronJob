@@ -3,18 +3,15 @@ namespace NCronJob;
 /// <summary>
 /// Represents a builder to configure a job with a name or a parameter.
 /// </summary>
-public sealed class ParameterBuilder : IOptionChainerBuilder
+public sealed class ParameterBuilder : OptionChainerBuilder
 {
     private readonly JobOption jobOption;
 
-    /// <summary>
-    /// Chains another option to the job.
-    /// </summary>
-    public JobOptionBuilder And { get; }
-
-    internal ParameterBuilder(JobOptionBuilder optionBuilder, JobOption jobOption)
+    internal ParameterBuilder(
+        JobOptionBuilder optionBuilder,
+        JobOption jobOption)
+        : base(optionBuilder)
     {
-        And = optionBuilder;
         this.jobOption = jobOption;
     }
 

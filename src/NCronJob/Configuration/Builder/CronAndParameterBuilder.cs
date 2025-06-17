@@ -3,21 +3,17 @@ namespace NCronJob;
 /// <summary>
 /// Represents a builder to refine a job with a cron expression or a parameter.
 /// </summary>
-public sealed class CronAndParameterBuilder : IOptionChainerBuilder
+public sealed class CronAndParameterBuilder : OptionChainerBuilder
 {
-    private readonly JobOptionBuilder optionBuilder;
     private readonly JobOption jobOption;
 
-    internal CronAndParameterBuilder(JobOptionBuilder optionBuilder, JobOption jobOption)
+    internal CronAndParameterBuilder(
+        JobOptionBuilder optionBuilder,
+        JobOption jobOption)
+        : base(optionBuilder)
     {
-        this.optionBuilder = optionBuilder;
         this.jobOption = jobOption;
     }
-
-    /// <summary>
-    /// Chains another option to the job.
-    /// </summary>
-    public JobOptionBuilder And => optionBuilder;
 
     /// <summary>
     /// The parameter that can be passed down to the job.<br/>
@@ -44,6 +40,6 @@ public sealed class CronAndParameterBuilder : IOptionChainerBuilder
         jobOption.CronExpression = cronExpression;
         jobOption.TimeZoneInfo = timeZoneInfo;
 
-        return new ParameterOnlyBuilder(optionBuilder, jobOption);
+        return new ParameterOnlyBuilder(OptionBuilder, jobOption);
     }
 }

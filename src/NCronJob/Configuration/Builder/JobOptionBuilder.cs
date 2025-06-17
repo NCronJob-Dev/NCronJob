@@ -60,7 +60,8 @@ public sealed class JobOptionBuilder
         };
 
         jobOptions.Add(jobOption);
-        return new ParameterOnlyBuilder(this, jobOption);
+
+        return new OptionChainerBuilder(this);
     }
 
     internal List<JobOption> GetJobOptions()
