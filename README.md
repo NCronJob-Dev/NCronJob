@@ -151,13 +151,12 @@ public class MyService
 
 ## Running a Job at Startup
 
-If you want a job to run when the application starts, you can configure it to run at startup using the `RunAtStartup` method. Here is an example:
+If you want a job to run when the application starts, you can configure it to run at startup using the `RunAtStartup` configuration method. Here is an example:
 
 ```csharp
 builder.Services.AddNCronJob(options =>
 {
-    options.AddJob<MyJob>()
-           .RunAtStartup();
+    options.AddJob<MyJob>(j => j.RunAtStartup());
 });
 
 var app = builder.Build();

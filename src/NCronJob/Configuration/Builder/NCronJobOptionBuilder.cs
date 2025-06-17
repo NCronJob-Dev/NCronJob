@@ -319,6 +319,7 @@ public interface IStartupStage<TJob> : INotificationStage<TJob>
     /// </code>
     /// All startup jobs will be executed (and awaited) before the web application is started. This is particular useful for migration and cache hydration.
     /// </remarks>
+    [Obsolete("This method will be dropped in the next major version. Configure startup jobs through the JobOptionBuilder fluent interface instead.")]
     INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false);
 }
 

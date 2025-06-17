@@ -889,6 +889,27 @@ public sealed class IntegrationTests : JobIntegrationBase
                     .And
                     .WithParameter("one")).RunAtStartup()
         },
+        {
+            // Duplicate registration as a startup job
+            s => s.AddJob<DummyJob>(p => p
+                    .WithName("JobName").RunAtStartup()).RunAtStartup()
+        },
+        {
+            // Duplicate registration as a startup job
+            s => s.AddJob<DummyJob>(p => p
+                    .WithName("JobName")
+                    .WithCronExpression(Cron.AtEveryMinute)
+                    .RunAtStartup()).RunAtStartup()
+        },
+        {
+            // Duplicate registration as a startup job
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one").RunAtStartup()).RunAtStartup()
+        },
+        {
+            // Duplicate registration as a startup job
+            s => s.AddJob<DummyJob>(p => p.RunAtStartup()).RunAtStartup()
+        },
     };
 
     public static TheoryData<Action<NCronJobOptionBuilder>> ValidRegistrations = new()
@@ -914,6 +935,12 @@ public sealed class IntegrationTests : JobIntegrationBase
                     .WithParameter("one")
                     .And
                     .WithParameter("two")).RunAtStartup()
+        },
+        {
+            s => s.AddJob<DummyJob>(p => p
+                    .WithParameter("one").RunAtStartup()
+                    .And
+                    .WithParameter("two").RunAtStartup())
         },
         {
             s => {

@@ -32,9 +32,9 @@ public sealed class JobOptionBuilder
     /// Sets the job name. This can be used to identify the job.
     /// </summary>
     /// <param name="jobName">The job name associated with this job.</param>
-    /// <returns>Returns a <see cref="CronAndParameterBuilder"/> that allows further configuration.</returns>
+    /// <returns>Returns a <see cref="CronAndParameterAndRunAtStartupBuilder"/> that allows further configuration.</returns>
     /// <remarks>The job name should be unique over all job instances.</remarks>
-    public CronAndParameterBuilder WithName(string jobName)
+    public CronAndParameterAndRunAtStartupBuilder WithName(string jobName)
     {
         var jobOption = new JobOption
         {
@@ -43,7 +43,7 @@ public sealed class JobOptionBuilder
 
         jobOptions.Add(jobOption);
 
-        return new CronAndParameterBuilder(this, jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
     }
 
     /// <summary>
@@ -51,12 +51,33 @@ public sealed class JobOptionBuilder
     /// When an instant job is triggered a parameter can be passed down via the <see cref="IInstantJobRegistry"/> interface.
     /// </summary>
     /// <param name="parameter">The parameter to add that will be passed to the cron job.</param>
-    /// <returns>Returns a <see cref="IOptionChainerBuilder"/> that allows chaining new options.</returns>
-    public IOptionChainerBuilder WithParameter(object? parameter)
+    /// <returns>Returns a <see cref="RunAtStartupBuilder"/> that allows configuring the job to run at startup.</returns>
+    public RunAtStartupBuilder WithParameter(object? parameter)
     {
         var jobOption = new JobOption
         {
             Parameter = parameter,
+        };
+
+        jobOptions.Add(jobOption);
+
+        return new RunAtStartupBuilder(this, jobOption);
+    }
+
+    /// <summary>
+    /// Configures the job to run once before the application itself runs.
+    /// </summary>
+    /// <param name="shouldCrashOnFailure">When <code>false</code>, will ignore any exception and allow the the application to start would the job crash. Default is <code>true</code>.</param>
+    /// <remarks>
+    /// If a job is marked to run at startup, it will be executed before any `IHostedService` is started.
+    /// All startup jobs will be executed (and awaited) before the web application is started. This is particular useful for migration and cache hydration.
+    /// </remarks>
+    /// <returns>Returns a <see cref="IOptionChainerBuilder"/> that allows chaining new options.</returns>
+    public IOptionChainerBuilder RunAtStartup(bool shouldCrashOnFailure = true)
+    {
+        var jobOption = new JobOption
+        {
+            ShouldCrashOnStartupFailure = shouldCrashOnFailure,
         };
 
         jobOptions.Add(jobOption);

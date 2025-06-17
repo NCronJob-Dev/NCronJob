@@ -21,8 +21,8 @@ As with CRON jobs, they must be registered in the `AddNCronJob` method.
 ```csharp
 builder.Services.AddNCronJob(options => 
 {
-    options.AddJob<MyStartupJob>()
-           .RunAtStartup(); // Configure the job to run at startup
+    // Configure the job to run at startup
+    options.AddJob<MyStartupJob>(j => j.RunAtStartup());
 });
 
 var app = builder.Build();
@@ -37,7 +37,9 @@ Failure to call `UseNCronJobAsync` when startup jobs are defined will lead to a 
 
 Of course, the call to `RunAtStartup` can also be chained to the registration of a standard CRON job. This setup may be useful, for instance, when one wants to prime a cache before the application starts, and then regularly refresh its content.
 
-It may happen that the specified startup job runs task that are required for the application setup. For those cases, when one cannot tolerate a startup job to fail, the `RunAtStartup` method accepts an optional parameter `shouldCrashOnFailure`. When set to `true`, the specified job is expected to complete in a successful state. Otherwise, an exception will be thrown preventing the application start.
+It may happen that the specified startup job runs task that are allowed to fail without impairing the application setup. For those cases, when one can tolerate a startup job to fail, the `RunAtStartup` method accepts an optional parameter `shouldCrashOnFailure`:
+- When set to `false`, any exception thrown by the job will be ignored.
+- Otherwise, when unspecified (or set to `true`), the job is expected to complete in a successful state, or an exception will be thrown preventing the application start.
 
 ## Example Use Case
 
@@ -69,8 +71,7 @@ In your `Program.cs` or `Startup.cs` file, register the job and configure it to 
 ```csharp
 builder.Services.AddNCronJob(options => 
 {
-    options.AddJob<InitialDataLoader>()
-           .RunAtStartup(shouldCrashOnFailure: true);
+    options.AddJob<InitialDataLoader>(j => j.RunAtStartup(shouldCrashOnFailure: true));
 });
 ```
 

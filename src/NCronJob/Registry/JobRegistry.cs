@@ -107,6 +107,12 @@ internal sealed class JobRegistry
     {
         foreach (var jobDefinition in jobDefinitions)
         {
+            if (jobDefinition.IsStartupJob)
+            {
+                throw new InvalidOperationException(
+                    $"Job '{jobDefinition.Name}' is already defined as a startup job.");
+            }
+
             jobDefinition.UpdateWith(new JobOption() { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
         }
     }
