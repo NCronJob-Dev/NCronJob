@@ -115,17 +115,14 @@ public class RunAtStartupJobTests : JobIntegrationBase
         filteredEvents.ShouldBeInstantThenCompleted<DummyJob>();
     }
 
-    [Fact]
-    public async Task StartupJobThatThrowsShouldNotPreventHostFromStarting()
+    [Theory]
+    [MemberData(nameof(CrashingCronAndForgivingRunAtStartupBuilders))]
+    public async Task StartupJobThatThrowsShouldNotPreventHostFromStarting(Action<NCronJobOptionBuilder> nBuilder)
     {
         var builder = Host.CreateDefaultBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s =>
-            {
-                s.AddJob<FailingJob>().RunAtStartup();
-                s.AddExceptionHandler<ExceptionHandler>();
-            });
+            services.AddNCronJob(nBuilder);
         });
 
         using var app = BuildApp(builder);
@@ -148,17 +145,14 @@ public class RunAtStartupJobTests : JobIntegrationBase
         filteredEvents.ShouldBeInstantThenFaultedDuringRun<FailingJob>();
     }
 
-    [Fact]
-    public async Task StartupJobCanBeConfiguredToPreventHostFromStartingOnFailure()
+    [Theory]
+    [MemberData(nameof(CrashingCronAndNonForgivingRunAtStartupBuilders))]
+    public async Task StartupJobCanBeConfiguredToPreventHostFromStartingOnFailure(Action<NCronJobOptionBuilder> nBuilder)
     {
         var builder = Host.CreateDefaultBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s =>
-            {
-                s.AddJob<FailingJob>().RunAtStartup(shouldCrashOnFailure: true);
-                s.AddExceptionHandler<ExceptionHandler>();
-            });
+            services.AddNCronJob(nBuilder);
         });
 
         using var app = BuildApp(builder);
@@ -172,6 +166,42 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[0].ShouldBe("ExceptionHandler");
         Storage.Entries.Count.ShouldBe(1);
     }
+
+    public static TheoryData<Action<NCronJobOptionBuilder>> CrashingCronAndNonForgivingRunAtStartupBuilders = new()
+    {
+        {
+            s =>
+            {
+                s.AddJob<FailingJob>().RunAtStartup(shouldCrashOnFailure: true);
+                s.AddExceptionHandler<ExceptionHandler>();
+            }
+        },
+        {
+            s =>
+            {
+                s.AddJob<FailingJob>(j => j.RunAtStartup());
+                s.AddExceptionHandler<ExceptionHandler>();
+            }
+        },
+    };
+
+    public static TheoryData<Action<NCronJobOptionBuilder>> CrashingCronAndForgivingRunAtStartupBuilders = new()
+    {
+        {
+            s =>
+            {
+                s.AddJob<FailingJob>().RunAtStartup();
+                s.AddExceptionHandler<ExceptionHandler>();
+            }
+        },
+        {
+            s =>
+            {
+                s.AddJob<FailingJob>(j => j.RunAtStartup(shouldCrashOnFailure: false));
+                s.AddExceptionHandler<ExceptionHandler>();
+            }
+        },
+    };
 
     private IHost BuildApp(IHostBuilder builder)
     {

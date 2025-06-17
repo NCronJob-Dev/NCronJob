@@ -5,9 +5,9 @@ using RunOnceSample;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddNCronJob(options =>
-    options.AddJob<RunAtStartJob>()
-    .RunAtStartup()
-    .AddNotificationHandler<RunAtStartJobHandler>());
+    options
+        .AddJob<RunAtStartJob>(j => j.RunAtStartup())
+        .AddNotificationHandler<RunAtStartJobHandler>());
 
 var app = builder.Build();
 

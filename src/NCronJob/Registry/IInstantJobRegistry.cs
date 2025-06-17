@@ -35,7 +35,7 @@ public interface IInstantJobRegistry
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <returns>The job correlation id.</returns>
-    [Obsolete("Use RunScheduledJob<TJob>(TimeSpan, object?, CancellationToken) instead.")]
+    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob<TJob>(TimeSpan, object?, CancellationToken) instead.")]
     Guid RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter = null, CancellationToken token = default)
         where TJob : IJob;
 
@@ -47,7 +47,7 @@ public interface IInstantJobRegistry
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
     /// <param name="token">An optional token to cancel the job.</param>
     /// <returns>The job correlation id.</returns>
-    [Obsolete("Use RunScheduledJob(string, TimeSpan, object?, CancellationToken) instead.")]
+    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob(string, TimeSpan, object?, CancellationToken) instead.")]
     Guid RunScheduledJob(string jobName, DateTimeOffset startDate, object? parameter = null, CancellationToken token = default);
 
     /// <summary>
@@ -74,7 +74,7 @@ public interface IInstantJobRegistry
     /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
-    [Obsolete("Use RunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
+    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
     Guid RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
 
     /// <summary>
@@ -101,7 +101,7 @@ public interface IInstantJobRegistry
     /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
-    [Obsolete("Use ForceRunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
+    [Obsolete("This method will be dropped in the next major version. Use ForceRunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
     Guid ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
 
     /// <summary>

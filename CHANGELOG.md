@@ -9,6 +9,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 
 - Teach `JobOptionBuilder` to only accept parameters. By [@nulltoken](https://github.com/nulltoken) in [#241](https://github.com/NCronJob-Dev/NCronJob/pull/241).
+- Teach `JobOptionBuilder` to allow configuration of a startup job. By [@nulltoken](https://github.com/nulltoken) in [#289](https://github.com/NCronJob-Dev/NCronJob/pull/289).
+
+### Changed
+
+- Deprecate `IStartupStage.RunAtStartup()`. By [@nulltoken](https://github.com/nulltoken) in [#289](https://github.com/NCronJob-Dev/NCronJob/pull/289).
 
 ## [v4.5.4] - 2025-06-14
 
