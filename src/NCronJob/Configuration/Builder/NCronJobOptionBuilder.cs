@@ -207,7 +207,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     }
 
     /// <inheritdoc />
-    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null, Action<DependencyBuilder<TJob>>? faulted = null)
+    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder>? success = null, Action<DependencyBuilder>? faulted = null)
     {
         ExecuteWhenHelper.AddRegistration(jobDefinitionCollector, jobDefinitions, success, faulted);
 
@@ -255,8 +255,8 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
     }
 
     /// <inheritdoc />
-    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder<TJob>>? success = null,
-        Action<DependencyBuilder<TJob>>? faulted = null)
+    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder>? success = null,
+        Action<DependencyBuilder>? faulted = null)
     {
         ExecuteWhenHelper.AddRegistration(jobDefinitionCollector, jobDefinitions, success, faulted);
 
@@ -347,23 +347,21 @@ public interface INotificationStage<TJob> : IJobStage
     /// <param name="faulted">Configure a job that runs after the principal job has faulted. Faulted means that the parent job did throw an exception.</param>
     /// <returns>The builder to add more jobs.</returns>
     INotificationStage<TJob> ExecuteWhen(
-        Action<DependencyBuilder<TJob>>? success = null,
-        Action<DependencyBuilder<TJob>>? faulted = null);
+        Action<DependencyBuilder>? success = null,
+        Action<DependencyBuilder>? faulted = null);
 }
 
 internal static class ExecuteWhenHelper
 {
-    public static void AddRegistration<TJob>(
+    public static void AddRegistration(
         JobDefinitionCollector jobDefinitionCollector,
         IReadOnlyCollection<JobDefinition> parentJobDefinitions,
-        Action<DependencyBuilder<TJob>>? success,
-        Action<DependencyBuilder<TJob>>? faulted)
-        where TJob : IJob
+        Action<DependencyBuilder>? success,
+        Action<DependencyBuilder>? faulted)
     {
-
         if (success is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>();
+            var dependencyBuilder = new DependencyBuilder();
             success(dependencyBuilder);
             var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
             var entry = new DependentJobRegistryEntry
@@ -376,7 +374,7 @@ internal static class ExecuteWhenHelper
 
         if (faulted is not null)
         {
-            var dependencyBuilder = new DependencyBuilder<TJob>();
+            var dependencyBuilder = new DependencyBuilder();
             faulted(dependencyBuilder);
             var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
             var entry = new DependentJobRegistryEntry
