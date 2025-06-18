@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCronJob.Tests;
 
@@ -23,10 +24,44 @@ public class RunDependentJobTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task WhenJobWasSuccessful_NonGenericDependentJobShouldRun()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob(typeof(DummyJob), "Message")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
     public async Task WhenJobWasFailed_DependentJobShouldRun()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
             .ExecuteWhen(faulted: s => s.RunJob<DummyJob>("Message")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(false, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Failed");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task WhenJobWasFailed_NonGenericDependentJobShouldRun()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(faulted: s => s.RunJob(typeof(DummyJob), "Message")));
 
         await StartNCronJob(startMonitoringEvents: true);
 

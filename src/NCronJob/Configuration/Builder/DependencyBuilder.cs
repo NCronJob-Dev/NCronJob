@@ -11,12 +11,12 @@ public sealed class DependencyBuilder
     /// Adds a job that runs after the principal job has finished with a given <paramref name="parameter"/>.
     /// </summary>
     /// <remarks>
-    /// <typeparamref name="TJob"/> will automatically be registered in the container. There is no need to call <see cref="NCronJobOptionBuilder.AddJob{TJob}"/> for the dependent job.
+    /// <param name="jobType">The type of the job to be executed. This type must implement <see cref="IJob"/>.</param>
+    /// <param name="parameter">The parameter to be passed to the job when it is executed.</param>
     /// </remarks>
-    public DependencyBuilder RunJob<TJob>(object? parameter = null)
-        where TJob : IJob
+    public DependencyBuilder RunJob(Type jobType, object? parameter = null)
     {
-        dependentJobOptions.Add(JobDefinition.CreateTyped(typeof(TJob), parameter));
+        dependentJobOptions.Add(JobDefinition.CreateTyped(jobType, parameter));
         return this;
     }
 
