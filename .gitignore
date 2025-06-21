@@ -402,4 +402,4 @@ FodyWeavers.xsd
 .DS_Store
 
 # mkdocs
-docs/site/
+/site/
