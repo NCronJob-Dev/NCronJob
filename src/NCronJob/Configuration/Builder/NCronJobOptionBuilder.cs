@@ -149,12 +149,9 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 
         var jobDefinitions = new List<JobDefinition>();
 
-        var builder = new JobOptionBuilder();
-        options?.Invoke(builder);
-
         services.TryAddScoped(jobType);
 
-        var jobOptions = builder.GetJobOptions();
+        var jobOptions = JobOptionBuilder.Evaluate(options);
 
         foreach (var option in jobOptions)
         {
