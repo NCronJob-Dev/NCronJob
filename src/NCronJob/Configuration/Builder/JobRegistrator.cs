@@ -9,8 +9,118 @@ using System.Threading.Tasks;
 
 namespace NCronJob;
 
-internal class JobRegistrator
+/// <summary>
+/// Defines the contract to register jobs in the service collection.
+/// </summary>
+public interface IJobRegistrator
 {
+    /// <summary>
+    /// Adds a typed job to the service collection that gets executed based on the given cron expression.
+    /// </summary>
+    /// <param name="jobType">The job type. It will be registered scoped into the container.</param>
+    /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
+    IDependencyAndJobRegistrator AddJob(Type jobType, Action<JobOptionBuilder>? options = null);
+
+    /// <summary>
+    /// Adds an untypedjob to the service collection that gets executed based on the given cron expression.
+    /// </summary>
+    /// <param name="jobDelegate">The delegate that represents the job to be executed.</param>
+    /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
+    IDependencyAndJobRegistrator AddJob(Delegate jobDelegate, Action<JobOptionBuilder>? options = null);
+}
+
+/// <summary>
+/// Extensions for IJobRegistrator.
+/// </summary>
+public static class IJobRegistratorExtensions
+{
+    /// <summary>
+    /// Adds a typed job to the service collection that gets executed based on the given cron expression.
+    /// </summary>
+    /// <typeparam name="T">The job type. It will be registered scoped into the container.</typeparam>
+    /// <param name="jobRegistrator"> The job registrator instance.</param>
+    /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
+    public static IDependencyAndJobRegistrator AddJob<T>(
+        this IJobRegistrator jobRegistrator,
+        Action<JobOptionBuilder>? options = null)
+        where T : class, IJob
+    {
+        ArgumentNullException.ThrowIfNull(jobRegistrator);
+
+        return jobRegistrator.AddJob(typeof(T), options);
+    }
+}
+
+/// <summary>
+/// Defines the contract to register jobs and dependencies in the service collection.
+/// </summary>
+public interface IDependencyAndJobRegistrator : IJobRegistrator
+{
+    /// <summary>
+    /// Adds a job that runs after the given job has finished.
+    /// </summary>
+    /// <param name="success">Configure a job that runs after the principal job has finished successfully.</param>
+    /// <param name="faulted">Configure a job that runs after the principal job has faulted. Faulted means that the parent job did throw an exception.</param>
+    /// <returns>The builder to register more jobs.</returns>
+    IDependencyAndJobRegistrator ExecuteWhen(
+        Action<DependencyBuilder>? success = null,
+        Action<DependencyBuilder>? faulted = null);
+}
+
+internal class JobRegistrator : IDependencyAndJobRegistrator
+{
+    private readonly IServiceCollection services;
+    private readonly ConcurrencySettings settings;
+    private readonly JobDefinitionCollector jobDefinitionCollector;
+    private readonly IReadOnlyCollection<JobDefinition> parentJobDefinitions;
+
+    public JobRegistrator(
+        IServiceCollection services,
+        ConcurrencySettings settings,
+        JobDefinitionCollector jobDefinitionCollector,
+        IReadOnlyCollection<JobDefinition> parentJobDefinitions)
+    {
+        this.services = services;
+        this.settings = settings;
+        this.jobDefinitionCollector = jobDefinitionCollector;
+        this.parentJobDefinitions = parentJobDefinitions;
+    }
+
+    public IDependencyAndJobRegistrator AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(jobType);
+
+        var jobDefinitions = AddTypedJobInternal(services, settings, jobType, options);
+
+        jobDefinitionCollector.Add(jobDefinitions);
+
+        return new JobRegistrator(services, settings, jobDefinitionCollector, jobDefinitions);
+    }
+
+    public IDependencyAndJobRegistrator AddJob(Delegate jobDelegate, Action<JobOptionBuilder>? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(jobDelegate);
+
+        var jobDefinitions = AddUntypedJobInternal(settings, jobDelegate, options);
+
+        jobDefinitionCollector.Add(jobDefinitions);
+
+        return new JobRegistrator(services, settings, jobDefinitionCollector, jobDefinitions);
+    }
+
+    public IDependencyAndJobRegistrator ExecuteWhen(
+        Action<DependencyBuilder>? success = null,
+        Action<DependencyBuilder>? faulted = null)
+    {
+        ExecuteWhenHelper.AddRegistration(
+            jobDefinitionCollector,
+            parentJobDefinitions,
+            success,
+            faulted);
+
+        return this;
+    }
+
     internal static List<JobDefinition> AddTypedJobInternal(
         IServiceCollection services,
         ConcurrencySettings settings,

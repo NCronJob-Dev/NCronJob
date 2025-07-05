@@ -89,7 +89,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         ArgumentNullException.ThrowIfNull(jobDelegate);
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
 
-        Action<JobOptionBuilder> actor = builder =>
+        AddJob(jobDelegate, builder =>
         {
             if (jobName is not null)
             {
@@ -101,13 +101,22 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
             {
                 builder.WithCronExpression(cronExpression, timeZoneInfo);
             }
-        };
-
-        var jobDefinitions = JobRegistrator.AddUntypedJobInternal(settings, jobDelegate, actor);
-
-        jobDefinitionCollector.Add(jobDefinitions);
+        });
 
         return this;
+    }
+
+    /// <summary>
+    /// Adds an untypedjob to the service collection that gets executed based on the given cron expression.
+    /// </summary>
+    /// <param name="jobDelegate">The delegate that represents the job to be executed.</param>
+    /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
+    public IDependencyAndJobRegistrator AddJob(
+        Delegate jobDelegate,
+        Action<JobOptionBuilder>? options = null)
+    {
+        var registrator = new JobRegistrator(services, settings, jobDefinitionCollector, Array.Empty<JobDefinition>());
+        return registrator.AddJob(jobDelegate, options);
     }
 
     /// <summary>

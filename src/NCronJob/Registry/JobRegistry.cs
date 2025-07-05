@@ -246,9 +246,8 @@ internal sealed class JobRegistry
 
         public bool Equals(JobDefinition? x, JobDefinition? y) =>
             (x is null && y is null) || (x is not null && y is not null
-                                         && x.Type == y.Type && x.IsTypedJob
-                                         && x.Parameter == y.Parameter
-                                         && x.CustomName == y.CustomName);
+                && ((x.CustomName is not null && x.CustomName == y.CustomName) || (x.JobFullName == y.JobFullName))
+                && x.Parameter == y.Parameter);
 
         public int GetHashCode(JobDefinition obj) => HashCode.Combine(
             obj.Type,
