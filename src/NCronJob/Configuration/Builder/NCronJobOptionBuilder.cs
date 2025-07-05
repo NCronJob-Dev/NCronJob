@@ -40,7 +40,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     public IStartupStage<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
-        var jobDefinitions = AddJobInternal(typeof(T), options);
+        var jobDefinitions = JobRegistrator.AddTypedJobInternal(services, settings, typeof(T), options);
 
         jobDefinitionCollector.Add(jobDefinitions);
 
@@ -64,7 +64,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     {
         ArgumentNullException.ThrowIfNull(jobType);
 
-        var jobDefinitions = AddJobInternal(jobType, options);
+        var jobDefinitions = JobRegistrator.AddTypedJobInternal(services, settings, jobType, options);
 
         jobDefinitionCollector.Add(jobDefinitions);
 
@@ -89,18 +89,23 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         ArgumentNullException.ThrowIfNull(jobDelegate);
         ArgumentException.ThrowIfNullOrEmpty(cronExpression);
 
-        ValidateConcurrencySetting(jobDelegate.Method);
-
-        var jobOption = new JobOption
+        Action<JobOptionBuilder> actor = builder =>
         {
-            CronExpression = cronExpression,
-            TimeZoneInfo = timeZoneInfo
+            if (jobName is not null)
+            {
+                builder
+                    .WithName(jobName)
+                    .WithCronExpression(cronExpression, timeZoneInfo);
+            }
+            else
+            {
+                builder.WithCronExpression(cronExpression, timeZoneInfo);
+            }
         };
 
-        var jobDefinition = JobDefinition.CreateUntyped(jobName, jobDelegate);
-        jobDefinition.UpdateWith(jobOption);
+        var jobDefinitions = JobRegistrator.AddUntypedJobInternal(settings, jobDelegate, actor);
 
-        jobDefinitionCollector.Add(jobDefinition);
+        jobDefinitionCollector.Add(jobDefinitions);
 
         return this;
     }
@@ -122,47 +127,6 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 
     void IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>
         AddJob(jobDelegate, cronExpression, timeZoneInfo, jobName);
-
-    private void ValidateConcurrencySetting(object jobIdentifier)
-    {
-        var cachedJobAttributes = jobIdentifier switch
-        {
-            Type type => JobAttributeCache.GetJobExecutionAttributes(type),
-            MethodInfo methodInfo => JobAttributeCache.GetJobExecutionAttributes(methodInfo),
-            _ => throw new ArgumentException("Invalid job identifier type")
-        };
-
-        var concurrencyAttribute = cachedJobAttributes.ConcurrencyPolicy;
-        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
-        {
-            var name = jobIdentifier is Type type ? type.Name : ((MethodInfo)jobIdentifier).Name;
-            throw new InvalidOperationException(
-                $"The MaxDegreeOfParallelism for {name} ({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed the global limit ({settings.MaxDegreeOfParallelism}).");
-        }
-    }
-
-    private List<JobDefinition> AddJobInternal(
-        Type jobType,
-        Action<JobOptionBuilder>? options)
-    {
-        ValidateConcurrencySetting(jobType);
-
-        var jobDefinitions = new List<JobDefinition>();
-
-        services.TryAddScoped(jobType);
-
-        var jobOptions = JobOptionBuilder.Evaluate(options);
-
-        foreach (var option in jobOptions)
-        {
-            var entry = JobDefinition.CreateTyped(option.Name, jobType, option.Parameter);
-            entry.UpdateWith(option);
-
-            jobDefinitions.Add(entry);
-        }
-
-        return jobDefinitions;
-    }
 }
 
 /// <summary>
