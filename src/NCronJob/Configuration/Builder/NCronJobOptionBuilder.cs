@@ -8,7 +8,7 @@ namespace NCronJob;
 /// <summary>
 /// Represents the builder for the NCronJob options.
 /// </summary>
-public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
+public class NCronJobOptionBuilder : IJobStage
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
@@ -131,11 +131,6 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         services.AddSingleton<IExceptionHandler, TExceptionHandler>();
         return this;
     }
-
-    void IRuntimeJobBuilder.AddJob(Type jobType, Action<JobOptionBuilder>? options) => AddJob(jobType, options);
-
-    void IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>
-        AddJob(jobDelegate, cronExpression, timeZoneInfo, jobName);
 }
 
 /// <summary>
