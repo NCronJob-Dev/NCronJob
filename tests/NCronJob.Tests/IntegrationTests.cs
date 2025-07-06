@@ -528,7 +528,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob((Storage storage) =>
         {
             storage.Add("Done");
-        }, Cron.AtEveryMinute);
+        }, p => p.WithCronExpression(Cron.AtEveryMinute));
 
         await StartNCronJob(startMonitoringEvents: true);
 
