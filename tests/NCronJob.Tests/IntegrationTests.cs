@@ -6,8 +6,6 @@ namespace NCronJob.Tests;
 
 public sealed class IntegrationTests : JobIntegrationBase
 {
-    private readonly static Delegate JobDelegate = () => { };
-
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
     {
@@ -86,9 +84,9 @@ public sealed class IntegrationTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob();
 
-        await StartNCronJobAndExecuteInstantUntypedJob((ijr, token) => IInstantJobRegistryExtensions.ForceRunInstantJob(ijr, untypedJob, token));
+        await StartNCronJobAndExecuteInstantUntypedJob((ijr, token) => IInstantJobRegistryExtensions.ForceRunInstantJob(ijr, UntypedJob.Dummy, token));
 
-        await StartNCronJobAndExecuteInstantUntypedJob((ijr, token) => ijr.ForceRunScheduledJob(untypedJob, TimeSpan.Zero, token));
+        await StartNCronJobAndExecuteInstantUntypedJob((ijr, token) => ijr.ForceRunScheduledJob(UntypedJob.Dummy, TimeSpan.Zero, token));
     }
 
     [Fact]
@@ -278,7 +276,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob(
-                untypedJob,
+                UntypedJob.Dummy,
                 Cron.Never,
                 jobName: "good");
         });
@@ -291,7 +289,7 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[0].ShouldBe("Done - Parameter : ");
+        Storage.Entries[0].ShouldBe("DummyJob (untyped) - Parameter: ");
         Storage.Entries.Count.ShouldBe(1);
     }
 
@@ -303,7 +301,7 @@ public sealed class IntegrationTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob(
-                untypedJob,
+                UntypedJob.Dummy,
                 Cron.Never,
                 jobName: "good");
         });
@@ -316,7 +314,7 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[0].ShouldBe("Done - Parameter : param");
+        Storage.Entries[0].ShouldBe("DummyJob (untyped) - Parameter: param");
         Storage.Entries.Count.ShouldBe(1);
     }
 
@@ -678,9 +676,9 @@ public sealed class IntegrationTests : JobIntegrationBase
     public void CanAddUntypedJobsWithTheSameDelegateWithDifferentNames()
     {
         Action act = () => ServiceCollection.AddNCronJob(
-            n => n.AddJob(untypedJob, Cron.AtEveryMinute)
-                .AddJob(untypedJob, Cron.AtEveryMinute, jobName: "one")
-                .AddJob(untypedJob, Cron.AtEveryMinute, jobName: "another"));
+            n => n.AddJob(UntypedJob.Dummy, Cron.AtEveryMinute)
+                .AddJob(UntypedJob.Dummy, Cron.AtEveryMinute, jobName: "one")
+                .AddJob(UntypedJob.Dummy, Cron.AtEveryMinute, jobName: "another"));
 
         act.ShouldNotThrow();
     }
@@ -864,8 +862,8 @@ public sealed class IntegrationTests : JobIntegrationBase
             // Pure duplicate registration
             s =>
             {
-                s.AddJob(JobDelegate, Cron.AtEveryMinute);
-                s.AddJob(JobDelegate, Cron.AtEveryMinute);
+                s.AddJob(UntypedJob.NoOp, Cron.AtEveryMinute);
+                s.AddJob(UntypedJob.NoOp, Cron.AtEveryMinute);
             }
         },
         {
@@ -991,9 +989,6 @@ public sealed class IntegrationTests : JobIntegrationBase
         filteredEvents.ShouldBeScheduledThenCompleted();
         return true;
     }
-
-    private readonly Delegate untypedJob = (IJobExecutionContext context, Storage storage, CancellationToken token)
-        => { storage.Add($"Done - Parameter : {context.Parameter}"); };
 
     private static class JobMethods
     {
