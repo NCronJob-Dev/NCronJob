@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.6.0] - 2025-09-02
+
 ### Added
 
 - Teach `JobOptionBuilder` to only accept parameters. By [@nulltoken](https://github.com/nulltoken) in [#241](https://github.com/NCronJob-Dev/NCronJob/pull/241).
@@ -543,7 +545,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.4...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.6.0...HEAD
+[v4.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.4...v4.6.0
 [v4.5.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.3...v4.5.4
 [v4.5.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.1...v4.5.3
 [v4.4.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.0...v4.4.1
