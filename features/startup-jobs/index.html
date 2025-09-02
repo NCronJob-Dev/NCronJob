@@ -147,8 +147,8 @@
 <p>As with CRON jobs, they must be registered in the <code>AddNCronJob</code> method.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyStartupJob</span><span class="o">&gt;</span><span class="p">()</span>
-<span class="w">           </span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">();</span><span class="w"> </span><span class="c1">// Configure the job to run at startup</span>
+<span class="w">    </span><span class="c1">// Configure the job to run at startup</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyStartupJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">());</span>
 <span class="p">});</span>
 
 <span class="kt">var</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="n">Build</span><span class="p">();</span>
@@ -160,7 +160,9 @@
 <p>The <code>RunAtStartup</code> in combination with <code>UseNCronJobAsync</code> method ensures that the job is executed as soon as the application starts. This method is useful for scenarios where certain tasks need to be performed immediately upon application launch.</p>
 <p>Failure to call <code>UseNCronJobAsync</code> when startup jobs are defined will lead to a fatal exception during the application start.</p>
 <p>Of course, the call to <code>RunAtStartup</code> can also be chained to the registration of a standard CRON job. This setup may be useful, for instance, when one wants to prime a cache before the application starts, and then regularly refresh its content.</p>
-<p>It may happen that the specified startup job runs task that are required for the application setup. For those cases, when one cannot tolerate a startup job to fail, the <code>RunAtStartup</code> method accepts an optional parameter <code>shouldCrashOnFailure</code>. When set to <code>true</code>, the specified job is expected to complete in a successful state. Otherwise, an exception will be thrown preventing the application start.</p>
+<p>It may happen that the specified startup job runs task that are allowed to fail without impairing the application setup. For those cases, when one can tolerate a startup job to fail, the <code>RunAtStartup</code> method accepts an optional parameter <code>shouldCrashOnFailure</code>:
+- When set to <code>false</code>, any exception thrown by the job will be ignored.
+- Otherwise, when unspecified (or set to <code>true</code>), the job is expected to complete in a successful state, or an exception will be thrown preventing the application start.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>Consider an application that needs to load initial data from a database or perform some cleanup tasks whenever it starts. You can define and configure a startup job to handle this:</p>
 <h3 id="job-definition">Job Definition<a class="headerlink" href="#job-definition" title="Permanent link">&para;</a></h3>
@@ -184,8 +186,7 @@
 <p>In your <code>Program.cs</code> or <code>Startup.cs</code> file, register the job and configure it to run at startup:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">InitialDataLoader</span><span class="o">&gt;</span><span class="p">()</span>
-<span class="w">           </span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">(</span><span class="n">shouldCrashOnFailure</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">InitialDataLoader</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">(</span><span class="n">shouldCrashOnFailure</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="p">));</span>
 <span class="p">});</span>
 </code></pre></div>
 
@@ -207,7 +208,7 @@
 
   <div role="contentinfo">
     <!-- Copyright etc -->
-      <p>2024 <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+      <p>©2024-Present <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
   </div>
 
   Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
