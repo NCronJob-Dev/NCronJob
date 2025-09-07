@@ -148,7 +148,8 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         {
             var oldJobs = jobRegistry.GetAllRootJobs();
             var jdc = new JobDefinitionCollector();
-            var builder = new NCronJobOptionBuilder(services, concurrencySettings, jdc);
+            var jobRegistrator = new JobRegistrator(services, concurrencySettings, jdc, Array.Empty<JobDefinition>());
+            var builder = new RuntimeJobBuilder(jobRegistrator);
             jobBuilder(builder);
 
             jobRegistry.FeedFrom(jdc);
