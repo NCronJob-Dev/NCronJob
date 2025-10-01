@@ -18,7 +18,7 @@
   </ItemGroup>
   <ItemGroup Label="Samples">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.19" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.4" />
   </ItemGroup>
   <ItemGroup Label="Tests">
