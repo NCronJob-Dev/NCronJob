@@ -43,7 +43,7 @@ internal sealed partial class QueueWorker : BackgroundService
         {
             return;
         }
-        
+
         if (shutdown is not null)
         {
             await shutdown.CancelAsync();
@@ -96,12 +96,12 @@ internal sealed partial class QueueWorker : BackgroundService
         isDisposed = true;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public override Task StartAsync(CancellationToken cancellationToken)
     {
         AssertUseNCronJobWasCalled();
 
         shutdown?.Dispose();
-        shutdown = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        shutdown = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var stopToken = shutdown.Token;
         stopToken.Register(LogCancellationRequestedInJob);
 
@@ -111,7 +111,19 @@ internal sealed partial class QueueWorker : BackgroundService
 
             CreateWorkerQueues(stopToken);
             jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
+        }
+        catch (Exception ex)
+        {
+            LogQueueWorkerError(ex);
+        }
 
+        return base.StartAsync(cancellationToken);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
             var tasks = workerTasks.Values.WhereNotNull();
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }

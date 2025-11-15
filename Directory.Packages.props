@@ -8,7 +8,7 @@
   </ItemGroup>
   <ItemGroup Label="NCronJob dependencies">
     <PackageVersion Include="Cronos" Version="0.11.1" />
-    <PackageVersion Include="Polly" Version="8.6.3" />
+    <PackageVersion Include="Polly" Version="8.6.4" />
   </ItemGroup>
   <ItemGroup Label="NCronJob NET8 dependencies" Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
@@ -16,21 +16,24 @@
   <ItemGroup Label="NCronJob NET9 dependencies" Condition="'$(TargetFramework)' == 'net9.0'">
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.7" />
   </ItemGroup>
+  <ItemGroup Label="NCronJob NET10 dependencies" Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+  </ItemGroup>
   <ItemGroup Label="Samples">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.19" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.1" />
   </ItemGroup>
   <ItemGroup Label="Tests">
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.8.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="System.ServiceModel.Primitives" Version="8.1.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4">
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="xunit.v3" Version="3.0.1" />
+    <PackageVersion Include="xunit.v3" Version="3.2.0" />
   </ItemGroup>
 </Project>

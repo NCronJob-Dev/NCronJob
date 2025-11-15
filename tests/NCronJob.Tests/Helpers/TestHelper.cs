@@ -116,7 +116,7 @@ public abstract class JobIntegrationBase : IDisposable
     {
         if (startMonitoringEvents)
         {
-            (subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
+            (subscription, var events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
             Events = events;
         }
 
