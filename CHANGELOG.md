@@ -6,6 +6,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+- Native support for .NET 10.
+
 ## [v4.6.0] - 2025-09-02
 
 ### Added
