@@ -28,23 +28,17 @@ public class JobOptionBuilderTests
     [Fact]
     public void AutoDetectSecondPrecisionWhenNotSpecified()
     {
-        var builder = new JobOptionBuilder();
-        builder.WithCronExpression("0 0 12 * * ?");
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom((b) => b.WithCronExpression("0 0 12 * * ?"));
         options.ShouldContain(o => o.CronExpression == "0 0 12 * * ?");
 
-        builder.WithCronExpression("0 1 * * *");
-        options = builder.GetJobOptions();
+        options = OptionsFrom((b) => b.WithCronExpression("0 1 * * *"));
         options.ShouldContain(o => o.CronExpression == "0 1 * * *");
     }
 
     [Fact]
     public void ShouldCreateJobOptionsWithCronExpression()
     {
-        var builder = new JobOptionBuilder();
-        builder.WithCronExpression(Cron.AtEveryMinute);
-
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom((b) => b.WithCronExpression(Cron.AtEveryMinute));
 
         options.Count.ShouldBe(1);
         options.Single().CronExpression.ShouldBe(Cron.AtEveryMinute);
@@ -54,14 +48,13 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleJobsWithParameters()
     {
-        var builder = new JobOptionBuilder();
-        builder.WithCronExpression(Cron.AtEveryMinute)
+        Action<JobOptionBuilder> actor = (b) => b.WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo")
             .And
             .WithCronExpression(Cron.AtMinute0)
             .WithParameter("bar");
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].CronExpression.ShouldBe(Cron.AtEveryMinute);
@@ -73,13 +66,12 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldAddMultipleCronJobsEvenWithoutParameters()
     {
-        var builder = new JobOptionBuilder();
-        builder
+        Action<JobOptionBuilder> actor = (b) => b
             .WithCronExpression(Cron.AtEveryMinute)
             .And
             .WithCronExpression(Cron.AtMinute0);
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].CronExpression.ShouldBe(Cron.AtEveryMinute);
@@ -91,14 +83,16 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder.WithCronExpression(Cron.AtEveryMinute)
-            .WithParameter("foo");
+        Action<JobOptionBuilder> actor = (builder) =>
+        {
+            builder.WithCronExpression(Cron.AtEveryMinute)
+                .WithParameter("foo");
 
-        builder.WithCronExpression(Cron.AtMinute0)
-            .WithParameter("bar");
+            builder.WithCronExpression(Cron.AtMinute0)
+                .WithParameter("bar");
+        };
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].CronExpression.ShouldBe(Cron.AtEveryMinute);
@@ -110,13 +104,12 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedJobsWithAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
+        Action<JobOptionBuilder> actor = (b) => b
             .WithName("name1")
             .And
             .WithName("name2");
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -126,14 +119,16 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
-            .WithName("name1");
+        Action<JobOptionBuilder> actor = (builder) =>
+        {
+            builder
+                .WithName("name1");
 
-        builder
-            .WithName("name2");
+            builder
+                .WithName("name2");
+        };
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -143,15 +138,14 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedAndScheduledJobsWithAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
+        Action<JobOptionBuilder> actor = (b) => b
             .WithName("name1")
             .WithCronExpression(Cron.AtEveryMinute)
             .And
             .WithName("name2")
             .WithCronExpression(Cron.AtEveryMinute);
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -163,16 +157,18 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedAndScheduledJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
-            .WithName("name1")
-            .WithCronExpression(Cron.AtEveryMinute);
+        Action<JobOptionBuilder> actor = (builder) =>
+        {
+            builder
+                .WithName("name1")
+                .WithCronExpression(Cron.AtEveryMinute);
 
-        builder
-            .WithName("name2")
-            .WithCronExpression(Cron.AtEveryMinute);
+            builder
+                .WithName("name2")
+                .WithCronExpression(Cron.AtEveryMinute);
+        };
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -184,8 +180,7 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedScheduledAndParameterizedJobsWithAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
+        Action<JobOptionBuilder> actor = (b) => b
             .WithName("name1")
             .WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo")
@@ -194,7 +189,7 @@ public class JobOptionBuilderTests
             .WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("bar");
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -208,18 +203,20 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedScheduledAndParameterizedJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
-            .WithName("name1")
-            .WithCronExpression(Cron.AtEveryMinute)
-            .WithParameter("foo");
+        Action<JobOptionBuilder> actor = (builder) =>
+        {
+            builder
+                .WithName("name1")
+                .WithCronExpression(Cron.AtEveryMinute)
+                .WithParameter("foo");
 
-        builder
-            .WithName("name2")
-            .WithCronExpression(Cron.AtEveryMinute)
-            .WithParameter("bar");
+            builder
+                .WithName("name2")
+                .WithCronExpression(Cron.AtEveryMinute)
+                .WithParameter("bar");
+        };
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -233,15 +230,14 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedAndParameterizedJobsWithAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
+        Action<JobOptionBuilder> actor = (b) => b
             .WithName("name1")
             .WithParameter("foo")
             .And
             .WithName("name2")
             .WithParameter("bar");
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -253,16 +249,18 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleNamedAndParameterizedJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
-            .WithName("name1")
-            .WithParameter("foo");
+        Action<JobOptionBuilder> actor = (builder) =>
+        {
+            builder
+                .WithName("name1")
+                .WithParameter("foo");
 
-        builder
-            .WithName("name2")
-            .WithParameter("bar");
+            builder
+                .WithName("name2")
+                .WithParameter("bar");
+        };
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Name.ShouldBe("name1");
@@ -274,13 +272,12 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleParameterizedJobsWithAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
+        Action<JobOptionBuilder> actor = (b) => b
             .WithParameter("foo")
             .And
             .WithParameter("bar");
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Parameter.ShouldBe("foo");
@@ -290,17 +287,24 @@ public class JobOptionBuilderTests
     [Fact]
     public void ShouldCreateMultipleParameterizedJobsWithoutAnd()
     {
-        var builder = new JobOptionBuilder();
-        builder
-            .WithParameter("foo");
+        Action<JobOptionBuilder> actor = (builder) =>
+        {
+            builder
+               .WithParameter("foo");
 
-        builder
-            .WithParameter("bar");
+            builder
+                .WithParameter("bar");
+        };
 
-        var options = builder.GetJobOptions();
+        var options = OptionsFrom(actor);
 
         options.Count.ShouldBe(2);
         options[0].Parameter.ShouldBe("foo");
         options[1].Parameter.ShouldBe("bar");
+    }
+
+    private static List<JobOption> OptionsFrom(Action<JobOptionBuilder> actor)
+    {
+        return JobOptionBuilder.Evaluate(actor).ToList();
     }
 }
