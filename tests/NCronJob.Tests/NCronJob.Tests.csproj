@@ -37,8 +37,4 @@
       <ProjectReference Include="..\..\src\NCronJob\NCronJob.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-
 </Project>

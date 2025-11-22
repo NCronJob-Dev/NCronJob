@@ -1,5 +1,0 @@
-{
-    "$schema": "https://xunit.net/schema/v3.0-alpha-1/xunit.runner.schema.json",
-    "diagnosticMessages": true,
-    "longRunningTestSeconds": 15
-}
