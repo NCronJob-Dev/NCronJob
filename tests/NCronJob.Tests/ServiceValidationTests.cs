@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
 
@@ -221,6 +222,49 @@ public class ServiceValidationTests : JobIntegrationBase
         await app.UseNCronJobAsync();
     }
 
+    [Fact]
+    public async Task UseNCronJob_InDevelopmentEnvironment_ShouldAutoEnableValidation()
+    {
+        // Arrange
+        var builder = Host.CreateDefaultBuilder();
+        builder.ConfigureServices(services =>
+        {
+            services.AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression("0 0 * * *")));
+            // Intentionally not registering the dependency
+            
+            // Add a development environment
+            services.AddSingleton<IHostEnvironment>(new FakeDevelopmentEnvironment());
+        });
+
+        using var app = BuildApp(builder);
+
+        // Act & Assert - Should throw because development environment auto-enables validation
+        var exception = await Should.ThrowAsync<InvalidOperationException>(app.UseNCronJobAsync());
+        
+        exception.Message.ShouldContain("service validation failed");
+        exception.Message.ShouldContain(nameof(JobWithDependency));
+    }
+
+    [Fact]
+    public async Task UseNCronJob_InDevelopmentEnvironment_CanDisableValidationExplicitly()
+    {
+        // Arrange
+        var builder = Host.CreateDefaultBuilder();
+        builder.ConfigureServices(services =>
+        {
+            services.AddNCronJob(n => n.AddJob<JobWithDependency>(p => p.WithCronExpression("0 0 * * *")));
+            // Intentionally not registering the dependency
+            
+            // Add a development environment
+            services.AddSingleton<IHostEnvironment>(new FakeDevelopmentEnvironment());
+        });
+
+        using var app = BuildApp(builder);
+
+        // Act & Assert - Should not throw because we explicitly disabled validation
+        await app.UseNCronJobAsync(options => options.ValidateOnBuild = false);
+    }
+
     private IHost BuildApp(IHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -273,5 +317,13 @@ public class ServiceValidationTests : JobIntegrationBase
 
     private class MyService
     {
+    }
+
+    private sealed class FakeDevelopmentEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Development";
+        public string ApplicationName { get; set; } = "TestApp";
+        public string ContentRootPath { get; set; } = string.Empty;
+        public IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
 }
