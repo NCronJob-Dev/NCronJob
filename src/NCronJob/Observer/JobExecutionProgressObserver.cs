@@ -72,7 +72,14 @@ internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReport
             progresses.Add(orchestrationCompleted);
         }
 
-        foreach (var callback in callbacks)
+        // Take a snapshot of callbacks while holding the lock to avoid race conditions
+        Action<ExecutionProgress>[] callbacksSnapshot;
+        lock (callbacksLock)
+        {
+            callbacksSnapshot = callbacks.ToArray();
+        }
+
+        foreach (var callback in callbacksSnapshot)
         {
             foreach (var entry in progresses)
             {
