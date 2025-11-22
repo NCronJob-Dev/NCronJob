@@ -6,10 +6,14 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.7.0] - 2025-11-22
+
 ### Added
+
 - Native support for .NET 10.
 
 ### Fixed
+
 - Fixed race condition in `JobExecutionProgressObserver` that could cause test hangs on .NET 9.0 in resource-constrained environments. Reported by [@nulltoken](https://github.com/nulltoken) in [#125](https://github.com/NCronJob-Dev/NCronJob/issues/125).
 
 ## [v4.6.0] - 2025-09-02
@@ -551,7 +555,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.6.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.7.0...HEAD
+[v4.7.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.6.0...v4.7.0
 [v4.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.4...v4.6.0
 [v4.5.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.3...v4.5.4
 [v4.5.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.4.1...v4.5.3
