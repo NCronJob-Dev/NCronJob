@@ -9,6 +9,9 @@ All notable changes to **NCronJob** will be documented in this file. The project
 ### Added
 - Native support for .NET 10.
 
+### Fixed
+- Fixed race condition in `JobExecutionProgressObserver` that could cause test hangs on .NET 9.0 in resource-constrained environments. Reported by [@nulltoken](https://github.com/nulltoken) in [#125](https://github.com/NCronJob-Dev/NCronJob/issues/125).
+
 ## [v4.6.0] - 2025-09-02
 
 ### Added
