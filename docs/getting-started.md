@@ -61,6 +61,8 @@ app.Run();
 
 Now your `PrintHelloWorld` job will run every minute and log "Hello World" to the console. And that is all!
 
+> **💡 Tip**: When running in Development mode, **NCronJob** automatically validates that all jobs and their dependencies are properly registered. This helps catch configuration errors early. Learn more in the [Service Validation](advanced/service-validation.md) guide.
+
 ## Too complicated?
 We also over a "Minimal API" that allows you to define jobs similiar to the Minimal API for Controllers.
 
