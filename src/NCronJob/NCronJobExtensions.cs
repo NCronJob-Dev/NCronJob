@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using System.Reflection;
 
 namespace NCronJob;
 
@@ -136,12 +137,51 @@ public static class NCronJobExtensions
     /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
     /// </summary>
     /// <remarks>
+    /// Failure to call this method (or <see cref="UseNCronJobAsync(IHost, Action{NCronJobOptions}?)"/>) when startup jobs are defined will lead to a fatal exception during the application start.
+    /// </remarks>
+    /// <param name="host">The host.</param>
+    /// <param name="configureOptions">Optional configuration action for NCronJob options.</param>
+    public static IHost UseNCronJob(this IHost host, Action<NCronJobOptions>? configureOptions)
+        => UseNCronJobAsync(host, configureOptions).ConfigureAwait(false).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
+    /// </summary>
+    /// <remarks>
     /// Failure to call this method (or <see cref="UseNCronJob(IHost)"/>) when startup jobs are defined will lead to a fatal exception during the application start.
     /// </remarks>
     /// <param name="host">The host.</param>
     public static async Task<IHost> UseNCronJobAsync(this IHost host)
+        => await UseNCronJobAsync(host, null);
+
+    /// <summary>
+    /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.
+    /// </summary>
+    /// <remarks>
+    /// Failure to call this method (or <see cref="UseNCronJob(IHost, Action{NCronJobOptions}?)"/>) when startup jobs are defined will lead to a fatal exception during the application start.
+    /// When ValidateOnBuild is enabled in the options, this will validate that all jobs and their dependencies can be resolved.
+    /// </remarks>
+    /// <param name="host">The host.</param>
+    /// <param name="configureOptions">Optional configuration action for NCronJob options.</param>
+    public static async Task<IHost> UseNCronJobAsync(this IHost host, Action<NCronJobOptions>? configureOptions)
     {
         ArgumentNullException.ThrowIfNull(host);
+
+        var options = new NCronJobOptions();
+        
+        // Auto-enable validation in development environment
+        var environment = host.Services.GetService<IHostEnvironment>();
+        if (environment?.IsDevelopment() == true)
+        {
+            options.ValidateOnBuild = true;
+        }
+
+        configureOptions?.Invoke(options);
+
+        if (options.ValidateOnBuild)
+        {
+            ValidateJobRegistrations(host.Services);
+        }
 
         var jobManager = host.Services.GetRequiredService<StartupJobManager>();
         var stopToken = host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
@@ -150,6 +190,91 @@ public static class NCronJobExtensions
         host.Services.GetRequiredService<MissingMethodCalledHandler>().UseWasCalled = true;
 
         return host;
+    }
+
+    private static void ValidateJobRegistrations(IServiceProvider serviceProvider)
+    {
+        var jobRegistry = serviceProvider.GetRequiredService<JobRegistry>();
+        var errors = new List<string>();
+
+        foreach (var jobDefinition in jobRegistry.GetAllCronJobs())
+        {
+            try
+            {
+                // Create a scope to test if the job and its dependencies can be resolved
+                using var scope = serviceProvider.CreateScope();
+                
+                if (jobDefinition.IsTypedJob)
+                {
+                    // Try to resolve the job type
+                    var jobInstance = scope.ServiceProvider.GetService(jobDefinition.Type);
+                    if (jobInstance == null)
+                    {
+                        errors.Add($"Job '{jobDefinition.Name}' (Type: {jobDefinition.Type.FullName}) is not registered in the service container.");
+                        continue;
+                    }
+
+                    // Validate constructor dependencies
+                    var constructors = jobDefinition.Type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+                    foreach (var constructor in constructors)
+                    {
+                        foreach (var parameter in constructor.GetParameters())
+                        {
+                            var paramInstance = scope.ServiceProvider.GetService(parameter.ParameterType);
+                            if (paramInstance == null && !IsOptionalParameter(parameter))
+                            {
+                                errors.Add($"Job '{jobDefinition.Name}' has a dependency on '{parameter.ParameterType.FullName}' which is not registered in the service container.");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // For delegate-based jobs, validate the parameters
+                    var delegateInstance = jobDefinition.GetDelegate();
+                    if (delegateInstance == null)
+                    {
+                        continue;
+                    }
+                    var method = delegateInstance.Method;
+                    foreach (var parameter in method.GetParameters())
+                    {
+                        // Skip special parameters like CancellationToken and JobExecutionContext
+                        if (parameter.ParameterType == typeof(CancellationToken) || 
+                            parameter.ParameterType == typeof(JobExecutionContext) ||
+                            typeof(IJobExecutionContext).IsAssignableFrom(parameter.ParameterType))
+                        {
+                            continue;
+                        }
+
+                        var paramInstance = scope.ServiceProvider.GetService(parameter.ParameterType);
+                        if (paramInstance == null && !IsOptionalParameter(parameter))
+                        {
+                            errors.Add($"Delegate job '{jobDefinition.Name}' has a dependency on '{parameter.ParameterType.FullName}' which is not registered in the service container.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Failed to validate job '{jobDefinition.Name}': {ex.Message}");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            var errorMessage = "NCronJob service validation failed. The following issues were detected:\n" +
+                               string.Join("\n", errors.Select((e, i) => $"  {i + 1}. {e}"));
+            throw new InvalidOperationException(errorMessage);
+        }
+    }
+
+    private static bool IsOptionalParameter(ParameterInfo parameter)
+    {
+        return parameter.IsOptional || 
+               parameter.HasDefaultValue || 
+               (parameter.ParameterType.IsGenericType && 
+                parameter.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>));
     }
 
     // Inspired by https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.DependencyInjection.Abstractions/src/Extensions/ServiceCollectionDescriptorExtensions.cs

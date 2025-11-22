@@ -184,6 +184,8 @@ internal sealed record JobDefinition
 
     private Delegate? Delegate { get; }
 
+    internal Delegate? GetDelegate() => Delegate;
+
     private static CronExpression GetCronExpression(string expression)
     {
         var precisionRequired = DetermineAndValidatePrecision(expression);
