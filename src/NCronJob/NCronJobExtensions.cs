@@ -206,26 +206,12 @@ public static class NCronJobExtensions
                 
                 if (jobDefinition.IsTypedJob)
                 {
-                    // Try to resolve the job type
+                    // Try to resolve the job type - this validates the job and all its dependencies
+                    // The DI container will automatically validate that all constructor parameters can be resolved
                     var jobInstance = scope.ServiceProvider.GetService(jobDefinition.Type);
                     if (jobInstance == null)
                     {
                         errors.Add($"Job '{jobDefinition.Name}' (Type: {jobDefinition.Type.FullName}) is not registered in the service container.");
-                        continue;
-                    }
-
-                    // Validate constructor dependencies
-                    var constructors = jobDefinition.Type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-                    foreach (var constructor in constructors)
-                    {
-                        foreach (var parameter in constructor.GetParameters())
-                        {
-                            var paramInstance = scope.ServiceProvider.GetService(parameter.ParameterType);
-                            if (paramInstance == null && !IsOptionalParameter(parameter))
-                            {
-                                errors.Add($"Job '{jobDefinition.Name}' has a dependency on '{parameter.ParameterType.FullName}' which is not registered in the service container.");
-                            }
-                        }
                     }
                 }
                 else
