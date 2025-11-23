@@ -120,7 +120,10 @@ public class TriggerTests
         // Assert
         jobRun.TriggerType.ShouldBe(TriggerType.Instant);
         jobRun.Trigger.ShouldBeOfType<InstantTrigger>();
-        ((InstantTrigger)jobRun.Trigger).RunAt.ShouldBe(runAt);
+        if (jobRun.Trigger is InstantTrigger instantTrigger)
+        {
+            instantTrigger.RunAt.ShouldBe(runAt);
+        }
     }
 
     [Fact]
@@ -137,7 +140,10 @@ public class TriggerTests
         // Assert
         jobRun.TriggerType.ShouldBe(TriggerType.Startup);
         jobRun.Trigger.ShouldBeOfType<StartupTrigger>();
-        ((StartupTrigger)jobRun.Trigger).ShouldCrashOnFailure.ShouldBeTrue();
+        if (jobRun.Trigger is StartupTrigger startupTrigger)
+        {
+            startupTrigger.ShouldCrashOnFailure.ShouldBeTrue();
+        }
     }
 
     [Fact]

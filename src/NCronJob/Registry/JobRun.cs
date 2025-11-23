@@ -89,9 +89,14 @@ internal class JobRun
         JobDefinition jobDefinition,
         DateTimeOffset runAt)
     {
-        if (jobDefinition.CronExpression is null || jobDefinition.UserDefinedCronExpression is null)
+        if (jobDefinition.CronExpression is null)
         {
-            throw new InvalidOperationException("Cannot create a CRON job run without a cron expression.");
+            throw new InvalidOperationException("Cannot create a CRON job run without a cron expression. JobDefinition.CronExpression is null.");
+        }
+
+        if (jobDefinition.UserDefinedCronExpression is null)
+        {
+            throw new InvalidOperationException("Cannot create a CRON job run without a user-defined cron expression. JobDefinition.UserDefinedCronExpression is null.");
         }
 
         var trigger = new CronTrigger(jobDefinition.CronExpression, jobDefinition.UserDefinedCronExpression, jobDefinition.TimeZone);
