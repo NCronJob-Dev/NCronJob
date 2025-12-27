@@ -32,6 +32,7 @@ nav:
   - Features:
     - Define and Schedule Jobs: features/define-and-schedule-jobs.md
     - Passing Parameters: features/parameters.md
+    - Conditional Job Scheduling: features/conditional-job-scheduling.md
     - Notifications: features/notifications.md
     - Registering multiple CRON expressions: features/multiple-cron-expressions.md
     - Triggering instant jobs: features/instant-jobs.md

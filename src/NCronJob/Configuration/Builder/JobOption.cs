@@ -34,4 +34,10 @@ internal class JobOption
     /// The job name given by the user, which can be used to identify the job.
     /// </summary>
     public string? Name { get; set; }
+
+    /// <summary>
+    /// Conditional predicates that must all return true for the job to execute.
+    /// If any condition returns false, the job will be skipped.
+    /// </summary>
+    public List<Func<IServiceProvider, CancellationToken, ValueTask<bool>>>? Conditions { get; set; }
 }

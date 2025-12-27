@@ -50,4 +50,73 @@ public sealed class ParameterBuilder : OptionChainerBuilder
         jobOption.Name = jobName;
         return this;
     }
+
+    /// <summary>
+    /// Adds a condition that must be satisfied for the job to execute.
+    /// Multiple conditions are combined with AND logic - all must return true.
+    /// </summary>
+    /// <param name="predicate">A synchronous predicate that returns true if the job should execute.</param>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows further configuration.</returns>
+    /// <remarks>
+    /// The condition is evaluated once before job instantiation. If it returns false, the job is skipped.
+    /// Conditions are NOT re-evaluated during retry attempts - if the initial condition was true, retries proceed.
+    /// Multiple OnlyIf calls are combined with AND logic.
+    /// </remarks>
+    public ParameterBuilder OnlyIf(Func<bool> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        
+        jobOption.Conditions ??= [];
+        jobOption.Conditions.Add((_, _) => new ValueTask<bool>(predicate()));
+        
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a condition that must be satisfied for the job to execute, with dependency injection support.
+    /// Multiple conditions are combined with AND logic - all must return true.
+    /// </summary>
+    /// <param name="predicate">A delegate that accepts dependencies from DI and returns true if the job should execute.</param>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows further configuration.</returns>
+    /// <remarks>
+    /// The condition is evaluated once before job instantiation. If it returns false, the job is skipped.
+    /// Conditions are NOT re-evaluated during retry attempts - if the initial condition was true, retries proceed.
+    /// Multiple OnlyIf calls are combined with AND logic.
+    /// Example:
+    /// <code>
+    /// .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("my-job"))
+    /// </code>
+    /// </remarks>
+    public ParameterBuilder OnlyIf(Delegate predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        
+        var invoker = ConditionInvokerBuilder.BuildConditionInvoker(predicate);
+        
+        jobOption.Conditions ??= [];
+        jobOption.Conditions.Add(invoker);
+        
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an asynchronous condition that must be satisfied for the job to execute.
+    /// Multiple conditions are combined with AND logic - all must return true.
+    /// </summary>
+    /// <param name="predicate">An asynchronous predicate that returns true if the job should execute.</param>
+    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows further configuration.</returns>
+    /// <remarks>
+    /// The condition is evaluated once before job instantiation. If it returns false, the job is skipped.
+    /// Conditions are NOT re-evaluated during retry attempts - if the initial condition was true, retries proceed.
+    /// Multiple OnlyIf calls are combined with AND logic.
+    /// </remarks>
+    public ParameterBuilder OnlyIf(Func<Task<bool>> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        
+        jobOption.Conditions ??= [];
+        jobOption.Conditions.Add(async (_, ct) => await predicate().ConfigureAwait(false));
+        
+        return this;
+    }
 }

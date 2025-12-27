@@ -17,16 +17,8 @@ internal class DynamicJobFactory : IJob
 
         this.serviceProvider = serviceProvider;
         parameters = jobAction.Method.GetParameters();
-        serviceResolvers = BuildServiceResolvers();
-
+        serviceResolvers = ServiceResolverHelper.BuildServiceResolvers(parameters);
         invoker = BuildInvoker(jobAction);
-
-        Func<IServiceProvider, object>?[] BuildServiceResolvers() =>
-            parameters.Select(p =>
-                p.ParameterType == typeof(IJobExecutionContext) || p.ParameterType == typeof(CancellationToken)
-                    ? null
-                    : new Func<IServiceProvider, object>(sp => sp.GetRequiredService(p.ParameterType))
-            ).ToArray();
     }
 
     private static Func<object[], Task> BuildInvoker(Delegate jobDelegate)
@@ -57,16 +49,12 @@ internal class DynamicJobFactory : IJob
 
     public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
-        var arguments = new object[parameters.Length];
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            if (parameters[i].ParameterType == typeof(IJobExecutionContext))
-                arguments[i] = context;
-            else if (parameters[i].ParameterType == typeof(CancellationToken))
-                arguments[i] = token;
-            else if (serviceResolvers[i] != null)
-                arguments[i] = serviceResolvers[i]!(serviceProvider);
-        }
+        var arguments = ServiceResolverHelper.ResolveArguments(
+            serviceProvider,
+            parameters,
+            serviceResolvers,
+            context,
+            token);
 
         return invoker(arguments);
     }

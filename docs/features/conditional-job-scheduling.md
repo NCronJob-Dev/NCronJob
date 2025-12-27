@@ -1,0 +1,378 @@
+# Conditional Job Scheduling with OnlyIf
+
+Schedule jobs that only execute when specific runtime conditions are met. This feature allows you to control job execution based on feature flags, configuration values, cached state, or any other runtime condition—without wasting resources instantiating jobs that won't run.
+
+## The Problem
+
+Traditionally, if you needed conditional job execution, you had to check the condition inside the job's `RunAsync` method:
+
+```csharp
+public class MyJob : IJob
+{
+    private readonly IFeatureFlagService _featureFlags;
+    
+    public MyJob(IFeatureFlagService featureFlags)
+    {
+        _featureFlags = featureFlags;
+    }
+    
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    {
+        // Job is instantiated even if it won't run
+        if (!_featureFlags.IsEnabled("my-feature"))
+            return Task.CompletedTask; // Wasted instantiation
+        
+        // Actual work...
+    }
+}
+```
+
+**Issues with this approach:**
+- Job class is instantiated and dependencies resolved even when skipped
+- Conditional logic is hidden inside the job
+- Job appears as "executed" in logs/metrics when it did nothing
+- Wastes resources on dependency injection and object creation
+
+## The Solution: OnlyIf
+
+The `OnlyIf` method allows you to specify conditions that are evaluated **before** job instantiation:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MyJob>(p => p
+        .WithCronExpression("*/5 * * * *")
+        .OnlyIf(() => GlobalCache.IsFeatureEnabled));
+});
+```
+
+**Benefits:**
+- Jobs are only instantiated when conditions are satisfied
+- Conditional logic is explicit in job registration
+- Proper "Skipped" state in logs/metrics
+- Saves resources by avoiding unnecessary instantiation
+
+## Usage Examples
+
+### Simple Predicate
+
+Evaluate a simple boolean condition:
+
+```csharp
+var isMaintenanceMode = false;
+
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<BackupJob>(p => p
+        .WithCronExpression("0 2 * * *") // Daily at 2 AM
+        .OnlyIf(() => !isMaintenanceMode)); // Skip during maintenance
+});
+```
+
+### With Dependency Injection
+
+Access services from DI to make decisions:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<DataSyncJob>(p => p
+        .WithCronExpression("*/10 * * * *")
+        .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("data-sync")));
+});
+```
+
+### Async Conditions
+
+Use async methods for I/O-bound condition checks:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<ReportJob>(p => p
+        .WithCronExpression("0 9 * * MON") // Every Monday at 9 AM
+        .OnlyIf(async (IConfigService config) => 
+            await config.IsJobEnabledAsync("weekly-report")));
+});
+```
+
+### Multiple Conditions (AND Logic)
+
+Combine multiple conditions—all must be true for execution:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<AnalyticsJob>(p => p
+        .WithCronExpression("0 * * * *")
+        .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("analytics"))
+        .OnlyIf((ICacheService cache) => cache.Get<bool>("system-ready"))
+        .OnlyIf(() => DateTime.UtcNow.Hour >= 8 && DateTime.UtcNow.Hour < 18)); // Business hours only
+});
+```
+
+All conditions are evaluated in order, and the job is skipped if **any** condition returns false.
+
+### Accessing CancellationToken
+
+Conditions can access the cancellation token for cooperative cancellation:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MyJob>(p => p
+        .WithCronExpression("*/5 * * * *")
+        .OnlyIf(async (IHealthCheckService health, CancellationToken ct) => 
+            await health.IsHealthyAsync(ct)));
+});
+```
+
+## How It Works
+
+### Execution Flow
+
+**Without OnlyIf:**
+```
+Cron triggers → Job instantiated → Dependencies resolved → RunAsync() executes
+```
+
+**With OnlyIf:**
+```
+Cron triggers → OnlyIf evaluated → (if false, skip) → Job instantiated → RunAsync() executes
+                                 ↓
+                            Job never created
+                            Resources saved
+```
+
+### Evaluation Timing
+
+- **Evaluated**: Once per cron trigger, before job instantiation
+- **Scope**: Uses a new async scope for dependency resolution
+- **Retries**: Conditions are **NOT re-evaluated** during retry attempts
+- **Dependent Jobs**: Conditions apply only to the primary job, not dependent jobs
+
+### Important: Conditions and Retries
+
+When a job has a retry policy and its condition was initially `true`:
+
+```csharp
+[RetryPolicy(retryCount: 3)]
+public class MyJob : IJob { /* ... */ }
+
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MyJob>(p => p
+        .WithCronExpression("*/5 * * * *")
+        .OnlyIf(() => someCondition)); // Evaluated only once
+});
+```
+
+**If the condition is `true` initially:**
+1. Job is instantiated and runs
+2. If it fails, retry policy kicks in
+3. Condition is **NOT** re-evaluated for retries
+4. Retries proceed regardless of condition state
+
+**If the condition is `false` initially:**
+1. Job is never instantiated
+2. Execution is skipped entirely
+3. No retries occur
+
+This design ensures that once a job starts executing, retry behavior is consistent and not affected by changing conditions.
+
+## Monitoring Skipped Jobs
+
+### Condition Handlers
+
+Register handlers to be notified when jobs are skipped due to unmet conditions:
+
+```csharp
+public class MyJobConditionHandler : IJobConditionHandler<MyJob>
+{
+    private readonly ILogger<MyJobConditionHandler> _logger;
+    
+    public MyJobConditionHandler(ILogger<MyJobConditionHandler> logger)
+    {
+        _logger = logger;
+    }
+    
+    public Task HandleConditionNotMetAsync(
+        JobConditionContext context, 
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "Job {JobName} was skipped at {Time}", 
+            context.JobName, 
+            DateTimeOffset.UtcNow);
+        
+        // Could also:
+        // - Update metrics
+        // - Send notifications
+        // - Update dashboards
+        
+        return Task.CompletedTask;
+    }
+}
+
+// Register the handler
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MyJob>(p => p
+            .WithCronExpression("*/5 * * * *")
+            .OnlyIf(() => someCondition))
+        .AddConditionHandler<MyJobConditionHandler>();
+});
+```
+
+### JobConditionContext
+
+The context provided to condition handlers contains:
+
+```csharp
+public sealed class JobConditionContext
+{
+    public Guid CorrelationId { get; }        // Unique execution ID
+    public string? JobName { get; }            // Custom job name
+    public Type? JobType { get; }              // Job class type
+    public TriggerType TriggerType { get; }    // How job was triggered
+    public object? Parameter { get; }          // Job parameter
+}
+```
+
+### Logging
+
+NCronJob automatically logs condition evaluation:
+
+- **Debug level**: When conditions are not satisfied
+- **Trace level**: When conditions are satisfied
+
+```
+[DBG] Job 'MyJob' condition was not satisfied. Skipping execution.
+[TRC] Job 'OtherJob' condition was satisfied. Proceeding with execution.
+```
+
+## Best Practices
+
+### 1. Keep Conditions Fast
+
+Conditions are evaluated on the scheduler thread. Keep them lightweight:
+
+```csharp
+// Good - Fast check
+.OnlyIf(() => _cache.Get<bool>("feature-enabled"))
+
+// Avoid - Expensive operation
+.OnlyIf(async (IDatabase db) => await db.ComplexQueryAsync())
+```
+
+### 2. Use Feature Flags for Deployment Safety
+
+Gradually roll out new jobs:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<NewExperimentalJob>(p => p
+        .WithCronExpression("*/5 * * * *")
+        .OnlyIf((IFeatureFlagService flags) => 
+            flags.IsEnabled("experimental-job")));
+});
+```
+
+### 3. Combine with Parameters
+
+Different conditions for different parameters:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options
+        .AddJob<DataProcessingJob>(p => p
+            .WithCronExpression("0 */6 * * *")
+            .WithParameter("production")
+            .OnlyIf(() => isProdReady))
+        .And
+        .AddJob<DataProcessingJob>(p => p
+            .WithCronExpression("0 */2 * * *")
+            .WithParameter("staging")
+            .OnlyIf(() => isStagingReady));
+});
+```
+
+### 4. Document Condition Logic
+
+Make conditions self-documenting:
+
+```csharp
+// Clear intent
+.OnlyIf((ISystemStatus status) => status.IsSystemHealthy())
+
+// Unclear
+.OnlyIf((ISystemStatus status) => status.Check())
+```
+
+## Common Use Cases
+
+### Feature Flags
+
+```csharp
+.OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("new-feature"))
+```
+
+### Maintenance Windows
+
+```csharp
+.OnlyIf(() => !MaintenanceMode.IsActive)
+```
+
+### Business Hours Only
+
+```csharp
+.OnlyIf(() => 
+{
+    var hour = DateTime.UtcNow.Hour;
+    return hour >= 8 && hour < 18;
+})
+```
+
+### System Health Checks
+
+```csharp
+.OnlyIf(async (IHealthCheckService health) => 
+    await health.IsHealthyAsync())
+```
+
+### Cache Validity
+
+```csharp
+.OnlyIf((ICacheService cache) => 
+    !cache.Has("recent-sync") || cache.IsExpired("recent-sync"))
+```
+
+### Configuration-Based
+
+```csharp
+.OnlyIf((IConfiguration config) => 
+    config.GetValue<bool>("Jobs:DataSync:Enabled"))
+```
+
+## Performance Considerations
+
+- **Instantiation Savings**: Jobs are never created when conditions fail, saving CPU and memory
+- **Dependency Resolution**: Dependencies for conditions are resolved in a separate scope
+- **Scope Lifetime**: The condition evaluation scope is disposed immediately after evaluation
+- **Parallel Evaluation**: Multiple job conditions can be evaluated concurrently
+- **No Lock Contention**: Conditions don't affect job concurrency settings
+
+## Limitations
+
+- Conditions cannot access the `IJobExecutionContext` (job hasn't been created yet)
+- Conditions cannot be changed at runtime without restarting the application
+- Delegate-based (untyped) jobs can use conditions, but condition handlers only work with typed jobs
+
+## See Also
+
+- [Feature Flags](https://martinfowler.com/articles/feature-toggles.html)
+- [Retry Support](./retry-support.md)
+- [Notifications](./notifications.md)
+- [Concurrency Control](./concurrency-control.md)
