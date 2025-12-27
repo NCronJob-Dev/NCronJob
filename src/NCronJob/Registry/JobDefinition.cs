@@ -73,6 +73,13 @@ internal sealed record JobDefinition
     public RetryPolicyBaseAttribute? RetryPolicy => JobPolicyMetadata.RetryPolicy;
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
 
+    /// <summary>
+    /// Conditional predicate that must return true for the job to execute.
+    /// If false, the job will be skipped without instantiation.
+    /// Evaluated once before job instantiation and not re-evaluated during retries.
+    /// </summary>
+    public Func<IServiceProvider, CancellationToken, ValueTask<bool>>? Condition { get; private set; }
+
     [MemberNotNullWhen(true, nameof(Type))]
     [MemberNotNullWhen(false, nameof(Delegate))]
     public bool IsTypedJob { get; }
@@ -162,6 +169,39 @@ internal sealed record JobDefinition
         if (jobOption.ShouldCrashOnStartupFailure is not null)
         {
             ShouldCrashOnStartupFailure = jobOption.ShouldCrashOnStartupFailure;
+        }
+
+        if (jobOption.Conditions is not null && jobOption.Conditions.Count > 0)
+        {
+            // Combine all conditions with AND logic
+            if (Condition is null)
+            {
+                Condition = async (sp, ct) =>
+                {
+                    foreach (var condition in jobOption.Conditions)
+                    {
+                        if (!await condition(sp, ct).ConfigureAwait(false))
+                            return false;
+                    }
+                    return true;
+                };
+            }
+            else
+            {
+                var existingCondition = Condition;
+                Condition = async (sp, ct) =>
+                {
+                    if (!await existingCondition(sp, ct).ConfigureAwait(false))
+                        return false;
+                    
+                    foreach (var condition in jobOption.Conditions)
+                    {
+                        if (!await condition(sp, ct).ConfigureAwait(false))
+                            return false;
+                    }
+                    return true;
+                };
+            }
         }
     }
 

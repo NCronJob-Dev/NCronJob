@@ -207,6 +207,13 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
     }
 
     /// <inheritdoc />
+    public INotificationStage<TJob> AddConditionHandler<TJobConditionHandler>() where TJobConditionHandler : class, IJobConditionHandler<TJob>
+    {
+        services.TryAddScoped<IJobConditionHandler<TJob>, TJobConditionHandler>();
+        return new NotificationStage<TJob>(services, jobDefinitions, settings, jobDefinitionCollector);
+    }
+
+    /// <inheritdoc />
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder>? success = null, Action<DependencyBuilder>? faulted = null)
     {
         ExecuteWhenHelper.AddRegistration(jobDefinitionCollector, jobDefinitions, success, faulted);
@@ -251,6 +258,13 @@ internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : c
         , IJobNotificationHandler<TJob>
     {
         services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return this;
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> AddConditionHandler<TJobConditionHandler>() where TJobConditionHandler : class, IJobConditionHandler<TJob>
+    {
+        services.TryAddScoped<IJobConditionHandler<TJob>, TJobConditionHandler>();
         return this;
     }
 
@@ -339,6 +353,16 @@ public interface INotificationStage<TJob> : IJobStage
     /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
     /// </remarks>
     INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>;
+
+    /// <summary>
+    /// Adds a condition handler for a given <see cref="IJob"/> that is invoked when the job's OnlyIf condition is not met.
+    /// </summary>
+    /// <typeparam name="TJobConditionHandler">The handler-type that is used to handle the condition failure.</typeparam>
+    /// <remarks>
+    /// The given <see cref="IJobConditionHandler{TJob}"/> instance is registered as a scoped service.
+    /// This handler is invoked before job instantiation when an OnlyIf condition returns false.
+    /// </remarks>
+    INotificationStage<TJob> AddConditionHandler<TJobConditionHandler>() where TJobConditionHandler : class, IJobConditionHandler<TJob>;
 
     /// <summary>
     /// Adds a job that runs after the given job has finished.

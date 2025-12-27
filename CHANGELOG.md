@@ -6,6 +6,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- `OnlyIf` to not trigger jobs based on a predicate. Reported by [@amithegde
+](https://github.com/amithegde) in #328. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+
 ## [v4.7.0] - 2025-11-22
 
 ### Added

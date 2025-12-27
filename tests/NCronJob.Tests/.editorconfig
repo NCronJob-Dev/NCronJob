@@ -6,5 +6,8 @@ dotnet_diagnostic.IDISP017.severity = none
 # CA2211: Non-constant fields should not be visible
 dotnet_diagnostic.CA2211.severity = suggestion
 
- # CA0618: [Obsolete] compiler warnings.
- dotnet_diagnostic.CS0618.severity = none
+# CA0618: [Obsolete] compiler warnings.
+dotnet_diagnostic.CS0618.severity = none
+
+# S2325: Make members static
+dotnet_diagnostic.S2325.severity = none
