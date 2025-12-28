@@ -35,11 +35,17 @@ public class MyJob : IJob
 
 ## The Solution: OnlyIf
 
-The `OnlyIf` method allows you to specify conditions that are evaluated **before** job instantiation:
+The `OnlyIf` method allows you to specify conditions that are evaluated **before** job instantiation. You can use `OnlyIf` directly or chain it with other configuration methods:
 
 ```csharp
 builder.Services.AddNCronJob(options =>
 {
+    // Direct usage without chaining
+    options.AddJob<MyJob>(p => p
+        .OnlyIf(() => GlobalCache.IsFeatureEnabled)
+        .WithCronExpression("*/5 * * * *"));
+    
+    // Or chain after other methods
     options.AddJob<MyJob>(p => p
         .WithCronExpression("*/5 * * * *")
         .OnlyIf(() => GlobalCache.IsFeatureEnabled));
@@ -51,6 +57,7 @@ builder.Services.AddNCronJob(options =>
 - Conditional logic is explicit in job registration
 - Proper "Skipped" state in logs/metrics
 - Saves resources by avoiding unnecessary instantiation
+- Works with both scheduled (cron) and instant jobs
 
 ## Usage Examples
 
@@ -64,8 +71,8 @@ var isMaintenanceMode = false;
 builder.Services.AddNCronJob(options =>
 {
     options.AddJob<BackupJob>(p => p
-        .WithCronExpression("0 2 * * *") // Daily at 2 AM
-        .OnlyIf(() => !isMaintenanceMode)); // Skip during maintenance
+        .OnlyIf(() => !isMaintenanceMode) // Skip during maintenance
+        .WithCronExpression("0 2 * * *")); // Daily at 2 AM
 });
 ```
 
@@ -432,6 +439,32 @@ Make conditions self-documenting:
 .OnlyIf((IConfiguration config) => 
     config.GetValue<bool>("Jobs:DataSync:Enabled"))
 ```
+
+### Instant Jobs
+
+The `OnlyIf` feature works seamlessly with instant jobs triggered via `IInstantJobRegistry`. When a condition is not met, the instant job is skipped just like scheduled jobs:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<DataSyncJob>(p => p
+        .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("data-sync")));
+});
+
+// Later in your code (e.g., API endpoint)
+app.MapPost("/trigger-sync", (IInstantJobRegistry registry) => 
+{
+    // Job will only execute if the condition is met
+    var correlationId = registry.RunInstantJob<DataSyncJob>();
+    return Results.Accepted();
+});
+```
+
+**Important Notes for Instant Jobs:**
+- Conditions are evaluated when the instant job is triggered
+- If the condition returns `false`, the job is skipped and marked as "Skipped" in the execution state
+- The job is never instantiated when conditions fail, saving resources
+- Works with all instant job methods: `RunInstantJob`, `RunScheduledJob`, `ForceRunInstantJob`, `ForceRunScheduledJob`
 
 ### Dependent Jobs (ExecuteWhen)
 
