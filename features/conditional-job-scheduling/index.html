@@ -85,6 +85,20 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#using-onlyif-with-dependent-jobs">Using OnlyIf with Dependent Jobs</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#basic-example">Basic Example</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#multiple-dependent-jobs-with-different-conditions">Multiple Dependent Jobs with Different Conditions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#with-async-conditions">With Async Conditions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#combining-parent-and-dependent-job-conditions">Combining Parent and Dependent Job Conditions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#important-notes-for-dependent-jobs">Important Notes for Dependent Jobs</a>
+    </li>
+        </ul>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#monitoring-skipped-jobs">Monitoring Skipped Jobs</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#condition-handlers">Condition Handlers</a>
@@ -120,6 +134,8 @@
     <li class="toctree-l3"><a class="reference internal" href="#cache-validity">Cache Validity</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#configuration-based">Configuration-Based</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#dependent-jobs-executewhen">Dependent Jobs (ExecuteWhen)</a>
     </li>
         </ul>
     </li>
@@ -315,7 +331,7 @@
 <li><strong>Evaluated</strong>: Once per cron trigger, before job instantiation</li>
 <li><strong>Scope</strong>: Uses a new async scope for dependency resolution</li>
 <li><strong>Retries</strong>: Conditions are <strong>NOT re-evaluated</strong> during retry attempts</li>
-<li><strong>Dependent Jobs</strong>: Conditions apply only to the primary job, not dependent jobs</li>
+<li><strong>Dependent Jobs</strong>: Conditions can be applied to both parent jobs and dependent jobs (ExecuteWhen)</li>
 </ul>
 <h3 id="important-conditions-and-retries">Important: Conditions and Retries<a class="headerlink" href="#important-conditions-and-retries" title="Permanent link">&para;</a></h3>
 <p>When a job has a retry policy and its condition was initially <code>true</code>:</p>
@@ -340,6 +356,69 @@
 2. Execution is skipped entirely
 3. No retries occur</p>
 <p>This design ensures that once a job starts executing, retry behavior is consistent and not affected by changing conditions.</p>
+<h2 id="using-onlyif-with-dependent-jobs">Using OnlyIf with Dependent Jobs<a class="headerlink" href="#using-onlyif-with-dependent-jobs" title="Permanent link">&para;</a></h2>
+<p>The <code>OnlyIf</code> feature works seamlessly with dependent jobs defined using <code>ExecuteWhen</code>. This allows you to control whether dependent jobs should run based on runtime conditions:</p>
+<h3 id="basic-example">Basic Example<a class="headerlink" href="#basic-example" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">BlogPostPublisher</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="w">            </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SimilarBlogPostJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">someCondition</span><span class="p">));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="multiple-dependent-jobs-with-different-conditions">Multiple Dependent Jobs with Different Conditions<a class="headerlink" href="#multiple-dependent-jobs-with-different-conditions" title="Permanent link">&para;</a></h3>
+<p>You can apply different conditions to different dependent jobs:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">DataProcessingJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="w">            </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">EmailNotificationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;email-notifications&quot;</span><span class="p">))</span>
+<span class="w">            </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SlackNotificationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;slack-notifications&quot;</span><span class="p">))</span>
+<span class="w">            </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">CleanupJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DateTime</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">.</span><span class="n">Hour</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">6</span><span class="p">));</span><span class="w"> </span><span class="c1">// Only during off-hours</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="with-async-conditions">With Async Conditions<a class="headerlink" href="#with-async-conditions" title="Permanent link">&para;</a></h3>
+<p>Dependent jobs support async conditions just like parent jobs:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MainJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="w">            </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">ExpensiveValidationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IValidationService</span><span class="w"> </span><span class="n">validator</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">                    </span><span class="k">await</span><span class="w"> </span><span class="n">validator</span><span class="p">.</span><span class="n">ShouldValidateAsync</span><span class="p">()));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="combining-parent-and-dependent-job-conditions">Combining Parent and Dependent Job Conditions<a class="headerlink" href="#combining-parent-and-dependent-job-conditions" title="Permanent link">&para;</a></h3>
+<p>Both parent and dependent jobs can have conditions:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MainJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">parentCondition</span><span class="p">))</span><span class="w"> </span><span class="c1">// Parent job condition</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="w">            </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">FollowUpJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">childCondition</span><span class="p">));</span><span class="w"> </span><span class="c1">// Dependent job condition</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p>In this case:
+1. The parent job runs only if <code>parentCondition</code> is true
+2. If the parent job runs successfully, the dependent job runs only if <code>childCondition</code> is true
+3. Both conditions are evaluated independently</p>
+<h3 id="important-notes-for-dependent-jobs">Important Notes for Dependent Jobs<a class="headerlink" href="#important-notes-for-dependent-jobs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Independent Evaluation</strong>: Each dependent job&rsquo;s condition is evaluated independently</li>
+<li><strong>No Instantiation on Skip</strong>: When a condition fails, the dependent job is never instantiated</li>
+<li><strong>Chaining Support</strong>: You can chain multiple <code>RunJob()</code> calls, each with its own <code>OnlyIf()</code> condition</li>
+<li><strong>All OnlyIf Features</strong>: Dependent jobs support all <code>OnlyIf</code> features: simple predicates, DI, async, and multiple conditions</li>
+</ul>
 <h2 id="monitoring-skipped-jobs">Monitoring Skipped Jobs<a class="headerlink" href="#monitoring-skipped-jobs" title="Permanent link">&para;</a></h2>
 <h3 id="condition-handlers">Condition Handlers<a class="headerlink" href="#condition-handlers" title="Permanent link">&para;</a></h3>
 <p>Register handlers to be notified when jobs are skipped due to unmet conditions:</p>
@@ -479,6 +558,14 @@
 <h3 id="configuration-based">Configuration-Based<a class="headerlink" href="#configuration-based" title="Permanent link">&para;</a></h3>
 <div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IConfiguration</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="w">    </span><span class="n">config</span><span class="p">.</span><span class="n">GetValue</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;Jobs:DataSync:Enabled&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="dependent-jobs-executewhen">Dependent Jobs (ExecuteWhen)<a class="headerlink" href="#dependent-jobs-executewhen" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Conditional execution for jobs triggered by ExecuteWhen</span>
+<span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="w">    </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">EmailJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">emailEnabled</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SlackJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">        </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;slack-notifications&quot;</span><span class="p">)))</span>
 </code></pre></div>
 
 <h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>

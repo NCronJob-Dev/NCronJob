@@ -79,6 +79,12 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#conditional-execution-with-onlyif">Conditional Execution with OnlyIf</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#onlyif-features-for-dependent-jobs">OnlyIf Features for Dependent Jobs</a>
+    </li>
+        </ul>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#accessing-the-state-of-the-parent-job">Accessing the state of the parent job</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#order-of-execution-between-inotificationjobhandler-and-dependent-jobs">Order of execution between INotificationJobHandler and dependent jobs</a>
@@ -172,6 +178,47 @@
 <span class="p">});</span>
 </code></pre></div>
 
+<h2 id="conditional-execution-with-onlyif">Conditional Execution with OnlyIf<a class="headerlink" href="#conditional-execution-with-onlyif" title="Permanent link">&para;</a></h2>
+<p>Dependent jobs support conditional execution using the <code>OnlyIf</code> method, allowing you to control whether a dependent job should run based on runtime conditions:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">BlogPostPublisher</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SimilarBlogPostJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">            </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">someCondition</span><span class="p">));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="onlyif-features-for-dependent-jobs">OnlyIf Features for Dependent Jobs<a class="headerlink" href="#onlyif-features-for-dependent-jobs" title="Permanent link">&para;</a></h3>
+<p>The <code>OnlyIf</code> method on dependent jobs supports all the same features as regular jobs:</p>
+<p><strong>Simple predicate:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">NotificationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">shouldNotify</span><span class="p">))</span>
+</code></pre></div>
+
+<p><strong>With dependency injection:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">NotificationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;notifications&quot;</span><span class="p">)))</span>
+</code></pre></div>
+
+<p><strong>Async conditions:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">NotificationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IConfigService</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">IsEnabledAsync</span><span class="p">(</span><span class="s">&quot;notifications&quot;</span><span class="p">)))</span>
+</code></pre></div>
+
+<p><strong>Multiple conditions (AND logic):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">NotificationJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;notifications&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DateTime</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">.</span><span class="n">Hour</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">DateTime</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">.</span><span class="n">Hour</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">18</span><span class="p">))</span>
+</code></pre></div>
+
+<p><strong>Chain multiple dependent jobs with different conditions:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="w">    </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">EmailJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">emailEnabled</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SlackJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">slackEnabled</span><span class="p">))</span>
+</code></pre></div>
+
+<p>When a dependent job&rsquo;s condition is not met, it will be skipped without instantiation, just like parent jobs with <code>OnlyIf</code>.</p>
 <h2 id="accessing-the-state-of-the-parent-job">Accessing the state of the parent job<a class="headerlink" href="#accessing-the-state-of-the-parent-job" title="Permanent link">&para;</a></h2>
 <p>The <code>JobExecutionContext</code> object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
