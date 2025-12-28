@@ -117,6 +117,7 @@ public sealed class DependentJobBuilder
         if (jobOption is not null)
         {
             jobDefinition.UpdateWith(jobOption);
+            jobOption = null; // Reset to prevent duplicate application
         }
     }
 
