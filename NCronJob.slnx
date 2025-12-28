@@ -16,12 +16,14 @@
     <File Path=".github/workflows/dotnet.yml" />
   </Folder>
   <Folder Name="/sample/">
+    <Project Path="sample/DashboardSample/DashboardSample.csproj" />
     <Project Path="sample/MinimalSample/MinimalSample.csproj" />
     <Project Path="sample/NCronJobSample/NCronJobSample.csproj" />
     <Project Path="sample/RunOnceSample/RunOnceSample.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/NCronJob/NCronJob.csproj" />
+    <Project Path="src/NCronJob.Dashboard/NCronJob.Dashboard.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NCronJob.Tests/NCronJob.Tests.csproj" />

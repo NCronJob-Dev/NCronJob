@@ -15,7 +15,7 @@ public class DataProcessingJob : IJob
     {
         var parameter = context.Parameter as string ?? "No parameter provided";
         logger.LogInformation("Processing data with parameter: {Parameter}", parameter);
-        await Task.Delay(3000, token); // Simulate data processing
+        await Task.Delay(3000, token);
         logger.LogInformation("Data processing completed");
     }
 }

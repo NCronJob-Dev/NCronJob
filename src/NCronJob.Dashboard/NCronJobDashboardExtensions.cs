@@ -31,6 +31,9 @@ public static class NCronJobDashboardExtensions
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
         
+        // Add antiforgery services
+        services.AddAntiforgery();
+        
         return services;
     }
 

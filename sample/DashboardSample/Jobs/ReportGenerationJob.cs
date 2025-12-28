@@ -14,7 +14,7 @@ public class ReportGenerationJob : IJob
     public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         logger.LogInformation("Generating reports...");
-        await Task.Delay(5000, token); // Simulate report generation
+        await Task.Delay(5000, token);
         logger.LogInformation("Reports generated successfully");
     }
 }

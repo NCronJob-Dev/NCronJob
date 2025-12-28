@@ -60,6 +60,40 @@ body {
     background-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Tabs */
+.dashboard-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 8px;
+    padding: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
 /* Alerts */
 .alert {
     padding: 15px 20px;
@@ -94,23 +128,15 @@ body {
 
 /* Dashboard Content */
 .dashboard-content {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
-}
-
-@media (max-width: 1200px) {
-    .dashboard-content {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Sections */
-section {
     background: white;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Sections */
+section {
+    width: 100%;
 }
 
 section h2 {
@@ -475,4 +501,36 @@ section h2 {
 
 .activity-log::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* Trigger Form */
+.trigger-section {
+    width: 100%;
+}
+
+.trigger-form {
+    max-width: 600px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+
+.form-actions {
+    margin-top: 20px;
 }
