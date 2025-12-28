@@ -6,12 +6,15 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- `OnlyIf` for child jobs to not trigger based on a predicate.
+
 ## [v4.8.1] - 2025-12-28
 
 ### Added
 
-- `OnlyIf` to not trigger jobs based on a predicate. Reported by [@amithegde
-  ](https://github.com/amithegde) in #328. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+- `OnlyIf` to not trigger jobs based on a predicate. Reported by [@amithegde](https://github.com/amithegde) in #328. Fixed by [@linkdotnet](https://github.com/linkdotnet).
 
 ## [v4.7.0] - 2025-11-22
 

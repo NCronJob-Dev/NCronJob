@@ -28,6 +28,58 @@ Services.AddNCronJob(options =>
 });
 ```
 
+## Conditional Execution with OnlyIf
+
+Dependent jobs support conditional execution using the `OnlyIf` method, allowing you to control whether a dependent job should run based on runtime conditions:
+
+```csharp
+Services.AddNCronJob(options => 
+{
+    options.AddJob<BlogPostPublisher>(p => p.WithCronExpression("* * * * *"))
+        .ExecuteWhen(s => s.RunJob<SimilarBlogPostJob>()
+            .OnlyIf(() => someCondition));
+});
+```
+
+### OnlyIf Features for Dependent Jobs
+
+The `OnlyIf` method on dependent jobs supports all the same features as regular jobs:
+
+**Simple predicate:**
+```csharp
+.ExecuteWhen(success: s => s.RunJob<NotificationJob>()
+    .OnlyIf(() => shouldNotify))
+```
+
+**With dependency injection:**
+```csharp
+.ExecuteWhen(success: s => s.RunJob<NotificationJob>()
+    .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("notifications")))
+```
+
+**Async conditions:**
+```csharp
+.ExecuteWhen(success: s => s.RunJob<NotificationJob>()
+    .OnlyIf(async (IConfigService config) => 
+        await config.IsEnabledAsync("notifications")))
+```
+
+**Multiple conditions (AND logic):**
+```csharp
+.ExecuteWhen(success: s => s.RunJob<NotificationJob>()
+    .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("notifications"))
+    .OnlyIf(() => DateTime.UtcNow.Hour >= 8 && DateTime.UtcNow.Hour < 18))
+```
+
+**Chain multiple dependent jobs with different conditions:**
+```csharp
+.ExecuteWhen(success: s => s
+    .RunJob<EmailJob>().OnlyIf(() => emailEnabled)
+    .RunJob<SlackJob>().OnlyIf(() => slackEnabled))
+```
+
+When a dependent job's condition is not met, it will be skipped without instantiation, just like parent jobs with `OnlyIf`.
+
 ## Accessing the state of the parent job
 The `JobExecutionContext` object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.
 

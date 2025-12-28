@@ -341,4 +341,210 @@ public class RunDependentJobTests : JobIntegrationBase
             return Task.CompletedTask;
         }
     }
+
+    [Fact]
+    public async Task DependentJobWithOnlyIfConditionShouldExecuteWhenTrue()
+    {
+        var shouldRun = true;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message").OnlyIf(() => shouldRun)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+        Storage.Entries.Count.ShouldBe(2);
+
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Completed);
+    }
+
+    [Fact]
+    public async Task DependentJobWithOnlyIfConditionShouldSkipWhenFalse()
+    {
+        var shouldRun = false;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message").OnlyIf(() => shouldRun)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries.Count.ShouldBe(1); // Dependent job never executed
+
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Skipped);
+    }
+
+    [Fact]
+    public async Task DependentJobWithDependencyInjectionConditionShouldWork()
+    {
+        ServiceCollection.AddSingleton<FeatureFlagService>();
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")
+                .OnlyIf((FeatureFlagService flags) => flags.IsEnabled("dependent-feature"))));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task DependentJobWithAsyncConditionShouldWork()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")
+                .OnlyIf(async () =>
+                {
+                    await Task.Delay(10);
+                    return true;
+                })));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task MultipleDependentJobsWithOnlyIfConditionsShouldWorkIndependently()
+    {
+        var firstShouldRun = true;
+        var secondShouldRun = false;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s
+                .RunJob<DummyJob>("First").OnlyIf(() => firstShouldRun)
+                .RunJob<AnotherDummyJob>("Second").OnlyIf(() => secondShouldRun)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: First");
+        Storage.Entries.Count.ShouldBe(2); // Second job never executed
+
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        // Should have one skipped event for the second job
+        filteredEvents.Count(e => e.State == ExecutionState.Skipped).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task DependentJobWithMultipleOnlyIfConditionsShouldBeCombinedWithAndLogic()
+    {
+        var condition1 = true;
+        var condition2 = true;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")
+                .OnlyIf(() => condition1)
+                .OnlyIf(() => condition2)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task DependentJobWithMultipleOnlyIfConditionsShouldSkipWhenOneReturnsFalse()
+    {
+        var condition1 = true;
+        var condition2 = false;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")
+                .OnlyIf(() => condition1)
+                .OnlyIf(() => condition2)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries.Count.ShouldBe(1); // Dependent job never executed
+
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Skipped);
+    }
+
+    [Fact]
+    public async Task DependentAnonymousJobWithOnlyIfConditionShouldWork()
+    {
+        var shouldRun = true;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob((Storage storage) => storage.Add("Anonymous executed"))
+                .OnlyIf(() => shouldRun)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("Anonymous executed");
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task DependentJobOnlyIfCanAccessCancellationToken()
+    {
+        var cancellationTokenPassed = false;
+
+        ServiceCollection.AddNCronJob(n => n.AddJob<PrincipalJob>()
+            .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")
+                .OnlyIf((CancellationToken ct) =>
+                {
+                    cancellationTokenPassed = !ct.IsCancellationRequested;
+                    return true;
+                })));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        cancellationTokenPassed.ShouldBeTrue();
+        Storage.Entries[0].ShouldBe("PrincipalJob: Success");
+        Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+    }
+
+    private sealed class FeatureFlagService
+    {
+        public bool IsEnabled(string feature) => feature == "dependent-feature";
+    }
 }
