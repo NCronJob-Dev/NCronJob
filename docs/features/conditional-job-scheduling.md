@@ -149,7 +149,7 @@ Cron triggers → OnlyIf evaluated → (if false, skip) → Job instantiated →
 - **Evaluated**: Once per cron trigger, before job instantiation
 - **Scope**: Uses a new async scope for dependency resolution
 - **Retries**: Conditions are **NOT re-evaluated** during retry attempts
-- **Dependent Jobs**: Conditions apply only to the primary job, not dependent jobs
+- **Dependent Jobs**: Conditions can be applied to both parent jobs and dependent jobs (ExecuteWhen)
 
 ### Important: Conditions and Retries
 
@@ -179,6 +179,83 @@ builder.Services.AddNCronJob(options =>
 3. No retries occur
 
 This design ensures that once a job starts executing, retry behavior is consistent and not affected by changing conditions.
+
+## Using OnlyIf with Dependent Jobs
+
+The `OnlyIf` feature works seamlessly with dependent jobs defined using `ExecuteWhen`. This allows you to control whether dependent jobs should run based on runtime conditions:
+
+### Basic Example
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<BlogPostPublisher>(p => p.WithCronExpression("* * * * *"))
+        .ExecuteWhen(success: s => s
+            .RunJob<SimilarBlogPostJob>()
+                .OnlyIf(() => someCondition));
+});
+```
+
+### Multiple Dependent Jobs with Different Conditions
+
+You can apply different conditions to different dependent jobs:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<DataProcessingJob>(p => p.WithCronExpression("0 * * * *"))
+        .ExecuteWhen(success: s => s
+            .RunJob<EmailNotificationJob>()
+                .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("email-notifications"))
+            .RunJob<SlackNotificationJob>()
+                .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("slack-notifications"))
+            .RunJob<CleanupJob>()
+                .OnlyIf(() => DateTime.UtcNow.Hour < 6)); // Only during off-hours
+});
+```
+
+### With Async Conditions
+
+Dependent jobs support async conditions just like parent jobs:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MainJob>(p => p.WithCronExpression("0 * * * *"))
+        .ExecuteWhen(success: s => s
+            .RunJob<ExpensiveValidationJob>()
+                .OnlyIf(async (IValidationService validator) => 
+                    await validator.ShouldValidateAsync()));
+});
+```
+
+### Combining Parent and Dependent Job Conditions
+
+Both parent and dependent jobs can have conditions:
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MainJob>(p => p
+            .WithCronExpression("0 * * * *")
+            .OnlyIf(() => parentCondition)) // Parent job condition
+        .ExecuteWhen(success: s => s
+            .RunJob<FollowUpJob>()
+                .OnlyIf(() => childCondition)); // Dependent job condition
+});
+```
+
+In this case:
+1. The parent job runs only if `parentCondition` is true
+2. If the parent job runs successfully, the dependent job runs only if `childCondition` is true
+3. Both conditions are evaluated independently
+
+### Important Notes for Dependent Jobs
+
+- **Independent Evaluation**: Each dependent job's condition is evaluated independently
+- **No Instantiation on Skip**: When a condition fails, the dependent job is never instantiated
+- **Chaining Support**: You can chain multiple `RunJob()` calls, each with its own `OnlyIf()` condition
+- **All OnlyIf Features**: Dependent jobs support all `OnlyIf` features: simple predicates, DI, async, and multiple conditions
 
 ## Monitoring Skipped Jobs
 
@@ -354,6 +431,16 @@ Make conditions self-documenting:
 ```csharp
 .OnlyIf((IConfiguration config) => 
     config.GetValue<bool>("Jobs:DataSync:Enabled"))
+```
+
+### Dependent Jobs (ExecuteWhen)
+
+```csharp
+// Conditional execution for jobs triggered by ExecuteWhen
+.ExecuteWhen(success: s => s
+    .RunJob<EmailJob>().OnlyIf(() => emailEnabled)
+    .RunJob<SlackJob>().OnlyIf((IFeatureFlagService flags) => 
+        flags.IsEnabled("slack-notifications")))
 ```
 
 ## Performance Considerations
