@@ -2,82 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.ncronjob.dev/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/getting-started/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/advanced/dynamic-job-control/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/advanced/global-concurrency/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/advanced/log-level/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/advanced/observing-job-progress/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/concurrency-control/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.ncronjob.dev/features/conditional-job-scheduling/</loc>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/define-and-schedule-jobs/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/exception-handler/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/instant-jobs/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/minimal-api/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/model-dependencies/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/multiple-cron-expressions/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/notifications/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/parameters/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/retry-support/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/features/startup-jobs/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/migration/v2/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/migration/v3/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
     <url>
          <loc>https://docs.ncronjob.dev/migration/v4/</loc>
-         <lastmod>2025-11-22</lastmod>
+         <lastmod>2025-12-28</lastmod>
     </url>
 </urlset>

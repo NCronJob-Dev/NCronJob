@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/features/conditional-job-scheduling/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Conditional Job Scheduling - NCronJob</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Conditional Job Scheduling";
+        var mkdocs_page_input_path = "features/conditional-job-scheduling.md";
+        var mkdocs_page_url = "/features/conditional-job-scheduling/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../..">
+          <img src="../../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Conditional Job Scheduling</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-problem">The Problem</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-solution-onlyif">The Solution: OnlyIf</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage-examples">Usage Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#simple-predicate">Simple Predicate</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#with-dependency-injection">With Dependency Injection</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#async-conditions">Async Conditions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#multiple-conditions-and-logic">Multiple Conditions (AND Logic)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#accessing-cancellationtoken">Accessing CancellationToken</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-it-works">How It Works</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#execution-flow">Execution Flow</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evaluation-timing">Evaluation Timing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#important-conditions-and-retries">Important: Conditions and Retries</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#monitoring-skipped-jobs">Monitoring Skipped Jobs</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#condition-handlers">Condition Handlers</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#jobconditioncontext">JobConditionContext</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-keep-conditions-fast">1. Keep Conditions Fast</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-use-feature-flags-for-deployment-safety">2. Use Feature Flags for Deployment Safety</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-combine-with-parameters">3. Combine with Parameters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-document-condition-logic">4. Document Condition Logic</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#common-use-cases">Common Use Cases</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#feature-flags">Feature Flags</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#maintenance-windows">Maintenance Windows</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#business-hours-only">Business Hours Only</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-health-checks">System Health Checks</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cache-validity">Cache Validity</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration-based">Configuration-Based</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#performance-considerations">Performance Considerations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#limitations">Limitations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#see-also">See Also</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model-dependencies/">Model dependencies</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Controlling the log level</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Features</li>
+      <li class="breadcrumb-item active">Conditional Job Scheduling</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/features/conditional-job-scheduling.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="conditional-job-scheduling-with-onlyif">Conditional Job Scheduling with OnlyIf<a class="headerlink" href="#conditional-job-scheduling-with-onlyif" title="Permanent link">&para;</a></h1>
+<p>Schedule jobs that only execute when specific runtime conditions are met. This feature allows you to control job execution based on feature flags, configuration values, cached state, or any other runtime condition—without wasting resources instantiating jobs that won&rsquo;t run.</p>
+<h2 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
+<p>Traditionally, if you needed conditional job execution, you had to check the condition inside the job&rsquo;s <code>RunAsync</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">_featureFlags</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">MyJob</span><span class="p">(</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">featureFlags</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_featureFlags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">featureFlags</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Job is instantiated even if it won&#39;t run</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">_featureFlags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;my-feature&quot;</span><span class="p">))</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span><span class="w"> </span><span class="c1">// Wasted instantiation</span>
+
+<span class="w">        </span><span class="c1">// Actual work...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Issues with this approach:</strong>
+- Job class is instantiated and dependencies resolved even when skipped
+- Conditional logic is hidden inside the job
+- Job appears as &ldquo;executed&rdquo; in logs/metrics when it did nothing
+- Wastes resources on dependency injection and object creation</p>
+<h2 id="the-solution-onlyif">The Solution: OnlyIf<a class="headerlink" href="#the-solution-onlyif" title="Permanent link">&para;</a></h2>
+<p>The <code>OnlyIf</code> method allows you to specify conditions that are evaluated <strong>before</strong> job instantiation:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">GlobalCache</span><span class="p">.</span><span class="n">IsFeatureEnabled</span><span class="p">));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p><strong>Benefits:</strong>
+- Jobs are only instantiated when conditions are satisfied
+- Conditional logic is explicit in job registration
+- Proper &ldquo;Skipped&rdquo; state in logs/metrics
+- Saves resources by avoiding unnecessary instantiation</p>
+<h2 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">&para;</a></h2>
+<h3 id="simple-predicate">Simple Predicate<a class="headerlink" href="#simple-predicate" title="Permanent link">&para;</a></h3>
+<p>Evaluate a simple boolean condition:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">isMaintenanceMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">;</span>
+
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">BackupJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 2 * * *&quot;</span><span class="p">)</span><span class="w"> </span><span class="c1">// Daily at 2 AM</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">isMaintenanceMode</span><span class="p">));</span><span class="w"> </span><span class="c1">// Skip during maintenance</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="with-dependency-injection">With Dependency Injection<a class="headerlink" href="#with-dependency-injection" title="Permanent link">&para;</a></h3>
+<p>Access services from DI to make decisions:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">DataSyncJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/10 * * * *&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;data-sync&quot;</span><span class="p">)));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="async-conditions">Async Conditions<a class="headerlink" href="#async-conditions" title="Permanent link">&para;</a></h3>
+<p>Use async methods for I/O-bound condition checks:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ReportJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 9 * * MON&quot;</span><span class="p">)</span><span class="w"> </span><span class="c1">// Every Monday at 9 AM</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IConfigService</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">IsJobEnabledAsync</span><span class="p">(</span><span class="s">&quot;weekly-report&quot;</span><span class="p">)));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="multiple-conditions-and-logic">Multiple Conditions (AND Logic)<a class="headerlink" href="#multiple-conditions-and-logic" title="Permanent link">&para;</a></h3>
+<p>Combine multiple conditions—all must be true for execution:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">AnalyticsJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;analytics&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">ICacheService</span><span class="w"> </span><span class="n">cache</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">cache</span><span class="p">.</span><span class="n">Get</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;system-ready&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DateTime</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">.</span><span class="n">Hour</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">DateTime</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">.</span><span class="n">Hour</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">18</span><span class="p">));</span><span class="w"> </span><span class="c1">// Business hours only</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p>All conditions are evaluated in order, and the job is skipped if <strong>any</strong> condition returns false.</p>
+<h3 id="accessing-cancellationtoken">Accessing CancellationToken<a class="headerlink" href="#accessing-cancellationtoken" title="Permanent link">&para;</a></h3>
+<p>Conditions can access the cancellation token for cooperative cancellation:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IHealthCheckService</span><span class="w"> </span><span class="n">health</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="n">health</span><span class="p">.</span><span class="n">IsHealthyAsync</span><span class="p">(</span><span class="n">ct</span><span class="p">)));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<h3 id="execution-flow">Execution Flow<a class="headerlink" href="#execution-flow" title="Permanent link">&para;</a></h3>
+<p><strong>Without OnlyIf:</strong></p>
+<div class="codehilite"><pre><span></span><code>Cron triggers → Job instantiated → Dependencies resolved → RunAsync() executes
+</code></pre></div>
+
+<p><strong>With OnlyIf:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Cron</span><span class="w"> </span><span class="nv">triggers</span><span class="w"> </span>→<span class="w"> </span><span class="nv">OnlyIf</span><span class="w"> </span><span class="nv">evaluated</span><span class="w"> </span>→<span class="w"> </span><span class="ss">(</span><span class="k">if</span><span class="w"> </span><span class="nv">false</span>,<span class="w"> </span><span class="nv">skip</span><span class="ss">)</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Job</span><span class="w"> </span><span class="nv">instantiated</span><span class="w"> </span>→<span class="w"> </span><span class="nv">RunAsync</span><span class="ss">()</span><span class="w"> </span><span class="nv">executes</span>
+<span class="w">                                 </span>↓
+<span class="w">                            </span><span class="nv">Job</span><span class="w"> </span><span class="nv">never</span><span class="w"> </span><span class="nv">created</span>
+<span class="w">                            </span><span class="nv">Resources</span><span class="w"> </span><span class="nv">saved</span>
+</code></pre></div>
+
+<h3 id="evaluation-timing">Evaluation Timing<a class="headerlink" href="#evaluation-timing" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Evaluated</strong>: Once per cron trigger, before job instantiation</li>
+<li><strong>Scope</strong>: Uses a new async scope for dependency resolution</li>
+<li><strong>Retries</strong>: Conditions are <strong>NOT re-evaluated</strong> during retry attempts</li>
+<li><strong>Dependent Jobs</strong>: Conditions apply only to the primary job, not dependent jobs</li>
+</ul>
+<h3 id="important-conditions-and-retries">Important: Conditions and Retries<a class="headerlink" href="#important-conditions-and-retries" title="Permanent link">&para;</a></h3>
+<p>When a job has a retry policy and its condition was initially <code>true</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="na">[RetryPolicy(retryCount: 3)]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="p">}</span>
+
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">someCondition</span><span class="p">));</span><span class="w"> </span><span class="c1">// Evaluated only once</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p><strong>If the condition is <code>true</code> initially:</strong>
+1. Job is instantiated and runs
+2. If it fails, retry policy kicks in
+3. Condition is <strong>NOT</strong> re-evaluated for retries
+4. Retries proceed regardless of condition state</p>
+<p><strong>If the condition is <code>false</code> initially:</strong>
+1. Job is never instantiated
+2. Execution is skipped entirely
+3. No retries occur</p>
+<p>This design ensures that once a job starts executing, retry behavior is consistent and not affected by changing conditions.</p>
+<h2 id="monitoring-skipped-jobs">Monitoring Skipped Jobs<a class="headerlink" href="#monitoring-skipped-jobs" title="Permanent link">&para;</a></h2>
+<h3 id="condition-handlers">Condition Handlers<a class="headerlink" href="#condition-handlers" title="Permanent link">&para;</a></h3>
+<p>Register handlers to be notified when jobs are skipped due to unmet conditions:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJobConditionHandler</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJobConditionHandler</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">MyJobConditionHandler</span><span class="o">&gt;</span><span class="w"> </span><span class="n">_logger</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">MyJobConditionHandler</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">MyJobConditionHandler</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">HandleConditionNotMetAsync</span><span class="p">(</span>
+<span class="w">        </span><span class="n">JobConditionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span>
+<span class="w">            </span><span class="s">&quot;Job {JobName} was skipped at {Time}&quot;</span><span class="p">,</span><span class="w"> </span>
+<span class="w">            </span><span class="n">context</span><span class="p">.</span><span class="n">JobName</span><span class="p">,</span><span class="w"> </span>
+<span class="w">            </span><span class="n">DateTimeOffset</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Could also:</span>
+<span class="w">        </span><span class="c1">// - Update metrics</span>
+<span class="w">        </span><span class="c1">// - Send notifications</span>
+<span class="w">        </span><span class="c1">// - Update dashboards</span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Register the handler</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">someCondition</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddConditionHandler</span><span class="o">&lt;</span><span class="n">MyJobConditionHandler</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="jobconditioncontext">JobConditionContext<a class="headerlink" href="#jobconditioncontext" title="Permanent link">&para;</a></h3>
+<p>The context provided to condition handlers contains:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobConditionContext</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Guid</span><span class="w"> </span><span class="n">CorrelationId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">        </span><span class="c1">// Unique execution ID</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">JobName</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">            </span><span class="c1">// Custom job name</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Type</span><span class="o">?</span><span class="w"> </span><span class="n">JobType</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">              </span><span class="c1">// Job class type</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">TriggerType</span><span class="w"> </span><span class="n">TriggerType</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">    </span><span class="c1">// How job was triggered</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">object?</span><span class="w"> </span><span class="n">Parameter</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">          </span><span class="c1">// Job parameter</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
+<p>NCronJob automatically logs condition evaluation:</p>
+<ul>
+<li><strong>Debug level</strong>: When conditions are not satisfied</li>
+<li><strong>Trace level</strong>: When conditions are satisfied</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span><span class="n">DBG</span><span class="o">]</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="s1">&#39;MyJob&#39;</span><span class="w"> </span><span class="k">condition</span><span class="w"> </span><span class="n">was</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">satisfied</span><span class="p">.</span><span class="w"> </span><span class="n">Skipping</span><span class="w"> </span><span class="n">execution</span><span class="p">.</span>
+<span class="o">[</span><span class="n">TRC</span><span class="o">]</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="s1">&#39;OtherJob&#39;</span><span class="w"> </span><span class="k">condition</span><span class="w"> </span><span class="n">was</span><span class="w"> </span><span class="n">satisfied</span><span class="p">.</span><span class="w"> </span><span class="n">Proceeding</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">execution</span><span class="p">.</span>
+</code></pre></div>
+
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="1-keep-conditions-fast">1. Keep Conditions Fast<a class="headerlink" href="#1-keep-conditions-fast" title="Permanent link">&para;</a></h3>
+<p>Conditions are evaluated on the scheduler thread. Keep them lightweight:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Good - Fast check</span>
+<span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">Get</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;feature-enabled&quot;</span><span class="p">))</span>
+
+<span class="c1">// Avoid - Expensive operation</span>
+<span class="p">.</span><span class="n">OnlyIf</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IDatabase</span><span class="w"> </span><span class="n">db</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">ComplexQueryAsync</span><span class="p">())</span>
+</code></pre></div>
+
+<h3 id="2-use-feature-flags-for-deployment-safety">2. Use Feature Flags for Deployment Safety<a class="headerlink" href="#2-use-feature-flags-for-deployment-safety" title="Permanent link">&para;</a></h3>
+<p>Gradually roll out new jobs:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">NewExperimentalJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">            </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;experimental-job&quot;</span><span class="p">)));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="3-combine-with-parameters">3. Combine with Parameters<a class="headerlink" href="#3-combine-with-parameters" title="Permanent link">&para;</a></h3>
+<p>Different conditions for different parameters:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">DataProcessingJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 */6 * * *&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;production&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">isProdReady</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">And</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">DataProcessingJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 */2 * * *&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;staging&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">isStagingReady</span><span class="p">));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="4-document-condition-logic">4. Document Condition Logic<a class="headerlink" href="#4-document-condition-logic" title="Permanent link">&para;</a></h3>
+<p>Make conditions self-documenting:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Clear intent</span>
+<span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">ISystemStatus</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">status</span><span class="p">.</span><span class="n">IsSystemHealthy</span><span class="p">())</span>
+
+<span class="c1">// Unclear</span>
+<span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">ISystemStatus</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">status</span><span class="p">.</span><span class="n">Check</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="common-use-cases">Common Use Cases<a class="headerlink" href="#common-use-cases" title="Permanent link">&para;</a></h2>
+<h3 id="feature-flags">Feature Flags<a class="headerlink" href="#feature-flags" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;new-feature&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="maintenance-windows">Maintenance Windows<a class="headerlink" href="#maintenance-windows" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">MaintenanceMode</span><span class="p">.</span><span class="n">IsActive</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="business-hours-only">Business Hours Only<a class="headerlink" href="#business-hours-only" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">hour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DateTime</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">.</span><span class="n">Hour</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">hour</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">hour</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">18</span><span class="p">;</span>
+<span class="p">})</span>
+</code></pre></div>
+
+<h3 id="system-health-checks">System Health Checks<a class="headerlink" href="#system-health-checks" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IHealthCheckService</span><span class="w"> </span><span class="n">health</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">health</span><span class="p">.</span><span class="n">IsHealthyAsync</span><span class="p">())</span>
+</code></pre></div>
+
+<h3 id="cache-validity">Cache Validity<a class="headerlink" href="#cache-validity" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">ICacheService</span><span class="w"> </span><span class="n">cache</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="o">!</span><span class="n">cache</span><span class="p">.</span><span class="n">Has</span><span class="p">(</span><span class="s">&quot;recent-sync&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">cache</span><span class="p">.</span><span class="n">IsExpired</span><span class="p">(</span><span class="s">&quot;recent-sync&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="configuration-based">Configuration-Based<a class="headerlink" href="#configuration-based" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IConfiguration</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="n">config</span><span class="p">.</span><span class="n">GetValue</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;Jobs:DataSync:Enabled&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Instantiation Savings</strong>: Jobs are never created when conditions fail, saving CPU and memory</li>
+<li><strong>Dependency Resolution</strong>: Dependencies for conditions are resolved in a separate scope</li>
+<li><strong>Scope Lifetime</strong>: The condition evaluation scope is disposed immediately after evaluation</li>
+<li><strong>Parallel Evaluation</strong>: Multiple job conditions can be evaluated concurrently</li>
+<li><strong>No Lock Contention</strong>: Conditions don&rsquo;t affect job concurrency settings</li>
+</ul>
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Conditions cannot access the <code>IJobExecutionContext</code> (job hasn&rsquo;t been created yet)</li>
+<li>Conditions cannot be changed at runtime without restarting the application</li>
+<li>Delegate-based (untyped) jobs can use conditions, but condition handlers only work with typed jobs</li>
+</ul>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://martinfowler.com/articles/feature-toggles.html">Feature Flags</a></li>
+<li><a href="../retry-support/">Retry Support</a></li>
+<li><a href="../notifications/">Notifications</a></li>
+<li><a href="../concurrency-control/">Concurrency Control</a></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../parameters/" class="btn btn-neutral float-left" title="Passing Parameters"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../notifications/" class="btn btn-neutral float-right" title="Notifications">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>©2024-Present <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../parameters/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../notifications/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
