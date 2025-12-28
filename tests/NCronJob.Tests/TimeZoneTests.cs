@@ -10,11 +10,9 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldAssignCorrectTimeZoneToJobOptions()
     {
-        var builder = new JobOptionBuilder();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
-        builder.WithCronExpression(Cron.AtEveryMinute, timeZoneInfo: timeZone);
 
-        var options = builder.GetJobOptions();
+        var options = JobOptionBuilder.Evaluate(b => b.WithCronExpression(Cron.AtEveryMinute, timeZoneInfo: timeZone));
 
         options.Single().TimeZoneInfo.ShouldBe(timeZone);
     }
@@ -22,10 +20,7 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldNotInferAnythingIfTimeZoneNotSpecified()
     {
-        var builder = new JobOptionBuilder();
-        builder.WithCronExpression(Cron.AtEveryMinute);
-
-        var options = builder.GetJobOptions();
+        var options = JobOptionBuilder.Evaluate(b => b.WithCronExpression(Cron.AtEveryMinute));
 
         options.Single().TimeZoneInfo.ShouldBeNull();
     }
@@ -33,12 +28,10 @@ public sealed class TimeZoneTests : JobIntegrationBase
     [Fact]
     public void ShouldAssignCorrectTimeZoneAndExpressionToJobOptions()
     {
-        var builder = new JobOptionBuilder();
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
         var cronExpression = Cron.AtEveryMinute;
-        builder.WithCronExpression(cronExpression, timeZoneInfo: timeZone);
 
-        var options = builder.GetJobOptions();
+        var options = JobOptionBuilder.Evaluate(b => b.WithCronExpression(cronExpression, timeZoneInfo: timeZone));
 
         options.Single().TimeZoneInfo.ShouldBe(timeZone);
         options.Single().CronExpression.ShouldBe(cronExpression);

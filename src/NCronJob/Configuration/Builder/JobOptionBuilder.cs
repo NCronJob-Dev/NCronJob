@@ -85,13 +85,22 @@ public sealed class JobOptionBuilder
         return new OptionChainerBuilder(this);
     }
 
-    internal List<JobOption> GetJobOptions()
+    internal static ICollection<JobOption> Evaluate(Action<JobOptionBuilder>? options)
     {
-        if (jobOptions.Count == 0)
+        if (options is null)
         {
-            jobOptions.Add(new JobOption());
+            return [new JobOption()];
         }
 
+        var builder = new JobOptionBuilder();
+
+        options(builder);
+
+        return builder.GetJobOptions();
+    }
+
+    private List<JobOption> GetJobOptions()
+    {
         return jobOptions;
     }
 }
