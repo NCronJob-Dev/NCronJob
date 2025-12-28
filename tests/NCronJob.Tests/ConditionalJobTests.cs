@@ -277,6 +277,163 @@ public class ConditionalJobTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task DirectOnlyIfWithoutChainingWhenTrueShouldExecute()
+    {
+        var shouldRun = true;
+        
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p
+                .OnlyIf(() => shouldRun)
+                .WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = Events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("SimpleJob executed");
+        Storage.Entries.Count.ShouldBe(1);
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Running);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Completed);
+    }
+
+    [Fact]
+    public async Task DirectOnlyIfWithoutChainingWhenFalseShouldSkip()
+    {
+        var shouldRun = false;
+        
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p
+                .OnlyIf(() => shouldRun)
+                .WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = Events[0].CorrelationId;
+        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+
+        Storage.Entries.Count.ShouldBe(0); // Job never executed
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Skipped);
+    }
+
+    [Fact]
+    public async Task DirectOnlyIfWithDependencyInjectionShouldWork()
+    {
+        ServiceCollection.AddSingleton<FeatureFlagService>();
+        
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p
+                .OnlyIf((FeatureFlagService flags) => flags.IsEnabled("my-feature"))
+                .WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = Events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("SimpleJob executed");
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Running);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Completed);
+    }
+
+    [Fact]
+    public async Task DirectOnlyIfWithAsyncConditionShouldWork()
+    {
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p
+                .OnlyIf(async () =>
+                {
+                    await Task.Delay(10);
+                    return true;
+                })
+                .WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = Events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("SimpleJob executed");
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Running);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Completed);
+    }
+
+    [Fact]
+    public async Task DirectOnlyIfCanBeChainedWithOtherOnlyIfs()
+    {
+        var condition1 = true;
+        var condition2 = true;
+        
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p
+                .OnlyIf(() => condition1)
+                .OnlyIf(() => condition2)
+                .WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = Events[0].CorrelationId;
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("SimpleJob executed");
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Running);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Completed);
+    }
+
+    [Fact]
+    public async Task DirectOnlyIfWithInstantJobShouldWork()
+    {
+        var shouldRun = true;
+        
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p.OnlyIf(() => shouldRun)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+        var orchestrationId = instantJobRegistry.RunInstantJob<SimpleJob>(token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries[0].ShouldBe("SimpleJob executed");
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Running);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Completed);
+    }
+
+    [Fact]
+    public async Task DirectOnlyIfWithInstantJobWhenFalseShouldSkip()
+    {
+        var shouldRun = false;
+        
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<SimpleJob>(p => p.OnlyIf(() => shouldRun)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+        var orchestrationId = instantJobRegistry.RunInstantJob<SimpleJob>(token: CancellationToken);
+
+        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+
+        Storage.Entries.Count.ShouldBe(0); // Job never executed
+        
+        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        filteredEvents.ShouldContain(e => e.State == ExecutionState.Skipped);
+    }
+
+    [Fact]
     public async Task ConditionWithMultipleDependenciesShouldResolveAll()
     {
         ServiceCollection.AddSingleton<FeatureFlagService>();
