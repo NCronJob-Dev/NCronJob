@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- `OnlyIf` on top-level job configuration.
+
 ## [v4.9.0] - 2025-12-28
 
 ### Added
