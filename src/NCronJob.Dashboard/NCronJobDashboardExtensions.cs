@@ -27,6 +27,10 @@ public static class NCronJobDashboardExtensions
         services.TryAddSingleton(options);
         services.TryAddSingleton<DashboardService>();
         
+        // Add Razor Components with Interactive Server support
+        services.AddRazorComponents()
+            .AddInteractiveServerComponents();
+        
         return services;
     }
 
