@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Polly" VersionOverride="8.6.4" />
+      <PackageReference Include="Polly" />
       <ProjectReference Include="..\..\src\NCronJob\NCronJob.csproj" />
     </ItemGroup>
 
