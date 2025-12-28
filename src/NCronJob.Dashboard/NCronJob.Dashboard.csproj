@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>NCronJob.Dashboard</PackageId>
+    <Title>NCronJob.Dashboard</Title>
+    <Description>
+      Blazor-based dashboard for NCronJob, providing real-time monitoring and management of scheduled jobs.
+    </Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/NCronJob-Dev/NCronJob</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/NCronJob-Dev/NCronJob</PackageProjectUrl>
+    <PackageTags>job;scheduler;dashboard;blazor;monitoring;cron;ncronjob</PackageTags>
+    <Authors>Steven Giesel</Authors>
+    <Company>Giesel Engineering</Company>
+    <Copyright>Steven Giesel</Copyright>
+    <Product>NCronJob.Dashboard</Product>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageIcon>logo_small.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Build information">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\assets\logo_small.png" Pack="true" PackagePath="" Visible="false" />
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCronJob\NCronJob.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,478 @@
+/* NCronJob Dashboard Styles */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f5f5f5;
+}
+
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 2em;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.current-time {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.btn-refresh {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.btn-refresh:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Alerts */
+.alert {
+    padding: 15px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert-error {
+    background-color: #fee;
+    border-left: 4px solid #c33;
+    color: #c33;
+}
+
+.alert-success {
+    background-color: #efe;
+    border-left: 4px solid #3c3;
+    color: #3a3;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: inherit;
+    padding: 0;
+    line-height: 1;
+}
+
+/* Dashboard Content */
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sections */
+section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.5em;
+}
+
+.no-jobs, .no-activity {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+/* Jobs Table */
+.jobs-table {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr 0.8fr 2fr;
+    gap: 1px;
+    background-color: #667eea;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr 0.8fr 2fr;
+    gap: 1px;
+    background-color: white;
+}
+
+.table-row.disabled-job {
+    opacity: 0.6;
+}
+
+.cell {
+    padding: 15px;
+    background-color: inherit;
+}
+
+.cell-name {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.job-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.job-type {
+    font-size: 0.85em;
+    color: #666;
+    font-family: 'Courier New', monospace;
+}
+
+.job-parameter details {
+    margin-top: 5px;
+    font-size: 0.85em;
+}
+
+.job-parameter summary {
+    cursor: pointer;
+    color: #667eea;
+}
+
+.job-parameter pre {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.8em;
+}
+
+.cell-cron code {
+    background-color: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.timezone {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 5px;
+}
+
+.cell-next {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.next-execution {
+    font-weight: 500;
+    color: #333;
+}
+
+.time-until {
+    font-size: 0.85em;
+    color: #667eea;
+}
+
+.no-schedule {
+    color: #999;
+    font-style: italic;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.status-enabled {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-disabled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #5568d3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Activity Log */
+.activity-log {
+    max-height: 600px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.activity-item {
+    padding: 12px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #ccc;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.activity-time {
+    font-family: 'Courier New', monospace;
+    color: #666;
+    font-weight: 600;
+}
+
+.activity-job {
+    font-weight: 500;
+    color: #333;
+}
+
+.activity-state {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.activity-error {
+    grid-column: 1 / -1;
+    color: #dc3545;
+    font-size: 0.85em;
+}
+
+.activity-notstarted {
+    border-left-color: #adb5bd;
+}
+
+.activity-running {
+    border-left-color: #17a2b8;
+    background-color: #e7f4f6;
+}
+
+.activity-completed {
+    border-left-color: #28a745;
+    background-color: #e7f7ea;
+}
+
+.activity-failed {
+    border-left-color: #dc3545;
+    background-color: #f8e7e9;
+}
+
+.activity-orchestrationstarted {
+    border-left-color: #6610f2;
+    background-color: #f0e7ff;
+}
+
+.activity-orchestrationcompleted {
+    border-left-color: #6610f2;
+    background-color: #f0e7ff;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.parameter-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    resize: vertical;
+}
+
+.trigger-error {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #fee;
+    border-left: 4px solid #c33;
+    color: #c33;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Scrollbar Styling */
+.activity-log::-webkit-scrollbar {
+    width: 8px;
+}
+
+.activity-log::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.activity-log::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.activity-log::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
