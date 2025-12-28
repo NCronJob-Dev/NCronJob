@@ -6,10 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.8.1] - 2025-12-28
+
 ### Added
 
 - `OnlyIf` to not trigger jobs based on a predicate. Reported by [@amithegde
-](https://github.com/amithegde) in #328. Fixed by [@linkdotnet](https://github.com/linkdotnet).
+  ](https://github.com/amithegde) in #328. Fixed by [@linkdotnet](https://github.com/linkdotnet).
 
 ## [v4.7.0] - 2025-11-22
 
@@ -560,7 +562,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.7.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.8.1...HEAD
+[v4.8.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.7.0...v4.8.1
 [v4.7.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.6.0...v4.7.0
 [v4.6.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.4...v4.6.0
 [v4.5.4]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.5.3...v4.5.4
