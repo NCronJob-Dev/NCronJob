@@ -167,7 +167,7 @@ internal sealed partial class JobWorker
         var delay = nextRunTime - utcNow;
         if (delay > TimeSpan.Zero)
         {
-            await TaskExtensions.LongDelaySafe(delay, timeProvider, stopToken).ConfigureAwait(false);
+            await Task.LongDelaySafe(delay, timeProvider, stopToken).ConfigureAwait(false);
         }
     }
 

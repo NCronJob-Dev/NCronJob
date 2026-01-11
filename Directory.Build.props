@@ -5,6 +5,7 @@
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <AnalysisLevel>latest</AnalysisLevel>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <LangVersion>14.0</LangVersion>
 
         <NoWarn>$(NoWarn);NCRONJOB_OBSERVER</NoWarn>
     </PropertyGroup>

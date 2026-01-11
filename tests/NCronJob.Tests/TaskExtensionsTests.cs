@@ -13,12 +13,12 @@ public class TaskExtensionsTests
         var maxDelayTimeSpan = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
         var timeProvider = new FakeTimeProvider();
         var targetTimeSpan = TimeSpan.FromDays(100);
-        var token = new CancellationToken();
+        var token = CancellationToken.None;
 
         // Act
         var act = () =>
         {
-            var delayTask = TaskExtensions.LongDelaySafe(targetTimeSpan, timeProvider, token);
+            var delayTask = Task.LongDelaySafe(targetTimeSpan, timeProvider, token);
             timeProvider.Advance(maxDelayTimeSpan);
             timeProvider.Advance(maxDelayTimeSpan);
             timeProvider.Advance(targetTimeSpan - (maxDelayTimeSpan + maxDelayTimeSpan));
@@ -36,10 +36,10 @@ public class TaskExtensionsTests
         // Arrange
         var timeProvider = new FakeTimeProvider();
         var targetTimeSpan = TimeSpan.Zero;
-        var token = new CancellationToken();
+        var token = CancellationToken.None;
 
         // Act
-        var act = () => TaskExtensions.LongDelaySafe(targetTimeSpan, timeProvider, token);
+        var act = () => Task.LongDelaySafe(targetTimeSpan, timeProvider, token);
 
         // Assert
         act.ShouldThrow<ArgumentOutOfRangeException>();
