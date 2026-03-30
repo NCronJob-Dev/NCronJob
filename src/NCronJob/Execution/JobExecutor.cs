@@ -69,7 +69,7 @@ internal sealed partial class JobExecutor : IDisposable
             var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
             await ExecuteJob(runContext, job);
         }
-        catch (Exception exc) when (exc is not OperationCanceledException or AggregateException)
+        catch (Exception exc) when (exc is not (OperationCanceledException or AggregateException))
         {
             LogJobFailed(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
@@ -154,7 +154,7 @@ internal sealed partial class JobExecutor : IDisposable
             {
                 await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
             }
-            catch (Exception innerExc) when (innerExc is not OperationCanceledException or AggregateException)
+            catch (Exception innerExc) when (innerExc is not (OperationCanceledException or AggregateException))
             {
                 // We don't want to throw exceptions from the notification service
             }
