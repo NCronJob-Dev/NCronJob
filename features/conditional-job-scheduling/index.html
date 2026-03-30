@@ -135,6 +135,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#configuration-based">Configuration-Based</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#instant-jobs">Instant Jobs</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#dependent-jobs-executewhen">Dependent Jobs (ExecuteWhen)</a>
     </li>
         </ul>
@@ -241,9 +243,15 @@
 - Job appears as &ldquo;executed&rdquo; in logs/metrics when it did nothing
 - Wastes resources on dependency injection and object creation</p>
 <h2 id="the-solution-onlyif">The Solution: OnlyIf<a class="headerlink" href="#the-solution-onlyif" title="Permanent link">&para;</a></h2>
-<p>The <code>OnlyIf</code> method allows you to specify conditions that are evaluated <strong>before</strong> job instantiation:</p>
+<p>The <code>OnlyIf</code> method allows you to specify conditions that are evaluated <strong>before</strong> job instantiation. You can use <code>OnlyIf</code> directly or chain it with other configuration methods:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
+<span class="w">    </span><span class="c1">// Direct usage without chaining</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">GlobalCache</span><span class="p">.</span><span class="n">IsFeatureEnabled</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">));</span>
+
+<span class="w">    </span><span class="c1">// Or chain after other methods</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
 <span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
 <span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">GlobalCache</span><span class="p">.</span><span class="n">IsFeatureEnabled</span><span class="p">));</span>
@@ -254,7 +262,8 @@
 - Jobs are only instantiated when conditions are satisfied
 - Conditional logic is explicit in job registration
 - Proper &ldquo;Skipped&rdquo; state in logs/metrics
-- Saves resources by avoiding unnecessary instantiation</p>
+- Saves resources by avoiding unnecessary instantiation
+- Works with both scheduled (cron) and instant jobs</p>
 <h2 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">&para;</a></h2>
 <h3 id="simple-predicate">Simple Predicate<a class="headerlink" href="#simple-predicate" title="Permanent link">&para;</a></h3>
 <p>Evaluate a simple boolean condition:</p>
@@ -263,8 +272,8 @@
 <span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">BackupJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
-<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 2 * * *&quot;</span><span class="p">)</span><span class="w"> </span><span class="c1">// Daily at 2 AM</span>
-<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">isMaintenanceMode</span><span class="p">));</span><span class="w"> </span><span class="c1">// Skip during maintenance</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">isMaintenanceMode</span><span class="p">)</span><span class="w"> </span><span class="c1">// Skip during maintenance</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 2 * * *&quot;</span><span class="p">));</span><span class="w"> </span><span class="c1">// Daily at 2 AM</span>
 <span class="p">});</span>
 </code></pre></div>
 
@@ -560,6 +569,28 @@
 <span class="w">    </span><span class="n">config</span><span class="p">.</span><span class="n">GetValue</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;Jobs:DataSync:Enabled&quot;</span><span class="p">))</span>
 </code></pre></div>
 
+<h3 id="instant-jobs">Instant Jobs<a class="headerlink" href="#instant-jobs" title="Permanent link">&para;</a></h3>
+<p>The <code>OnlyIf</code> feature works seamlessly with instant jobs triggered via <code>IInstantJobRegistry</code>. When a condition is not met, the instant job is skipped just like scheduled jobs:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">DataSyncJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">        </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">((</span><span class="n">IFeatureFlagService</span><span class="w"> </span><span class="n">flags</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">flags</span><span class="p">.</span><span class="n">IsEnabled</span><span class="p">(</span><span class="s">&quot;data-sync&quot;</span><span class="p">)));</span>
+<span class="p">});</span>
+
+<span class="c1">// Later in your code (e.g., API endpoint)</span>
+<span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/trigger-sync&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// Job will only execute if the condition is met</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">correlationId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">RunInstantJob</span><span class="o">&lt;</span><span class="n">DataSyncJob</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Accepted</span><span class="p">();</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p><strong>Important Notes for Instant Jobs:</strong>
+- Conditions are evaluated when the instant job is triggered
+- If the condition returns <code>false</code>, the job is skipped and marked as &ldquo;Skipped&rdquo; in the execution state
+- The job is never instantiated when conditions fail, saving resources
+- Works with all instant job methods: <code>RunInstantJob</code>, <code>RunScheduledJob</code>, <code>ForceRunInstantJob</code>, <code>ForceRunScheduledJob</code></p>
 <h3 id="dependent-jobs-executewhen">Dependent Jobs (ExecuteWhen)<a class="headerlink" href="#dependent-jobs-executewhen" title="Permanent link">&para;</a></h3>
 <div class="codehilite"><pre><span></span><code><span class="c1">// Conditional execution for jobs triggered by ExecuteWhen</span>
 <span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span>
