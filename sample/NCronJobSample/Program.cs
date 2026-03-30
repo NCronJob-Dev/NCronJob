@@ -51,8 +51,7 @@ app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
 {
     instantJobRegistry.RunInstantJob<PrintHelloWorldJob>("Hello from instant job! ###################### Queued, not forced ######################");
 })
-    .WithName("TriggerInstantJob")
-    .WithOpenApi();
+    .WithName("TriggerInstantJob");
 
 app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry, int timeDelayInSeconds = 0) =>
 {
@@ -60,7 +59,6 @@ app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry, 
         "Hello from instant job! ######################## May the Force be with you ######################");
 })
     .WithSummary("Triggers a job regardless of concurrency setting for that Job Type")
-    .WithName("ForceTriggerInstantJob")
-    .WithOpenApi();
+    .WithName("ForceTriggerInstantJob");
 
 await app.RunAsync();

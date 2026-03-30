@@ -23,7 +23,8 @@ public class TestRetryJob(ILogger<TestRetryJob> logger, int maxFailuresBeforeSuc
         }
 
         await Task.Delay(3000, token);
-        logger.LogInformation($"TestRetryJob with instance Id {context.Id} completed successfully on attempt {attemptCount}.");
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("TestRetryJob with instance Id {Id} completed successfully on attempt {AttemptCount}.", context.Id, attemptCount);
         await Task.CompletedTask;
     }
 }
