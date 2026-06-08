@@ -212,7 +212,7 @@ internal sealed class JobRegistry
                 return false;
             }
 
-            var expressionEquals = x.CronExpression?.Equals(y.CronExpression) ?? y.CronExpression is null;
+            var expressionEquals = x.CronExpression?.Equals(y.CronExpression) ?? (y.CronExpression is null);
 
             return x.JobFullName == y.JobFullName
                          && x.Parameter == y.Parameter

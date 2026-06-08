@@ -59,7 +59,7 @@ internal sealed class JobQueueManager : IDisposable
                 jobQueue.Clear();
                 jobQueue.CollectionChanged -= CallCollectionChanged;
                 semaphores.TryRemove(queueName, out _);
-                if (jobCancellationTokens.TryRemove(queueName, out CancellationTokenSource? x))
+                if (jobCancellationTokens.TryRemove(queueName, out var x))
                 {
                     x.Cancel();
                     x.Dispose();

@@ -282,12 +282,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     {
         var jobDefinition = jobRegistry.FindRootJobDefinition(jobName);
 
-        if (jobDefinition is null)
-        {
-            throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-        }
-
-        return jobDefinition;
+        return jobDefinition ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
     }
 
     private Guid RunInternal(

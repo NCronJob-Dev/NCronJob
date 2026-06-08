@@ -208,7 +208,7 @@ public static class EventsHelper
         events.Count.ShouldBe(4);
     }
 
-    private static bool ShouldBeWellFormed(
+    private static void ShouldBeWellFormed(
         this ExecutionProgress @event,
         Type? type,
         string? name,
@@ -233,7 +233,5 @@ public static class EventsHelper
                 @event.IsTypedJob.ShouldBe(@event.Type != null);
                 break;
         }
-
-        return true;
     }
 }

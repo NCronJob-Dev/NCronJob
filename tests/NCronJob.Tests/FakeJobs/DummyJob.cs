@@ -11,11 +11,6 @@ public class DummyJob(Storage storage) : IJob
 
     private static object? UpdateWith(IJobExecutionContext context)
     {
-        if (context.Parameter is null)
-        {
-            return context.Output;
-        }
-
-        return $"{context.Output}+{context.Parameter}";
+        return context.Parameter is null ? context.Output : $"{context.Output}+{context.Parameter}";
     }
 }

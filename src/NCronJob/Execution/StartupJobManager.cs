@@ -35,7 +35,7 @@ internal partial class StartupJobManager(
 
         LogStartupJobsCompletion(logger, timeProvider.GetUtcNow());
 
-        Exception[] faults = jobRuns
+        var faults = jobRuns
             .Where(jr => jr.JobDefinition.ShouldCrashOnStartupFailure == true && jr.CurrentState.Type == JobStateType.Faulted)
             .Select(jr => jr.CurrentState.Fault)
             .Cast<Exception>()

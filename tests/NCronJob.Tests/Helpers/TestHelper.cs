@@ -21,7 +21,7 @@ public abstract class JobIntegrationBase : IDisposable
         FakeTimeProvider fakeTimeProvider = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
         FakeTimer = fakeTimeProvider;
 
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        var cancellationToken = TestContext.Current.CancellationToken;
         CancellationToken = cancellationToken;
 
         ServiceCollection = new();

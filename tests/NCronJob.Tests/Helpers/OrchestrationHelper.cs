@@ -24,10 +24,7 @@ public class OrchestrationHelper
     {
         SynchronizedCollection<ExecutionProgress> events = [];
 
-        void Subscriber(ExecutionProgress progress)
-        {
-            events.Add(progress);
-        }
+        void Subscriber(ExecutionProgress progress) => events.Add(progress);
 
         var progressReporter = serviceProvider.GetRequiredService<IJobExecutionProgressReporter>();
 
@@ -41,7 +38,7 @@ public class OrchestrationHelper
         Action? onAnyFoundButLast = null,
         bool stopMonitoringEvents = false)
     {
-        List<ExecutionProgress> seen = new();
+        List<ExecutionProgress> seen = [];
 
         await WaitUntilConditionIsMet(events, LastOfNthCompletedOrchestration, stopMonitoringEvents);
 
@@ -76,10 +73,7 @@ public class OrchestrationHelper
             OrchestrationHasReachedExpectedState,
             stopMonitoringEvents);
 
-        bool OrchestrationHasReachedExpectedState(ExecutionProgress @event)
-        {
-            return @event.CorrelationId == orchestrationId && @event.State == state;
-        }
+        bool OrchestrationHasReachedExpectedState(ExecutionProgress @event) => @event.CorrelationId == orchestrationId && @event.State == state;
     }
 
     public async Task<ExecutionProgress> WaitUntilConditionIsMet(
@@ -92,11 +86,11 @@ public class OrchestrationHelper
         // in here (which leads to a "Collection was modified; enumeration operation may not
         // execute." error message would we using any enumerating based (eg. Linq) traversal.
 
-        int index = 0;
+        var index = 0;
 
         while (true)
         {
-            int count = events.Count;
+            var count = events.Count;
 
             while (index < count)
             {

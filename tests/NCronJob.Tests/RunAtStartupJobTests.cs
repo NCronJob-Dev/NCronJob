@@ -19,7 +19,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        Func<Task> act = async () => await RunApp(app);
+        var act = async () => await RunApp(app);
 
         await act.ShouldThrowAsync<InvalidOperationException>();
     }
@@ -53,7 +53,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        (var subscription, var events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -96,7 +96,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        (var subscription, var events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -127,7 +127,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        (IDisposable subscription, IList<ExecutionProgress> events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        (var subscription, var events) = RegisterAnExecutionProgressSubscriber(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);

@@ -83,13 +83,13 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         // Trying to register twice the same unnamed delegates fails
         registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out _).ShouldBe(true);
 
-        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out Exception? unNamedUntypedJobException).ShouldBe(false);
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute), out var unNamedUntypedJobException).ShouldBe(false);
         unNamedUntypedJobException.ShouldNotBeNull();
         unNamedUntypedJobException.Message.ShouldStartWith("Job registration conflict for job 'Untyped job NCronJob.UntypedJob_I2s40FrC' detected.");
 
         // Trying to register twice the same named delegates fails as well
         registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one"), out _).ShouldBe(true);
-        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one"), out Exception? namedUntypedJobException).ShouldBe(false);
+        registry.TryRegister(s => s.AddJob(jobDelegate, Cron.AtEveryMinute, jobName: "one"), out var namedUntypedJobException).ShouldBe(false);
         namedUntypedJobException.ShouldNotBeNull();
         namedUntypedJobException.Message.ShouldStartWith("Job registration conflict detected. A job has already been registered with the name 'one'.");
 

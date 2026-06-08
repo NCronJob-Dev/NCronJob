@@ -99,13 +99,10 @@ internal sealed record JobDefinition
         Type type,
         object? parameter)
     {
-        if (type.FullName is null // FullName is later required to properly identify the JobDefinition
-            || !type.GetInterfaces().Contains(typeof(IJob)))
-        {
-            throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.");
-        }
-
-        return new(name, type, parameter);
+        return type.FullName is null // FullName is later required to properly identify the JobDefinition
+            || !type.GetInterfaces().Contains(typeof(IJob))
+            ? throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.")
+            : new(name, type, parameter);
     }
 
     public static JobDefinition CreateUntyped(
@@ -193,7 +190,7 @@ internal sealed record JobDefinition
                 {
                     if (!await existingCondition(sp, ct).ConfigureAwait(false))
                         return false;
-                    
+
                     foreach (var condition in jobOption.Conditions)
                     {
                         if (!await condition(sp, ct).ConfigureAwait(false))
@@ -207,20 +204,15 @@ internal sealed record JobDefinition
 
     public IJob? ResolveJob(IServiceProvider scopedServiceProvider)
     {
-        if (IsTypedJob)
-        {
-            return (IJob?)scopedServiceProvider.GetService(Type);
-        }
-
-        return new DynamicJobFactory(scopedServiceProvider, Delegate);
+        return IsTypedJob ? (IJob?)scopedServiceProvider.GetService(Type) : new DynamicJobFactory(scopedServiceProvider, Delegate);
     }
 
     public bool IsUnnamedOrUnscheduledOrParameterlessTypedJob =>
-        (CustomName is not null
-            || CronExpression is not null
-            || IsStartupJob
-            || !IsTypedJob
-            || Parameter is null);
+        CustomName is not null
+        || CronExpression is not null
+        || IsStartupJob
+        || !IsTypedJob
+        || Parameter is null;
 
     private Delegate? Delegate { get; }
 

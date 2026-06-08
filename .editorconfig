@@ -65,7 +65,6 @@ dotnet_style_predefined_type_for_member_access = true                           
 
 # Modifier preferences
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#normalize-modifiers
-dotnet_style_require_accessibility_modifiers = always                           # IDE0040
 csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async   # IDE0036
 dotnet_style_readonly_field = true                                              # IDE0044
 
@@ -415,11 +414,15 @@ dotnet_diagnostic.S1133.severity = suggestion
 
 # Visual Studio
 dotnet_diagnostic.IDE0005.severity = none # IDE0005: Using directive is unnecessary
+dotnet_diagnostic.IDE0021.severity = none # IDE0021: Use expression body for constructor
+dotnet_diagnostic.IDE0022.severity = none # IDE0022: Use expression body for method
+dotnet_diagnostic.IDE0040.severity = none # IDE0040: Accessiblity modifiers unnecessary
 dotnet_diagnostic.IDE0055.severity = none # IDE0055: Fix formatting
 dotnet_diagnostic.IDE0058.severity = none # IDE0058: Expression value is never used
 dotnet_diagnostic.IDE0079.severity = warning # IDE0079: Remove unnecessary suppression
 dotnet_diagnostic.IDE0130.severity = none # IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0290.severity = none # IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0305.severity = suggestion # IDE0305: Collection initialization can be simplified
 
 # AsyncFixer
 
@@ -480,3 +483,6 @@ dotnet_diagnostic.S3871.severity = none # S3871: Exception types should be "publ
 dotnet_diagnostic.S1186.severity = none # S1186: Methods should not be empty
 dotnet_diagnostic.S1144.severity = none # S1144: Unused private types should be removed
 dotnet_diagnostic.S6608.severity = none # S6608: Indexing at Count-1 should be used instead of "Enumerable" extension method "Last"
+
+dotnet_diagnostic.IDE0010.severity = none # IDE0010: Populate switch
+dotnet_diagnostic.IDE0072.severity = none # IDE0072: Populate switch

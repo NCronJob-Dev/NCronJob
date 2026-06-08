@@ -298,7 +298,7 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         public Task RunAsync(IJobExecutionContext context, CancellationToken token)
         {
-            Action maybeThrow = () => { };
+            var maybeThrow = () => { };
 
             if (context.Parameter is true)
             {

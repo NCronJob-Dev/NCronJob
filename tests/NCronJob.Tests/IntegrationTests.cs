@@ -6,7 +6,7 @@ namespace NCronJob.Tests;
 
 public sealed class IntegrationTests : JobIntegrationBase
 {
-    private readonly static Delegate JobDelegate = () => { };
+    private static readonly Delegate JobDelegate = () => { };
 
     [Fact]
     public async Task CronJobThatIsScheduledEveryMinuteShouldBeExecuted()
@@ -813,10 +813,10 @@ public sealed class IntegrationTests : JobIntegrationBase
         jobs.First().CronExpression.ShouldBe(expression);
         jobs.Last().CronExpression.ShouldBe(expression);
 
-        runtimeJobRegistry.TryGetSchedule("job1", out string? cron1, out _).ShouldBeTrue();
+        runtimeJobRegistry.TryGetSchedule("job1", out var cron1, out _).ShouldBeTrue();
         cron1.ShouldBe(expression);
 
-        runtimeJobRegistry.TryGetSchedule("job2", out string? cron2, out _).ShouldBeTrue();
+        runtimeJobRegistry.TryGetSchedule("job2", out var cron2, out _).ShouldBeTrue();
         cron2.ShouldBe(expression);
     }
 

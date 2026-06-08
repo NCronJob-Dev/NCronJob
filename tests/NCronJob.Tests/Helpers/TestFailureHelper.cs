@@ -10,7 +10,7 @@ public static class TestFailureHelper
         {
             current.TestOutputHelper!.WriteLine("** Warnings:");
 
-            foreach (string warning in current.Warnings)
+            foreach (var warning in current.Warnings)
             {
                 current.TestOutputHelper!.WriteLine(warning);
             }
@@ -20,7 +20,7 @@ public static class TestFailureHelper
         {
             current.TestOutputHelper!.WriteLine("** Events:");
 
-            foreach (ExecutionProgress @event in events)
+            foreach (var @event in events)
             {
                 current.TestOutputHelper!.WriteLine($"{@event.Timestamp:o} {@event.CorrelationId} {@event.State}");
             }
@@ -28,7 +28,7 @@ public static class TestFailureHelper
             current.TestOutputHelper!.WriteLine("");
             current.TestOutputHelper!.WriteLine("** Storage:");
 
-            foreach ((string timestamp, string content) in storage.TimedEntries)
+            foreach ((var timestamp, var content) in storage.TimedEntries)
             {
                 current.TestOutputHelper!.WriteLine($"{timestamp} {content}");
             }

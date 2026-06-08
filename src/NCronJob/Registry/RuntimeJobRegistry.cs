@@ -235,7 +235,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     /// <inheritdoc />
     public void EnableJob(Type type)
     {
-        ProcessAllJobDefinitionsOfType(type, j => EnableJob(j));
+        ProcessAllJobDefinitionsOfType(type, EnableJob);
     }
 
     /// <inheritdoc />
@@ -250,7 +250,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     /// <inheritdoc />
     public void DisableJob(Type type)
     {
-        ProcessAllJobDefinitionsOfType(type, j => DisableJob(j));
+        ProcessAllJobDefinitionsOfType(type, DisableJob);
     }
 
     private void ProcessAllJobDefinitionsOfType(Type type, Action<JobDefinition> processor)
