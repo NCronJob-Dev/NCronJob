@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup Label="Analyzers">
     <GlobalPackageReference Include="IDisposableAnalyzers" Version="4.0.8" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
-    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.27.0.140913" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
   </ItemGroup>
   <ItemGroup Label="NCronJob dependencies">
     <PackageVersion Include="Cronos" Version="0.13.0" />
