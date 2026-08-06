@@ -1,0 +1,58 @@
+@page "/schedule"
+@inject DashboardControls Controls
+@inject NCronJobDashboardOptions Options
+@inject TimeProvider TimeProvider
+<PageTitle>Schedule · NCronJob</PageTitle>
+
+<header class="page-header">
+    <div><div class="eyebrow">Configuration</div><h1>Schedule</h1><div class="muted">Recurring jobs and their next occurrence.</div></div>
+    <div class="metric"><strong>@entries.Count</strong> recurring jobs</div>
+</header>
+
+<section class="panel">
+@if (entries.Count == 0)
+{
+    <div class="empty">No recurring jobs are registered.</div>
+}
+else
+{
+    <div class="table-scroll"><table><thead><tr><th>Job</th><th>Schedule</th><th>Next run</th><th>Status</th>@if (Options.EnableControls) { <th>Controls</th> }</tr></thead><tbody>
+    @foreach (var entry in entries)
+    {
+        <tr>
+            <td><div class="job-name">@entry.DisplayName</div><div class="job-type">@(entry.Type?.FullName ?? "Delegate job")</div></td>
+            <td><code>@entry.CronExpression</code><div class="job-type">@entry.TimeZone.Id</div></td>
+            <td>@(entry.NextOccurrence?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "—")</td>
+            <td><span class="badge @(entry.IsEnabled ? "state-Running" : "state-Skipped")">@(entry.IsEnabled ? "Enabled" : "Disabled")</span></td>
+            @if (Options.EnableControls)
+            {
+                <td>
+                    <div class="actions">
+                        <button class="primary" data-action="run-now" data-name="@entry.Name" data-type="@entry.Type?.FullName">Run now</button>
+                        @if (entry.IsEnabled) { <button data-action="disable" data-name="@entry.Name" data-type="@entry.Type?.FullName">Disable</button> }
+                        else { <button data-action="enable" data-name="@entry.Name" data-type="@entry.Type?.FullName">Enable</button> }
+                    </div>
+                    @if (entry.Name is not null)
+                    {
+                        <details class="params" data-editor>
+                            <summary>Edit schedule or parameter</summary>
+                            <div style="height:8px"></div>
+                            <div class="edit-row"><input aria-label="Cron expression" data-cron value="@entry.CronExpression" /><select aria-label="Time zone" data-timezone>@foreach (var zoneId in timeZoneIds) { <option value="@zoneId" selected="@(zoneId == entry.TimeZone.Id)">@zoneId</option> }</select><button data-action="schedule" data-name="@entry.Name">Save schedule</button></div>
+                            <div style="height:8px"></div>
+                            <div class="edit-row"><textarea aria-label="Parameter JSON" data-parameter>@entry.ParameterJson</textarea><span></span><button data-action="parameter" data-name="@entry.Name">Save parameter</button></div>
+                        </details>
+                    }
+                </td>
+            }
+        </tr>
+    }
+    </tbody></table></div>
+}
+</section>
+
+@code {
+    private IReadOnlyList<ScheduleEntry> entries = [];
+    private readonly IReadOnlyList<string> timeZoneIds = TimeZoneInfo.GetSystemTimeZones().Select(zone => zone.Id).ToArray();
+
+    protected override void OnInitialized() => entries = Controls.GetSchedule(TimeProvider.GetUtcNow());
+}

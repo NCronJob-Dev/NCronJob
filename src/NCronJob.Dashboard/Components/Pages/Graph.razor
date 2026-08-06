@@ -1,0 +1,72 @@
+@page "/graph"
+@inject DependencyGraphBuilder Builder
+@inject DashboardDataStore Store
+<PageTitle>Dependencies · NCronJob</PageTitle>
+
+<header class="page-header">
+    <div><div class="eyebrow">Orchestration</div><h1>Dependency graph</h1><div class="muted">Jobs triggered after successful or faulted execution.</div></div>
+    <div class="legend"><span class="success">Success</span><span class="faulted">Faulted</span></div>
+</header>
+
+<section class="panel">
+@if (model.Nodes.Count == 0)
+{
+    <div class="empty">No jobs are registered.</div>
+}
+else
+{
+    <div class="graph-wrap">
+        <svg width="@Width" height="@Height" role="img" aria-label="Job dependency graph">
+            <defs>
+                <marker id="arrow-success" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#4fd19b" /></marker>
+                <marker id="arrow-faulted" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#ff6b78" /></marker>
+            </defs>
+            @foreach (var edge in model.Edges)
+            {
+                var from = nodesById[edge.From]; var to = nodesById[edge.To];
+                <path d="@EdgePath(from, to)" fill="none" class="edge-@edge.Kind.ToString().ToLowerInvariant()" stroke-width="2" marker-end="url(#arrow-@edge.Kind.ToString().ToLowerInvariant())" />
+            }
+            @foreach (var node in model.Nodes)
+            {
+                <g class="graph-node" transform="translate(@node.X @node.Y)"><rect width="190" height="58"></rect><text x="14" y="34">@TrimLabel(node.Label)</text></g>
+            }
+        </svg>
+    </div>
+}
+</section>
+
+@if (orchestrations.Count > 0)
+{
+    <section class="panel" style="margin-top:20px">
+        <div class="panel-title"><h2 style="margin:0">Recent orchestrations</h2></div>
+        <div class="table-scroll"><table><thead><tr><th>Correlation</th><th>Runs</th><th>Flow</th></tr></thead><tbody>
+        @foreach (var orchestration in orchestrations.Take(20))
+        {
+            <tr><td><code>@orchestration.CorrelationId</code></td><td>@orchestration.Runs.Count</td><td>@string.Join(" → ", orchestration.Runs.Select(run => $"{run.JobName} ({run.State})"))</td></tr>
+        }
+        </tbody></table></div>
+    </section>
+}
+
+@code {
+    private GraphModel model = new([], []);
+    private IReadOnlyDictionary<string, GraphNode> nodesById = new Dictionary<string, GraphNode>();
+    private IReadOnlyList<OrchestrationSnapshot> orchestrations = [];
+    private double Width => Math.Max(500, model.Nodes.Count == 0 ? 500 : model.Nodes.Max(node => node.X) + 250);
+    private double Height => Math.Max(430, model.Nodes.Count == 0 ? 430 : model.Nodes.Max(node => node.Y) + 110);
+
+    protected override void OnInitialized()
+    {
+        model = Builder.Build();
+        nodesById = model.Nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        orchestrations = Store.GetOrchestrations();
+    }
+
+    private static string EdgePath(GraphNode from, GraphNode to)
+    {
+        var startX = from.X + 190; var startY = from.Y + 29; var endX = to.X; var endY = to.Y + 29; var bend = (startX + endX) / 2;
+        return $"M {startX} {startY} C {bend} {startY}, {bend} {endY}, {endX} {endY}";
+    }
+
+    private static string TrimLabel(string label) => label.Length > 24 ? string.Concat(label.AsSpan(0, 23), "…") : label;
+}

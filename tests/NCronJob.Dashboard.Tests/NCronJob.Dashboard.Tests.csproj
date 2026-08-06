@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets></PackageReference>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.runner.visualstudio"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets></PackageReference>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+  <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
+  <ItemGroup><Using Include="Xunit" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="..\..\src\NCronJob.Dashboard\NCronJob.Dashboard.csproj" /></ItemGroup>
+</Project>

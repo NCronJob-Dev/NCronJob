@@ -1,0 +1,92 @@
+@inject NCronJobDashboardOptions Options
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="@BaseHref" />
+    <HeadOutlet />
+    <style>
+        :root { color-scheme: dark; --bg:#090d14; --panel:#111824; --panel-2:#161f2d; --line:#253246; --text:#e6edf7; --muted:#8d9bb0; --blue:#55a7ff; --green:#4fd19b; --red:#ff6b78; --amber:#f5bd5d; --violet:#ac8cff; }
+        * { box-sizing:border-box; }
+        body { margin:0; background:radial-gradient(circle at 75% -20%,#182b48 0,transparent 36%),var(--bg); color:var(--text); font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+        button,input,select,textarea { font:inherit; }
+        button { border:1px solid var(--line); background:#192436; color:var(--text); border-radius:7px; padding:7px 11px; cursor:pointer; }
+        button:hover { border-color:#466184; background:#20304a; }
+        button.danger { color:#ffabb2; }
+        button.primary { background:#176bc2; border-color:#2388ec; }
+        input,select,textarea { width:100%; color:var(--text); background:#0c121c; border:1px solid var(--line); border-radius:7px; padding:8px 10px; }
+        textarea { min-height:110px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+        a { color:inherit; }
+        .shell { min-height:100vh; display:grid; grid-template-columns:220px 1fr; }
+        .sidebar { position:sticky; top:0; height:100vh; border-right:1px solid var(--line); background:rgba(10,15,23,.92); padding:24px 16px; backdrop-filter:blur(18px); }
+        .brand { display:flex; align-items:center; gap:10px; padding:0 8px 24px; font-weight:750; letter-spacing:-.02em; }
+        .brand-mark { width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:linear-gradient(145deg,#2488ed,#745ee8); box-shadow:0 0 24px #247fe850; }
+        .nav { display:grid; gap:6px; }
+        .nav a { text-decoration:none; color:var(--muted); padding:10px 12px; border-radius:8px; }
+        .nav a:hover,.nav a.active { color:var(--text); background:#172233; }
+        .sidebar-note { position:absolute; bottom:22px; left:24px; color:#627087; font-size:11px; text-transform:uppercase; letter-spacing:.14em; }
+        main { min-width:0; padding:34px 42px 60px; }
+        .page-header { display:flex; justify-content:space-between; gap:20px; align-items:end; margin-bottom:24px; }
+        h1 { margin:0; font-size:27px; letter-spacing:-.035em; }
+        h2 { margin:0 0 14px; font-size:15px; letter-spacing:-.01em; }
+        .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:.13em; font-size:11px; font-weight:700; margin-bottom:6px; }
+        .muted { color:var(--muted); }
+        .metric { border:1px solid var(--line); border-radius:10px; padding:9px 13px; background:#111a28; }
+        .metric strong { font-size:18px; margin-right:5px; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; margin-bottom:28px; }
+        .card,.panel { background:linear-gradient(145deg,rgba(20,29,43,.98),rgba(13,20,31,.98)); border:1px solid var(--line); border-radius:11px; box-shadow:0 12px 36px #0003; }
+        .card { padding:15px; }
+        .card-head { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+        .job-name { font-weight:700; }
+        .job-type { color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+        .meta { display:flex; gap:12px; color:var(--muted); font-size:12px; margin-top:14px; }
+        .panel { overflow:hidden; }
+        .panel-title { padding:15px 17px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+        .badge { display:inline-flex; align-items:center; border:1px solid currentColor; border-radius:999px; padding:2px 8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+        .state-Running,.state-Completed { color:var(--green); }
+        .state-Faulted,.state-Cancelled,.state-Expired { color:var(--red); }
+        .state-Retrying { color:var(--amber); }
+        .state-Skipped,.state-NotStarted,.state-Scheduled { color:var(--muted); }
+        .state-Initializing,.state-Completing,.state-WaitingForDependency { color:var(--violet); }
+        table { width:100%; border-collapse:collapse; }
+        th,td { padding:11px 14px; border-bottom:1px solid #202c3e; text-align:left; vertical-align:top; }
+        th { color:#78879d; font-size:10px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; }
+        tbody tr:last-child td { border-bottom:0; }
+        tbody tr:hover { background:#ffffff04; }
+        .actions { display:flex; flex-wrap:wrap; gap:6px; }
+        .params { margin-top:10px; }
+        summary { color:var(--blue); cursor:pointer; font-size:12px; }
+        pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#090e16; border:1px solid #202b3c; border-radius:8px; padding:12px; color:#bfd2ea; font-size:12px; }
+        .empty { padding:36px; text-align:center; color:var(--muted); }
+        .notice { margin:0 0 14px; border:1px solid #31435d; border-radius:8px; padding:10px 12px; background:#152035; }
+        .notice.error { border-color:#713742; color:#ffadb5; background:#29171d; }
+        .edit-row { display:grid; grid-template-columns:minmax(100px,1fr) minmax(140px,1fr) auto; gap:8px; min-width:410px; }
+        .graph-wrap { overflow:auto; min-height:430px; background-image:linear-gradient(#172131 1px,transparent 1px),linear-gradient(90deg,#172131 1px,transparent 1px); background-size:24px 24px; }
+        .graph-node rect { fill:#141f2f; stroke:#3b506d; stroke-width:1; rx:8; }
+        .graph-node text { fill:var(--text); font-size:12px; font-weight:650; }
+        .edge-success { stroke:var(--green); }
+        .edge-faulted { stroke:var(--red); }
+        .legend { display:flex; gap:16px; color:var(--muted); font-size:12px; }
+        .legend span::before { content:""; display:inline-block; width:18px; height:2px; margin:0 6px 3px 0; background:currentColor; }
+        .legend .success { color:var(--green); } .legend .faulted { color:var(--red); }
+        @@media (max-width:800px) { .shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:14px}.brand{padding-bottom:12px}.nav{grid-template-columns:repeat(3,1fr)}.sidebar-note{display:none}main{padding:24px 14px}.table-scroll{overflow:auto}.edit-row{min-width:360px} }
+    </style>
+</head>
+<body>
+    <Routes />
+    <script src="dashboard.js"></script>
+</body>
+</html>
+
+@code {
+    private string BaseHref
+    {
+        get
+        {
+            var path = string.IsNullOrWhiteSpace(Options.BasePath) ? "/" : Options.BasePath;
+            return path == "/" ? "/" : $"/{path.Trim('/')}/";
+        }
+    }
+
+}

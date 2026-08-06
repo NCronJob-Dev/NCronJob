@@ -1,0 +1,60 @@
+@page "/"
+@implements IDisposable
+@inject DashboardDataStore Store
+<PageTitle>Live activity · NCronJob</PageTitle>
+
+<header class="page-header">
+    <div><div class="eyebrow">Runtime</div><h1>Live activity</h1><div class="muted">Job execution state as it changes.</div></div>
+    <div class="metric"><strong>@running.Count</strong> running now</div>
+</header>
+
+<h2>Running now</h2>
+@if (running.Count == 0)
+{
+    <div class="panel empty">No jobs are currently executing.</div>
+}
+else
+{
+    <div class="grid">
+        @foreach (var run in running)
+        {
+            <article class="card">
+                <div class="card-head"><div><div class="job-name">@run.JobName</div><div class="job-type">@run.JobType</div></div><StateBadge State="@run.State.ToString()" /></div>
+                <div class="meta"><span>@run.TriggerType</span><span>@run.StateChangedAt.ToLocalTime().ToString("HH:mm:ss")</span></div>
+                <details class="params"><summary>Parameters</summary><pre>@run.ParameterJson</pre></details>
+            </article>
+        }
+    </div>
+}
+
+<section class="panel" style="margin-top:28px">
+    <div class="panel-title"><h2 style="margin:0">Recent runs</h2><span class="muted">@recent.Count retained</span></div>
+    @if (recent.Count == 0)
+    {
+        <div class="empty">Runs will appear here when jobs begin.</div>
+    }
+    else
+    {
+        <div class="table-scroll"><table><thead><tr><th>Job</th><th>State</th><th>Trigger</th><th>Updated</th><th>Details</th></tr></thead><tbody>
+        @foreach (var run in recent)
+        {
+            <tr><td><div class="job-name">@run.JobName</div><div class="job-type">@run.JobRunId</div></td><td><StateBadge State="@run.State.ToString()" /></td><td>@run.TriggerType</td><td>@run.StateChangedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td><td><details><summary>JSON</summary><pre>@run.ParameterJson</pre><div class="job-type">Correlation @run.CorrelationId</div></details></td></tr>
+        }
+        </tbody></table></div>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<DashboardRun> running = [];
+    private IReadOnlyList<DashboardRun> recent = [];
+
+    protected override void OnInitialized()
+    {
+        Store.Changed += HandleChanged;
+        Refresh();
+    }
+
+    private void HandleChanged() => _ = InvokeAsync(() => { Refresh(); StateHasChanged(); });
+    private void Refresh() { running = Store.GetRunningRuns(); recent = Store.GetRecentRuns(); }
+    public void Dispose() => Store.Changed -= HandleChanged;
+}
