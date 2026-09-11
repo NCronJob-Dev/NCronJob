@@ -602,6 +602,31 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task ConcurrentRuntimeRegistrationsAndReadsAreThreadSafe()
+    {
+        ServiceCollection.AddNCronJob();
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        const int jobCount = 200;
+
+        var writer = Task.Run(() => Parallel.For(0, jobCount, i =>
+            registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: $"Job{i}"), out _).ShouldBeTrue()),
+            CancellationToken);
+
+        var reader = Task.Run(() =>
+        {
+            while (!writer.IsCompleted)
+            {
+                _ = registry.GetAllRecurringJobs();
+                _ = registry.TryGetSchedule("Job0", out _, out _);
+            }
+        }, CancellationToken);
+
+        await Task.WhenAll(writer, reader);
+
+        registry.GetAllRecurringJobs().Count.ShouldBe(jobCount);
+    }
+
+    [Fact]
     public void ShouldThrowRuntimeExceptionWithDuplicateJob()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
