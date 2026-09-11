@@ -581,6 +581,27 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task ShouldEnableJobWithSecondPrecision()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEverySecond).WithName("JobName")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        registry.DisableJob("JobName");
+
+        Should.NotThrow(() => registry.EnableJob("JobName"));
+
+        registry.TryGetSchedule("JobName", out var cronExpression, out _).ShouldBeTrue();
+        cronExpression.ShouldBe(Cron.AtEverySecond);
+
+        FakeTimer.Advance(TimeSpan.FromSeconds(1));
+
+        var completed = await WaitForNthOrchestrationState(ExecutionState.Completed, 1, stopMonitoringEvents: true);
+        completed.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public void ShouldThrowRuntimeExceptionWithDuplicateJob()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));

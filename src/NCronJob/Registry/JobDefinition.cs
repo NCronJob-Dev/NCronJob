@@ -119,7 +119,7 @@ internal sealed record JobDefinition
     {
         if (UserDefinedCronExpression is not null)
         {
-            CronExpression = CronExpression.Parse(UserDefinedCronExpression);
+            CronExpression = GetCronExpression(UserDefinedCronExpression.Trim());
             return;
         }
 
