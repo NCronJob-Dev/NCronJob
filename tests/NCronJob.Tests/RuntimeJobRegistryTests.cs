@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -119,6 +120,29 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenCancelled("Job");
+    }
+
+    [Fact]
+    public async Task RemovingAJobStopsItsQueueWorker()
+    {
+        ServiceCollection.AddNCronJob();
+
+        await StartNCronJob();
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var queueWorker = ServiceProvider.GetServices<IHostedService>().OfType<QueueWorker>().Single();
+
+        registry.TryRegister(s => s.AddJob((Storage storage) => storage.Add("true"), Cron.AtEveryMinute, jobName: "Job"), out _).ShouldBeTrue();
+        queueWorker.GetActiveWorkerQueueNames().Count.ShouldBe(1);
+
+        registry.RemoveJob("Job");
+
+        while (queueWorker.GetActiveWorkerQueueNames().Count > 0)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
+        }
+
+        ServiceProvider.GetRequiredService<JobQueueManager>().GetAllJobQueueNames().ShouldBeEmpty();
     }
 
     [Fact]

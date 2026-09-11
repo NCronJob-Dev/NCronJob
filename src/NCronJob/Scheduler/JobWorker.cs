@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace NCronJob;
 
@@ -13,9 +11,14 @@ internal sealed partial class JobWorker
     private readonly JobExecutionProgressObserver observer;
     private readonly ILogger<JobWorker> logger;
     private readonly int globalConcurrencyLimit;
-    private readonly ConcurrentDictionary<string, int> runningJobCounts = [];
-    private int TotalRunningJobCount => runningJobCounts.Values.Sum();
-    private readonly TaskFactory taskFactory;
+    private readonly Dictionary<string, int> runningJobCounts = [];
+    private int totalRunningJobCount;
+    private TaskCompletionSource capacitySignal = CreateSignal();
+#if NET9_0_OR_GREATER
+    private readonly Lock slotLock = new();
+#else
+    private readonly object slotLock = new();
+#endif
 
     public JobWorker(
         JobQueueManager jobQueueManager,
@@ -33,33 +36,60 @@ internal sealed partial class JobWorker
         this.observer = observer;
         this.logger = logger;
         globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
-
-        taskFactory = TaskFactoryProvider.GetTaskFactory();
     }
 
     public async Task WorkerAsync(string queueName, CancellationToken cancellationToken)
     {
-        var concurrencyLimit = registry.GetJobTypeConcurrencyLimit(queueName);
-        var semaphore = jobQueueManager.GetOrAddSemaphore(queueName, concurrencyLimit);
         var runningTasks = new List<Task>();
 
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            var jobQueue = jobQueueManager.GetOrAddQueue(queueName);
-
-            runningTasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
-
-            if (jobQueue.TryPeek(out var nextJob, out var priorityTuple) && IsJobEligibleToStart(nextJob, jobQueue))
+            while (!cancellationToken.IsCancellationRequested && jobQueueManager.TryGetQueue(queueName, out var jobQueue))
             {
-                await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                await DispatchJobForProcessing(nextJob, priorityTuple.NextRunTime, queueName, semaphore, runningTasks, cancellationToken)
-                    .ConfigureAwait(false);
+                runningTasks.RemoveAll(t => t.IsCompleted);
+
+                var queueChanged = jobQueueManager.WaitForChangeAsync(queueName);
+
+                if (!jobQueue.TryPeek(out var nextJob, out var priority))
+                {
+                    await queueChanged.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (priority.NextRunTime > timeProvider.GetUtcNow())
+                {
+                    await WaitUntilOrChangeAsync(priority.NextRunTime, queueChanged, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                var capacityChanged = GetCapacitySignal();
+                if (!TryReserveSlot(nextJob.JobDefinition))
+                {
+                    await Task.WhenAny(queueChanged, capacityChanged).WaitAsync(cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (!jobQueue.TryDequeueIf(nextJob))
+                {
+                    ReleaseSlot(nextJob.JobDefinition);
+                    continue;
+                }
+
+                runningTasks.Add(StartJobProcessingAsync(nextJob, cancellationToken));
+
+                if (nextJob.TriggerType == TriggerType.Cron)
+                {
+                    ScheduleJob(nextJob.JobDefinition, priority.NextRunTime);
+                }
             }
-            else
-            {
-                // Avoid tight loop when there's no job queued
-                await Task.WhenAny(runningTasks.Concat([Task.Delay(500, cancellationToken)])).ConfigureAwait(false);
-            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            LogWorkerCancelled(queueName);
+        }
+        catch (ObjectDisposedException) when (jobQueueManager.IsDisposed)
+        {
+            LogJobQueueManagerDisposed();
         }
 
         await Task.WhenAll(runningTasks).ConfigureAwait(false);
@@ -67,127 +97,114 @@ internal sealed partial class JobWorker
 
     public async Task InvokeJob(JobRun jobRun, CancellationToken cancellationToken)
     {
-        await WaitForNextExecution(jobRun.RunAt, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var delay = jobRun.RunAt - timeProvider.GetUtcNow();
+            if (delay > TimeSpan.Zero)
+            {
+                await Task.LongDelaySafe(delay, timeProvider, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            jobRun.NotifyStateChange(JobStateType.Cancelled);
+            return;
+        }
+
+        AcquireSlot(jobRun.JobDefinition);
         await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task DispatchJobForProcessing(
-        JobRun nextJob,
-        DateTimeOffset nextRunTime,
-        string queueName,
-        SemaphoreSlim semaphore,
-        List<Task> runningTasks,
-        CancellationToken cancellationToken)
-    {
-        var shouldReleaseSemaphore = true;
-
-        try
+    private Task StartJobProcessingAsync(JobRun jobRun, CancellationToken cancellationToken) =>
+        Task.Run(async () =>
         {
-            var cts = jobQueueManager.GetCancellationTokenSource(queueName);
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
-            var linkedToken = linkedCts.Token;
-
-            await WaitForNextExecution(nextRunTime, linkedCts.Token).ConfigureAwait(false);
-
-            if (jobQueueManager.IsDisposed || linkedToken.IsCancellationRequested)
-            {
-                // We will most likely run into this, when the IHostApplicationLifetime is stopped
-                LogJobQueueManagerDisposed();
-                return;
-            }
-
-            if (!jobQueueManager.TryGetQueue(queueName, out var jobQueue))
-            {
-                throw new InvalidOperationException($"Job queue not found for {queueName}");
-            }
-
-            jobQueue.Dequeue();
-
-            var jobTask = StartJobProcessingAsync(nextJob, linkedToken).ContinueWith(_ =>
-                semaphore.Release(), cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-
-            runningTasks.Add(jobTask);
-
-            if (!nextJob.IsOneTimeJob)
-            {
-                ScheduleJob(nextJob.JobDefinition, nextRunTime);
-            }
-
-            shouldReleaseSemaphore = false;
-        }
-        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested || oce.CancellationToken.IsCancellationRequested)
-        {
-            nextJob.NotifyStateChange(JobStateType.Cancelled);
-        }
-        catch (Exception ex)
-        {
-            LogExceptionInJob(ex.Message, nextJob.JobDefinition.Name);
-            nextJob.NotifyStateChange(JobStateType.Faulted, ex);
-        }
-        finally
-        {
-            if (shouldReleaseSemaphore && !jobQueueManager.IsDisposed)
-            {
-                semaphore.Release();
-            }
-        }
-    }
-
-    private async Task StartJobProcessingAsync(JobRun jobRun, CancellationToken cancellationToken) =>
-        await taskFactory.StartNew(async () =>
-        {
-            UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, 1);
             try
             {
                 await jobProcessor.ProcessJobAsync(jobRun, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
-                UpdateRunningJobCount(jobRun.JobDefinition.JobFullName, -1);
+                ReleaseSlot(jobRun.JobDefinition);
             }
-        }, cancellationToken, TaskCreationOptions.None, TaskScheduler.Default)
-            .Unwrap()
-            .ContinueWith(task =>
-        {
-            if (task.IsFaulted)
-            {
-                Debug.Assert(task.Exception is not null);
-                jobRun.NotifyStateChange(JobStateType.Faulted, task.Exception);
-            }
+        }, CancellationToken.None);
 
-            if (task.IsCanceled)
-            {
-                jobRun.NotifyStateChange(JobStateType.Cancelled);
-            }
-        }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-
-    private async Task WaitForNextExecution(DateTimeOffset nextRunTime, CancellationToken stopToken)
+    private async Task WaitUntilOrChangeAsync(DateTimeOffset dueTime, Task queueChanged, CancellationToken cancellationToken)
     {
-        var utcNow = timeProvider.GetUtcNow();
-        var delay = nextRunTime - utcNow;
-        if (delay > TimeSpan.Zero)
+        var delay = dueTime - timeProvider.GetUtcNow();
+        if (delay <= TimeSpan.Zero)
         {
-            await Task.LongDelaySafe(delay, timeProvider, stopToken).ConfigureAwait(false);
+            return;
+        }
+
+        using var delayCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var delayTask = Task.LongDelaySafe(delay, timeProvider, delayCts.Token);
+
+        // Time may have advanced between computing the delay and arming the timer, which would make the timer fire late.
+        var completedTask = timeProvider.GetUtcNow() >= dueTime
+            ? null
+            : await Task.WhenAny(delayTask, queueChanged).ConfigureAwait(false);
+
+        if (completedTask != delayTask)
+        {
+            await delayCts.CancelAsync().ConfigureAwait(false);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private bool TryReserveSlot(JobDefinition jobDefinition)
+    {
+        var maxAllowed = jobDefinition.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
+
+        lock (slotLock)
+        {
+            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
+
+            if (currentCount >= maxAllowed || totalRunningJobCount >= globalConcurrencyLimit)
+            {
+                return false;
+            }
+
+            runningJobCounts[jobDefinition.JobFullName] = currentCount + 1;
+            totalRunningJobCount++;
+            return true;
         }
     }
 
-    private bool IsJobEligibleToStart(JobRun nextJob, JobQueue jobQueue)
+    private void AcquireSlot(JobDefinition jobDefinition)
     {
-        var isSameJob = jobQueue.TryPeek(out var confirmedNextJob, out _) && confirmedNextJob == nextJob;
-        var concurrentSlotsOpen = TotalRunningJobCount < globalConcurrencyLimit;
-        return isSameJob && CanStartJob(nextJob.JobDefinition) && concurrentSlotsOpen;
+        lock (slotLock)
+        {
+            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
+            runningJobCounts[jobDefinition.JobFullName] = currentCount + 1;
+            totalRunningJobCount++;
+        }
     }
 
-    private bool CanStartJob(JobDefinition jobEntry)
+    private void ReleaseSlot(JobDefinition jobDefinition)
     {
-        var maxAllowed = jobEntry.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
-        var currentCount = runningJobCounts.GetOrAdd(jobEntry.JobFullName, _ => 0);
+        TaskCompletionSource signal;
 
-        return currentCount < maxAllowed;
+        lock (slotLock)
+        {
+            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
+            runningJobCounts[jobDefinition.JobFullName] = Math.Max(0, currentCount - 1);
+            totalRunningJobCount = Math.Max(0, totalRunningJobCount - 1);
+
+            signal = capacitySignal;
+            capacitySignal = CreateSignal();
+        }
+
+        signal.TrySetResult();
     }
 
-    private void UpdateRunningJobCount(string jobFullName, int change) =>
-        runningJobCounts.AddOrUpdate(jobFullName, change, (_, existingVal) => Math.Max(0, existingVal + change));
+    private Task GetCapacitySignal()
+    {
+        lock (slotLock)
+        {
+            return capacitySignal.Task;
+        }
+    }
 
     public void ScheduleJob(JobDefinition job, DateTimeOffset? lastScheduledRunTime = null)
     {
@@ -214,7 +231,7 @@ internal sealed partial class JobWorker
 
         var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
 
-        LogNextJobRun(job.Name, nextRunTime.Value);  // todo: log by subscribing to OnStateChanged => JobStateType.Scheduled
+        LogNextJobRun(job.Name, nextRunTime.Value);
         var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
         jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
         run.NotifyStateChange(JobStateType.Scheduled);
@@ -230,8 +247,7 @@ internal sealed partial class JobWorker
         RemoveJob(() => registry.RemoveByType(type));
     }
 
-    private void RemoveJob(
-        Func<string?> unregistrator)
+    private void RemoveJob(Func<string?> unregistrator)
     {
         var jobDefinitionFullName = unregistrator();
 
@@ -241,7 +257,6 @@ internal sealed partial class JobWorker
         }
 
         jobQueueManager.RemoveQueue(jobDefinitionFullName);
-
     }
 
     public void RescheduleJob(JobDefinition jobDefinition)
@@ -250,6 +265,7 @@ internal sealed partial class JobWorker
 
         jobQueueManager.RemoveQueue(jobDefinition.JobFullName);
         ScheduleJob(jobDefinition);
-        jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
     }
+
+    private static TaskCompletionSource CreateSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

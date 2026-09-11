@@ -58,6 +58,23 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
         return element;
     }
 
+    public bool TryDequeueIf(TElement expected)
+    {
+        lock (Lock)
+        {
+            if (!PriorityQueue.TryPeek(out var head, out _) || !EqualityComparer<TElement>.Default.Equals(head, expected))
+            {
+                return false;
+            }
+
+            PriorityQueue.Dequeue();
+        }
+
+        InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, expected));
+
+        return true;
+    }
+
     public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
     {
         lock (Lock)
