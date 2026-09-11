@@ -15,75 +15,30 @@ public sealed class DependentJobBuilder
         this.jobDefinition = jobDefinition;
     }
 
-    /// <summary>
-    /// Adds a condition that must be satisfied for the dependent job to execute.
-    /// Multiple conditions are combined with AND logic - all must return true.
-    /// </summary>
-    /// <param name="predicate">A synchronous predicate that returns true if the job should execute.</param>
-    /// <returns>Returns a <see cref="DependentJobBuilder"/> that allows further configuration.</returns>
-    /// <remarks>
-    /// The condition is evaluated once before job instantiation. If it returns false, the job is skipped.
-    /// Conditions are NOT re-evaluated during retry attempts - if the initial condition was true, retries proceed.
-    /// Multiple OnlyIf calls are combined with AND logic.
-    /// </remarks>
+    /// <inheritdoc cref="JobOptionBuilder.OnlyIf(Func{bool})"/>
+    /// <returns>Returns the same <see cref="DependentJobBuilder"/> that allows further configuration.</returns>
     public DependentJobBuilder OnlyIf(Func<bool> predicate)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-        
-        EnsureJobOption();
-        jobOption!.Conditions ??= [];
-        jobOption.Conditions.Add((_, _) => new ValueTask<bool>(predicate()));
-        
+        EnsureJobOption().AddCondition(predicate);
+
         return this;
     }
 
-    /// <summary>
-    /// Adds a condition that must be satisfied for the dependent job to execute, with dependency injection support.
-    /// Multiple conditions are combined with AND logic - all must return true.
-    /// </summary>
-    /// <param name="predicate">A delegate that accepts dependencies from DI and returns true if the job should execute.</param>
-    /// <returns>Returns a <see cref="DependentJobBuilder"/> that allows further configuration.</returns>
-    /// <remarks>
-    /// The condition is evaluated once before job instantiation. If it returns false, the job is skipped.
-    /// Conditions are NOT re-evaluated during retry attempts - if the initial condition was true, retries proceed.
-    /// Multiple OnlyIf calls are combined with AND logic.
-    /// Example:
-    /// <code>
-    /// .OnlyIf((IFeatureFlagService flags) => flags.IsEnabled("my-job"))
-    /// </code>
-    /// </remarks>
+    /// <inheritdoc cref="JobOptionBuilder.OnlyIf(Delegate)"/>
+    /// <returns>Returns the same <see cref="DependentJobBuilder"/> that allows further configuration.</returns>
     public DependentJobBuilder OnlyIf(Delegate predicate)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-        
-        var invoker = ConditionInvokerBuilder.BuildConditionInvoker(predicate);
-        
-        EnsureJobOption();
-        jobOption!.Conditions ??= [];
-        jobOption.Conditions.Add(invoker);
-        
+        EnsureJobOption().AddCondition(predicate);
+
         return this;
     }
 
-    /// <summary>
-    /// Adds an asynchronous condition that must be satisfied for the dependent job to execute.
-    /// Multiple conditions are combined with AND logic - all must return true.
-    /// </summary>
-    /// <param name="predicate">An asynchronous predicate that returns true if the job should execute.</param>
-    /// <returns>Returns a <see cref="DependentJobBuilder"/> that allows further configuration.</returns>
-    /// <remarks>
-    /// The condition is evaluated once before job instantiation. If it returns false, the job is skipped.
-    /// Conditions are NOT re-evaluated during retry attempts - if the initial condition was true, retries proceed.
-    /// Multiple OnlyIf calls are combined with AND logic.
-    /// </remarks>
+    /// <inheritdoc cref="JobOptionBuilder.OnlyIf(Func{Task{bool}})"/>
+    /// <returns>Returns the same <see cref="DependentJobBuilder"/> that allows further configuration.</returns>
     public DependentJobBuilder OnlyIf(Func<Task<bool>> predicate)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-        
-        EnsureJobOption();
-        jobOption!.Conditions ??= [];
-        jobOption.Conditions.Add(async (_, ct) => await predicate().ConfigureAwait(false));
-        
+        EnsureJobOption().AddCondition(predicate);
+
         return this;
     }
 
@@ -121,8 +76,5 @@ public sealed class DependentJobBuilder
         }
     }
 
-    private void EnsureJobOption()
-    {
-        jobOption ??= new JobOption();
-    }
+    private JobOption EnsureJobOption() => jobOption ??= new JobOption();
 }

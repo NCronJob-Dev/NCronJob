@@ -98,12 +98,8 @@ public sealed class JobOptionBuilder
     /// </remarks>
     public CronAndParameterAndRunAtStartupBuilder OnlyIf(Func<bool> predicate)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-        
-        var jobOption = new JobOption
-        {
-            Conditions = [(_, _) => new ValueTask<bool>(predicate())]
-        };
+        var jobOption = new JobOption();
+        jobOption.AddCondition(predicate);
 
         jobOptions.Add(jobOption);
 
@@ -127,14 +123,8 @@ public sealed class JobOptionBuilder
     /// </remarks>
     public CronAndParameterAndRunAtStartupBuilder OnlyIf(Delegate predicate)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-        
-        var invoker = ConditionInvokerBuilder.BuildConditionInvoker(predicate);
-        
-        var jobOption = new JobOption
-        {
-            Conditions = [invoker]
-        };
+        var jobOption = new JobOption();
+        jobOption.AddCondition(predicate);
 
         jobOptions.Add(jobOption);
 
@@ -154,12 +144,8 @@ public sealed class JobOptionBuilder
     /// </remarks>
     public CronAndParameterAndRunAtStartupBuilder OnlyIf(Func<Task<bool>> predicate)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-        
-        var jobOption = new JobOption
-        {
-            Conditions = [async (_, ct) => await predicate().ConfigureAwait(false)]
-        };
+        var jobOption = new JobOption();
+        jobOption.AddCondition(predicate);
 
         jobOptions.Add(jobOption);
 
