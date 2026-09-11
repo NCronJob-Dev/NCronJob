@@ -6,9 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
 
-internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReporter
+internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgressReporter
 {
+    private readonly ILogger<JobExecutionProgressObserver> logger;
     private readonly List<Action<ExecutionProgress>> callbacks = [];
+
+    public JobExecutionProgressObserver(ILogger<JobExecutionProgressObserver> logger)
+    {
+        this.logger = logger;
+    }
 
 #if NET9_0_OR_GREATER
     private readonly Lock callbacksLock = new();
@@ -83,10 +89,20 @@ internal sealed class JobExecutionProgressObserver : IJobExecutionProgressReport
         {
             foreach (var entry in progresses)
             {
-                callback(entry);
+                try
+                {
+                    callback(entry);
+                }
+                catch (Exception ex)
+                {
+                    LogCallbackFailed(entry.State, ex);
+                }
             }
         }
     }
+
+    [LoggerMessage(LogLevel.Error, "An execution progress callback threw while reporting state '{State}'.")]
+    private partial void LogCallbackFailed(ExecutionState state, Exception exception);
 
     internal sealed class ActionDisposer : IDisposable
     {
