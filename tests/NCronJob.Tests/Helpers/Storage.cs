@@ -10,7 +10,16 @@ public sealed class Storage(TimeProvider timeProvider)
     private readonly object locker = new();
 #endif
 
-    public IList<string> Entries => new ReadOnlyCollection<string>(TimedEntries.Select(e => e.Item2).ToList());
+    public IList<string> Entries
+    {
+        get
+        {
+            lock (locker)
+            {
+                return new ReadOnlyCollection<string>(TimedEntries.Select(e => e.Item2).ToList());
+            }
+        }
+    }
     public IList<(string, string)> TimedEntries { get; } = [];
 
     public void Add(string content)

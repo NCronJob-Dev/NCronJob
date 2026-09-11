@@ -648,6 +648,84 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         await Task.WhenAll(writer, reader);
 
         registry.GetAllRecurringJobs().Count.ShouldBe(jobCount);
+
+        var jobQueueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+        for (var i = 0; i < jobCount; i++)
+        {
+            jobQueueManager.TryGetQueue($"Untyped job Job{i}", out var jobQueue).ShouldBeTrue();
+            jobQueue.Count.ShouldBe(1);
+        }
+    }
+
+    [Fact]
+    public void ReschedulingAJobThatIsNoLongerRegisteredDoesNotRecreateItsQueue()
+    {
+        ServiceCollection.AddNCronJob();
+
+        var orphan = JobDefinition.CreateUntyped("Orphan", () => { });
+        orphan.UpdateWith(new JobOption { CronExpression = Cron.AtEveryMinute });
+
+        ServiceProvider.GetRequiredService<JobWorker>().ScheduleJob(orphan);
+
+        ServiceProvider.GetRequiredService<JobQueueManager>().GetAllJobQueueNames().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task StoppingWaitsForRunningJobsOfRemovedQueues()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ServiceCollection.AddSingleton(gate);
+        ServiceCollection.AddNCronJob(s => s.AddJob<GatedJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        await WaitForNthOrchestrationState(ExecutionState.Running, 1, stopMonitoringEvents: true);
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().RemoveJob<GatedJob>();
+
+        var queueWorker = ServiceProvider.GetServices<IHostedService>().OfType<QueueWorker>().Single();
+        var stopTask = queueWorker.StopAsync(CancellationToken);
+
+        await Task.Delay(TimeSpan.FromMilliseconds(100), CancellationToken);
+        stopTask.IsCompleted.ShouldBeFalse();
+
+        gate.SetResult();
+        await stopTask;
+    }
+
+    [Fact]
+    public async Task ProgressCallbackCanUseTheRegistryWhileAJobIsBeingRemoved()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+
+        await StartNCronJob();
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var registeredFromCallback = false;
+
+        using var subscription = ServiceProvider.GetRequiredService<IJobExecutionProgressReporter>().Register(progress =>
+        {
+            if (progress.State != ExecutionState.Cancelled)
+            {
+                return;
+            }
+
+            // Registering from another thread needs the queue manager; it must not be blocked by the removal in progress.
+            registeredFromCallback = Task.Run(
+                () => registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "FromCallback")),
+                CancellationToken).Wait(TimeSpan.FromSeconds(5), CancellationToken);
+        });
+
+        registry.RemoveJob("JobName");
+
+        registeredFromCallback.ShouldBeTrue();
+    }
+
+    private sealed class GatedJob(TaskCompletionSource gate) : IJob
+    {
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token) => gate.Task;
     }
 
     [Fact]

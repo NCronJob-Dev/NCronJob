@@ -50,6 +50,14 @@ internal sealed class JobRegistry
         }
     }
 
+    public bool IsRootJob(JobDefinition jobDefinition)
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.Contains(jobDefinition);
+        }
+    }
+
     public JobDefinition? FindFirstRootJobDefinition(Type type)
     {
         lock (syncLock)

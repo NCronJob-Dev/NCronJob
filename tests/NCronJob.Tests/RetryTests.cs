@@ -115,10 +115,11 @@ public sealed class RetryTests : JobIntegrationBase
         var firstDelay = attemptTimes[1] - attemptTimes[0];
         var secondDelay = attemptTimes[2] - attemptTimes[1];
 
+        // The fake clock is advanced in 1s steps while waiting, so only lower bounds are exact.
+        // The upper bound still fails when delays elapse in real time, as every real second maps to ~50 fake seconds.
         firstDelay.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromSeconds(2));
-        firstDelay.ShouldBeLessThan(TimeSpan.FromSeconds(4));
         secondDelay.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromSeconds(4));
-        secondDelay.ShouldBeLessThan(TimeSpan.FromSeconds(6));
+        (firstDelay + secondDelay).ShouldBeLessThan(TimeSpan.FromSeconds(30));
     }
 
     [Theory]

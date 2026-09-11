@@ -19,8 +19,8 @@ internal sealed partial class QueueWorker
     [LoggerMessage(LogLevel.Trace, "Job Queue Worker Cancelled '{JobName}'")]
     private partial void LogJobQueueCancelled(string jobName);
 
-    [LoggerMessage(LogLevel.Trace, "Job Queue Worker Faulted '{JobName}'")]
-    private partial void LogJobQueueFaulted(string jobName);
+    [LoggerMessage(LogLevel.Error, "Job Queue Worker Faulted '{JobName}'")]
+    private partial void LogJobQueueFaulted(string jobName, Exception? exception);
 
     [LoggerMessage(LogLevel.Trace, "Job Queue Worker Completed '{JobName}'")]
     private partial void LogJobQueueCompleted(string jobName);

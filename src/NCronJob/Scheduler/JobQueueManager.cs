@@ -19,16 +19,26 @@ internal sealed class JobQueueManager : IDisposable
 
     public bool IsDisposed { get; private set; }
 
-    public JobQueue GetOrAddQueue(string queueName)
+    /// <summary>
+    /// Adds the run to its queue, creating the queue if needed.
+    /// Lookup and enqueue are atomic with respect to <see cref="RemoveQueue"/>, so a run can never end up in a removed queue.
+    /// </summary>
+    /// <returns><c>false</c> when <paramref name="canEnqueue"/> rejected the run.</returns>
+    public bool Enqueue(JobRun run, Func<bool>? canEnqueue = null)
     {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-        JobQueue jobQueue;
+        var queueName = run.JobDefinition.JobFullName;
         var isCreating = false;
 
         lock (syncLock)
         {
-            jobQueue = jobQueues.GetOrAdd(queueName, jt =>
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (canEnqueue is not null && !canEnqueue())
+            {
+                return false;
+            }
+
+            var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
             {
                 isCreating = true;
                 var queue = new JobQueue(jt);
@@ -36,6 +46,8 @@ internal sealed class JobQueueManager : IDisposable
                 queueSignals[jt] = CreateSignal();
                 return queue;
             });
+
+            jobQueue.EnqueueForDirectExecution(run);
         }
 
         if (isCreating)
@@ -43,23 +55,23 @@ internal sealed class JobQueueManager : IDisposable
             QueueAdded?.Invoke(queueName);
         }
 
-        return jobQueue;
+        return true;
     }
 
     public void RemoveQueue(string queueName)
     {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        List<JobRun> cancellableRuns;
+
         lock (syncLock)
         {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
             if (!jobQueues.TryRemove(queueName, out var jobQueue))
             {
                 return;
             }
 
-            foreach (var job in jobQueue.Where(j => j.IsCancellable))
-            {
-                job.NotifyStateChange(JobStateType.Cancelled);
-            }
+            cancellableRuns = jobQueue.Where(j => j.IsCancellable).ToList();
 
             jobQueue.Clear();
             jobQueue.CollectionChanged -= CallCollectionChanged;
@@ -68,6 +80,12 @@ internal sealed class JobQueueManager : IDisposable
             {
                 signal.TrySetResult();
             }
+        }
+
+        // Progress callbacks run user code, so they must not be invoked while holding the lock.
+        foreach (var run in cancellableRuns)
+        {
+            run.NotifyStateChange(JobStateType.Cancelled);
         }
     }
 

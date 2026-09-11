@@ -113,18 +113,28 @@ internal sealed record JobDefinition
 
     public void Disable()
     {
-        schedule = schedule with { CronExpression = NotReacheableCronDefinition };
+        UpdateSchedule(current => current with { CronExpression = NotReacheableCronDefinition });
     }
 
     public void Enable()
     {
-        var current = schedule;
-        schedule = current with
+        UpdateSchedule(current => current with
         {
             CronExpression = current.UserDefinedCronExpression is not null
                 ? GetCronExpression(current.UserDefinedCronExpression.Trim())
                 : null
-        };
+        });
+    }
+
+    // Compare-and-swap so a concurrent schedule change is never overwritten by a stale snapshot.
+    private void UpdateSchedule(Func<JobSchedule, JobSchedule> update)
+    {
+        JobSchedule current;
+        do
+        {
+            current = schedule;
+        }
+        while (Interlocked.CompareExchange(ref schedule, update(current), current) != current);
     }
 
     public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow)
