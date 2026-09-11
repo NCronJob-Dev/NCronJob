@@ -61,6 +61,8 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cron-macros">Cron macros</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#chaining-cron-expressions-with-and">Chaining Cron Expressions with And</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#scheduling-jobs-with-time-zones">Scheduling Jobs With Time Zones</a>
@@ -101,7 +103,7 @@
               </ul>
               <p class="caption"><span class="caption-text">Advanced</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Controlling the log level</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Logging and log scopes</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/global-concurrency/">Global Concurrency</a>
                   </li>
@@ -175,6 +177,61 @@
 <span class="p">});</span>
 </code></pre></div>
 
+<h2 id="cron-macros">Cron macros<a class="headerlink" href="#cron-macros" title="Permanent link">&para;</a></h2>
+<p>Instead of a cron expression, one of the following macros can be used:</p>
+<table>
+<thead>
+<tr>
+<th>Macro</th>
+<th>Equivalent expression</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@every_second</code></td>
+<td><code>* * * * * *</code></td>
+<td>Every second</td>
+</tr>
+<tr>
+<td><code>@every_minute</code></td>
+<td><code>* * * * *</code></td>
+<td>Every minute</td>
+</tr>
+<tr>
+<td><code>@hourly</code></td>
+<td><code>0 * * * *</code></td>
+<td>Every hour at minute 0</td>
+</tr>
+<tr>
+<td><code>@daily</code> / <code>@midnight</code></td>
+<td><code>0 0 * * *</code></td>
+<td>Every day at midnight</td>
+</tr>
+<tr>
+<td><code>@weekly</code></td>
+<td><code>0 0 * * 0</code></td>
+<td>Every Sunday at midnight</td>
+</tr>
+<tr>
+<td><code>@monthly</code></td>
+<td><code>0 0 1 * *</code></td>
+<td>On the first day of every month at midnight</td>
+</tr>
+<tr>
+<td><code>@yearly</code> / <code>@annually</code></td>
+<td><code>0 0 1 1 *</code></td>
+<td>On January 1st at midnight</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyCronJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;@daily&quot;</span><span class="p">));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p>Macros are evaluated in the configured time zone, just like regular cron expressions.</p>
 <h2 id="chaining-cron-expressions-with-and">Chaining Cron Expressions with <code>And</code><a class="headerlink" href="#chaining-cron-expressions-with-and" title="Permanent link">&para;</a></h2>
 <p>Execute the same job on multiple schedules using the <code>And</code> command:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>

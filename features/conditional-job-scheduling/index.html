@@ -179,7 +179,7 @@
               </ul>
               <p class="caption"><span class="caption-text">Advanced</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Controlling the log level</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Logging and log scopes</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/global-concurrency/">Global Concurrency</a>
                   </li>
@@ -214,7 +214,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="conditional-job-scheduling-with-onlyif">Conditional Job Scheduling with OnlyIf<a class="headerlink" href="#conditional-job-scheduling-with-onlyif" title="Permanent link">&para;</a></h1>
-<p>Schedule jobs that only execute when specific runtime conditions are met. This feature allows you to control job execution based on feature flags, configuration values, cached state, or any other runtime condition—without wasting resources instantiating jobs that won&rsquo;t run.</p>
+<p>Schedule jobs that only execute when specific runtime conditions are met. This feature allows you to control job execution based on feature flags, configuration values, cached state, or any other runtime condition - without wasting resources instantiating jobs that won&rsquo;t run.</p>
 <h2 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
 <p>Traditionally, if you needed conditional job execution, you had to check the condition inside the job&rsquo;s <code>RunAsync</code> method:</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
@@ -299,7 +299,7 @@
 </code></pre></div>
 
 <h3 id="multiple-conditions-and-logic">Multiple Conditions (AND Logic)<a class="headerlink" href="#multiple-conditions-and-logic" title="Permanent link">&para;</a></h3>
-<p>Combine multiple conditions—all must be true for execution:</p>
+<p>Combine multiple conditions - all must be true for execution:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">AnalyticsJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>

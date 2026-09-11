@@ -5,14 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/advanced/log-level/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Controlling the log level - NCronJob</title>
+    <title>Logging and log scopes - NCronJob</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Controlling the log level";
+        var mkdocs_page_name = "Logging and log scopes";
         var mkdocs_page_input_path = "advanced/log-level.md";
         var mkdocs_page_url = "/advanced/log-level/";
       </script>
@@ -87,8 +87,10 @@
               </ul>
               <p class="caption"><span class="caption-text">Advanced</span></p>
               <ul class="current">
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Controlling the log level</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Logging and log scopes</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#log-scopes">Log scopes</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../global-concurrency/">Global Concurrency</a>
@@ -113,7 +115,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Advanced</li>
-      <li class="breadcrumb-item active">Controlling the log level</li>
+      <li class="breadcrumb-item active">Logging and log scopes</li>
     <li class="wy-breadcrumbs-aside">
           <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/advanced/log-level.md">Edit on NCronJob-Dev/NCronJob</a>
     </li>
@@ -131,6 +133,57 @@
 <span class="w">      </span><span class="nt">&quot;Default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Information&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;Microsoft.AspNetCore&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Warning&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;NCronJob&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Debug&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="log-scopes">Log scopes<a class="headerlink" href="#log-scopes" title="Permanent link">&para;</a></h2>
+<p>Every job run is executed within a <a href="https://learn.microsoft.com/dotnet/core/extensions/logging#log-scopes">log scope</a>. All log entries written during the run carry the following properties, including the ones written by your job through its injected <code>ILogger&lt;T&gt;</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>JobName</code></td>
+<td>The job type (for example <code>MyApp.PrintHelloWorldJob</code>). If a custom name was given, it comes first and the type follows in parentheses. For delegate (minimal API) jobs, the type part is <code>Untyped job &lt;name&gt;</code>, or a generated identifier when no name was given.</td>
+</tr>
+<tr>
+<td><code>JobRunId</code></td>
+<td>The unique identifier of this run.</td>
+</tr>
+<tr>
+<td><code>CorrelationId</code></td>
+<td>The identifier shared by a job and all of its dependent jobs (see <code>IJobExecutionContext.CorrelationId</code>).</td>
+</tr>
+<tr>
+<td><code>TriggerType</code></td>
+<td>How the run was started: <code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>This makes it possible to filter or group all log entries of a single run, or of a whole chain of dependent jobs, without passing any context around manually.</p>
+<p>Whether scopes end up in your logs depends on the logging provider and its configuration. Most structured logging providers can turn scopes into properties (for example Serilog via <code>Serilog.Extensions.Logging</code>, or OpenTelemetry with <code>IncludeScopes</code> enabled). The console logger only shows scopes when they are enabled:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;Logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;Console&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;FormatterName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;FormatterOptions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;IncludeScopes&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>With scopes enabled, a log entry of a job looks like this:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">info</span><span class="o">:</span><span class="w"> </span><span class="n">MyApp</span><span class="o">.</span><span class="na">PrintHelloWorldJob</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span>
+<span class="w">      </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">MyApp</span><span class="o">.</span><span class="na">PrintHelloWorldJob</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="mi">3</span><span class="n">f0c2a5e</span><span class="o">-...</span><span class="w"> </span><span class="o">(</span><span class="n">correlation</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="mi">9</span><span class="n">b1d7c44</span><span class="o">-...,</span><span class="w"> </span><span class="n">triggered</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">Cron</span><span class="o">)</span>
+<span class="w">      </span><span class="n">Hello</span><span class="w"> </span><span class="n">World</span>
 </code></pre></div>
               
             </div>
