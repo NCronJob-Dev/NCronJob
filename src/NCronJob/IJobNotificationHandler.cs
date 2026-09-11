@@ -13,7 +13,8 @@ public interface IJobNotificationHandler
     /// <param name="exception">The exception that was thrown during the execution of the job. If the job was successful, this will be <c>null</c>.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> that can be used to cancel the notification.</param>
     /// <remarks>
-    /// The method will be invoked with the same scope as the job itself.
+    /// The handler is resolved from its own service scope; scoped services are not shared with the job instance.
+    /// Use <see cref="IJobExecutionContext.Output"/> to pass data from the job to the handler.
     /// </remarks>
     public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken);
 }

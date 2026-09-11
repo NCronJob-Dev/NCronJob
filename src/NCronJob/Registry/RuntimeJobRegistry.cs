@@ -124,20 +124,17 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
-    private readonly JobQueueManager jobQueueManager;
     private readonly ConcurrencySettings concurrencySettings;
 
     public RuntimeJobRegistry(
         IServiceCollection services,
         JobRegistry jobRegistry,
         JobWorker jobWorker,
-        JobQueueManager jobQueueManager,
         ConcurrencySettings concurrencySettings)
     {
         this.services = services;
         this.jobRegistry = jobRegistry;
         this.jobWorker = jobWorker;
-        this.jobQueueManager = jobQueueManager;
         this.concurrencySettings = concurrencySettings;
     }
 
@@ -146,18 +143,15 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         try
         {
-            var oldJobs = jobRegistry.GetAllRootJobs();
             var jdc = new JobDefinitionCollector();
             var builder = new NCronJobOptionBuilder(services, concurrencySettings, jdc);
             jobBuilder(builder);
 
             jobRegistry.FeedFrom(jdc);
 
-            var newJobs = jobRegistry.GetAllRootJobs().Except(oldJobs);
-            foreach (var jobDefinition in newJobs)
+            foreach (var jobDefinition in jdc.Entries.Keys)
             {
                 jobWorker.ScheduleJob(jobDefinition);
-                jobQueueManager.SignalJobQueue(jobDefinition.JobFullName);
             }
 
             exception = null;

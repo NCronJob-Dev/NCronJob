@@ -4,6 +4,12 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
+#if NET9_0_OR_GREATER
+    private readonly Lock syncLock = new();
+#else
+    private readonly object syncLock = new();
+#endif
+
     private readonly List<JobDefinition> allRootJobs = [];
 
     private IEnumerable<JobDefinition> AllDependentJobDefinitions => dependentJobsPerJobDefinition.Values
@@ -12,22 +18,71 @@ internal sealed class JobRegistry
     private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
         = new(DependentJobDefinitionEqualityComparer.Instance);
 
-    public IReadOnlyCollection<JobDefinition> GetAllRootJobs() => [.. allRootJobs];
+    public IReadOnlyCollection<JobDefinition> GetAllRootJobs()
+    {
+        lock (syncLock)
+        {
+            return [.. allRootJobs];
+        }
+    }
 
-    public IReadOnlyCollection<JobDefinition> GetAllCronJobs() => allRootJobs.Where(c => c.CronExpression is not null).ToList();
+    public IReadOnlyCollection<JobDefinition> GetAllCronJobs()
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.Where(c => c.CronExpression is not null).ToList();
+        }
+    }
 
-    public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs() => allRootJobs.Where(c => c.IsStartupJob).ToList();
+    public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs()
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.Where(c => c.IsStartupJob).ToList();
+        }
+    }
 
     public IReadOnlyCollection<JobDefinition> FindAllRootJobDefinition(Type type)
-        => allRootJobs.Where(j => j.Type == type).ToList();
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.Where(j => j.Type == type).ToList();
+        }
+    }
+
+    public bool IsRootJob(JobDefinition jobDefinition)
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.Contains(jobDefinition);
+        }
+    }
 
     public JobDefinition? FindFirstRootJobDefinition(Type type)
-        => allRootJobs.FirstOrDefault(j => j.Type == type);
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.FirstOrDefault(j => j.Type == type);
+        }
+    }
 
     public JobDefinition? FindRootJobDefinition(string jobName)
-        => allRootJobs.FirstOrDefault(j => j.CustomName == jobName);
+    {
+        lock (syncLock)
+        {
+            return allRootJobs.FirstOrDefault(j => j.CustomName == jobName);
+        }
+    }
 
     public void Add(JobDefinition jobDefinition)
+    {
+        lock (syncLock)
+        {
+            AddUnsafe(jobDefinition);
+        }
+    }
+
+    private void AddUnsafe(JobDefinition jobDefinition)
     {
         AssertNoDuplicateJobNames(jobDefinition.CustomName);
         AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(jobDefinition);
@@ -44,49 +99,56 @@ internal sealed class JobRegistry
         allRootJobs.Add(jobDefinition);
     }
 
-    public int GetJobTypeConcurrencyLimit(string jobTypeName)
-        => allRootJobs.FirstOrDefault(j => j.JobFullName == jobTypeName)
-            ?.ConcurrencyPolicy
-            ?.MaxDegreeOfParallelism ?? 1;
-
     public string? RemoveByName(string jobName)
     {
-        EnsureCanBeRemoved(j => j.CustomName == jobName);
-
-        var jobDefinition = FindRootJobDefinition(jobName);
-
-        if (jobDefinition is null)
+        lock (syncLock)
         {
-            return null;
+            EnsureCanBeRemoved(j => j.CustomName == jobName);
+
+            var jobDefinition = allRootJobs.FirstOrDefault(j => j.CustomName == jobName);
+
+            if (jobDefinition is null)
+            {
+                return null;
+            }
+
+            Remove(jobDefinition);
+
+            return jobDefinition.JobFullName;
         }
-
-        Remove(jobDefinition);
-
-        return jobDefinition.JobFullName;
     }
 
     public string? RemoveByType(Type type)
     {
-        EnsureCanBeRemoved(j => j.Type == type);
-
-        var jobDefinition = FindFirstRootJobDefinition(type);
-
-        if (jobDefinition is null)
+        lock (syncLock)
         {
-            return null;
+            EnsureCanBeRemoved(j => j.Type == type);
+
+            var allJobDefinitions = allRootJobs.Where(j => j.Type == type).ToList();
+
+            if (allJobDefinitions.Count == 0)
+            {
+                return null;
+            }
+
+            foreach (var oneJobDefinition in allJobDefinitions)
+            {
+                Remove(oneJobDefinition);
+            }
+
+            return allJobDefinitions[0].JobFullName;
         }
-
-        var allJobDefinitions = FindAllRootJobDefinition(type);
-
-        foreach (var oneJobDefinition in allJobDefinitions)
-        {
-            Remove(oneJobDefinition);
-        }
-
-        return jobDefinition.JobFullName;
     }
 
     public void RegisterJobDependency(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
+    {
+        lock (syncLock)
+        {
+            RegisterJobDependencyUnsafe(parentJobdefinitions, entry);
+        }
+    }
+
+    private void RegisterJobDependencyUnsafe(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
     {
         foreach (var jobDefinition in parentJobdefinitions)
         {
@@ -120,9 +182,14 @@ internal sealed class JobRegistry
     private JobDefinition[] FilterByAndProject(
         JobDefinition parentJobDefinition,
         Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<JobDefinition>> transform)
-    => !dependentJobsPerJobDefinition.TryGetValue(parentJobDefinition, out var types)
-        ? []
-        : transform(types).ToArray();
+    {
+        lock (syncLock)
+        {
+            return !dependentJobsPerJobDefinition.TryGetValue(parentJobDefinition, out var types)
+                ? []
+                : transform(types).ToArray();
+        }
+    }
 
     private void EnsureCanBeRemoved(Func<JobDefinition, bool> jobDefintionFinder)
     {
@@ -183,15 +250,18 @@ internal sealed class JobRegistry
 
     public void FeedFrom(JobDefinitionCollector jdc)
     {
-        foreach (var (jobDefinition, dependentJobs) in jdc.Entries)
+        lock (syncLock)
         {
-            Add(jobDefinition);
-
-            List<JobDefinition> value = [jobDefinition];
-
-            foreach (var entry in dependentJobs)
+            foreach (var (jobDefinition, dependentJobs) in jdc.Entries)
             {
-                RegisterJobDependency(value, entry);
+                AddUnsafe(jobDefinition);
+
+                List<JobDefinition> value = [jobDefinition];
+
+                foreach (var entry in dependentJobs)
+                {
+                    RegisterJobDependencyUnsafe(value, entry);
+                }
             }
         }
     }

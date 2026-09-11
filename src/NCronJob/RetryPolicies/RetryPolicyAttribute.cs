@@ -28,6 +28,7 @@ public sealed class RetryPolicyAttribute : RetryPolicyBaseAttribute
     /// <param name="policyCreatorType">The type of retry policy to create, as defined by the <see cref="PolicyType"/> enum.</param>
     public RetryPolicyAttribute(int retryCount = 3, PolicyType policyCreatorType = PolicyType.ExponentialBackoff)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(retryCount);
         RetryCount = retryCount;
         PolicyCreatorType = policyCreatorType;
     }

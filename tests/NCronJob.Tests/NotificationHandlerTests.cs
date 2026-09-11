@@ -63,6 +63,24 @@ public class NotificationHandlerTests : JobIntegrationBase
         await StartNCronJobAndAssertSimpleJobWasProcessedAndNotified();
     }
 
+    [Fact]
+    public async Task HandlerThrowingAggregateExceptionDoesNotFailTheJob()
+    {
+        ServiceCollection.AddNCronJob(n => n
+                .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .AddNotificationHandler<HandlerThatThrowsAggregateException>()
+        );
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = Events[0].CorrelationId;
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Events.FilterByOrchestrationId(orchestrationId).ShouldBeScheduledThenCompleted<DummyJob>();
+        Storage.Entries.ShouldBe(["DummyJob - Parameter: ", "HandlerThatThrowsAggregateException"], ignoreOrder: false);
+    }
+
     private async Task StartNCronJobAndAssertSimpleJobWasProcessedAndNotified()
     {
         await StartNCronJob(startMonitoringEvents: true);
@@ -93,6 +111,15 @@ public class NotificationHandlerTests : JobIntegrationBase
 
             storage.Add($"{GetType().Name} - Exception: {exception.GetType().Name}");
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class HandlerThatThrowsAggregateException(Storage storage) : IJobNotificationHandler<DummyJob>
+    {
+        public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+        {
+            storage.Add(GetType().Name);
+            throw new AggregateException(new InvalidOperationException());
         }
     }
 

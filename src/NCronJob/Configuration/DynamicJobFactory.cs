@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace NCronJob;
@@ -23,24 +21,16 @@ internal class DynamicJobFactory : IJob
 
     private static Func<object[], Task> BuildInvoker(Delegate jobDelegate)
     {
-        var method = jobDelegate.Method;
-        var returnType = method.ReturnType;
-        var param = Expression.Parameter(typeof(object[]), "args");
-        var args = method.GetParameters().Select((p, index) =>
-            Expression.Convert(Expression.ArrayIndex(param, Expression.Constant(index)), p.ParameterType)).ToArray();
-        var instance = method.IsStatic ? null : Expression.Constant(jobDelegate.Target);
-        var call = Expression.Call(instance, method, args);
+        var returnType = jobDelegate.Method.ReturnType;
 
         if (returnType == typeof(Task))
         {
-            var lambda = Expression.Lambda<Func<object[], Task>>(call, param);
-            return lambda.Compile();
+            return DelegateInvoker.Build<Task>(jobDelegate);
         }
 
         if (returnType == typeof(void))
         {
-            var lambda = Expression.Lambda<Action<object[]>>(Expression.Block(call, Expression.Default(typeof(void))), param);
-            var action = lambda.Compile();
+            var action = DelegateInvoker.BuildAction(jobDelegate);
             return objects => { action(objects); return Task.CompletedTask; };
         }
 

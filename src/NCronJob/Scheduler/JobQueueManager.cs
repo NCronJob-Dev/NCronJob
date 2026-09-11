@@ -7,8 +7,7 @@ namespace NCronJob;
 internal sealed class JobQueueManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
+    private readonly Dictionary<string, TaskCompletionSource> queueSignals = [];
 #if NET9_0_OR_GREATER
     private readonly Lock syncLock = new();
 #else
@@ -20,51 +19,73 @@ internal sealed class JobQueueManager : IDisposable
 
     public bool IsDisposed { get; private set; }
 
-    public JobQueue GetOrAddQueue(string queueName)
+    /// <summary>
+    /// Adds the run to its queue, creating the queue if needed.
+    /// Lookup and enqueue are atomic with respect to <see cref="RemoveQueue"/>, so a run can never end up in a removed queue.
+    /// </summary>
+    /// <returns><c>false</c> when <paramref name="canEnqueue"/> rejected the run.</returns>
+    public bool Enqueue(JobRun run, Func<bool>? canEnqueue = null)
     {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        var queueName = run.JobDefinition.JobFullName;
+        var isCreating = false;
+
         lock (syncLock)
         {
-            var isCreating = false;
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (canEnqueue is not null && !canEnqueue())
+            {
+                return false;
+            }
+
             var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
             {
                 isCreating = true;
                 var queue = new JobQueue(jt);
                 queue.CollectionChanged += CallCollectionChanged;
-                jobCancellationTokens[jt] = new CancellationTokenSource();
+                queueSignals[jt] = CreateSignal();
                 return queue;
             });
 
-            if (isCreating)
-            {
-                QueueAdded?.Invoke(queueName);
-            }
-
-            return jobQueue;
+            jobQueue.EnqueueForDirectExecution(run);
         }
+
+        if (isCreating)
+        {
+            QueueAdded?.Invoke(queueName);
+        }
+
+        return true;
     }
 
     public void RemoveQueue(string queueName)
     {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        List<JobRun> cancellableRuns;
+
         lock (syncLock)
         {
-            if (jobQueues.TryRemove(queueName, out var jobQueue))
-            {
-                foreach (var job in jobQueue.Where(j => j.IsCancellable))
-                {
-                    job.NotifyStateChange(JobStateType.Cancelled);
-                }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-                jobQueue.Clear();
-                jobQueue.CollectionChanged -= CallCollectionChanged;
-                semaphores.TryRemove(queueName, out _);
-                if (jobCancellationTokens.TryRemove(queueName, out var x))
-                {
-                    x.Cancel();
-                    x.Dispose();
-                }
+            if (!jobQueues.TryRemove(queueName, out var jobQueue))
+            {
+                return;
             }
+
+            cancellableRuns = jobQueue.Where(j => j.IsCancellable).ToList();
+
+            jobQueue.Clear();
+            jobQueue.CollectionChanged -= CallCollectionChanged;
+
+            if (queueSignals.Remove(queueName, out var signal))
+            {
+                signal.TrySetResult();
+            }
+        }
+
+        // Progress callbacks run user code, so they must not be invoked while holding the lock.
+        foreach (var run in cancellableRuns)
+        {
+            run.NotifyStateChange(JobStateType.Cancelled);
         }
     }
 
@@ -80,63 +101,66 @@ internal sealed class JobQueueManager : IDisposable
         return jobQueues.Keys;
     }
 
-    public SemaphoreSlim GetOrAddSemaphore(string queueName, int concurrencyLimit)
-    {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
-        return semaphores.GetOrAdd(queueName, _ => new SemaphoreSlim(concurrencyLimit));
-    }
-
-    public CancellationTokenSource GetCancellationTokenSource(string queueName)
-    {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
-        return jobCancellationTokens[queueName];
-    }
-
-    public void SignalJobQueue(string queueName)
+    /// <summary>
+    /// Returns a task that completes the next time the given queue changes or is removed.
+    /// Obtain it before inspecting the queue so that no change can be missed.
+    /// </summary>
+    public Task WaitForChangeAsync(string queueName)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
-            if (!jobQueues.ContainsKey(queueName))
-            {
-                return;
-            }
-
-            var cts = jobCancellationTokens[queueName];
-            cts.Cancel();
-            jobCancellationTokens[queueName] = new CancellationTokenSource();
+            return queueSignals.TryGetValue(queueName, out var signal) ? signal.Task : Task.CompletedTask;
         }
     }
-
-    public int Count(string queueName) => jobQueues.TryGetValue(queueName, out var jobQueue) ? jobQueue.Count : 0;
 
     public void Dispose()
     {
         if (IsDisposed)
             return;
 
-        foreach (var jobQueue in jobQueues.Values)
+        lock (syncLock)
         {
-            jobQueue.CollectionChanged -= CallCollectionChanged;
-        }
+            foreach (var jobQueue in jobQueues.Values)
+            {
+                jobQueue.CollectionChanged -= CallCollectionChanged;
+            }
 
-        foreach (var semaphore in semaphores.Values)
+            foreach (var signal in queueSignals.Values)
+            {
+                signal.TrySetResult();
+            }
+
+            jobQueues.Clear();
+            queueSignals.Clear();
+
+            IsDisposed = true;
+        }
+    }
+
+    private void SignalJobQueue(string queueName)
+    {
+        lock (syncLock)
         {
-            semaphore.Dispose();
+            if (!queueSignals.TryGetValue(queueName, out var signal))
+            {
+                return;
+            }
+
+            queueSignals[queueName] = CreateSignal();
+            signal.TrySetResult();
         }
-
-        foreach (var cts in jobCancellationTokens.Values)
-        {
-            cts.Dispose();
-        }
-
-        jobQueues.Clear();
-        semaphores.Clear();
-        jobCancellationTokens.Clear();
-
-        IsDisposed = true;
     }
 
     private void CallCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        => CollectionChanged?.Invoke(sender, e);
+    {
+        if (sender is JobQueue jobQueue && e.Action == NotifyCollectionChangedAction.Add)
+        {
+            SignalJobQueue(jobQueue.Name);
+        }
+
+        CollectionChanged?.Invoke(sender, e);
+    }
+
+    private static TaskCompletionSource CreateSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

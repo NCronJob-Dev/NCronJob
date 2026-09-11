@@ -63,7 +63,7 @@ internal sealed partial class RetryHandler : IRetryHandler
                 return operation(ct);
             }, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             var jobName = runContext.JobRun.JobDefinition.Name;
             LogCancellationOperationInJob(jobName);

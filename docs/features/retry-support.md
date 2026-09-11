@@ -8,6 +8,8 @@ The `RetryPolicy` attribute allows you to specify the number of retry attempts a
 - **ExponentialBackoff:** Increases the delay between retry attempts exponentially.
 - **FixedInterval:** Keeps the delay between retry attempts consistent.
 
+The built-in strategies wait using the registered `TimeProvider`. This means retry delays can be controlled in tests, for example with `FakeTimeProvider`. Custom policies (see below) control their own delays.
+
 ## Using Retry Policies
 
 Here are examples of how to use the built-in retry policies:

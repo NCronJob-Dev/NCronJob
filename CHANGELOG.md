@@ -6,6 +6,33 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Every job run is executed within a log scope containing `JobName`, `JobRunId`, `CorrelationId` and `TriggerType`, so log entries (including those written by the job itself) can be correlated to their run.
+
+## [v4.10.3] - 2026-09-11
+
+### Fixed
+
+- Re-enabling a job with a second-precision cron expression (six fields) via `IRuntimeJobRegistry.EnableJob` threw a `CronFormatException`.
+- An `OperationCanceledException` thrown by the job itself (e.g. an `HttpClient` timeout) was reported as a successful run and triggered success-dependent jobs. It is now treated as a failure.
+- A job throwing an `AggregateException` bypassed exception handlers, notification handlers and faulted-dependent jobs.
+- A throwing `IJobExecutionProgressReporter` callback could break job scheduling and execution. Callback exceptions are now logged and ignored.
+- The job registry and job schedules were not safe for concurrent changes through `IRuntimeJobRegistry` while jobs were being scheduled. Concurrent `TryRegister` calls could also schedule duplicate runs.
+- A notification handler throwing an `AggregateException` caused a successful job to be reported as faulted.
+- Rescheduling racing with `RemoveJob` could bring a removed job back, and a run could get stranded in a queue that was being removed.
+- Stopping the host did not wait for jobs that were still running after their job had been removed.
+- Triggering an instant job for a cron-scheduled job could lead to duplicate cron executions.
+- Removing a job left its queue worker running and leaked internal resources.
+
+### Changed
+
+- The scheduler is now signal-driven and no longer polls every job queue every 500 ms.
+- The built-in retry policies (`ExponentialBackoff`, `FixedInterval`) now wait using the registered `TimeProvider`.
+- `RetryPolicyAttribute` rejects a negative `retryCount`.
+- Clarified in the documentation that notification handlers are resolved from their own service scope.
+- Removed internal dead code.
+
 ## [v4.10.2] - 2026-06-08
 
 ### Changed
@@ -589,7 +616,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.2...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.3...HEAD
+[v4.10.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.2...v4.10.3
 [v4.10.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.1...v4.10.2
 [v4.10.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.0...v4.10.1
 [v4.10.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.9.0...v4.10.0

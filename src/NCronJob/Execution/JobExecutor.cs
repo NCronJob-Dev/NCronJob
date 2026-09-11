@@ -50,12 +50,6 @@ internal sealed partial class JobExecutor : IDisposable
     {
         ObjectDisposedException.ThrowIf(isDisposed, this);
 
-        if (isDisposed)
-        {
-            LogSkipAsDisposed();
-            return;
-        }
-
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
@@ -69,7 +63,7 @@ internal sealed partial class JobExecutor : IDisposable
             var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
             await ExecuteJob(runContext, job);
         }
-        catch (Exception exc) when (exc is not (OperationCanceledException or AggregateException))
+        catch (Exception exc) when (exc is not OperationCanceledException || !linkedCts.Token.IsCancellationRequested)
         {
             LogJobFailed(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
@@ -154,9 +148,9 @@ internal sealed partial class JobExecutor : IDisposable
             {
                 await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
             }
-            catch (Exception innerExc) when (innerExc is not (OperationCanceledException or AggregateException))
+            catch (Exception innerExc) when (innerExc is not OperationCanceledException || !ct.IsCancellationRequested)
             {
-                // We don't want to throw exceptions from the notification service
+                LogNotificationHandlerFailed(notificationService.GetType(), innerExc);
             }
         }
     }
@@ -186,8 +180,7 @@ internal sealed partial class JobExecutor : IDisposable
                 continue;
             }
 
-            var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
-            jobQueue.EnqueueForDirectExecution(newRun);
+            jobQueueManager.Enqueue(newRun);
         }
     }
 

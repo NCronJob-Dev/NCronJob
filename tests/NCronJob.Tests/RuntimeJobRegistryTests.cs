@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Shouldly;
 
 namespace NCronJob.Tests;
@@ -119,6 +120,29 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenCancelled("Job");
+    }
+
+    [Fact]
+    public async Task RemovingAJobStopsItsQueueWorker()
+    {
+        ServiceCollection.AddNCronJob();
+
+        await StartNCronJob();
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var queueWorker = ServiceProvider.GetServices<IHostedService>().OfType<QueueWorker>().Single();
+
+        registry.TryRegister(s => s.AddJob((Storage storage) => storage.Add("true"), Cron.AtEveryMinute, jobName: "Job"), out _).ShouldBeTrue();
+        queueWorker.GetActiveWorkerQueueNames().Count.ShouldBe(1);
+
+        registry.RemoveJob("Job");
+
+        while (queueWorker.GetActiveWorkerQueueNames().Count > 0)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
+        }
+
+        ServiceProvider.GetRequiredService<JobQueueManager>().GetAllJobQueueNames().ShouldBeEmpty();
     }
 
     [Fact]
@@ -578,6 +602,130 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
         var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
         secondOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>("JobName");
 
+    }
+
+    [Fact]
+    public async Task ShouldEnableJobWithSecondPrecision()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEverySecond).WithName("JobName")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        registry.DisableJob("JobName");
+
+        Should.NotThrow(() => registry.EnableJob("JobName"));
+
+        registry.TryGetSchedule("JobName", out var cronExpression, out _).ShouldBeTrue();
+        cronExpression.ShouldBe(Cron.AtEverySecond);
+
+        FakeTimer.Advance(TimeSpan.FromSeconds(1));
+
+        var completed = await WaitForNthOrchestrationState(ExecutionState.Completed, 1, stopMonitoringEvents: true);
+        completed.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ConcurrentRuntimeRegistrationsAndReadsAreThreadSafe()
+    {
+        ServiceCollection.AddNCronJob();
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        const int jobCount = 200;
+
+        var writer = Task.Run(() => Parallel.For(0, jobCount, i =>
+            registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: $"Job{i}"), out _).ShouldBeTrue()),
+            CancellationToken);
+
+        var reader = Task.Run(() =>
+        {
+            while (!writer.IsCompleted)
+            {
+                _ = registry.GetAllRecurringJobs();
+                _ = registry.TryGetSchedule("Job0", out _, out _);
+            }
+        }, CancellationToken);
+
+        await Task.WhenAll(writer, reader);
+
+        registry.GetAllRecurringJobs().Count.ShouldBe(jobCount);
+
+        var jobQueueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+        for (var i = 0; i < jobCount; i++)
+        {
+            jobQueueManager.TryGetQueue($"Untyped job Job{i}", out var jobQueue).ShouldBeTrue();
+            jobQueue.Count.ShouldBe(1);
+        }
+    }
+
+    [Fact]
+    public void ReschedulingAJobThatIsNoLongerRegisteredDoesNotRecreateItsQueue()
+    {
+        ServiceCollection.AddNCronJob();
+
+        var orphan = JobDefinition.CreateUntyped("Orphan", () => { });
+        orphan.UpdateWith(new JobOption { CronExpression = Cron.AtEveryMinute });
+
+        ServiceProvider.GetRequiredService<JobWorker>().ScheduleJob(orphan);
+
+        ServiceProvider.GetRequiredService<JobQueueManager>().GetAllJobQueueNames().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task StoppingWaitsForRunningJobsOfRemovedQueues()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ServiceCollection.AddSingleton(gate);
+        ServiceCollection.AddNCronJob(s => s.AddJob<GatedJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        await WaitForNthOrchestrationState(ExecutionState.Running, 1, stopMonitoringEvents: true);
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().RemoveJob<GatedJob>();
+
+        var queueWorker = ServiceProvider.GetServices<IHostedService>().OfType<QueueWorker>().Single();
+        var stopTask = queueWorker.StopAsync(CancellationToken);
+
+        await Task.Delay(TimeSpan.FromMilliseconds(100), CancellationToken);
+        stopTask.IsCompleted.ShouldBeFalse();
+
+        gate.SetResult();
+        await stopTask;
+    }
+
+    [Fact]
+    public async Task ProgressCallbackCanUseTheRegistryWhileAJobIsBeingRemoved()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+
+        await StartNCronJob();
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var registeredFromCallback = false;
+
+        using var subscription = ServiceProvider.GetRequiredService<IJobExecutionProgressReporter>().Register(progress =>
+        {
+            if (progress.State != ExecutionState.Cancelled)
+            {
+                return;
+            }
+
+            // Registering from another thread needs the queue manager; it must not be blocked by the removal in progress.
+            registeredFromCallback = Task.Run(
+                () => registry.TryRegister(s => s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "FromCallback")),
+                CancellationToken).Wait(TimeSpan.FromSeconds(5), CancellationToken);
+        });
+
+        registry.RemoveJob("JobName");
+
+        registeredFromCallback.ShouldBeTrue();
+    }
+
+    private sealed class GatedJob(TaskCompletionSource gate) : IJob
+    {
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token) => gate.Task;
     }
 
     [Fact]

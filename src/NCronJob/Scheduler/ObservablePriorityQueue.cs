@@ -41,21 +41,21 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
         InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, element));
     }
 
-    public TElement Dequeue()
+    public bool TryDequeueIf(TElement expected)
     {
-        TElement element;
-
         lock (Lock)
         {
-            if (PriorityQueue.Count == 0)
-                throw new InvalidOperationException("Queue is empty");
+            if (!PriorityQueue.TryPeek(out var head, out _) || !EqualityComparer<TElement>.Default.Equals(head, expected))
+            {
+                return false;
+            }
 
-            element = PriorityQueue.Dequeue();
+            PriorityQueue.Dequeue();
         }
 
-        InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, element));
+        InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, expected));
 
-        return element;
+        return true;
     }
 
     public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)

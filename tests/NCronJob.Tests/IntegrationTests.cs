@@ -26,6 +26,27 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task ThrowingProgressCallbackDoesNotBreakJobExecution()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        using var throwingSubscription = ServiceProvider
+            .GetRequiredService<IJobExecutionProgressReporter>()
+            .Register(_ => throw new InvalidOperationException("Faulty subscriber"));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        var orchestrationId = Events[0].CorrelationId;
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Events.FilterByOrchestrationId(orchestrationId).ShouldBeScheduledThenCompleted<DummyJob>();
+        Storage.Entries.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task AdvancingTheWholeTimeShouldHaveTenEntries()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
@@ -430,8 +451,13 @@ public sealed class IntegrationTests : JobIntegrationBase
             1,
             stopMonitoringEvents: true);
 
+        // The Running state is reported right before the job body executes and writes to the storage.
+        while (!Storage.Entries.Contains("Running LongRunningJob"))
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
+        }
+
         Storage.Entries.ShouldContain("DummyJob - Parameter: ");
-        Storage.Entries.ShouldContain("Running LongRunningJob");
         Storage.Entries.Count.ShouldBe(2);
     }
 
@@ -505,23 +531,50 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         await StartNCronJob(startMonitoringEvents: true);
 
-        var instantOrchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<DummyJob>(token: CancellationToken);
-
-        await WaitForOrchestrationCompletion(instantOrchestrationId, stopMonitoringEvents: true);
-
         var scheduledOrchestrationId = Events[0].CorrelationId;
 
-        var scheduledOrchestrationEvents = Events.FilterByOrchestrationId(scheduledOrchestrationId);
-        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
+        var instantOrchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<DummyJob>(token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(instantOrchestrationId);
 
         var instantOrchestrationEvents = Events.FilterByOrchestrationId(instantOrchestrationId);
         instantOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
 
+        FakeTimer.Advance(TimeSpan.FromHours(1));
+
+        await WaitForOrchestrationCompletion(scheduledOrchestrationId, stopMonitoringEvents: true);
+
+        var scheduledOrchestrationEvents = Events.FilterByOrchestrationId(scheduledOrchestrationId);
+        scheduledOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>();
+
         // Scheduled orchestration should have started before the instant job related one...
         scheduledOrchestrationEvents[0].Timestamp.ShouldBeLessThan(instantOrchestrationEvents[0].Timestamp);
 
-        // ...and cancelled before the initialization of the instant job related one.
-        scheduledOrchestrationEvents[3].Timestamp.ShouldBeLessThan(instantOrchestrationEvents[2].Timestamp);
+        Storage.Entries.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task TriggeringInstantJobDoesNotDuplicateCronExecutions()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithParameter("CRON")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var instantOrchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<DummyJob>("INSTANT", CancellationToken);
+
+        await WaitForOrchestrationCompletion(instantOrchestrationId);
+
+        const int cronSlots = 3;
+        for (var slot = 1; slot <= cronSlots; slot++)
+        {
+            FakeTimer.Advance(TimeSpan.FromMinutes(1));
+            await WaitForNthOrchestrationState(ExecutionState.OrchestrationCompleted, 1 + slot);
+        }
+
+        await WaitForNthOrchestrationState(ExecutionState.OrchestrationCompleted, 1 + cronSlots, stopMonitoringEvents: true);
+
+        Storage.Entries.Count(e => e.EndsWith("INSTANT", StringComparison.Ordinal)).ShouldBe(1);
+        Storage.Entries.Count(e => e.EndsWith("CRON", StringComparison.Ordinal)).ShouldBe(cronSlots);
     }
 
     [Fact]
@@ -584,7 +637,8 @@ public sealed class IntegrationTests : JobIntegrationBase
         await WaitForOrchestrationCompletion(instantOrchestrationId, stopMonitoringEvents: true);
 
         var scheduledOrchestrationEvents = Events.FilterByOrchestrationId(scheduledOrchestrationId);
-        scheduledOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>();
+        scheduledOrchestrationEvents.Select(e => e.State).ShouldBe(
+            [ExecutionState.OrchestrationStarted, ExecutionState.NotStarted, ExecutionState.Scheduled]);
 
         var instantOrchestrationEvents = Events.FilterByOrchestrationId(instantOrchestrationId);
         instantOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();

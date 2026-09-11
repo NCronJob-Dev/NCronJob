@@ -43,10 +43,8 @@ internal static class JobStateExtensions
         JobStateType.Retrying;
 
     public static bool CanBeCancelled(this JobState current) =>
-        current.Type is
-        JobStateType.NotStarted or
-        JobStateType.Scheduled ||
-        current.CanInitiateRun();
+        current.Type is JobStateType.NotStarted or JobStateType.Scheduled
+        || current.CanInitiateRun();
 }
 
 internal enum JobStateType

@@ -1,7 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using System.Linq.Expressions;
-using System.Reflection;
-
 namespace NCronJob;
 
 internal static class ConditionInvokerBuilder
@@ -15,72 +11,26 @@ internal static class ConditionInvokerBuilder
 
         if (returnType == typeof(bool))
         {
-            var syncInvoker = BuildSyncInvoker(predicate);
-            return (sp, ct) =>
-            {
-                var arguments = ServiceResolverHelper.ResolveArguments(sp, parameters, serviceResolvers, null, ct);
-                var result = syncInvoker(arguments);
-                return new ValueTask<bool>(result);
-            };
+            var syncInvoker = DelegateInvoker.Build<bool>(predicate);
+            return (sp, ct) => new ValueTask<bool>(syncInvoker(ResolveArguments(sp, ct)));
         }
-        
+
         if (returnType == typeof(Task<bool>))
         {
-            var asyncInvoker = BuildAsyncInvoker(predicate);
-            return async (sp, ct) =>
-            {
-                var arguments = ServiceResolverHelper.ResolveArguments(sp, parameters, serviceResolvers, null, ct);
-                return await asyncInvoker(arguments).ConfigureAwait(false);
-            };
+            var asyncInvoker = DelegateInvoker.Build<Task<bool>>(predicate);
+            return (sp, ct) => new ValueTask<bool>(asyncInvoker(ResolveArguments(sp, ct)));
         }
-        
+
         if (returnType == typeof(ValueTask<bool>))
         {
-            var valueTaskInvoker = BuildValueTaskInvoker(predicate);
-            return (sp, ct) =>
-            {
-                var arguments = ServiceResolverHelper.ResolveArguments(sp, parameters, serviceResolvers, null, ct);
-                return valueTaskInvoker(arguments);
-            };
+            var valueTaskInvoker = DelegateInvoker.Build<ValueTask<bool>>(predicate);
+            return (sp, ct) => valueTaskInvoker(ResolveArguments(sp, ct));
         }
 
         throw new InvalidOperationException(
             $"The condition predicate must return bool, Task<bool>, or ValueTask<bool>. Found: {returnType.Name}");
-    }
 
-    private static Func<object[], bool> BuildSyncInvoker(Delegate predicate)
-    {
-        var method = predicate.Method;
-        var param = Expression.Parameter(typeof(object[]), "args");
-        var args = method.GetParameters().Select((p, index) =>
-            Expression.Convert(Expression.ArrayIndex(param, Expression.Constant(index)), p.ParameterType)).ToArray();
-        var instance = method.IsStatic ? null : Expression.Constant(predicate.Target);
-        var call = Expression.Call(instance, method, args);
-        var lambda = Expression.Lambda<Func<object[], bool>>(call, param);
-        return lambda.Compile();
-    }
-
-    private static Func<object[], Task<bool>> BuildAsyncInvoker(Delegate predicate)
-    {
-        var method = predicate.Method;
-        var param = Expression.Parameter(typeof(object[]), "args");
-        var args = method.GetParameters().Select((p, index) =>
-            Expression.Convert(Expression.ArrayIndex(param, Expression.Constant(index)), p.ParameterType)).ToArray();
-        var instance = method.IsStatic ? null : Expression.Constant(predicate.Target);
-        var call = Expression.Call(instance, method, args);
-        var lambda = Expression.Lambda<Func<object[], Task<bool>>>(call, param);
-        return lambda.Compile();
-    }
-
-    private static Func<object[], ValueTask<bool>> BuildValueTaskInvoker(Delegate predicate)
-    {
-        var method = predicate.Method;
-        var param = Expression.Parameter(typeof(object[]), "args");
-        var args = method.GetParameters().Select((p, index) =>
-            Expression.Convert(Expression.ArrayIndex(param, Expression.Constant(index)), p.ParameterType)).ToArray();
-        var instance = method.IsStatic ? null : Expression.Constant(predicate.Target);
-        var call = Expression.Call(instance, method, args);
-        var lambda = Expression.Lambda<Func<object[], ValueTask<bool>>>(call, param);
-        return lambda.Compile();
+        object[] ResolveArguments(IServiceProvider sp, CancellationToken ct)
+            => ServiceResolverHelper.ResolveArguments(sp, parameters, serviceResolvers, null, ct);
     }
 }
