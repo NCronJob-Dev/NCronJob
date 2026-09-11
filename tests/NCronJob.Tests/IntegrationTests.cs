@@ -26,6 +26,27 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task CronJobScheduledWithAMacroShouldBeExecuted()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression("@hourly").WithName("Hourly")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        registry.TryGetSchedule("Hourly", out var cronExpression, out _).ShouldBeTrue();
+        cronExpression.ShouldBe("@hourly");
+
+        var orchestrationId = Events[0].CorrelationId;
+
+        FakeTimer.Advance(TimeSpan.FromHours(1));
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Events.FilterByOrchestrationId(orchestrationId).ShouldBeScheduledThenCompleted<DummyJob>("Hourly");
+        Storage.Entries.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task ThrowingProgressCallbackDoesNotBreakJobExecution()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
