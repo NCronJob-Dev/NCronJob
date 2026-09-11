@@ -44,11 +44,18 @@ internal sealed partial class JobWorker
 
         try
         {
-            while (!cancellationToken.IsCancellationRequested && jobQueueManager.TryGetQueue(queueName, out var jobQueue))
+            while (!cancellationToken.IsCancellationRequested)
             {
                 runningTasks.RemoveAll(t => t.IsCompleted);
 
+                // The signal must be taken before resolving the queue: if the queue gets replaced in between,
+                // the removal completes this signal instead of the worker waiting on the new queue's signal while peeking the old queue.
                 var queueChanged = jobQueueManager.WaitForChangeAsync(queueName);
+
+                if (!jobQueueManager.TryGetQueue(queueName, out var jobQueue))
+                {
+                    break;
+                }
 
                 if (!jobQueue.TryPeek(out var nextJob, out var priority))
                 {
@@ -92,7 +99,11 @@ internal sealed partial class JobWorker
             LogJobQueueManagerDisposed();
         }
 
-        await Task.WhenAll(runningTasks).ConfigureAwait(false);
+        // Only drain on shutdown; a worker for a removed queue must exit promptly so a re-created queue gets a new worker.
+        if (cancellationToken.IsCancellationRequested)
+        {
+            await Task.WhenAll(runningTasks).ConfigureAwait(false);
+        }
     }
 
     public async Task InvokeJob(JobRun jobRun, CancellationToken cancellationToken)
