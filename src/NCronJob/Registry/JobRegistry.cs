@@ -91,16 +91,6 @@ internal sealed class JobRegistry
         allRootJobs.Add(jobDefinition);
     }
 
-    public int GetJobTypeConcurrencyLimit(string jobTypeName)
-    {
-        lock (syncLock)
-        {
-            return allRootJobs.FirstOrDefault(j => j.JobFullName == jobTypeName)
-                ?.ConcurrencyPolicy
-                ?.MaxDegreeOfParallelism ?? 1;
-        }
-    }
-
     public string? RemoveByName(string jobName)
     {
         lock (syncLock)

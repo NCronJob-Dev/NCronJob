@@ -96,8 +96,6 @@ internal sealed class JobQueueManager : IDisposable
         }
     }
 
-    public int Count(string queueName) => jobQueues.TryGetValue(queueName, out var jobQueue) ? jobQueue.Count : 0;
-
     public void Dispose()
     {
         if (IsDisposed)

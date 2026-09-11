@@ -66,7 +66,6 @@ internal class JobRun
     /// </summary>
     public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
     public bool IsExpired => timeProvider.GetUtcNow() - RunAt > Expiry;
-    public bool IsOneTimeJob { get; }
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
     public TriggerType TriggerType { get; }

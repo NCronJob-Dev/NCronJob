@@ -41,23 +41,6 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
         InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, element));
     }
 
-    public TElement Dequeue()
-    {
-        TElement element;
-
-        lock (Lock)
-        {
-            if (PriorityQueue.Count == 0)
-                throw new InvalidOperationException("Queue is empty");
-
-            element = PriorityQueue.Dequeue();
-        }
-
-        InformCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, element));
-
-        return element;
-    }
-
     public bool TryDequeueIf(TElement expected)
     {
         lock (Lock)
