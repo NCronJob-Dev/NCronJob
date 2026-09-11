@@ -58,13 +58,17 @@ public sealed class LoggingScopeTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        var scopeProperties = loggerProvider.Entries
-            .Single(e => e.Message == LoggingJob.Message)
-            .ScopeProperties;
+        var rootRunId = Events.First(e => e.CorrelationId == orchestrationId && e.Type == typeof(DummyJob) && e.RunId is not null).RunId;
+        var dependentRunId = Events.First(e => e.CorrelationId == orchestrationId && e.Type == typeof(LoggingJob) && e.RunId is not null).RunId;
 
-        scopeProperties["JobName"].ShouldBe(typeof(LoggingJob).FullName);
-        scopeProperties["CorrelationId"].ShouldBe(orchestrationId);
-        scopeProperties["TriggerType"].ShouldBe(TriggerType.Dependent);
+        var entry = loggerProvider.Entries.Single(e => e.Message == LoggingJob.Message);
+
+        entry.JobRunScopeCount.ShouldBe(1);
+        entry.ScopeProperties["JobName"].ShouldBe(typeof(LoggingJob).FullName);
+        entry.ScopeProperties["JobRunId"].ShouldBe(dependentRunId);
+        entry.ScopeProperties["JobRunId"].ShouldNotBe(rootRunId);
+        entry.ScopeProperties["CorrelationId"].ShouldBe(orchestrationId);
+        entry.ScopeProperties["TriggerType"].ShouldBe(TriggerType.Dependent);
     }
 
     private sealed class LoggingJob(ILogger<LoggingJob> logger) : IJob
@@ -84,7 +88,7 @@ public sealed class LoggingScopeTests : JobIntegrationBase
     {
         private IExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
 
-        public ConcurrentQueue<(string Message, Dictionary<string, object?> ScopeProperties)> Entries { get; } = new();
+        public ConcurrentQueue<(string Message, Dictionary<string, object?> ScopeProperties, int JobRunScopeCount)> Entries { get; } = new();
 
         public ILogger CreateLogger(string categoryName) => new ScopeCapturingLogger(this);
 
@@ -104,18 +108,26 @@ public sealed class LoggingScopeTests : JobIntegrationBase
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
             {
                 var properties = new Dictionary<string, object?>();
+                var jobRunScopeCount = 0;
                 provider.scopeProvider.ForEachScope((scope, props) =>
                 {
-                    if (scope is IEnumerable<KeyValuePair<string, object?>> pairs)
+                    if (scope is not IEnumerable<KeyValuePair<string, object?>> pairs)
                     {
-                        foreach (var (key, value) in pairs)
+                        return;
+                    }
+
+                    foreach (var (key, value) in pairs)
+                    {
+                        if (key == "JobRunId")
                         {
-                            props[key] = value;
+                            jobRunScopeCount++;
                         }
+
+                        props[key] = value;
                     }
                 }, properties);
 
-                provider.Entries.Enqueue((formatter(state, exception), properties));
+                provider.Entries.Enqueue((formatter(state, exception), properties, jobRunScopeCount));
             }
         }
     }

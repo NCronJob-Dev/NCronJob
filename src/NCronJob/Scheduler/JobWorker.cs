@@ -125,17 +125,23 @@ internal sealed partial class JobWorker
 
     private Task StartJobProcessingAsync(JobRun jobRun, CancellationToken cancellationToken)
     {
-        var jobTask = Task.Run(async () =>
+        Task jobTask;
+
+        // Each run starts from a clean execution context, so it doesn't inherit ambient state (e.g. log scopes) of whoever triggered it.
+        using (ExecutionContext.SuppressFlow())
         {
-            try
+            jobTask = Task.Run(async () =>
             {
-                await jobProcessor.ProcessJobAsync(jobRun, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                ReleaseSlot(jobRun.JobDefinition);
-            }
-        }, CancellationToken.None);
+                try
+                {
+                    await jobProcessor.ProcessJobAsync(jobRun, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    ReleaseSlot(jobRun.JobDefinition);
+                }
+            }, CancellationToken.None);
+        }
 
         runningJobs.TryAdd(jobTask, 0);
         jobTask.ContinueWith(
