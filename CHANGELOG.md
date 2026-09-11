@@ -6,6 +6,24 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Re-enabling a job with a second-precision cron expression (six fields) via `IRuntimeJobRegistry.EnableJob` threw a `CronFormatException`.
+- An `OperationCanceledException` thrown by the job itself (e.g. an `HttpClient` timeout) was reported as a successful run and triggered success-dependent jobs. It is now treated as a failure.
+- A job throwing an `AggregateException` bypassed exception handlers, notification handlers and faulted-dependent jobs.
+- A throwing `IJobExecutionProgressReporter` callback could break job scheduling and execution. Callback exceptions are now logged and ignored.
+- The job registry and job schedules were not safe for concurrent changes through `IRuntimeJobRegistry` while jobs were being scheduled.
+- Triggering an instant job for a cron-scheduled job could lead to duplicate cron executions.
+- Removing a job left its queue worker running and leaked internal resources.
+
+### Changed
+
+- The scheduler is now signal-driven and no longer polls every job queue every 500 ms.
+- The built-in retry policies (`ExponentialBackoff`, `FixedInterval`) now wait using the registered `TimeProvider`.
+- `RetryPolicyAttribute` rejects a negative `retryCount`.
+- Clarified in the documentation that notification handlers are resolved from their own service scope.
+- Removed internal dead code.
+
 ## [v4.10.2] - 2026-06-08
 
 ### Changed
