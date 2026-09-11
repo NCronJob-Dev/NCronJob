@@ -93,6 +93,34 @@ public sealed class RetryTests : JobIntegrationBase
         Storage.Entries[2].ShouldBe($"{orchestrationId} Failed - 3");
     }
 
+    [Fact]
+    public async Task ExponentialBackoffDelaysHonorTimeProvider()
+    {
+        ServiceCollection.AddSingleton(new MaxFailuresWrapper(2));
+        ServiceCollection.AddNCronJob(n => n.AddJob<ExponentialBackoffJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        var orchestrationId = Events[0].CorrelationId;
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        var attemptTimes = Storage.TimedEntries
+            .Select(e => DateTimeOffset.Parse(e.Item1, CultureInfo.InvariantCulture))
+            .ToList();
+        attemptTimes.Count.ShouldBe(3);
+
+        var firstDelay = attemptTimes[1] - attemptTimes[0];
+        var secondDelay = attemptTimes[2] - attemptTimes[1];
+
+        firstDelay.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromSeconds(2));
+        firstDelay.ShouldBeLessThan(TimeSpan.FromSeconds(4));
+        secondDelay.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromSeconds(4));
+        secondDelay.ShouldBeLessThan(TimeSpan.FromSeconds(6));
+    }
+
     [Theory]
     [ClassData(typeof(CancellingContextTestData))]
     internal async Task JobShouldHonorCancellation(
@@ -169,6 +197,22 @@ public sealed class RetryTests : JobIntegrationBase
             storage.Add(attemptCount.ToString(CultureInfo.InvariantCulture));
 
             return Task.CompletedTask;
+        }
+    }
+
+    [RetryPolicy(retryCount: 2)]
+    private sealed class ExponentialBackoffJob(Storage storage, MaxFailuresWrapper maxFailuresWrapper)
+        : IJob
+    {
+        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            storage.Add(context.Attempts.ToString(CultureInfo.InvariantCulture));
+
+            return context.Attempts <= maxFailuresWrapper.MaxFailuresBeforeSuccess
+                ? throw new InvalidOperationException("Job Failed")
+                : Task.CompletedTask;
         }
     }
 
