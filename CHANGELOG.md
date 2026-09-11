@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.10.3] - 2026-09-11
+
 ### Fixed
 
 - Re-enabling a job with a second-precision cron expression (six fields) via `IRuntimeJobRegistry.EnableJob` threw a `CronFormatException`.
@@ -610,7 +612,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.2...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.3...HEAD
+[v4.10.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.2...v4.10.3
 [v4.10.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.1...v4.10.2
 [v4.10.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.0...v4.10.1
 [v4.10.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.9.0...v4.10.0
