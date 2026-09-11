@@ -7,8 +7,7 @@ namespace NCronJob;
 internal sealed class JobQueueManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> jobCancellationTokens = new();
+    private readonly Dictionary<string, TaskCompletionSource> queueSignals = [];
 #if NET9_0_OR_GREATER
     private readonly Lock syncLock = new();
 #else
@@ -23,25 +22,28 @@ internal sealed class JobQueueManager : IDisposable
     public JobQueue GetOrAddQueue(string queueName)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+        JobQueue jobQueue;
+        var isCreating = false;
+
         lock (syncLock)
         {
-            var isCreating = false;
-            var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
+            jobQueue = jobQueues.GetOrAdd(queueName, jt =>
             {
                 isCreating = true;
                 var queue = new JobQueue(jt);
                 queue.CollectionChanged += CallCollectionChanged;
-                jobCancellationTokens[jt] = new CancellationTokenSource();
+                queueSignals[jt] = CreateSignal();
                 return queue;
             });
-
-            if (isCreating)
-            {
-                QueueAdded?.Invoke(queueName);
-            }
-
-            return jobQueue;
         }
+
+        if (isCreating)
+        {
+            QueueAdded?.Invoke(queueName);
+        }
+
+        return jobQueue;
     }
 
     public void RemoveQueue(string queueName)
@@ -49,21 +51,22 @@ internal sealed class JobQueueManager : IDisposable
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
-            if (jobQueues.TryRemove(queueName, out var jobQueue))
+            if (!jobQueues.TryRemove(queueName, out var jobQueue))
             {
-                foreach (var job in jobQueue.Where(j => j.IsCancellable))
-                {
-                    job.NotifyStateChange(JobStateType.Cancelled);
-                }
+                return;
+            }
 
-                jobQueue.Clear();
-                jobQueue.CollectionChanged -= CallCollectionChanged;
-                semaphores.TryRemove(queueName, out _);
-                if (jobCancellationTokens.TryRemove(queueName, out var x))
-                {
-                    x.Cancel();
-                    x.Dispose();
-                }
+            foreach (var job in jobQueue.Where(j => j.IsCancellable))
+            {
+                job.NotifyStateChange(JobStateType.Cancelled);
+            }
+
+            jobQueue.Clear();
+            jobQueue.CollectionChanged -= CallCollectionChanged;
+
+            if (queueSignals.Remove(queueName, out var signal))
+            {
+                signal.TrySetResult();
             }
         }
     }
@@ -80,31 +83,16 @@ internal sealed class JobQueueManager : IDisposable
         return jobQueues.Keys;
     }
 
-    public SemaphoreSlim GetOrAddSemaphore(string queueName, int concurrencyLimit)
-    {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
-        return semaphores.GetOrAdd(queueName, _ => new SemaphoreSlim(concurrencyLimit));
-    }
-
-    public CancellationTokenSource GetCancellationTokenSource(string queueName)
-    {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
-        return jobCancellationTokens[queueName];
-    }
-
-    public void SignalJobQueue(string queueName)
+    /// <summary>
+    /// Returns a task that completes the next time the given queue changes or is removed.
+    /// Obtain it before inspecting the queue so that no change can be missed.
+    /// </summary>
+    public Task WaitForChangeAsync(string queueName)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
-            if (!jobQueues.ContainsKey(queueName))
-            {
-                return;
-            }
-
-            var cts = jobCancellationTokens[queueName];
-            cts.Cancel();
-            jobCancellationTokens[queueName] = new CancellationTokenSource();
+            return queueSignals.TryGetValue(queueName, out var signal) ? signal.Task : Task.CompletedTask;
         }
     }
 
@@ -115,28 +103,48 @@ internal sealed class JobQueueManager : IDisposable
         if (IsDisposed)
             return;
 
-        foreach (var jobQueue in jobQueues.Values)
+        lock (syncLock)
         {
-            jobQueue.CollectionChanged -= CallCollectionChanged;
-        }
+            foreach (var jobQueue in jobQueues.Values)
+            {
+                jobQueue.CollectionChanged -= CallCollectionChanged;
+            }
 
-        foreach (var semaphore in semaphores.Values)
+            foreach (var signal in queueSignals.Values)
+            {
+                signal.TrySetResult();
+            }
+
+            jobQueues.Clear();
+            queueSignals.Clear();
+
+            IsDisposed = true;
+        }
+    }
+
+    private void SignalJobQueue(string queueName)
+    {
+        lock (syncLock)
         {
-            semaphore.Dispose();
+            if (!queueSignals.TryGetValue(queueName, out var signal))
+            {
+                return;
+            }
+
+            queueSignals[queueName] = CreateSignal();
+            signal.TrySetResult();
         }
-
-        foreach (var cts in jobCancellationTokens.Values)
-        {
-            cts.Dispose();
-        }
-
-        jobQueues.Clear();
-        semaphores.Clear();
-        jobCancellationTokens.Clear();
-
-        IsDisposed = true;
     }
 
     private void CallCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        => CollectionChanged?.Invoke(sender, e);
+    {
+        if (sender is JobQueue jobQueue && e.Action == NotifyCollectionChangedAction.Add)
+        {
+            SignalJobQueue(jobQueue.Name);
+        }
+
+        CollectionChanged?.Invoke(sender, e);
+    }
+
+    private static TaskCompletionSource CreateSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -249,8 +249,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         {
             var jobDefinition = jobDefinitionFinder();
 
-            token.Register(() => LogCancellationRequested(parameter));
-
             return RunInternal(jobDefinition, parameter, startDate, forceExecution, token);
         }
     }
@@ -310,17 +308,10 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         {
             var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
             jobQueue.EnqueueForDirectExecution(run);
-            jobQueueManager.SignalJobQueue(run.JobDefinition.JobFullName);
         }
 
         return run.CorrelationId;
     }
-
-    [LoggerMessage(LogLevel.Warning, "Job {JobName} cancelled by request.")]
-    private partial void LogCancellationNotice(string jobName);
-
-    [LoggerMessage(LogLevel.Debug, "Cancellation requested for CronRegistry {Parameter}.")]
-    private partial void LogCancellationRequested(object? parameter);
 
     [LoggerMessage(LogLevel.Warning, "Job {JobName} is not registered, will create new registration.")]
     private partial void LogJobNotRegistered(string jobName);

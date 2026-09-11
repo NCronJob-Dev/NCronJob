@@ -52,7 +52,6 @@ public static class NCronJobExtensions
             services,
             jobRegistry,
             sp.GetRequiredService<JobWorker>(),
-            sp.GetRequiredService<JobQueueManager>(),
             sp.GetRequiredService<ConcurrencySettings>()));
         services.TryAddSingleton<JobExecutionProgressObserver>();
         services.TryAddSingleton<IJobExecutionProgressReporter, JobExecutionProgressObserver>((sp) =>

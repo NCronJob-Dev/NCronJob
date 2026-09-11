@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 using System.Collections.Specialized;
-using System.Diagnostics.CodeAnalysis;
 
 namespace NCronJob;
 
@@ -14,8 +12,13 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly ILogger<QueueWorker> logger;
     private readonly MissingMethodCalledHandler missingMethodCalledHandler;
     private CancellationTokenSource? shutdown;
-    private readonly ConcurrentDictionary<string, Task?> workerTasks = new();
-    private readonly ConcurrentDictionary<string, bool> addingWorkerTasks = new();
+    private readonly Dictionary<string, Task> workerTasks = [];
+#if NET9_0_OR_GREATER
+    private readonly Lock workerTasksLock = new();
+#else
+    private readonly object workerTasksLock = new();
+#endif
+    private volatile bool isStopping;
     private volatile bool isDisposed;
 
     public QueueWorker(
@@ -44,44 +47,19 @@ internal sealed partial class QueueWorker : BackgroundService
             return;
         }
 
+        isStopping = true;
+
         if (shutdown is not null)
         {
             await shutdown.CancelAsync();
         }
 
-        while (!workerTasks.IsEmpty)
-        {
-            var currentTasks = workerTasks.ToArray();
+        LogQueueWorkerDraining();
 
-            foreach (var (jobType, task) in currentTasks)
-            {
-                if (task is null)
-                {
-                    continue;
-                }
+        await Task.WhenAll(GetWorkerTasksSnapshot()).WaitAsync(cancellationToken);
 
-                var taskEnded = task.IsCanceled || task.IsFaulted || task.IsCompleted;
-                if (taskEnded && workerTasks.TryRemove(jobType, out _))
-                {
-                    if (task.IsCanceled)
-                        LogJobQueueCancelled(jobType);
-                    else if (task.IsFaulted)
-                        LogJobQueueFaulted(jobType);
-                    else if (task.IsCompleted)
-                        LogJobQueueCompleted(jobType);
-                }
-            }
-
-            if (workerTasks.IsEmpty)
-            {
-                LogQueueWorkerStopping();
-                await base.StopAsync(cancellationToken);
-                break;
-            }
-
-            LogQueueWorkerDraining();
-            await Task.Delay(500, cancellationToken);
-        }
+        LogQueueWorkerStopping();
+        await base.StopAsync(cancellationToken);
     }
 
     public override void Dispose()
@@ -107,10 +85,11 @@ internal sealed partial class QueueWorker : BackgroundService
 
         try
         {
+            jobQueueManager.QueueAdded += OnQueueAdded;
+
             ScheduleInitialJobs();
 
             CreateWorkerQueues(stopToken);
-            jobQueueManager.QueueAdded += OnQueueAdded;  // this needs to come after we create the initial Worker Queues
         }
         catch (Exception ex)
         {
@@ -124,8 +103,7 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         try
         {
-            var tasks = workerTasks.Values.WhereNotNull();
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            await Task.WhenAll(GetWorkerTasksSnapshot()).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -165,24 +143,68 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void AddWorkerTask(string jobQueueName, CancellationToken stopToken)
     {
-        if (!workerTasks.ContainsKey(jobQueueName) && !addingWorkerTasks.GetOrAdd(jobQueueName, _ => false))
+        lock (workerTasksLock)
         {
-            addingWorkerTasks[jobQueueName] = true;
+            if (isStopping || stopToken.IsCancellationRequested || workerTasks.ContainsKey(jobQueueName))
+            {
+                return;
+            }
+
             try
             {
                 var workerTask = jobWorker.WorkerAsync(jobQueueName, stopToken);
-                workerTasks.TryAdd(jobQueueName, workerTask);
+                workerTasks[jobQueueName] = workerTask;
 
-                workerTask.ContinueWith(_ =>
-                {
-                    addingWorkerTasks.TryUpdate(jobQueueName, false, true);
-                }, stopToken, TaskContinuationOptions.None, TaskScheduler.Default);
+                workerTask.ContinueWith(
+                    completedTask => OnWorkerCompleted(jobQueueName, completedTask, stopToken),
+                    CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.Default);
             }
             catch (Exception ex)
             {
                 LogQueueWorkerCreationError(jobQueueName, ex);
-                addingWorkerTasks[jobQueueName] = false;
             }
+        }
+    }
+
+    private void OnWorkerCompleted(string jobQueueName, Task completedTask, CancellationToken stopToken)
+    {
+        if (completedTask.IsCanceled)
+            LogJobQueueCancelled(jobQueueName);
+        else if (completedTask.IsFaulted)
+            LogJobQueueFaulted(jobQueueName);
+        else
+            LogJobQueueCompleted(jobQueueName);
+
+        lock (workerTasksLock)
+        {
+            if (workerTasks.TryGetValue(jobQueueName, out var currentTask) && currentTask == completedTask)
+            {
+                workerTasks.Remove(jobQueueName);
+            }
+        }
+
+        // The queue may have been removed and re-created while the previous worker was exiting.
+        if (!jobQueueManager.IsDisposed && jobQueueManager.TryGetQueue(jobQueueName, out _))
+        {
+            AddWorkerTask(jobQueueName, stopToken);
+        }
+    }
+
+    internal IReadOnlyCollection<string> GetActiveWorkerQueueNames()
+    {
+        lock (workerTasksLock)
+        {
+            return [.. workerTasks.Keys];
+        }
+    }
+
+    private Task[] GetWorkerTasksSnapshot()
+    {
+        lock (workerTasksLock)
+        {
+            return [.. workerTasks.Values];
         }
     }
 
