@@ -45,7 +45,9 @@ internal sealed record JobDefinition
 
     public string? CustomName { get; }
 
-    public CronExpression? CronExpression { get; private set; }
+    private JobSchedule schedule = JobSchedule.None;
+
+    public CronExpression? CronExpression => schedule.CronExpression;
 
     /// <summary>
     /// This is the unhandled cron expression from the user. Using <see cref="CronExpression.ToString"/> will alter the expression.
@@ -58,11 +60,11 @@ internal sealed record JobDefinition
     /// </code>
     /// If the user wants to compare the schedule by its string representation, this property should be used.
     /// </summary>
-    public string? UserDefinedCronExpression { get; private set; }
+    public string? UserDefinedCronExpression => schedule.UserDefinedCronExpression;
 
     public object? Parameter { get; private set; }
 
-    public TimeZoneInfo? TimeZone { get; private set; }
+    public TimeZoneInfo? TimeZone => schedule.TimeZone;
 
     /// <summary>
     /// The JobFullName is used as a unique identifier for the job type including anonymous jobs. This helps with concurrency management.
@@ -84,8 +86,7 @@ internal sealed record JobDefinition
     [MemberNotNullWhen(false, nameof(Delegate))]
     public bool IsTypedJob { get; }
 
-    public bool IsEnabled => CronExpression is null
-        || CronExpression != NotReacheableCronDefinition;
+    public bool IsEnabled => schedule.IsEnabled;
 
     public static JobDefinition CreateTyped(
         Type type,
@@ -112,35 +113,42 @@ internal sealed record JobDefinition
 
     public void Disable()
     {
-        CronExpression = NotReacheableCronDefinition;
+        schedule = schedule with { CronExpression = NotReacheableCronDefinition };
     }
 
     public void Enable()
     {
-        if (UserDefinedCronExpression is not null)
+        var current = schedule;
+        schedule = current with
         {
-            CronExpression = GetCronExpression(UserDefinedCronExpression.Trim());
-            return;
-        }
-
-        CronExpression = null;
+            CronExpression = current.UserDefinedCronExpression is not null
+                ? GetCronExpression(current.UserDefinedCronExpression.Trim())
+                : null
+        };
     }
 
     public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow)
-        => CronExpression?.GetNextOccurrence(utcNow, TimeZone ?? TimeZoneInfo.Utc);
+    {
+        var current = schedule;
+        return current.CronExpression?.GetNextOccurrence(utcNow, current.TimeZone ?? TimeZoneInfo.Utc);
+    }
 
     public (string? UserDefinedCronExpression, TimeZoneInfo? TimeZone) GetSchedule()
-        => (UserDefinedCronExpression, UserDefinedCronExpression is null ? null : TimeZone ?? TimeZoneInfo.Utc);
+    {
+        var current = schedule;
+        return (current.UserDefinedCronExpression, current.UserDefinedCronExpression is null ? null : current.TimeZone ?? TimeZoneInfo.Utc);
+    }
 
     public RecurringJobSchedule ToRecurringJobSchedule()
     {
+        var current = schedule;
         return new RecurringJobSchedule(
             JobName: CustomName,
             Type: Type,
             IsTypedJob: IsTypedJob,
-            CronExpression: UserDefinedCronExpression!,
-            IsEnabled: IsEnabled,
-            TimeZone: TimeZone ?? TimeZoneInfo.Utc);
+            CronExpression: current.UserDefinedCronExpression!,
+            IsEnabled: current.IsEnabled,
+            TimeZone: current.TimeZone ?? TimeZoneInfo.Utc);
     }
 
     public void UpdateWith(JobOption? jobOption)
@@ -152,10 +160,10 @@ internal sealed record JobDefinition
 
         if (jobOption.CronExpression is not null)
         {
-            UserDefinedCronExpression = jobOption.CronExpression;
-            CronExpression = GetCronExpression(jobOption.CronExpression.Trim());
-
-            TimeZone = jobOption.TimeZoneInfo;
+            schedule = new JobSchedule(
+                jobOption.CronExpression,
+                GetCronExpression(jobOption.CronExpression.Trim()),
+                jobOption.TimeZoneInfo);
         }
 
         if (jobOption.Parameter is not null)
@@ -230,4 +238,14 @@ internal sealed record JobDefinition
     }
 
     private static readonly CronExpression NotReacheableCronDefinition = CronExpression.Parse("* * 31 2 *");
+
+    private sealed record JobSchedule(
+        string? UserDefinedCronExpression,
+        CronExpression? CronExpression,
+        TimeZoneInfo? TimeZone)
+    {
+        public static readonly JobSchedule None = new(null, null, null);
+
+        public bool IsEnabled => CronExpression is null || CronExpression != NotReacheableCronDefinition;
+    }
 }
