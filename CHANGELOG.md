@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Every job run is executed within a log scope containing `JobName`, `JobRunId`, `CorrelationId` and `TriggerType`, so log entries (including those written by the job itself) can be correlated to their run.
+
 ## [v4.10.3] - 2026-09-11
 
 ### Fixed
