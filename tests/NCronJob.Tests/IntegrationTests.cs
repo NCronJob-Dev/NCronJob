@@ -26,6 +26,27 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task ThrowingProgressCallbackDoesNotBreakJobExecution()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
+
+        using var throwingSubscription = ServiceProvider
+            .GetRequiredService<IJobExecutionProgressReporter>()
+            .Register(_ => throw new InvalidOperationException("Faulty subscriber"));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        var orchestrationId = Events[0].CorrelationId;
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Events.FilterByOrchestrationId(orchestrationId).ShouldBeScheduledThenCompleted<DummyJob>();
+        Storage.Entries.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task AdvancingTheWholeTimeShouldHaveTenEntries()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
