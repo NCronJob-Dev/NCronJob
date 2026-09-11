@@ -451,8 +451,13 @@ public sealed class IntegrationTests : JobIntegrationBase
             1,
             stopMonitoringEvents: true);
 
+        // The Running state is reported right before the job body executes and writes to the storage.
+        while (!Storage.Entries.Contains("Running LongRunningJob"))
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
+        }
+
         Storage.Entries.ShouldContain("DummyJob - Parameter: ");
-        Storage.Entries.ShouldContain("Running LongRunningJob");
         Storage.Entries.Count.ShouldBe(2);
     }
 
