@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
@@ -12,6 +13,7 @@ internal sealed partial class JobWorker
     private readonly ILogger<JobWorker> logger;
     private readonly int globalConcurrencyLimit;
     private readonly Dictionary<string, int> runningJobCounts = [];
+    private readonly ConcurrentDictionary<Task, byte> runningJobs = new();
     private int totalRunningJobCount;
     private TaskCompletionSource capacitySignal = CreateSignal();
 #if NET9_0_OR_GREATER
@@ -40,14 +42,10 @@ internal sealed partial class JobWorker
 
     public async Task WorkerAsync(string queueName, CancellationToken cancellationToken)
     {
-        var runningTasks = new List<Task>();
-
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                runningTasks.RemoveAll(t => t.IsCompleted);
-
                 // The signal must be taken before resolving the queue: if the queue gets replaced in between,
                 // the removal completes this signal instead of the worker waiting on the new queue's signal while peeking the old queue.
                 var queueChanged = jobQueueManager.WaitForChangeAsync(queueName);
@@ -82,7 +80,7 @@ internal sealed partial class JobWorker
                     continue;
                 }
 
-                runningTasks.Add(StartJobProcessingAsync(nextJob, cancellationToken));
+                _ = StartJobProcessingAsync(nextJob, cancellationToken);
 
                 if (nextJob.TriggerType == TriggerType.Cron)
                 {
@@ -98,13 +96,12 @@ internal sealed partial class JobWorker
         {
             LogJobQueueManagerDisposed();
         }
-
-        // Only drain on shutdown; a worker for a removed queue must exit promptly so a re-created queue gets a new worker.
-        if (cancellationToken.IsCancellationRequested)
-        {
-            await Task.WhenAll(runningTasks).ConfigureAwait(false);
-        }
     }
+
+    /// <summary>
+    /// Completes once all jobs started by this worker, including those of already removed queues, have finished.
+    /// </summary>
+    public Task WaitForRunningJobsAsync() => Task.WhenAll(runningJobs.Keys);
 
     public async Task InvokeJob(JobRun jobRun, CancellationToken cancellationToken)
     {
@@ -126,8 +123,9 @@ internal sealed partial class JobWorker
         await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
 
-    private Task StartJobProcessingAsync(JobRun jobRun, CancellationToken cancellationToken) =>
-        Task.Run(async () =>
+    private Task StartJobProcessingAsync(JobRun jobRun, CancellationToken cancellationToken)
+    {
+        var jobTask = Task.Run(async () =>
         {
             try
             {
@@ -138,6 +136,16 @@ internal sealed partial class JobWorker
                 ReleaseSlot(jobRun.JobDefinition);
             }
         }, CancellationToken.None);
+
+        runningJobs.TryAdd(jobTask, 0);
+        jobTask.ContinueWith(
+            completedTask => runningJobs.TryRemove(completedTask, out _),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+
+        return jobTask;
+    }
 
     private async Task WaitUntilOrChangeAsync(DateTimeOffset dueTime, Task queueChanged, CancellationToken cancellationToken)
     {
@@ -240,12 +248,15 @@ internal sealed partial class JobWorker
             return;
         }
 
-        var jobQueue = jobQueueManager.GetOrAddQueue(job.JobFullName);
-
         LogNextJobRun(job.Name, nextRunTime.Value);
         var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
-        jobQueue.Enqueue(run, (nextRunTime.Value, (int)run.Priority));
         run.NotifyStateChange(JobStateType.Scheduled);
+
+        // Checked atomically with queue removal, so a job removed concurrently isn't brought back by a pending reschedule.
+        if (!jobQueueManager.Enqueue(run, () => registry.IsRootJob(job)))
+        {
+            run.NotifyStateChange(JobStateType.Cancelled);
+        }
     }
 
     public void RemoveJobByName(string jobName)

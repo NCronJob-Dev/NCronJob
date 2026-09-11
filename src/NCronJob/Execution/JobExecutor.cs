@@ -148,9 +148,9 @@ internal sealed partial class JobExecutor : IDisposable
             {
                 await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
             }
-            catch (Exception innerExc) when (innerExc is not (OperationCanceledException or AggregateException))
+            catch (Exception innerExc) when (innerExc is not OperationCanceledException || !ct.IsCancellationRequested)
             {
-                // We don't want to throw exceptions from the notification service
+                LogNotificationHandlerFailed(notificationService.GetType(), innerExc);
             }
         }
     }
@@ -180,8 +180,7 @@ internal sealed partial class JobExecutor : IDisposable
                 continue;
             }
 
-            var jobQueue = jobQueueManager.GetOrAddQueue(newRun.JobDefinition.JobFullName);
-            jobQueue.EnqueueForDirectExecution(newRun);
+            jobQueueManager.Enqueue(newRun);
         }
     }
 

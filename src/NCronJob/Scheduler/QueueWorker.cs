@@ -57,6 +57,7 @@ internal sealed partial class QueueWorker : BackgroundService
         LogQueueWorkerDraining();
 
         await Task.WhenAll(GetWorkerTasksSnapshot()).WaitAsync(cancellationToken);
+        await jobWorker.WaitForRunningJobsAsync().WaitAsync(cancellationToken);
 
         LogQueueWorkerStopping();
         await base.StopAsync(cancellationToken);
@@ -173,7 +174,7 @@ internal sealed partial class QueueWorker : BackgroundService
         if (completedTask.IsCanceled)
             LogJobQueueCancelled(jobQueueName);
         else if (completedTask.IsFaulted)
-            LogJobQueueFaulted(jobQueueName);
+            LogJobQueueFaulted(jobQueueName, completedTask.Exception);
         else
             LogJobQueueCompleted(jobQueueName);
 
@@ -185,10 +186,17 @@ internal sealed partial class QueueWorker : BackgroundService
             }
         }
 
-        // The queue may have been removed and re-created while the previous worker was exiting.
-        if (!jobQueueManager.IsDisposed && jobQueueManager.TryGetQueue(jobQueueName, out _))
+        try
         {
-            AddWorkerTask(jobQueueName, stopToken);
+            // The queue may have been removed and re-created while the previous worker was exiting.
+            if (jobQueueManager.TryGetQueue(jobQueueName, out _))
+            {
+                AddWorkerTask(jobQueueName, stopToken);
+            }
+        }
+        catch (ObjectDisposedException) when (jobQueueManager.IsDisposed)
+        {
+            LogJobQueueCompleted(jobQueueName);
         }
     }
 

@@ -12,7 +12,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 - An `OperationCanceledException` thrown by the job itself (e.g. an `HttpClient` timeout) was reported as a successful run and triggered success-dependent jobs. It is now treated as a failure.
 - A job throwing an `AggregateException` bypassed exception handlers, notification handlers and faulted-dependent jobs.
 - A throwing `IJobExecutionProgressReporter` callback could break job scheduling and execution. Callback exceptions are now logged and ignored.
-- The job registry and job schedules were not safe for concurrent changes through `IRuntimeJobRegistry` while jobs were being scheduled.
+- The job registry and job schedules were not safe for concurrent changes through `IRuntimeJobRegistry` while jobs were being scheduled. Concurrent `TryRegister` calls could also schedule duplicate runs.
+- A notification handler throwing an `AggregateException` caused a successful job to be reported as faulted.
+- Rescheduling racing with `RemoveJob` could bring a removed job back, and a run could get stranded in a queue that was being removed.
+- Stopping the host did not wait for jobs that were still running after their job had been removed.
 - Triggering an instant job for a cron-scheduled job could lead to duplicate cron executions.
 - Removing a job left its queue worker running and leaked internal resources.
 

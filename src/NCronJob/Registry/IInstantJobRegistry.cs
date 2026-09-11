@@ -306,8 +306,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         }
         else
         {
-            var jobQueue = jobQueueManager.GetOrAddQueue(run.JobDefinition.JobFullName);
-            jobQueue.EnqueueForDirectExecution(run);
+            jobQueueManager.Enqueue(run);
         }
 
         return run.CorrelationId;

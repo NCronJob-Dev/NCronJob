@@ -143,15 +143,13 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         try
         {
-            var oldJobs = jobRegistry.GetAllRootJobs();
             var jdc = new JobDefinitionCollector();
             var builder = new NCronJobOptionBuilder(services, concurrencySettings, jdc);
             jobBuilder(builder);
 
             jobRegistry.FeedFrom(jdc);
 
-            var newJobs = jobRegistry.GetAllRootJobs().Except(oldJobs);
-            foreach (var jobDefinition in newJobs)
+            foreach (var jobDefinition in jdc.Entries.Keys)
             {
                 jobWorker.ScheduleJob(jobDefinition);
             }
