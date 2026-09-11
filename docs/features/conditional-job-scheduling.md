@@ -1,6 +1,6 @@
 # Conditional Job Scheduling with OnlyIf
 
-Schedule jobs that only execute when specific runtime conditions are met. This feature allows you to control job execution based on feature flags, configuration values, cached state, or any other runtime condition—without wasting resources instantiating jobs that won't run.
+Schedule jobs that only execute when specific runtime conditions are met. This feature allows you to control job execution based on feature flags, configuration values, cached state, or any other runtime condition - without wasting resources instantiating jobs that won't run.
 
 ## The Problem
 
@@ -105,7 +105,7 @@ builder.Services.AddNCronJob(options =>
 
 ### Multiple Conditions (AND Logic)
 
-Combine multiple conditions—all must be true for execution:
+Combine multiple conditions - all must be true for execution:
 
 ```csharp
 builder.Services.AddNCronJob(options =>

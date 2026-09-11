@@ -22,7 +22,7 @@ a full-blown scheduler like `Hangfire` or `Quartz`.
 This library aims to fill that gap by providing a simple and easy-to-use job scheduler that can be used in any .NET
 application and feels "native".
 
-There's no need to set up a database—just schedule your tasks right away! The library provides two ways of scheduling
+There's no need to set up a database - just schedule your tasks right away! The library provides two ways of scheduling
 jobs:
 
 1. Instant jobs - Run a job immediately (or with a small delay, or at a specific date and time).
