@@ -44,6 +44,29 @@ Services.AddNCronJob(options =>
 });
 ```
 
+## Cron macros
+
+Instead of a cron expression, one of the following macros can be used:
+
+| Macro | Equivalent expression | Description |
+|---|---|---|
+| `@every_second` | `* * * * * *` | Every second |
+| `@every_minute` | `* * * * *` | Every minute |
+| `@hourly` | `0 * * * *` | Every hour at minute 0 |
+| `@daily` / `@midnight` | `0 0 * * *` | Every day at midnight |
+| `@weekly` | `0 0 * * 0` | Every Sunday at midnight |
+| `@monthly` | `0 0 1 * *` | On the first day of every month at midnight |
+| `@yearly` / `@annually` | `0 0 1 1 *` | On January 1st at midnight |
+
+```csharp
+Services.AddNCronJob(options =>
+{
+    options.AddJob<MyCronJob>(j => j.WithCronExpression("@daily"));
+});
+```
+
+Macros are evaluated in the configured time zone, just like regular cron expressions.
+
 ## Chaining Cron Expressions with `And`
 
 Execute the same job on multiple schedules using the `And` command:

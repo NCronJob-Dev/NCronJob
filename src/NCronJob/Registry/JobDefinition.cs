@@ -223,6 +223,13 @@ internal sealed record JobDefinition
 
     private static CronExpression GetCronExpression(string expression)
     {
+        if (expression.StartsWith('@'))
+        {
+            return CronExpression.TryParse(expression, CronFormat.IncludeSeconds, out var macroExpression)
+                ? macroExpression
+                : throw new ArgumentException($"Unknown cron macro '{expression}'.", nameof(expression));
+        }
+
         var precisionRequired = DetermineAndValidatePrecision(expression);
 
         var cf = precisionRequired ? CronFormat.IncludeSeconds : CronFormat.Standard;
