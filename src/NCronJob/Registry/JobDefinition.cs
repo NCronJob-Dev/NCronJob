@@ -168,37 +168,24 @@ internal sealed record JobDefinition
             ShouldCrashOnStartupFailure = jobOption.ShouldCrashOnStartupFailure;
         }
 
-        if (jobOption.Conditions is not null && jobOption.Conditions.Count > 0)
+        if (jobOption.Conditions is { Count: > 0 })
         {
-            // Combine all conditions with AND logic
-            if (Condition is null)
-            {
-                Condition = async (sp, ct) =>
-                {
-                    foreach (var condition in jobOption.Conditions)
-                    {
-                        if (!await condition(sp, ct).ConfigureAwait(false))
-                            return false;
-                    }
-                    return true;
-                };
-            }
-            else
-            {
-                var existingCondition = Condition;
-                Condition = async (sp, ct) =>
-                {
-                    if (!await existingCondition(sp, ct).ConfigureAwait(false))
-                        return false;
+            var previousCondition = Condition;
+            var addedConditions = jobOption.Conditions.ToArray();
 
-                    foreach (var condition in jobOption.Conditions)
-                    {
-                        if (!await condition(sp, ct).ConfigureAwait(false))
-                            return false;
-                    }
-                    return true;
-                };
-            }
+            Condition = async (sp, ct) =>
+            {
+                if (previousCondition is not null && !await previousCondition(sp, ct).ConfigureAwait(false))
+                    return false;
+
+                foreach (var condition in addedConditions)
+                {
+                    if (!await condition(sp, ct).ConfigureAwait(false))
+                        return false;
+                }
+
+                return true;
+            };
         }
     }
 
