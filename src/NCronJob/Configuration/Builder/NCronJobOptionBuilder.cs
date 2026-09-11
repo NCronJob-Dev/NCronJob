@@ -349,7 +349,7 @@ public interface INotificationStage<TJob> : IJobStage
     /// </summary>
     /// <typeparam name="TJobNotificationHandler">The handler-type that is used to handle the job.</typeparam>
     /// <remarks>
-    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service sharing the same scope as the job.
+    /// The given <see cref="IJobNotificationHandler{TJob}"/> instance is registered as a scoped service and resolved from its own scope, separate from the job's scope.
     /// Also, only one handler per job is allowed. If multiple handlers are registered, only the first one will be executed.
     /// </remarks>
     INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>;
