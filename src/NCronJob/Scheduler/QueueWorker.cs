@@ -153,7 +153,15 @@ internal sealed partial class QueueWorker : BackgroundService
 
             try
             {
-                var workerTask = jobWorker.WorkerAsync(jobQueueName, stopToken);
+                Task workerTask;
+
+                // Workers may be created from within a running job, for example when it enqueues a dependent job.
+                // They must not capture that job's execution context and its log scope.
+                using (ExecutionContext.SuppressFlow())
+                {
+                    workerTask = jobWorker.WorkerAsync(jobQueueName, stopToken);
+                }
+
                 workerTasks[jobQueueName] = workerTask;
 
                 workerTask.ContinueWith(
