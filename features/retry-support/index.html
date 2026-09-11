@@ -141,6 +141,7 @@
 <p>The <code>RetryPolicy</code> attribute allows you to specify the number of retry attempts and the strategy for handling retries. There are two built-in retry strategies:
 - <strong>ExponentialBackoff:</strong> Increases the delay between retry attempts exponentially.
 - <strong>FixedInterval:</strong> Keeps the delay between retry attempts consistent.</p>
+<p>The built-in strategies wait using the registered <code>TimeProvider</code>. This means retry delays can be controlled in tests, for example with <code>FakeTimeProvider</code>. Custom policies (see below) control their own delays.</p>
 <h2 id="using-retry-policies">Using Retry Policies<a class="headerlink" href="#using-retry-policies" title="Permanent link">&para;</a></h2>
 <p>Here are examples of how to use the built-in retry policies:</p>
 <h3 id="example-1-basic-retry-policy-defaults-to-exponential-backoff">Example 1: Basic Retry Policy, defaults to Exponential Backoff<a class="headerlink" href="#example-1-basic-retry-policy-defaults-to-exponential-backoff" title="Permanent link">&para;</a></h3>
