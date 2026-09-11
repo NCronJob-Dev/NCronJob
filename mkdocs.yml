@@ -47,7 +47,7 @@ nav:
     - v3 Migration Guide: migration/v3.md
     - v2 Migration Guide: migration/v2.md
   - Advanced:
-    - Controlling the log level: advanced/log-level.md
+    - Logging and log scopes: advanced/log-level.md
     - Global Concurrency: advanced/global-concurrency.md
     - Dynamic Job Control: advanced/dynamic-job-control.md
     - Observing progress of jobs: advanced/observing-job-progress.md

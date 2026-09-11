@@ -21,6 +21,13 @@ internal sealed partial class JobProcessor
 
     public async Task ProcessJobAsync(JobRun jobRun, CancellationToken cancellationToken)
     {
+        using var logScope = BeginJobRunScope(
+            logger,
+            jobRun.JobDefinition.Name,
+            jobRun.JobRunId,
+            jobRun.CorrelationId,
+            jobRun.TriggerType);
+
         try
         {
             if (jobRun.IsExpired)
@@ -66,6 +73,10 @@ internal sealed partial class JobProcessor
             jobRun.IncrementJobExecutionCount();
         }
     }
+
+    private static readonly Func<ILogger, string, Guid, Guid, TriggerType, IDisposable?> BeginJobRunScope =
+        LoggerMessage.DefineScope<string, Guid, Guid, TriggerType>(
+            "Job {JobName} run {JobRunId} (correlation id {CorrelationId}, triggered by {TriggerType})");
 
     [LoggerMessage(LogLevel.Trace, "Dequeuing job '{JobName}' because it has exceeded the expiration period.")]
     private partial void LogDequeuingExpiredJob(string jobName);
