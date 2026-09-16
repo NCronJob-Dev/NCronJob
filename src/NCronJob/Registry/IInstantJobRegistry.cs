@@ -179,7 +179,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     public Guid RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default)
     {
         var utcNow = timeProvider.GetUtcNow();
-        return RunScheduledJob(jobDelegate, utcNow + delay, token);
+        return RunDelegateJob(jobDelegate, utcNow + delay, false, token);
     }
 
     /// <inheritdoc />
@@ -204,7 +204,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     public Guid ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default)
     {
         var utcNow = timeProvider.GetUtcNow();
-        return ForceRunScheduledJob(jobDelegate, utcNow + delay, token);
+        return RunDelegateJob(jobDelegate, utcNow + delay, true, token);
     }
 
     /// <inheritdoc />
@@ -221,7 +221,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private Guid RunJob(Type jobType, DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
     {
         return RunJob(
-            () => TypedJobfinder(jobType, parameter),
+            () => TypedJobFinder(jobType, parameter),
             startDate,
             parameter,
             forceExecution,
@@ -231,7 +231,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
     private Guid RunJob(string jobName, DateTimeOffset startDate, object? parameter = null, bool forceExecution = false, CancellationToken token = default)
     {
         return RunJob(
-            () => NamedJobfinder(jobName),
+            () => NamedJobFinder(jobName),
             startDate,
             parameter,
             forceExecution,
@@ -253,7 +253,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         }
     }
 
-    private JobDefinition TypedJobfinder(Type jobType, object? parameter)
+    private JobDefinition TypedJobFinder(Type jobType, object? parameter)
     {
         var jobDefinitions = jobRegistry.FindAllRootJobDefinition(jobType);
 
@@ -276,12 +276,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry
         return jobDefinition;
     }
 
-    private JobDefinition NamedJobfinder(string jobName)
-    {
-        var jobDefinition = jobRegistry.FindRootJobDefinition(jobName);
-
-        return jobDefinition ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-    }
+    private JobDefinition NamedJobFinder(string jobName) => jobRegistry.FindRootJobDefinitionOrThrow(jobName);
 
     private Guid RunInternal(
         JobDefinition jobDefinition,

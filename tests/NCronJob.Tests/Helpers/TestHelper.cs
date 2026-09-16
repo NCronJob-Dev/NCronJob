@@ -111,6 +111,14 @@ public abstract class JobIntegrationBase : IDisposable
         await orchestrationHelper.WaitForOrchestrationState(Events, orchestrationId, state, stopMonitoringEvents);
     }
 
+    protected async Task WaitUntil(Func<bool> condition)
+    {
+        while (!condition())
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
+        }
+    }
+
     protected async Task StartNCronJob(
         bool startMonitoringEvents = false)
     {

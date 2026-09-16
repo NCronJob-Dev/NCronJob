@@ -28,7 +28,7 @@ internal static class ServiceResolverHelper
                 arguments[i] = context!;
             else if (parameters[i].ParameterType == typeof(CancellationToken))
                 arguments[i] = cancellationToken;
-            else if (serviceResolvers[i] != null)
+            else if (serviceResolvers[i] is not null)
                 arguments[i] = serviceResolvers[i]!(serviceProvider);
         }
         return arguments;

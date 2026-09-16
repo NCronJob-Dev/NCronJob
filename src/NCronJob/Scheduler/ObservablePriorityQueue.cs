@@ -99,9 +99,6 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    protected void InformCollectionChanged(NotifyCollectionChangedEventArgs args)
-    {
-        var handler = Interlocked.CompareExchange(ref CollectionChanged, null, null);
-        handler?.Invoke(this, args);
-    }
+    protected void InformCollectionChanged(NotifyCollectionChangedEventArgs args) =>
+        CollectionChanged?.Invoke(this, args);
 }

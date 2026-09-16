@@ -9,6 +9,7 @@ public sealed class Storage(TimeProvider timeProvider)
 #else
     private readonly object locker = new();
 #endif
+    private readonly List<(string, string)> timedEntries = [];
 
     public IList<string> Entries
     {
@@ -16,17 +17,27 @@ public sealed class Storage(TimeProvider timeProvider)
         {
             lock (locker)
             {
-                return new ReadOnlyCollection<string>(TimedEntries.Select(e => e.Item2).ToList());
+                return new ReadOnlyCollection<string>(timedEntries.Select(e => e.Item2).ToList());
             }
         }
     }
-    public IList<(string, string)> TimedEntries { get; } = [];
+
+    public IList<(string, string)> TimedEntries
+    {
+        get
+        {
+            lock (locker)
+            {
+                return new ReadOnlyCollection<(string, string)>([.. timedEntries]);
+            }
+        }
+    }
 
     public void Add(string content)
     {
         lock (locker)
         {
-            TimedEntries.Add((timeProvider.GetUtcNow().ToString("o"), content));
+            timedEntries.Add((timeProvider.GetUtcNow().ToString("o"), content));
         }
     }
 }

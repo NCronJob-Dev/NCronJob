@@ -75,7 +75,7 @@ internal sealed partial class JobExecutor : IDisposable
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
     {
         var job = definition.ResolveJob(scopedServiceProvider);
-        if (job != null)
+        if (job is not null)
         {
             return job;
         }
@@ -107,7 +107,7 @@ internal sealed partial class JobExecutor : IDisposable
         runContext.JobRun.NotifyStateChange(JobStateType.Running);
         LogRunningJob(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
 
-        await retryHandler.ExecuteAsync(async token => await job.RunAsync(runContext, token), runContext, stoppingToken);
+        await retryHandler.ExecuteAsync(token => job.RunAsync(runContext, token), runContext, stoppingToken);
 
         stoppingToken.ThrowIfCancellationRequested();
 
@@ -155,12 +155,12 @@ internal sealed partial class JobExecutor : IDisposable
         }
     }
 
-    public void InformDependentJobs(JobExecutionContext context, bool success)
+    private void InformDependentJobs(JobExecutionContext context, bool success)
     {
         var jobRun = context.JobRun;
         var dependencies = success
-            ? jobRegistry.GetDependentSuccessJobTypes(jobRun.JobDefinition)
-            : jobRegistry.GetDependentFaultedJobTypes(jobRun.JobDefinition);
+            ? jobRegistry.GetDependentSuccessJobs(jobRun.JobDefinition)
+            : jobRegistry.GetDependentFaultedJobs(jobRun.JobDefinition);
 
         if (dependencies.Count > 0)
             jobRun.NotifyStateChange(JobStateType.WaitingForDependency);
@@ -196,9 +196,9 @@ internal sealed partial class JobExecutor : IDisposable
                     break;
                 }
             }
-            catch
+            catch (Exception handlerException)
             {
-                LogExceptionHandlerError(exceptionHandler.GetType());
+                LogExceptionHandlerError(handlerException, exceptionHandler.GetType());
             }
         }
     }

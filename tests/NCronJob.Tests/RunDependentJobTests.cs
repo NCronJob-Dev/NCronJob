@@ -412,7 +412,7 @@ public class RunDependentJobTests : JobIntegrationBase
             .ExecuteWhen(success: s => s.RunJob<DummyJob>("Message")
                 .OnlyIf(async () =>
                 {
-                    await Task.Delay(10);
+                    await Task.Yield();
                     return true;
                 })));
 

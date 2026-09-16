@@ -8,7 +8,7 @@ namespace NCronJob;
 /// <summary>
 /// A policy creator that configures a fixed interval retry policy.
 /// </summary>
-internal partial class FixedIntervalRetryPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
+internal sealed partial class FixedIntervalRetryPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
 {
     private ILogger<FixedIntervalRetryPolicyCreator> logger = NullLogger<FixedIntervalRetryPolicyCreator>.Instance;
     private TimeProvider timeProvider = TimeProvider.System;
