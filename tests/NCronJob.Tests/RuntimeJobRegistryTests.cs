@@ -137,10 +137,7 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         registry.RemoveJob("Job");
 
-        while (queueWorker.GetActiveWorkerQueueNames().Count > 0)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
-        }
+        await WaitUntil(() => queueWorker.GetActiveWorkerQueueNames().Count == 0);
 
         ServiceProvider.GetRequiredService<JobQueueManager>().GetAllJobQueueNames().ShouldBeEmpty();
     }

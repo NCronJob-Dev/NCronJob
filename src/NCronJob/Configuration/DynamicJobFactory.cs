@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace NCronJob;
 
-internal class DynamicJobFactory : IJob
+internal sealed class DynamicJobFactory : IJob
 {
     private readonly IServiceProvider serviceProvider;
     private readonly Func<object[], Task> invoker;

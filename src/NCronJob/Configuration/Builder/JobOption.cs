@@ -3,7 +3,7 @@ namespace NCronJob;
 /// <summary>
 /// A configuration option for a job.
 /// </summary>
-internal class JobOption
+internal sealed class JobOption
 {
     /// <summary>
     /// Set's the cron expression for the job. If set to null, the job is added to the container but will not be scheduled.

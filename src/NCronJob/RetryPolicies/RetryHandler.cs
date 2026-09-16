@@ -70,13 +70,13 @@ internal sealed partial class RetryHandler : IRetryHandler
         }
         catch (Exception ex)
         {
-            LogRetryHandlerException(ex.Message);
+            LogRetryHandlerException(ex, ex.Message);
             throw; // Ensure exceptions are not swallowed if not handled internally
         }
     }
 
     [LoggerMessage(LogLevel.Error, "Error occurred during an operation with retries. {Message}")]
-    private partial void LogRetryHandlerException(string message);
+    private partial void LogRetryHandlerException(Exception exception, string message);
 
     [LoggerMessage(LogLevel.Debug, "Attempt {RetryCount} for job '{JobName}'")]
     private partial void LogRetryAttempt(int retryCount, string jobName);

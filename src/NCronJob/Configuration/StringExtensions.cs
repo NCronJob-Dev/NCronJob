@@ -3,7 +3,6 @@ using System.Text;
 
 namespace NCronJob;
 
-
 internal static class StringExtensions
 {
     public static string GenerateConsistentShortHash(this string input)
@@ -13,7 +12,7 @@ internal static class StringExtensions
         return RemoveChars(base64ShortHash, '+', '/', '=');
     }
 
-    public static string RemoveChars(this ReadOnlySpan<char> input, params ReadOnlySpan<char> charsToRemove)
+    private static string RemoveChars(ReadOnlySpan<char> input, params ReadOnlySpan<char> charsToRemove)
     {
         Span<char> buffer = stackalloc char[input.Length];
         var index = 0;
@@ -29,5 +28,3 @@ internal static class StringExtensions
         return new string(buffer[..index]);
     }
 }
-
-

@@ -79,7 +79,7 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(async () =>
                 {
-                    await Task.Delay(10);
+                    await Task.Yield();
                     return true;
                 })));
 
@@ -349,7 +349,7 @@ public class ConditionalJobTests : JobIntegrationBase
             .AddJob<SimpleJob>(p => p
                 .OnlyIf(async () =>
                 {
-                    await Task.Delay(10);
+                    await Task.Yield();
                     return true;
                 })
                 .WithCronExpression(Cron.AtEveryMinute)));
@@ -517,7 +517,7 @@ public class ConditionalJobTests : JobIntegrationBase
     {
         public async Task<bool> IsEnabledAsync(string feature)
         {
-            await Task.Delay(10);
+            await Task.Yield();
             return feature == "my-feature";
         }
     }

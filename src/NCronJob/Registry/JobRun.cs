@@ -6,7 +6,6 @@ namespace NCronJob;
 internal class JobRun
 {
     private readonly JobRun rootJob;
-    private int jobExecutionCount;
     private readonly TimeProvider timeProvider;
     private readonly Action<JobRun> progressReporter;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
@@ -64,12 +63,11 @@ internal class JobRun
     /// expiration period (grace period), the job is considered expired and should not be processed. Because the job is not processed,
     /// but it has been dequeued then essentially the job is dropped.
     /// </summary>
-    public TimeSpan Expiry { get; set; } = TimeSpan.FromMinutes(10);
+    public TimeSpan Expiry { get; } = TimeSpan.FromMinutes(10);
     public bool IsExpired => timeProvider.GetUtcNow() - RunAt > Expiry;
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
     public TriggerType TriggerType { get; }
-    public void IncrementJobExecutionCount() => Interlocked.Increment(ref jobExecutionCount);
 
     public static JobRun CreateStartupJob(
         TimeProvider timeProvider,

@@ -1,6 +1,6 @@
 namespace NCronJob;
 
-internal class JobQueueTupleComparer : IComparer<(DateTimeOffset NextRunTime, int Priority)>
+internal sealed class JobQueueTupleComparer : IComparer<(DateTimeOffset NextRunTime, int Priority)>
 {
     public int Compare((DateTimeOffset NextRunTime, int Priority) x, (DateTimeOffset NextRunTime, int Priority) y)
     {

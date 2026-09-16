@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace NCronJob;
@@ -176,8 +175,8 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(jobName);
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        var job = jobRegistry.FindRootJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-        job.UpdateWith(new JobOption() { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
+        var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
+        job.UpdateWith(new JobOption { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
 
         jobWorker.RescheduleJob(job);
     }
@@ -187,8 +186,8 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         ArgumentNullException.ThrowIfNull(jobName);
 
-        var job = jobRegistry.FindRootJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
-        job.UpdateWith(new JobOption() { Parameter = parameter });
+        var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
+        job.UpdateWith(new JobOption { Parameter = parameter });
 
         jobWorker.RescheduleJob(job);
     }

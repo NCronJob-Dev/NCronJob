@@ -2,7 +2,7 @@ using Polly;
 
 namespace NCronJob;
 
-internal class PolicyCreatorFactory(IServiceProvider serviceProvider)
+internal sealed class PolicyCreatorFactory(IServiceProvider serviceProvider)
 {
     public IAsyncPolicy CreatePolicy(PolicyType policyType, int retryCount, double delayFactor) =>
         policyType switch

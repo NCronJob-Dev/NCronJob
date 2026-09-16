@@ -1,6 +1,6 @@
 namespace NCronJob;
 
-internal class JobDefinitionCollector
+internal sealed class JobDefinitionCollector
 {
     public Dictionary<JobDefinition, List<DependentJobRegistryEntry>> Entries { get; } = [];
 
