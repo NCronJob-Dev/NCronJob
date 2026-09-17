@@ -72,6 +72,13 @@ The time zone can be controlled as well and defaults to UTC if not specified:
 builder.Services.AddNCronJob(() => { }, "0 * * * *", TimeZoneInfo.Local);
 ```
 
+## Naming a job
+To manage a minimal API job at runtime (see [**Dynamic Job Control**](../advanced/dynamic-job-control.md)), give it a name:
+
+```csharp
+builder.Services.AddNCronJob(() => { }, "0 * * * *", TimeZoneInfo.Local, "MyName");
+```
+
 ## Concurrency-Support
 In the same way, the concurrency level can be controlled (see [**Concurrency**](concurrency-control.md)):
 

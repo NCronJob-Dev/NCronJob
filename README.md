@@ -55,6 +55,7 @@ The whole documentation can be found here: [NCronJob Documentation](https://docs
 - [x] Startup jobs - Run a job when the application starts.
 - [x] Define job dependencies - trigger another job if one was successful or faulted!
 - [x] Add, remove, and update jobs at runtime.
+- [x] Observe the progress of a job's execution.
 
 ## Not features
 
@@ -63,8 +64,6 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
 
 - [ ] Job persistence - Jobs are not persisted between restarts of the application.
 - [ ] Job history - There is no history of jobs that have been run.
-- [ ] Progress state - There is no way to track the progress of a job. The library supports notifying when a job is
-  done, but not the progress of the job itself.
 
 ## Short example
 

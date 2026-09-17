@@ -5,7 +5,7 @@ and register it in your DI container.
 
 ```csharp
 builder.Services.AddNCronJob(options =>
-    options.AddCronJob<PrintHelloWorld>(j => 
+    options.AddJob<PrintHelloWorld>(j => 
     {
         // Every minute and optional parameter
         j.WithCronExpression("* * * * *")

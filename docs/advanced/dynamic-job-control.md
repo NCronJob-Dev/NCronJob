@@ -88,7 +88,7 @@ app.MapPut("/update-job", (IRuntimeJobRegistry registry) =>
 });
 ```
 
-Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the "old" parameter will be cancelled and rescheduled with the new parameter.
+Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the "old" parameter will be cancelled and rescheduled with the new parameter. Passing `null` clears the configured parameter.
 
 ## Retrieving a job schedule by name
 To retrieve the schedule of a job by name, use the `TryGetSchedule` method:
@@ -98,6 +98,26 @@ var found = registry.TryGetSchedule("MyName", out string? cronExpression, out Ti
 ```
 
 The cron expression and time zone can be `null` even if the job was found. This indicates that the job has no schedule (like dependent jobs).
+
+## Retrieving the next occurrence of a job
+
+To find out when a named recurring job will next run, use the `TryGetNextOccurrence` method:
+
+```csharp
+var found = registry.TryGetNextOccurrence("MyName", out DateTimeOffset? nextRun);
+```
+
+This returns `false` if the job doesn't exist, is disabled, or has no CRON-based schedule (like dependent or instant jobs).
+
+## Listing all recurring jobs
+
+To get an overview of every registered recurring (CRON) job, use `GetAllRecurringJobs`:
+
+```csharp
+IReadOnlyCollection<RecurringJobSchedule> jobs = registry.GetAllRecurringJobs();
+```
+
+Each `RecurringJobSchedule` exposes the job's `JobName`, `CronExpression`, `IsEnabled` state, `TimeZone`, and the `Type` of a typed job (`IsTypedJob` distinguishes typed jobs from minimal-API delegate jobs).
 
 ## Disabling and enabling jobs
 There are two ways to disable a job from the scheduler. By name or by type.
@@ -114,7 +134,7 @@ app.MapPut("/disable-job", (IRuntimeJobRegistry registry) =>
 
 That will prevent one job named `MyName` from being scheduled.
 
-In contrast disabling by type will disable all jobs of the given type (so zero to many jobs):
+In contrast disabling by type will disable all jobs of the given type. Unlike `RemoveJob`, both `DisableJob` and `EnableJob` throw an `InvalidOperationException` if no matching job is found, whether looked up by name or by type:
 
 ```csharp
 app.MapPut("/disable-job", (IRuntimeJobRegistry registry) =>
