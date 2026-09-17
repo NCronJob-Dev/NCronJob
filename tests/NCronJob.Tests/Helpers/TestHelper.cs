@@ -110,7 +110,7 @@ public abstract class JobIntegrationBase : IDisposable
             await Task.WhenAny(
                 task,
                 progressChanged,
-                Task.Delay(TimeSpan.FromMilliseconds(1), CancellationToken));
+                Task.Delay(TimeSpan.FromMilliseconds(20), CancellationToken));
         }
 
         return await task;
