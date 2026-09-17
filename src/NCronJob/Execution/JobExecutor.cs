@@ -13,6 +13,7 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IRetryHandler retryHandler;
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
+    private readonly TimeProvider timeProvider;
     private readonly ImmutableArray<IExceptionHandler> exceptionHandlers;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
@@ -24,6 +25,7 @@ internal sealed partial class JobExecutor : IDisposable
         IRetryHandler retryHandler,
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
+        TimeProvider timeProvider,
         IEnumerable<IExceptionHandler> exceptionHandlers)
     {
         this.serviceProvider = serviceProvider;
@@ -31,6 +33,7 @@ internal sealed partial class JobExecutor : IDisposable
         this.retryHandler = retryHandler;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
+        this.timeProvider = timeProvider;
         this.exceptionHandlers = [.. exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
@@ -52,7 +55,12 @@ internal sealed partial class JobExecutor : IDisposable
 
         // stoppingToken is never cancelled when the job is triggered outside the BackgroundProcess,
         // so we need to tie into the IHostApplicationLifetime
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken);
+        using var timeoutCts = run.JobDefinition.Timeout == Timeout.InfiniteTimeSpan
+            ? null
+            : new CancellationTokenSource(run.JobDefinition.Timeout, timeProvider);
+        using var linkedCts = timeoutCts is null
+            ? CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken)
+            : CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken, timeoutCts.Token);
         run.CancellationToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();

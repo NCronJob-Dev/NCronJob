@@ -7,17 +7,21 @@ internal class JobRun
 {
     private readonly JobRun rootJob;
     private readonly TimeProvider timeProvider;
+    private readonly ConcurrencySettings settings;
     private readonly Action<JobRun> progressReporter;
+    private readonly JobRunActivationGate? activationGate;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
 
     private JobRun(
         TimeProvider timeProvider,
         JobDefinition jobDefinition,
         DateTimeOffset runAt,
-        object? parameter,
+        OptionalParameter parameter,
         Action<JobRun> progressReporter,
-        TriggerType triggerType)
-    : this(timeProvider, null, jobDefinition, runAt, parameter, progressReporter, triggerType)
+        TriggerType triggerType,
+        ConcurrencySettings settings,
+        JobRunActivationGate? activationGate = null)
+    : this(timeProvider, null, jobDefinition, runAt, parameter, progressReporter, triggerType, settings, activationGate)
     {
     }
 
@@ -26,9 +30,11 @@ internal class JobRun
         JobRun? parentJob,
         JobDefinition jobDefinition,
         DateTimeOffset runAt,
-        object? parameter,
+        OptionalParameter parameter,
         Action<JobRun> progressReporter,
-        TriggerType triggerType)
+        TriggerType triggerType,
+        ConcurrencySettings settings,
+        JobRunActivationGate? activationGate = null)
     {
         var jobRunId = Guid.NewGuid();
 
@@ -37,9 +43,11 @@ internal class JobRun
         IsOrchestrationRoot = parentJob is null;
         CorrelationId = parentJob?.CorrelationId ?? Guid.NewGuid();
         this.timeProvider = timeProvider;
+        this.settings = settings;
+        this.activationGate = activationGate;
         JobDefinition = jobDefinition;
         RunAt = runAt;
-        Parameter = parameter ?? jobDefinition.Parameter;
+        Parameter = parameter.IsSpecified ? parameter.Value : jobDefinition.Parameter;
         TriggerType = triggerType;
 
         this.progressReporter = progressReporter;
@@ -63,8 +71,8 @@ internal class JobRun
     /// expiration period (grace period), the job is considered expired and should not be processed. Because the job is not processed,
     /// but it has been dequeued then essentially the job is dropped.
     /// </summary>
-    public TimeSpan Expiry { get; } = TimeSpan.FromMinutes(10);
-    public bool IsExpired => timeProvider.GetUtcNow() - RunAt > Expiry;
+    public TimeSpan Expiry => JobDefinition.JobRunExpiry ?? settings.DefaultJobRunExpiry;
+    public bool IsExpired => Expiry != Timeout.InfiniteTimeSpan && timeProvider.GetUtcNow() - RunAt > Expiry;
     public object? Parameter { get; }
     public object? ParentOutput { get; set; }
     public TriggerType TriggerType { get; }
@@ -72,24 +80,36 @@ internal class JobRun
     public static JobRun CreateStartupJob(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
-        JobDefinition jobDefinition)
-    => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), jobDefinition.Parameter, progressReporter, TriggerType.Startup);
+        JobDefinition jobDefinition,
+        ConcurrencySettings? settings = null)
+    => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), OptionalParameter.Unspecified, progressReporter, TriggerType.Startup, settings ?? new ConcurrencySettings());
 
     public static JobRun Create(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
-        DateTimeOffset runAt)
-    => new(timeProvider, jobDefinition, runAt, jobDefinition.Parameter, progressReporter, TriggerType.Cron);
+        DateTimeOffset runAt,
+        ConcurrencySettings? settings = null,
+        JobRunActivationGate? activationGate = null)
+    => new(
+        timeProvider,
+        jobDefinition,
+        runAt,
+        OptionalParameter.Unspecified,
+        progressReporter,
+        TriggerType.Cron,
+        settings ?? new ConcurrencySettings(),
+        activationGate);
 
     public static JobRun CreateInstant(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,
         DateTimeOffset runAt,
-        object? parameter,
-        CancellationToken token)
-    => new(timeProvider, jobDefinition, runAt, parameter, progressReporter, TriggerType.Instant)
+        OptionalParameter parameter,
+        CancellationToken token,
+        ConcurrencySettings? settings = null)
+    => new(timeProvider, jobDefinition, runAt, parameter, progressReporter, TriggerType.Instant, settings ?? new ConcurrencySettings())
     {
         CancellationToken = token,
     };
@@ -99,7 +119,15 @@ internal class JobRun
         object? parameter,
         CancellationToken token)
     {
-        JobRun run = new(timeProvider, this, jobDefinition, timeProvider.GetUtcNow(), parameter, progressReporter, TriggerType.Dependent)
+        JobRun run = new(
+            timeProvider,
+            this,
+            jobDefinition,
+            timeProvider.GetUtcNow(),
+            parameter is null ? OptionalParameter.Unspecified : OptionalParameter.FromValue(parameter),
+            progressReporter,
+            TriggerType.Dependent,
+            settings)
         {
             CancellationToken = token,
         };
@@ -110,6 +138,11 @@ internal class JobRun
     }
 
     public bool RootJobIsCompleted => rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
+
+    public ValueTask<bool> WaitForActivationAsync() =>
+        activationGate is null
+            ? ValueTask.FromResult(true)
+            : new ValueTask<bool>(activationGate.WaitAsync());
 
     // State change logic
     public bool IsCompleted => CurrentState.IsFinalState();
@@ -171,4 +204,23 @@ internal class JobRun
     {
         return !pendingDependents.IsEmpty && pendingDependents.Any(j => !j.IsCompleted || j.HasPendingDependentJobs());
     }
+}
+
+internal sealed class JobRunActivationGate
+{
+    private readonly TaskCompletionSource<bool> completion =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public Task<bool> WaitAsync() => completion.Task;
+
+    public void Activate() => completion.TrySetResult(true);
+
+    public void Reject() => completion.TrySetResult(false);
+}
+
+internal readonly record struct OptionalParameter(bool IsSpecified, object? Value)
+{
+    public static OptionalParameter Unspecified => default;
+
+    public static OptionalParameter FromValue(object? value) => new(true, value);
 }

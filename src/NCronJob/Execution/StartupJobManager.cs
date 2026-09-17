@@ -9,6 +9,7 @@ internal sealed partial class StartupJobManager(
     JobProcessor jobProcessor,
     JobExecutionProgressObserver observer,
     TimeProvider timeProvider,
+    ConcurrencySettings settings,
     ILogger<StartupJobManager> logger)
 {
     public async Task ProcessStartupJobs(CancellationToken stopToken)
@@ -25,7 +26,7 @@ internal sealed partial class StartupJobManager(
         List<JobRun> jobRuns = [];
         var startupTasks = startupJobs.Select(definition =>
         {
-            var jobRun = JobRun.CreateStartupJob(timeProvider, observer.Report, definition);
+            var jobRun = JobRun.CreateStartupJob(timeProvider, observer.Report, definition, settings);
 
             jobRuns.Add(jobRun);
             return CreateExecutionTask(jobRun, stopToken);

@@ -180,6 +180,22 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task InstantJobCanExplicitlyOverrideConfiguredParameterWithNull()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<DummyJob>(o => o.WithCronExpression(Cron.Never).WithParameter("Configured")));
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>()
+            .RunInstantJob<DummyJob>(parameter: null, token: CancellationToken);
+
+        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+
+        Storage.Entries.ShouldBe(["DummyJob - Parameter: "]);
+    }
+
+    [Fact]
     public async Task InstantJobShouldPassDownParameter()
     {
         ServiceCollection.AddNCronJob(
@@ -262,7 +278,7 @@ public sealed class IntegrationTests : JobIntegrationBase
 
     [Theory]
     [MemberData(nameof(InstantNamedJobRunners))]
-    public async Task CanDisambiguateSimarlyTypedJobsThroughNames(
+    public async Task NamedInstantJobsCanExplicitlyOverrideConfiguredParameterWithNull(
         Func<IInstantJobRegistry, TimeProvider, string, object?, CancellationToken, Guid> instantJobRunner)
     {
         ServiceCollection.AddNCronJob(n =>
@@ -281,7 +297,7 @@ public sealed class IntegrationTests : JobIntegrationBase
 
         await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
 
-        Storage.Entries[0].ShouldBe("DummyJob - Parameter: good_param");
+        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries[1].ShouldBe("AnotherDummyJob - Parameter: ");
         Storage.Entries.Count.ShouldBe(2);
     }

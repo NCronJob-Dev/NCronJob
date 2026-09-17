@@ -13,6 +13,10 @@ internal sealed class ConcurrencySettings
     /// The total number of concurrent jobs that can be executed
     /// by the scheduler at any one time, irrespective of the job type.
     /// </summary>
-    public int MaxDegreeOfParallelism { get; set; }
-}
+    public int MaxDegreeOfParallelism { get; set; } = Environment.ProcessorCount * 4;
 
+    /// <summary>
+    /// The default time a scheduled job may remain queued after its intended run time.
+    /// </summary>
+    public TimeSpan DefaultJobRunExpiry { get; set; } = TimeSpan.FromMinutes(10);
+}

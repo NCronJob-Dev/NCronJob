@@ -285,7 +285,7 @@ public class RunDependentJobTests : JobIntegrationBase
         var rootOrchestrationId = instantJobRegistry.ForceRunInstantJob<DummyJob>(null, token: CancellationToken);
         await WaitForOrchestrationCompletion(rootOrchestrationId);
 
-        var dependentOrchestrationId = instantJobRegistry.ForceRunInstantJob<AnotherDummyJob>(null, token: CancellationToken);
+        var dependentOrchestrationId = instantJobRegistry.ForceRunInstantJob<AnotherDummyJob>(token: CancellationToken);
         await WaitForOrchestrationCompletion(dependentOrchestrationId, stopMonitoringEvents: true);
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");

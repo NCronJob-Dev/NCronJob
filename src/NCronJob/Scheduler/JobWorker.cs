@@ -11,7 +11,7 @@ internal sealed partial class JobWorker
     private readonly TimeProvider timeProvider;
     private readonly JobExecutionProgressObserver observer;
     private readonly ILogger<JobWorker> logger;
-    private readonly int globalConcurrencyLimit;
+    private readonly ConcurrencySettings concurrencySettings;
     private readonly Dictionary<string, int> runningJobCounts = [];
     private readonly ConcurrentDictionary<Task, byte> runningJobs = new();
     private int totalRunningJobCount;
@@ -37,7 +37,7 @@ internal sealed partial class JobWorker
         this.timeProvider = timeProvider;
         this.observer = observer;
         this.logger = logger;
-        globalConcurrencyLimit = concurrencySettings.MaxDegreeOfParallelism;
+        this.concurrencySettings = concurrencySettings;
     }
 
     public async Task WorkerAsync(string queueName, CancellationToken cancellationToken)
@@ -76,6 +76,13 @@ internal sealed partial class JobWorker
 
                 if (!jobQueue.TryDequeueIf(nextJob))
                 {
+                    ReleaseSlot(nextJob.JobDefinition);
+                    continue;
+                }
+
+                if (!await nextJob.WaitForActivationAsync().ConfigureAwait(false))
+                {
+                    nextJob.NotifyStateChange(JobStateType.Cancelled);
                     ReleaseSlot(nextJob.JobDefinition);
                     continue;
                 }
@@ -185,7 +192,7 @@ internal sealed partial class JobWorker
         {
             runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
 
-            if (currentCount >= maxAllowed || totalRunningJobCount >= globalConcurrencyLimit)
+            if (currentCount >= maxAllowed || totalRunningJobCount >= concurrencySettings.MaxDegreeOfParallelism)
             {
                 return false;
             }
@@ -235,11 +242,16 @@ internal sealed partial class JobWorker
         }
     }
 
-    public void ScheduleJob(JobDefinition job, DateTimeOffset? lastScheduledRunTime = null)
+    public JobRun? ScheduleJob(
+        JobDefinition job,
+        DateTimeOffset? lastScheduledRunTime = null,
+        Action<JobRun>? onRunCreated = null,
+        Action<string>? onQueueCreated = null,
+        JobRunActivationGate? activationGate = null)
     {
         if (!job.IsEnabled)
         {
-            return;
+            return null;
         }
 
         var utcNow = timeProvider.GetUtcNow();
@@ -255,18 +267,30 @@ internal sealed partial class JobWorker
 
         if (!nextRunTime.HasValue)
         {
-            return;
+            return null;
         }
 
         LogNextJobRun(job.Name, nextRunTime.Value);
-        var run = JobRun.Create(timeProvider, observer.Report, job, nextRunTime.Value);
+        var run = JobRun.Create(
+            timeProvider,
+            observer.Report,
+            job,
+            nextRunTime.Value,
+            concurrencySettings,
+            activationGate);
+        onRunCreated?.Invoke(run);
         run.NotifyStateChange(JobStateType.Scheduled);
 
         // Checked atomically with queue removal, so a job removed concurrently isn't brought back by a pending reschedule.
-        if (!jobQueueManager.Enqueue(run, () => registry.IsRootJob(job)))
+        if (!jobQueueManager.Enqueue(
+                run,
+                () => registry.IsRootJob(job),
+                onQueueCreated))
         {
             run.NotifyStateChange(JobStateType.Cancelled);
         }
+
+        return run;
     }
 
     public void RemoveJobByName(string jobName)

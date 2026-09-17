@@ -1,0 +1,96 @@
+namespace NCronJob;
+
+internal sealed class DependentJobDefinition : IEquatable<DependentJobDefinition>
+{
+    private readonly Delegate? jobDelegate;
+    private readonly List<JobOption> jobOptions = [];
+    private readonly JobExecutionAttributes jobPolicyMetadata;
+
+    private DependentJobDefinition(string? customName, Type type, object? parameter)
+    {
+        CustomName = customName;
+        Type = type;
+        Parameter = parameter;
+        IsTypedJob = true;
+        jobPolicyMetadata = new JobExecutionAttributes(type);
+    }
+
+    private DependentJobDefinition(string? customName, Delegate jobDelegate)
+    {
+        CustomName = customName;
+        this.jobDelegate = jobDelegate;
+        jobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
+    }
+
+    public string? CustomName { get; }
+
+    public Type? Type { get; }
+
+    public object? Parameter { get; }
+
+    public bool IsTypedJob { get; }
+
+    public SupportsConcurrencyAttribute? ConcurrencyPolicy => jobPolicyMetadata.ConcurrencyPolicy;
+
+    public string Name => ToJobDefinition().Name;
+
+    public static DependentJobDefinition CreateTyped(Type type, object? parameter, string? customName = null)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        return type.FullName is null || !type.GetInterfaces().Contains(typeof(IJob))
+            ? throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.")
+            : new DependentJobDefinition(customName, type, parameter);
+    }
+
+    public static DependentJobDefinition CreateUntyped(string? customName, Delegate jobDelegate)
+    {
+        ArgumentNullException.ThrowIfNull(jobDelegate);
+        return new DependentJobDefinition(customName, jobDelegate);
+    }
+
+    public static DependentJobDefinition FromRoot(JobDefinition jobDefinition)
+    {
+        ArgumentNullException.ThrowIfNull(jobDefinition);
+
+        if (!jobDefinition.IsTypedJob)
+        {
+            throw new InvalidOperationException("Only typed jobs can define dependent jobs.");
+        }
+
+        return CreateTyped(jobDefinition.Type, jobDefinition.Parameter, jobDefinition.CustomName);
+    }
+
+    public void UpdateWith(JobOption jobOption)
+    {
+        ArgumentNullException.ThrowIfNull(jobOption);
+        jobOptions.Add(jobOption);
+    }
+
+    public JobDefinition ToJobDefinition()
+    {
+        var jobDefinition = IsTypedJob
+            ? JobDefinition.CreateTyped(CustomName, Type!, Parameter)
+            : JobDefinition.CreateUntyped(CustomName, jobDelegate!);
+
+        foreach (var jobOption in jobOptions)
+        {
+            jobDefinition.UpdateWith(jobOption);
+        }
+
+        return jobDefinition;
+    }
+
+    public bool Equals(DependentJobDefinition? other) =>
+        ReferenceEquals(this, other)
+        || (other is not null
+            && IsTypedJob
+            && other.IsTypedJob
+            && Type == other.Type
+            && Parameter == other.Parameter
+            && CustomName == other.CustomName);
+
+    public override bool Equals(object? obj) => obj is DependentJobDefinition other && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(Type, Parameter, CustomName);
+}

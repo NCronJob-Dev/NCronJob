@@ -37,6 +37,7 @@ nav:
     - Registering multiple CRON expressions: features/multiple-cron-expressions.md
     - Triggering instant jobs: features/instant-jobs.md
     - Concurrency control: features/concurrency-control.md
+    - Job timeouts and run expiry: features/timeouts-and-expiry.md
     - Retry support: features/retry-support.md
     - Minimal API: features/minimal-api.md
     - Startup Jobs: features/startup-jobs.md

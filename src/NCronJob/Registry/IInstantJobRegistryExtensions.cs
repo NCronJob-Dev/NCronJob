@@ -8,6 +8,19 @@ namespace NCronJob;
 public static class IInstantJobRegistryExtensions
 {
     /// <summary>
+    /// Queues an instant job using its configured parameter.
+    /// </summary>
+    public static Guid RunInstantJob<TJob>(
+        this IInstantJobRegistry instantJobRegistry,
+        CancellationToken token = default)
+        where TJob : IJob
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.RunScheduledJob(typeof(TJob), TimeSpan.Zero, token);
+    }
+
+    /// <summary>
     /// Queues an instant job to the JobQueue. The instance is retrieved from the container.
     /// <param name="instantJobRegistry">The instant job registry.</param>
     /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
@@ -65,6 +78,19 @@ public static class IInstantJobRegistryExtensions
     }
 
     /// <summary>
+    /// Queues an instant job using its configured parameter.
+    /// </summary>
+    public static Guid RunInstantJob(
+        this IInstantJobRegistry instantJobRegistry,
+        Type jobType,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.RunScheduledJob(jobType, TimeSpan.Zero, token);
+    }
+
+    /// <summary>
     /// Runs an instant job, which gets directly executed.
     /// </summary>
     /// <remarks>
@@ -105,6 +131,19 @@ public static class IInstantJobRegistryExtensions
     }
 
     /// <summary>
+    /// Runs a named instant job using its configured parameter.
+    /// </summary>
+    public static Guid RunInstantJob(
+        this IInstantJobRegistry instantJobRegistry,
+        string jobName,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.RunScheduledJob(jobName, TimeSpan.Zero, token);
+    }
+
+    /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>.
     /// </summary>
     /// <param name="instantJobRegistry">The instant job registry.</param>
@@ -122,6 +161,20 @@ public static class IInstantJobRegistryExtensions
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
 
         return instantJobRegistry.RunScheduledJob(typeof(TJob), delay, parameter, token);
+    }
+
+    /// <summary>
+    /// Runs a job using its configured parameter after the given <paramref name="delay"/>.
+    /// </summary>
+    public static Guid RunScheduledJob<TJob>(
+        this IInstantJobRegistry instantJobRegistry,
+        TimeSpan delay,
+        CancellationToken token = default)
+        where TJob : IJob
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.RunScheduledJob(typeof(TJob), delay, token);
     }
 
     /// <summary>
@@ -143,6 +196,20 @@ public static class IInstantJobRegistryExtensions
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
 
         return instantJobRegistry.ForceRunScheduledJob(typeof(TJob), delay, parameter, token);
+    }
+
+    /// <summary>
+    /// Runs a job using its configured parameter after the given <paramref name="delay"/>, ignoring concurrency settings.
+    /// </summary>
+    public static Guid ForceRunScheduledJob<TJob>(
+        this IInstantJobRegistry instantJobRegistry,
+        TimeSpan delay,
+        CancellationToken token = default)
+        where TJob : IJob
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.ForceRunScheduledJob(typeof(TJob), delay, token);
     }
 
     /// <summary>
@@ -171,6 +238,19 @@ public static class IInstantJobRegistryExtensions
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
 
         return instantJobRegistry.ForceRunInstantJob(typeof(TJob), parameter, token);
+    }
+
+    /// <summary>
+    /// Runs an instant job using its configured parameter, ignoring concurrency settings.
+    /// </summary>
+    public static Guid ForceRunInstantJob<TJob>(
+        this IInstantJobRegistry instantJobRegistry,
+        CancellationToken token = default)
+        where TJob : IJob
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.ForceRunScheduledJob(typeof(TJob), TimeSpan.Zero, token);
     }
 
     /// <summary>
@@ -203,6 +283,19 @@ public static class IInstantJobRegistryExtensions
     }
 
     /// <summary>
+    /// Runs an instant job using its configured parameter, ignoring concurrency settings.
+    /// </summary>
+    public static Guid ForceRunInstantJob(
+        this IInstantJobRegistry instantJobRegistry,
+        Type jobType,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.ForceRunScheduledJob(jobType, TimeSpan.Zero, token);
+    }
+
+    /// <summary>
     /// Runs an instant job to the registry, which will be executed even if the job is not registered and the concurrency is exceeded.
     /// <param name="instantJobRegistry">The instant job registry.</param>
     /// <param name="jobName">The name of the job to execute.</param>
@@ -229,6 +322,19 @@ public static class IInstantJobRegistryExtensions
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
 
         return instantJobRegistry.ForceRunScheduledJob(jobName, TimeSpan.Zero, parameter, token);
+    }
+
+    /// <summary>
+    /// Runs a named instant job using its configured parameter, ignoring concurrency settings.
+    /// </summary>
+    public static Guid ForceRunInstantJob(
+        this IInstantJobRegistry instantJobRegistry,
+        string jobName,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(instantJobRegistry);
+
+        return instantJobRegistry.ForceRunScheduledJob(jobName, TimeSpan.Zero, token);
     }
 
     /// <summary>

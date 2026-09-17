@@ -95,22 +95,13 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
 
     internal sealed class ActionDisposer : IDisposable
     {
-        private bool disposed;
-        private readonly Action disposer;
+        private Action? disposer;
 
         public ActionDisposer(Action disposer)
         {
             this.disposer = disposer;
         }
 
-        public void Dispose()
-        {
-            if (disposed)
-                return;
-
-            disposer();
-
-            disposed = true;
-        }
+        public void Dispose() => Interlocked.Exchange(ref disposer, null)?.Invoke();
     }
 }

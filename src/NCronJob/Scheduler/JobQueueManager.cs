@@ -24,7 +24,10 @@ internal sealed class JobQueueManager : IDisposable
     /// Lookup and enqueue are atomic with respect to <see cref="RemoveQueue"/>, so a run can never end up in a removed queue.
     /// </summary>
     /// <returns><c>false</c> when <paramref name="canEnqueue"/> rejected the run.</returns>
-    public bool Enqueue(JobRun run, Func<bool>? canEnqueue = null)
+    public bool Enqueue(
+        JobRun run,
+        Func<bool>? canEnqueue = null,
+        Action<string>? onQueueCreated = null)
     {
         var queueName = run.JobDefinition.JobFullName;
         var isCreating = false;
@@ -52,6 +55,7 @@ internal sealed class JobQueueManager : IDisposable
 
         if (isCreating)
         {
+            onQueueCreated?.Invoke(queueName);
             QueueAdded?.Invoke(queueName);
         }
 
@@ -84,6 +88,65 @@ internal sealed class JobQueueManager : IDisposable
 
         // Progress callbacks run user code, so they must not be invoked while holding the lock.
         foreach (var run in cancellableRuns)
+        {
+            run.NotifyStateChange(JobStateType.Cancelled);
+        }
+    }
+
+    public void RemoveRuns(
+        IReadOnlyCollection<JobRun> runs,
+        IReadOnlyCollection<string>? createdQueueNames = null)
+    {
+        if (runs.Count == 0 && createdQueueNames is not { Count: > 0 })
+        {
+            return;
+        }
+
+        var runSet = new HashSet<JobRun>(runs, ReferenceEqualityComparer.Instance);
+        var createdQueueSet = createdQueueNames is null
+            ? []
+            : new HashSet<string>(createdQueueNames, StringComparer.Ordinal);
+        var signals = new List<TaskCompletionSource>();
+
+        lock (syncLock)
+        {
+            if (!IsDisposed)
+            {
+                foreach (var (queueName, jobQueue) in jobQueues.ToArray())
+                {
+                    var removedRuns = jobQueue.RemoveWhere(runSet.Contains);
+                    var removeEmptyCreatedQueue = createdQueueSet.Contains(queueName) && jobQueue.Count == 0;
+
+                    if (removedRuns.Count == 0 && !removeEmptyCreatedQueue)
+                    {
+                        continue;
+                    }
+
+                    if (jobQueue.Count == 0)
+                    {
+                        jobQueues.TryRemove(queueName, out _);
+                        jobQueue.CollectionChanged -= CallCollectionChanged;
+
+                        if (queueSignals.Remove(queueName, out var removedSignal))
+                        {
+                            signals.Add(removedSignal);
+                        }
+                    }
+                    else if (queueSignals.TryGetValue(queueName, out var changedSignal))
+                    {
+                        queueSignals[queueName] = CreateSignal();
+                        signals.Add(changedSignal);
+                    }
+                }
+            }
+        }
+
+        foreach (var signal in signals)
+        {
+            signal.TrySetResult();
+        }
+
+        foreach (var run in runs.Where(run => run.IsCancellable))
         {
             run.NotifyStateChange(JobStateType.Cancelled);
         }

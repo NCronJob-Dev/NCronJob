@@ -56,4 +56,18 @@ public sealed class RunAtStartupBuilder : OptionChainerBuilder
 
         return this;
     }
+
+    /// <inheritdoc cref="JobOptionBuilder.WithTimeout(TimeSpan)"/>
+    public RunAtStartupBuilder WithTimeout(TimeSpan timeout)
+    {
+        jobOption.SetTimeout(timeout);
+        return this;
+    }
+
+    /// <inheritdoc cref="JobOptionBuilder.WithJobRunExpiry(TimeSpan)"/>
+    public RunAtStartupBuilder WithJobRunExpiry(TimeSpan expiry)
+    {
+        jobOption.SetJobRunExpiry(expiry);
+        return this;
+    }
 }

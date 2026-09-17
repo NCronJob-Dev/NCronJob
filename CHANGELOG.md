@@ -6,6 +6,25 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Scheduler-wide concurrency can be configured with `WithMaxDegreeOfParallelism`.
+- Jobs can define an execution timeout with `WithTimeout` and override the scheduler's stale-run expiry with `WithJobRunExpiry`; the global expiry can be configured with `WithDefaultJobRunExpiry`.
+- `IRuntimeJobRegistry.TryGetNextOccurrence` exposes the next occurrence of a named recurring job.
+- The minimal delegate registration overload supports assigning a job name for runtime management.
+- Instant-job overloads can distinguish an omitted parameter override from an explicitly supplied `null`.
+
+### Fixed
+
+- Runtime job registration is transactional: failed batches no longer leave partial registry entries, dependencies, service registrations, scheduler settings, or queued/running jobs behind.
+- `IRuntimeJobRegistry.EnableJob(Type)` and `DisableJob(Type)` now follow their documented not-found behavior.
+- `UpdateParameter(jobName, null)` now clears the configured parameter.
+- Execution-progress subscriptions are safely idempotent when disposed concurrently.
+
+### Changed
+
+- Dependent jobs now use a dedicated internal definition and centralized identity rules instead of reusing scheduled root-job definitions.
+
 ## [v4.11.0] - 2026-09-11
 
 ### Added

@@ -8,6 +8,32 @@ public sealed class JobOptionBuilder
     private readonly List<JobOption> jobOptions = [];
 
     /// <summary>
+    /// Configures the maximum execution time for the job.
+    /// </summary>
+    /// <param name="timeout">A positive duration, or <see cref="Timeout.InfiniteTimeSpan"/> for no timeout.</param>
+    /// <returns>A builder that allows further configuration of this job.</returns>
+    public CronAndParameterAndRunAtStartupBuilder WithTimeout(TimeSpan timeout)
+    {
+        var jobOption = new JobOption();
+        jobOption.SetTimeout(timeout);
+        jobOptions.Add(jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+    }
+
+    /// <summary>
+    /// Overrides how long a scheduled run may remain queued after its intended run time before expiring.
+    /// </summary>
+    /// <param name="expiry">A positive duration, or <see cref="Timeout.InfiniteTimeSpan"/> to disable expiry.</param>
+    /// <returns>A builder that allows further configuration of this job.</returns>
+    public CronAndParameterAndRunAtStartupBuilder WithJobRunExpiry(TimeSpan expiry)
+    {
+        var jobOption = new JobOption();
+        jobOption.SetJobRunExpiry(expiry);
+        jobOptions.Add(jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+    }
+
+    /// <summary>
     /// Adds a cron expression for the given job.
     /// </summary>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
@@ -82,7 +108,7 @@ public sealed class JobOptionBuilder
 
         jobOptions.Add(jobOption);
 
-        return new OptionChainerBuilder(this);
+        return new RunAtStartupBuilder(this, jobOption);
     }
 
     /// <summary>

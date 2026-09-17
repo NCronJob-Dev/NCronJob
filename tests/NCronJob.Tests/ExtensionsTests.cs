@@ -84,6 +84,21 @@ public class NCronJobTests
             .Message.ShouldContain("@fortnightly");
     }
 
+    [Fact]
+    public void NamedDelegateConvenienceOverloadRegistersRuntimeManageableJob()
+    {
+        var services = new ServiceCollection();
+        Action job = () => { };
+
+        services.AddNCronJob(job, Cron.AtEveryMinute, timeZoneInfo: null, jobName: "Named job");
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var jobDefinition = serviceProvider.GetRequiredService<JobRegistry>().FindRootJobDefinition("Named job");
+
+        jobDefinition.ShouldNotBeNull();
+        jobDefinition.IsTypedJob.ShouldBeFalse();
+    }
+
     private static NCronJobOptionBuilder BuildSut()
     {
         var collection = new ServiceCollection();

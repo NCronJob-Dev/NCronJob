@@ -414,34 +414,22 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task UpdatingParameterDoesNotSupportNullifying()
+    public void UpdatingParameterCanSetAndClearConfiguredParameter()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
             .WithCronExpression(Cron.AtEveryMinute)
             .WithParameter("foo")
             .WithName("JobName")));
 
-        await StartNCronJob(startMonitoringEvents: true);
-
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var jobDefinition = ServiceProvider.GetRequiredService<JobRegistry>().FindRootJobDefinition("JobName");
+        jobDefinition.ShouldNotBeNull();
+
+        registry.UpdateParameter("JobName", "bar");
+        jobDefinition.Parameter.ShouldBe("bar");
 
         registry.UpdateParameter("JobName", null);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-
-        var completedOrchestrationEvents = await WaitForNthOrchestrationState(
-            ExecutionState.OrchestrationCompleted,
-            2,
-            stopMonitoringEvents: true);
-
-        var firstOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[0].CorrelationId);
-        firstOrchestrationEvents.ShouldBeScheduledThenCancelled<DummyJob>("JobName");
-
-        var secondOrchestrationEvents = Events.FilterByOrchestrationId(completedOrchestrationEvents[1].CorrelationId);
-        secondOrchestrationEvents.ShouldBeScheduledThenCompleted<DummyJob>("JobName");
-
-        Storage.Entries[0].ShouldBe("DummyJob - Parameter: foo");
-        Storage.Entries.Count.ShouldBe(1);
+        jobDefinition.Parameter.ShouldBeNull();
     }
 
     [Fact]
@@ -741,6 +729,175 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
     }
 
     [Fact]
+    public void LateRegistrationConflictDoesNotPartiallyRegisterOrScheduleEarlierJobs()
+    {
+        ServiceCollection.AddNCronJob();
+
+        var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        var queueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+
+        var successful = runtimeJobRegistry.TryRegister(s =>
+        {
+            s.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Duplicate"));
+            s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Duplicate");
+        }, out var exception);
+
+        successful.ShouldBeFalse();
+        exception.ShouldBeOfType<InvalidOperationException>();
+        jobRegistry.GetAllRootJobs().ShouldBeEmpty();
+        queueManager.GetAllJobQueueNames().ShouldBeEmpty();
+        queueManager.TryGetQueue(typeof(AnotherDummyJob).FullName!, out _).ShouldBeFalse();
+
+        runtimeJobRegistry.TryRegister(
+            s => s.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Duplicate")),
+            out _).ShouldBeTrue();
+
+        var registeredJob = jobRegistry.FindRootJobDefinition("Duplicate");
+        registeredJob.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void SchedulingFailureRollsBackRegistryQueuesDependenciesAndServices()
+    {
+        ServiceCollection.AddNCronJob(s =>
+            s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2).WithName("Existing"))
+                .ExecuteWhen(success: d => d.RunJob<ExceptionJob>()));
+
+        var serviceDescriptors = ServiceCollection.ToArray();
+        var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        var jobWorker = ServiceProvider.GetRequiredService<JobWorker>();
+        var queueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+        var settings = ServiceProvider.GetRequiredService<ConcurrencySettings>();
+        var previousMaxDegreeOfParallelism = settings.MaxDegreeOfParallelism;
+        var previousDefaultJobRunExpiry = settings.DefaultJobRunExpiry;
+        var existingJob = jobRegistry.FindRootJobDefinition("Existing");
+        existingJob.ShouldNotBeNull();
+
+        jobWorker.ScheduleJob(existingJob);
+        queueManager.TryGetQueue(typeof(DummyJob).FullName!, out var sharedQueue).ShouldBeTrue();
+        var existingRun = sharedQueue.Single();
+
+        void ThrowOnNewQueue(string _) => throw new InvalidOperationException("Scheduling failed.");
+
+        queueManager.QueueAdded += ThrowOnNewQueue;
+        var successful = runtimeJobRegistry.TryRegister(builder =>
+        {
+            var fullBuilder = (NCronJobOptionBuilder)builder;
+            fullBuilder
+                .WithMaxDegreeOfParallelism(previousMaxDegreeOfParallelism + 1)
+                .WithDefaultJobRunExpiry(TimeSpan.FromMinutes(3));
+            fullBuilder.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5).WithName("Batch"))
+                .AddNotificationHandler<RollbackNotificationHandler>()
+                .ExecuteWhen(success: d => d.RunJob<AnotherDummyJob>());
+            fullBuilder.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Failure"));
+        }, out var exception);
+        queueManager.QueueAdded -= ThrowOnNewQueue;
+
+        successful.ShouldBeFalse();
+        exception.ShouldBeOfType<InvalidOperationException>();
+        jobRegistry.GetAllRootJobs().ShouldBe([existingJob]);
+        jobRegistry.GetDependentSuccessJobs(existingJob).Single().Type.ShouldBe(typeof(ExceptionJob));
+
+        queueManager.TryGetQueue(typeof(DummyJob).FullName!, out sharedQueue).ShouldBeTrue();
+        sharedQueue.Count.ShouldBe(1);
+        sharedQueue.Single().ShouldBeSameAs(existingRun);
+        queueManager.TryGetQueue(typeof(AnotherDummyJob).FullName!, out _).ShouldBeFalse();
+
+        ServiceCollection.Count.ShouldBe(serviceDescriptors.Length);
+        ServiceCollection.Zip(serviceDescriptors).ShouldAllBe(pair => ReferenceEquals(pair.First, pair.Second));
+        settings.MaxDegreeOfParallelism.ShouldBe(previousMaxDegreeOfParallelism);
+        settings.DefaultJobRunExpiry.ShouldBe(previousDefaultJobRunExpiry);
+
+        runtimeJobRegistry.TryRegister(
+            builder => builder.AddJob(
+                typeof(DummyJob),
+                p => p.WithCronExpression(Cron.AtMinute5).WithName("Batch")),
+            out _).ShouldBeTrue();
+
+        var reRegisteredJob = jobRegistry.FindRootJobDefinition("Batch");
+        reRegisteredJob.ShouldNotBeNull();
+        jobRegistry.GetDependentSuccessJobs(reRegisteredJob).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task FailedRegistrationCancelsADequeuedRunBeforeItsJobBodyExecutes()
+    {
+        ServiceCollection.AddNCronJob(builder =>
+        {
+            builder.WithMaxDegreeOfParallelism(1);
+            builder.AddJob<DummyJob>(p => p.WithName("Registered"));
+        });
+
+        await StartNCronJob(startMonitoringEvents: true);
+
+        var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        var queueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+        var queueAdditions = 0;
+
+        void DequeueFirstRunThenFail(string queueName)
+        {
+            queueAdditions++;
+            if (queueAdditions == 1)
+            {
+                FakeTimer.Advance(TimeSpan.FromMinutes(1));
+                SpinWait.SpinUntil(
+                    () => queueManager.TryGetQueue(queueName, out var queue) && queue.Count == 0,
+                    TimeSpan.FromSeconds(5)).ShouldBeTrue();
+                return;
+            }
+
+            throw new InvalidOperationException("Scheduling failed.");
+        }
+
+        queueManager.QueueAdded += DequeueFirstRunThenFail;
+        bool successful;
+        Exception? exception;
+        try
+        {
+            successful = runtimeJobRegistry.TryRegister(builder =>
+            {
+                builder.AddJob(
+                    typeof(DummyJob),
+                    p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Earlier"));
+                builder.AddJob(
+                    typeof(AnotherDummyJob),
+                    p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Failure"));
+            }, out exception);
+        }
+        finally
+        {
+            queueManager.QueueAdded -= DequeueFirstRunThenFail;
+        }
+
+        successful.ShouldBeFalse();
+        exception.ShouldBeOfType<InvalidOperationException>();
+
+        await WaitUntil(() => Events.Any(e => e.Name == "Earlier" && e.State == ExecutionState.Cancelled));
+
+        Storage.Entries.ShouldBeEmpty();
+        Events.ShouldNotContain(e =>
+            e.Name == "Earlier"
+            && (e.State == ExecutionState.Initializing || e.State == ExecutionState.Running));
+        jobRegistry.GetAllRootJobs().Select(job => job.CustomName).ShouldBe(["Registered"]);
+        queueManager.GetAllJobQueueNames().ShouldBeEmpty();
+
+        runtimeJobRegistry.TryRegister(
+            builder => builder.AddJob(
+                typeof(DummyJob),
+                p => p.WithCronExpression(Cron.AtEveryMinute).WithName("AfterRollback")),
+            out _).ShouldBeTrue();
+
+        var followUpRun = Events.Last(e => e.Name == "AfterRollback" && e.State == ExecutionState.Scheduled);
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        await WaitForOrchestrationCompletion(followUpRun.CorrelationId, stopMonitoringEvents: true);
+
+        Storage.Entries.ShouldBe(["DummyJob - Parameter: "]);
+    }
+
+    [Fact]
     public void RegisteringDuplicateDuringRuntimeLeadsToException()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
@@ -776,5 +933,14 @@ public class RuntimeJobRegistryTests : JobIntegrationBase
 
         successful.ShouldBeTrue();
         exception.ShouldBeNull();
+    }
+
+    private sealed class RollbackNotificationHandler : IJobNotificationHandler<DummyJob>
+    {
+        public Task HandleAsync(
+            IJobExecutionContext context,
+            Exception? exception,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 }

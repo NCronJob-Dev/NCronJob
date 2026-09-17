@@ -29,15 +29,26 @@ public static class NCronJobExtensions
         var jobRegistry = services.FirstOrDefault(d => d.ServiceType == typeof(JobRegistry))?.ImplementationInstance as JobRegistry
                             ?? new JobRegistry();
 
-        // 4 is just an arbitrary multiplier based on system observed I/O, this could come from Configuration
-        var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
+        var settings = services.FirstOrDefault(d => d.ServiceType == typeof(ConcurrencySettings))?.ImplementationInstance as ConcurrencySettings
+                       ?? new ConcurrencySettings();
+        var previousMaxDegreeOfParallelism = settings.MaxDegreeOfParallelism;
+        var previousDefaultJobRunExpiry = settings.DefaultJobRunExpiry;
 
         var jdc = new JobDefinitionCollector();
 
         var builder = new NCronJobOptionBuilder(services, settings, jdc);
-        options?.Invoke(builder);
-
-        jobRegistry.FeedFrom(jdc);
+        try
+        {
+            options?.Invoke(builder);
+            builder.ValidateConcurrencySettings(jobRegistry.GetAllRootJobs());
+            jobRegistry.FeedFrom(jdc);
+        }
+        catch
+        {
+            settings.MaxDegreeOfParallelism = previousMaxDegreeOfParallelism;
+            settings.DefaultJobRunExpiry = previousDefaultJobRunExpiry;
+            throw;
+        }
 
         services.TryAddSingleton(settings);
         services.AddHostedService<QueueWorker>();
@@ -52,7 +63,9 @@ public static class NCronJobExtensions
             services,
             jobRegistry,
             sp.GetRequiredService<JobWorker>(),
-            sp.GetRequiredService<ConcurrencySettings>()));
+            sp.GetRequiredService<JobQueueManager>(),
+            sp.GetRequiredService<ConcurrencySettings>(),
+            sp.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<JobExecutionProgressObserver>();
         services.TryAddSingleton<IJobExecutionProgressReporter, JobExecutionProgressObserver>(sp =>
             sp.GetRequiredService<JobExecutionProgressObserver>());
@@ -119,6 +132,23 @@ public static class NCronJobExtensions
     /// <returns>The modified service collection.</returns>
     public static IServiceCollection AddNCronJob(this IServiceCollection services, Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
         => services.AddNCronJob(builder => builder.AddJob(jobDelegate, cronExpression, timeZoneInfo));
+
+    /// <summary>
+    /// Adds a named anonymous job to the service collection that gets executed based on the given cron expression.
+    /// </summary>
+    /// <param name="services">The service collection used to register the services.</param>
+    /// <param name="jobDelegate">The delegate that represents the job to be executed.</param>
+    /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
+    /// <param name="timeZoneInfo">The time zone used to evaluate the cron expression. Defaults to UTC.</param>
+    /// <param name="jobName">The unique name used to identify and manage the job at runtime.</param>
+    /// <returns>The modified service collection.</returns>
+    public static IServiceCollection AddNCronJob(
+        this IServiceCollection services,
+        Delegate jobDelegate,
+        string cronExpression,
+        TimeZoneInfo? timeZoneInfo,
+        string jobName)
+        => services.AddNCronJob(builder => builder.AddJob(jobDelegate, cronExpression, timeZoneInfo, jobName));
 
     /// <summary>
     /// Configures the host to use NCronJob. This will also start any given startup jobs and their dependencies.

@@ -74,6 +74,29 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
         }
     }
 
+    public IReadOnlyCollection<TElement> RemoveWhere(Func<TElement, bool> predicate)
+    {
+        lock (Lock)
+        {
+            var entries = PriorityQueue.UnorderedItems.ToArray();
+            var removed = entries.Where(entry => predicate(entry.Element)).Select(entry => entry.Element).ToArray();
+
+            if (removed.Length == 0)
+            {
+                return removed;
+            }
+
+            PriorityQueue.Clear();
+
+            foreach (var entry in entries.Where(entry => !predicate(entry.Element)))
+            {
+                PriorityQueue.Enqueue(entry.Element, entry.Priority);
+            }
+
+            return removed;
+        }
+    }
+
     public int Count
     {
         get

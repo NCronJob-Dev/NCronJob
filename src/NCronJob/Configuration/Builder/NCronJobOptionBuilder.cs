@@ -25,6 +25,30 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     }
 
     /// <summary>
+    /// Configures the scheduler-wide maximum number of jobs that may execute concurrently.
+    /// </summary>
+    /// <param name="maxDegreeOfParallelism">The maximum number of concurrent job executions.</param>
+    /// <returns>The same builder so additional scheduler options and jobs can be configured.</returns>
+    public NCronJobOptionBuilder WithMaxDegreeOfParallelism(int maxDegreeOfParallelism)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
+        settings.MaxDegreeOfParallelism = maxDegreeOfParallelism;
+        return this;
+    }
+
+    /// <summary>
+    /// Configures how long scheduled jobs may remain queued after their intended run time before expiring.
+    /// </summary>
+    /// <param name="expiry">A positive duration, or <see cref="Timeout.InfiniteTimeSpan"/> to disable expiry.</param>
+    /// <returns>The same builder so additional scheduler options and jobs can be configured.</returns>
+    public NCronJobOptionBuilder WithDefaultJobRunExpiry(TimeSpan expiry)
+    {
+        JobOption.ValidateTimeoutLikeValue(expiry, nameof(expiry));
+        settings.DefaultJobRunExpiry = expiry;
+        return this;
+    }
+
+    /// <summary>
     /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// </summary>
     /// <param name="options">Configures the <see cref="JobOptionBuilder"/>, like the cron expression or parameters that get passed down.</param>
@@ -122,6 +146,34 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 
     void IRuntimeJobBuilder.AddJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string? jobName) =>
         AddJob(jobDelegate, cronExpression, timeZoneInfo, jobName);
+
+    internal void ValidateConcurrencySettings(IReadOnlyCollection<JobDefinition> existingJobDefinitions)
+    {
+        foreach (var jobDefinition in existingJobDefinitions.Concat(jobDefinitionCollector.Entries.Keys))
+        {
+            ValidateConcurrencySetting(jobDefinition.Name, jobDefinition.ConcurrencyPolicy);
+        }
+
+        var dependentJobDefinitions = jobDefinitionCollector.Entries.Values
+            .SelectMany(entries => entries)
+            .SelectMany(entry => entry.RunWhenSuccess.Concat(entry.RunWhenFaulted));
+
+        foreach (var jobDefinition in dependentJobDefinitions)
+        {
+            ValidateConcurrencySetting(jobDefinition.Name, jobDefinition.ConcurrencyPolicy);
+        }
+    }
+
+    private void ValidateConcurrencySetting(
+        string jobName,
+        SupportsConcurrencyAttribute? concurrencyAttribute)
+    {
+        if (concurrencyAttribute is not null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
+        {
+            throw new InvalidOperationException(
+                $"The MaxDegreeOfParallelism for {jobName} ({concurrencyAttribute.MaxDegreeOfParallelism}) cannot exceed the global limit ({settings.MaxDegreeOfParallelism}).");
+        }
+    }
 
     private void ValidateConcurrencySetting(object jobIdentifier)
     {
@@ -394,7 +446,7 @@ internal static class ExecuteWhenHelper
         }
     }
 
-    private static List<JobDefinition> Build(Action<DependencyBuilder> configure)
+    private static List<DependentJobDefinition> Build(Action<DependencyBuilder> configure)
     {
         var dependencyBuilder = new DependencyBuilder();
         configure(dependencyBuilder);

@@ -125,8 +125,21 @@ builder.Services.AddNCronJob(options =>
     {
         // Every minute and optional parameter
         j.WithCronExpression("* * * * *")
-         .WithParameter("Hello World");
+         .WithParameter("Hello World")
+         .WithTimeout(TimeSpan.FromMinutes(2))
+         .WithJobRunExpiry(TimeSpan.FromMinutes(5));
     }));
+```
+
+Scheduler-wide concurrency and queued-run expiry can be configured on the outer builder. By default, concurrency is
+`Environment.ProcessorCount * 4`, job execution has no timeout, and queued runs expire after ten minutes.
+`Timeout.InfiniteTimeSpan` disables either timeout or expiry.
+
+```csharp
+builder.Services.AddNCronJob(options => options
+    .WithMaxDegreeOfParallelism(16)
+    .WithDefaultJobRunExpiry(TimeSpan.FromMinutes(15))
+    .AddJob<PrintHelloWorld>());
 ```
 
 4. Run your application and see the magic happen!

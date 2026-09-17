@@ -62,6 +62,20 @@ public interface IRuntimeJobRegistry
     bool TryGetSchedule(string jobName, out string? cronExpression, out TimeZoneInfo? timeZoneInfo);
 
     /// <summary>
+    /// Tries to retrieve the next scheduled occurrence of an enabled recurring job by its name.
+    /// </summary>
+    /// <param name="jobName">The given job name.</param>
+    /// <param name="nextRun">
+    /// The next occurrence in UTC, or <c>null</c> when a valid recurring schedule has no future occurrence.
+    /// This is also <c>null</c> when the method returns <c>false</c>.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> when an enabled recurring job was found; otherwise <c>false</c> for unknown, disabled,
+    /// or unscheduled jobs.
+    /// </returns>
+    bool TryGetNextOccurrence(string jobName, out DateTimeOffset? nextRun);
+
+    /// <summary>
     /// Returns a list of all recurring jobs.
     /// </summary>
     /// <returns></returns>
@@ -120,46 +134,98 @@ public sealed record RecurringJobSchedule(string? JobName, string CronExpression
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
+#if NET9_0_OR_GREATER
+    private readonly Lock registrationLock = new();
+#else
+    private readonly object registrationLock = new();
+#endif
+
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
+    private readonly JobQueueManager jobQueueManager;
     private readonly ConcurrencySettings concurrencySettings;
+    private readonly TimeProvider timeProvider;
 
     public RuntimeJobRegistry(
         IServiceCollection services,
         JobRegistry jobRegistry,
         JobWorker jobWorker,
-        ConcurrencySettings concurrencySettings)
+        JobQueueManager jobQueueManager,
+        ConcurrencySettings concurrencySettings,
+        TimeProvider timeProvider)
     {
         this.services = services;
         this.jobRegistry = jobRegistry;
         this.jobWorker = jobWorker;
+        this.jobQueueManager = jobQueueManager;
         this.concurrencySettings = concurrencySettings;
+        this.timeProvider = timeProvider;
     }
 
     /// <inheritdoc />
     public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception)
     {
-        try
+        lock (registrationLock)
         {
-            var jdc = new JobDefinitionCollector();
-            var builder = new NCronJobOptionBuilder(services, concurrencySettings, jdc);
-            jobBuilder(builder);
+            var trackedServices = new TrackingServiceCollection(services);
+            var previousMaxDegreeOfParallelism = concurrencySettings.MaxDegreeOfParallelism;
+            var previousDefaultJobRunExpiry = concurrencySettings.DefaultJobRunExpiry;
+            JobRegistryRegistration? registration = null;
+            List<JobRun> scheduledRuns = [];
+            List<string> createdQueueNames = [];
+            var activationGate = new JobRunActivationGate();
 
-            jobRegistry.FeedFrom(jdc);
-
-            foreach (var jobDefinition in jdc.Entries.Keys)
+            try
             {
-                jobWorker.ScheduleJob(jobDefinition);
-            }
+                var jdc = new JobDefinitionCollector();
+                var builder = new NCronJobOptionBuilder(trackedServices, concurrencySettings, jdc);
+                jobBuilder(builder);
+                builder.ValidateConcurrencySettings(jobRegistry.GetAllRootJobs());
 
-            exception = null;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            exception = ex;
-            return false;
+                registration = jobRegistry.FeedFrom(jdc);
+
+                foreach (var jobDefinition in jdc.Entries.Keys)
+                {
+                    jobWorker.ScheduleJob(
+                        jobDefinition,
+                        onRunCreated: scheduledRuns.Add,
+                        onQueueCreated: createdQueueNames.Add,
+                        activationGate: activationGate);
+                }
+
+                activationGate.Activate();
+                exception = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                List<Exception> rollbackExceptions = [];
+                activationGate.Reject();
+
+                TryRollback(
+                    () => jobQueueManager.RemoveRuns(scheduledRuns, createdQueueNames),
+                    rollbackExceptions);
+
+                if (registration is not null)
+                {
+                    TryRollback(() => jobRegistry.Rollback(registration), rollbackExceptions);
+                }
+
+                TryRollback(trackedServices.Rollback, rollbackExceptions);
+                TryRollback(() =>
+                {
+                    concurrencySettings.MaxDegreeOfParallelism = previousMaxDegreeOfParallelism;
+                    concurrencySettings.DefaultJobRunExpiry = previousDefaultJobRunExpiry;
+                }, rollbackExceptions);
+
+                exception = rollbackExceptions.Count == 0
+                    ? ex
+                    : new AggregateException(
+                        "Runtime job registration failed and rollback encountered additional errors.",
+                        new[] { ex }.Concat(rollbackExceptions));
+                return false;
+            }
         }
     }
 
@@ -210,6 +276,23 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
+    public bool TryGetNextOccurrence(string jobName, out DateTimeOffset? nextRun)
+    {
+        ArgumentNullException.ThrowIfNull(jobName);
+
+        nextRun = null;
+
+        var job = jobRegistry.FindRootJobDefinition(jobName);
+        if (job is null || !job.IsEnabled || job.UserDefinedCronExpression is null)
+        {
+            return false;
+        }
+
+        nextRun = job.GetNextCronOccurrence(timeProvider.GetUtcNow());
+        return true;
+    }
+
+    /// <inheritdoc />
     public IReadOnlyCollection<RecurringJobSchedule> GetAllRecurringJobs()
         => jobRegistry
             .GetAllCronJobs()
@@ -248,7 +331,13 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
     private void ProcessAllJobDefinitionsOfType(Type type, Action<JobDefinition> processor)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         var jobDefinitions = jobRegistry.FindAllRootJobDefinition(type);
+        if (jobDefinitions.Count == 0)
+        {
+            throw new InvalidOperationException($"Root job with type '{type}' not found.");
+        }
 
         foreach (var jobDefinition in jobDefinitions)
         {
@@ -273,5 +362,77 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     private void RescheduleJob(JobDefinition job)
     {
         jobWorker.RescheduleJob(job);
+    }
+
+    private static void TryRollback(Action rollback, List<Exception> exceptions)
+    {
+        try
+        {
+            rollback();
+        }
+        catch (Exception exception)
+        {
+            exceptions.Add(exception);
+        }
+    }
+
+    private sealed class TrackingServiceCollection(IServiceCollection services) : IServiceCollection
+    {
+        private readonly List<ServiceDescriptor> addedDescriptors = [];
+
+        public ServiceDescriptor this[int index]
+        {
+            get => services[index];
+            set => services[index] = value;
+        }
+
+        public int Count => services.Count;
+
+        public bool IsReadOnly => services.IsReadOnly;
+
+        public void Add(ServiceDescriptor item)
+        {
+            services.Add(item);
+            addedDescriptors.Add(item);
+        }
+
+        public void Clear() => services.Clear();
+
+        public bool Contains(ServiceDescriptor item) => services.Contains(item);
+
+        public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => services.CopyTo(array, arrayIndex);
+
+        public IEnumerator<ServiceDescriptor> GetEnumerator() => services.GetEnumerator();
+
+        public int IndexOf(ServiceDescriptor item) => services.IndexOf(item);
+
+        public void Insert(int index, ServiceDescriptor item)
+        {
+            services.Insert(index, item);
+            addedDescriptors.Add(item);
+        }
+
+        public bool Remove(ServiceDescriptor item) => services.Remove(item);
+
+        public void RemoveAt(int index) => services.RemoveAt(index);
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Rollback()
+        {
+            foreach (var descriptor in addedDescriptors.AsEnumerable().Reverse())
+            {
+                for (var index = services.Count - 1; index >= 0; index--)
+                {
+                    if (!ReferenceEquals(services[index], descriptor))
+                    {
+                        continue;
+                    }
+
+                    services.RemoveAt(index);
+                    break;
+                }
+            }
+        }
     }
 }

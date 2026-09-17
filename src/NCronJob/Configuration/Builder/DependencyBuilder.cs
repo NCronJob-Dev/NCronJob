@@ -5,7 +5,7 @@ namespace NCronJob;
 /// </summary>
 public sealed class DependencyBuilder
 {
-    private readonly List<JobDefinition> dependentJobOptions = [];
+    private readonly List<DependentJobDefinition> dependentJobOptions = [];
     private DependentJobBuilder? lastBuilder;
 
     /// <summary>
@@ -20,7 +20,7 @@ public sealed class DependencyBuilder
         // Apply any pending job options from the last builder
         lastBuilder?.ApplyJobOption();
         
-        var jobDefinition = JobDefinition.CreateTyped(typeof(TJob), parameter);
+        var jobDefinition = DependentJobDefinition.CreateTyped(typeof(TJob), parameter);
         dependentJobOptions.Add(jobDefinition);
         lastBuilder = new DependentJobBuilder(this, jobDefinition);
         return lastBuilder;
@@ -38,13 +38,13 @@ public sealed class DependencyBuilder
         // Apply any pending job options from the last builder
         lastBuilder?.ApplyJobOption();
 
-        var jobDefinition = JobDefinition.CreateUntyped(jobName, jobDelegate);
+        var jobDefinition = DependentJobDefinition.CreateUntyped(jobName, jobDelegate);
         dependentJobOptions.Add(jobDefinition);
         lastBuilder = new DependentJobBuilder(this, jobDefinition);
         return lastBuilder;
     }
 
-    internal List<JobDefinition> GetDependentJobOption()
+    internal List<DependentJobDefinition> GetDependentJobOption()
     {
         // Apply any pending job options from the last builder before returning
         lastBuilder?.ApplyJobOption();

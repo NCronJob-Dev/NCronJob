@@ -6,10 +6,10 @@ namespace NCronJob;
 public sealed class DependentJobBuilder
 {
     private readonly DependencyBuilder dependencyBuilder;
-    private readonly JobDefinition jobDefinition;
+    private readonly DependentJobDefinition jobDefinition;
     private JobOption? jobOption;
 
-    internal DependentJobBuilder(DependencyBuilder dependencyBuilder, JobDefinition jobDefinition)
+    internal DependentJobBuilder(DependencyBuilder dependencyBuilder, DependentJobDefinition jobDefinition)
     {
         this.dependencyBuilder = dependencyBuilder;
         this.jobDefinition = jobDefinition;
@@ -39,6 +39,20 @@ public sealed class DependentJobBuilder
     {
         EnsureJobOption().AddCondition(predicate);
 
+        return this;
+    }
+
+    /// <inheritdoc cref="JobOptionBuilder.WithTimeout(TimeSpan)"/>
+    public DependentJobBuilder WithTimeout(TimeSpan timeout)
+    {
+        EnsureJobOption().SetTimeout(timeout);
+        return this;
+    }
+
+    /// <inheritdoc cref="JobOptionBuilder.WithJobRunExpiry(TimeSpan)"/>
+    public DependentJobBuilder WithJobRunExpiry(TimeSpan expiry)
+    {
+        EnsureJobOption().SetJobRunExpiry(expiry);
         return this;
     }
 

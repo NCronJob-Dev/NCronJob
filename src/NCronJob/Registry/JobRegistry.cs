@@ -10,11 +10,11 @@ internal sealed class JobRegistry
 
     private readonly List<JobDefinition> allRootJobs = [];
 
-    private IEnumerable<JobDefinition> AllDependentJobDefinitions => dependentJobsPerJobDefinition.Values
-            .SelectMany(v => v).SelectMany(v => v.RunWhenSuccess.Union(v.RunWhenFaulted));
+    private IEnumerable<DependentJobDefinition> AllDependentJobDefinitions => dependentJobsPerJobDefinition.Values
+        .SelectMany(v => v)
+        .SelectMany(v => v.RunWhenSuccess.Concat(v.RunWhenFaulted));
 
-    private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition
-        = new(DependentJobDefinitionEqualityComparer.Instance);
+    private readonly Dictionary<DependentJobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition = [];
 
     public IReadOnlyCollection<JobDefinition> GetAllRootJobs()
     {
@@ -79,16 +79,16 @@ internal sealed class JobRegistry
     {
         lock (syncLock)
         {
-            AddUnsafe(jobDefinition);
+            AddUnsafe(allRootJobs, jobDefinition);
         }
     }
 
-    private void AddUnsafe(JobDefinition jobDefinition)
+    private static void AddUnsafe(List<JobDefinition> rootJobs, JobDefinition jobDefinition)
     {
-        AssertNoDuplicateJobNames(jobDefinition.CustomName);
-        AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(jobDefinition);
+        AssertNoDuplicateJobNames(rootJobs, jobDefinition.CustomName);
+        AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(rootJobs, jobDefinition);
 
-        if (allRootJobs.Contains(jobDefinition, JobDefinitionEqualityComparer.Instance))
+        if (rootJobs.Contains(jobDefinition, JobDefinitionEqualityComparer.Instance))
         {
             throw new InvalidOperationException(
                 $"""
@@ -97,7 +97,7 @@ internal sealed class JobRegistry
                 """);
         }
 
-        allRootJobs.Add(jobDefinition);
+        rootJobs.Add(jobDefinition);
     }
 
     public string? RemoveByName(string jobName)
@@ -145,7 +145,7 @@ internal sealed class JobRegistry
     {
         foreach (var jobDefinition in parentJobDefinitions)
         {
-            var entries = dependentJobsPerJobDefinition.GetOrCreateList(jobDefinition);
+            var entries = dependentJobsPerJobDefinition.GetOrCreateList(DependentJobDefinition.FromRoot(jobDefinition));
             entries.Add(entry);
         }
     }
@@ -174,17 +174,24 @@ internal sealed class JobRegistry
 
     private JobDefinition[] FilterByAndProject(
         JobDefinition parentJobDefinition,
-        Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<JobDefinition>> transform)
+        Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<DependentJobDefinition>> transform)
     {
         lock (syncLock)
         {
-            return !dependentJobsPerJobDefinition.TryGetValue(parentJobDefinition, out var types)
+            if (!parentJobDefinition.IsTypedJob)
+            {
+                return [];
+            }
+
+            var dependentJobIdentity = DependentJobDefinition.FromRoot(parentJobDefinition);
+
+            return !dependentJobsPerJobDefinition.TryGetValue(dependentJobIdentity, out var types)
                 ? []
-                : transform(types).ToArray();
+                : transform(types).Select(definition => definition.ToJobDefinition()).ToArray();
         }
     }
 
-    private void EnsureCanBeRemoved(Func<JobDefinition, bool> jobDefinitionFinder)
+    private void EnsureCanBeRemoved(Func<DependentJobDefinition, bool> jobDefinitionFinder)
     {
         var any = AllDependentJobDefinitions.Any(jobDefinitionFinder);
 
@@ -200,17 +207,22 @@ internal sealed class JobRegistry
     {
         allRootJobs.Remove(jobDefinition);
 
-        dependentJobsPerJobDefinition.Remove(jobDefinition);
+        if (jobDefinition.IsTypedJob)
+        {
+            dependentJobsPerJobDefinition.Remove(DependentJobDefinition.FromRoot(jobDefinition));
+        }
     }
 
-    private void AssertNoDuplicateJobNames(string? additionalJobName)
+    private static void AssertNoDuplicateJobNames(
+        IReadOnlyCollection<JobDefinition> rootJobs,
+        string? additionalJobName)
     {
         if (additionalJobName is null)
         {
             return;
         }
 
-        if (!allRootJobs.Any(jd => jd.CustomName == additionalJobName))
+        if (!rootJobs.Any(jd => jd.CustomName == additionalJobName))
         {
             return;
         }
@@ -222,14 +234,16 @@ internal sealed class JobRegistry
             """);
     }
 
-    private void AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(JobDefinition jobDefinition)
+    private static void AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(
+        IReadOnlyCollection<JobDefinition> rootJobs,
+        JobDefinition jobDefinition)
     {
         if (jobDefinition.IsExemptFromUniqueParameterizedTypedJobCheck)
         {
             return;
         }
 
-        if (!allRootJobs.Any(jd => jd.Type == jobDefinition.Type))
+        if (!rootJobs.Any(jd => jd.Type == jobDefinition.Type))
         {
             return;
         }
@@ -241,21 +255,74 @@ internal sealed class JobRegistry
             """);
     }
 
-    public void FeedFrom(JobDefinitionCollector jdc)
+    public JobRegistryRegistration FeedFrom(JobDefinitionCollector jdc)
     {
         lock (syncLock)
         {
-            foreach (var (jobDefinition, dependentJobs) in jdc.Entries)
+            var validatedRootJobs = new List<JobDefinition>(allRootJobs);
+            var registeredDependencies = new List<RegisteredJobDependency>();
+
+            foreach (var jobDefinition in jdc.Entries.Keys)
             {
-                AddUnsafe(jobDefinition);
-
-                List<JobDefinition> value = [jobDefinition];
-
-                foreach (var entry in dependentJobs)
-                {
-                    RegisterJobDependencyUnsafe(value, entry);
-                }
+                AddUnsafe(validatedRootJobs, jobDefinition);
             }
+
+            var registration = new JobRegistryRegistration([.. jdc.Entries.Keys], registeredDependencies);
+
+            try
+            {
+                allRootJobs.AddRange(jdc.Entries.Keys);
+
+                foreach (var (jobDefinition, dependentJobs) in jdc.Entries)
+                {
+                    List<JobDefinition> value = [jobDefinition];
+
+                    foreach (var entry in dependentJobs)
+                    {
+                        RegisterJobDependencyUnsafe(value, entry);
+                        registeredDependencies.Add(new RegisteredJobDependency(
+                            DependentJobDefinition.FromRoot(jobDefinition),
+                            entry));
+                    }
+                }
+
+                return registration;
+            }
+            catch
+            {
+                RollbackUnsafe(registration);
+                throw;
+            }
+        }
+    }
+
+    public void Rollback(JobRegistryRegistration registration)
+    {
+        lock (syncLock)
+        {
+            RollbackUnsafe(registration);
+        }
+    }
+
+    private void RollbackUnsafe(JobRegistryRegistration registration)
+    {
+        foreach (var dependency in registration.Dependencies)
+        {
+            if (!dependentJobsPerJobDefinition.TryGetValue(dependency.Parent, out var entries))
+            {
+                continue;
+            }
+
+            entries.Remove(dependency.Entry);
+            if (entries.Count == 0)
+            {
+                dependentJobsPerJobDefinition.Remove(dependency.Parent);
+            }
+        }
+
+        foreach (var jobDefinition in registration.RootJobs)
+        {
+            allRootJobs.RemoveAll(candidate => ReferenceEquals(candidate, jobDefinition));
         }
     }
 
@@ -293,30 +360,12 @@ internal sealed class JobRegistry
             obj.CustomName,
             obj.IsStartupJob);
     }
-
-    private sealed class DependentJobDefinitionEqualityComparer : IEqualityComparer<JobDefinition>
-    {
-        // TODO: Maybe is the code conflating two different concepts.
-        // Dependent jobs may have a name, a type and a parameter, but that's the most of it.
-        // And the code currently uses the same type to hold the configuration of "lead" jobs
-        // and dependent jobs.
-        //
-        // Which brings this dependent job only comparer.
-        //
-        // Maybe should a DependentJobDefinition type spawn?
-
-        public static readonly DependentJobDefinitionEqualityComparer Instance = new();
-
-        public bool Equals(JobDefinition? x, JobDefinition? y) =>
-            (x is null && y is null) || (x is not null && y is not null
-                                         && x.Type == y.Type && x.IsTypedJob
-                                         && x.Parameter == y.Parameter
-                                         && x.CustomName == y.CustomName);
-
-        public int GetHashCode(JobDefinition obj) => HashCode.Combine(
-            obj.Type,
-            obj.Parameter,
-            obj.CustomName
-            );
-    }
 }
+
+internal sealed record JobRegistryRegistration(
+    IReadOnlyCollection<JobDefinition> RootJobs,
+    IReadOnlyCollection<RegisteredJobDependency> Dependencies);
+
+internal sealed record RegisteredJobDependency(
+    DependentJobDefinition Parent,
+    DependentJobRegistryEntry Entry);
