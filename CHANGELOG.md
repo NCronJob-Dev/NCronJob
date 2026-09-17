@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.12.0] - 2026-09-17
+
 ### Added
 
 - Scheduler-wide concurrency can be configured with `WithMaxDegreeOfParallelism`.
@@ -638,7 +640,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.11.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.0...HEAD
+[v4.12.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.11.0...v4.12.0
 [v4.11.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.3...v4.11.0
 [v4.10.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.2...v4.10.3
 [v4.10.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.10.1...v4.10.2
