@@ -31,12 +31,12 @@ public class TriggerTypeTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<TriggerTypeJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await WaitForOrchestrationCompletion(orchestrationId);
 
         Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe($"TriggerType: {TriggerType.Cron}");
@@ -47,12 +47,12 @@ public class TriggerTypeTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<TriggerTypeJob>());
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>()
             .RunInstantJob<TriggerTypeJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await WaitForOrchestrationCompletion(orchestrationId);
 
         Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe($"TriggerType: {TriggerType.Instant}");
@@ -66,12 +66,12 @@ public class TriggerTypeTests : JobIntegrationBase
             n.AddJob<DummyJob>().ExecuteWhen(success: s => s.RunJob<TriggerTypeJob>());
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>()
             .RunInstantJob<DummyJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await WaitForOrchestrationCompletion(orchestrationId);
 
         Storage.Entries.Count.ShouldBe(2);
         Storage.Entries[1].ShouldBe($"TriggerType: {TriggerType.Dependent}");

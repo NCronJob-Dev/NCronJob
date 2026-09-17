@@ -14,11 +14,11 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
@@ -38,11 +38,11 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
@@ -61,11 +61,11 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<ExceptionJob>(jo => jo.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringRun<ExceptionJob>();
@@ -84,11 +84,11 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
             o.AddJob<JobThatThrowsInCtor>(b => b.WithCronExpression(Cron.AtEveryMinute));
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeScheduledThenFaultedDuringInitialization<JobThatThrowsInCtor>();
@@ -109,11 +109,11 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
                     faulted: s => s.RunJob((Storage storage) => storage.Add("faulted")));
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var rootJobEvents = Events.FilterByOrchestrationId(orchestrationId).Where(e => e.Type == typeof(InternalTimeoutJob)).ToList();
         rootJobEvents.ShouldContain(e => e.State == ExecutionState.Faulted);
@@ -132,11 +132,11 @@ public sealed class GlobalExceptionHandlerTests : JobIntegrationBase
                 .ExecuteWhen(faulted: s => s.RunJob((Storage storage) => storage.Add("faulted")));
         });
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Events.FilterByOrchestrationId(orchestrationId)
             .ShouldContain(e => e.Type == typeof(AggregateExceptionJob) && e.State == ExecutionState.Faulted);

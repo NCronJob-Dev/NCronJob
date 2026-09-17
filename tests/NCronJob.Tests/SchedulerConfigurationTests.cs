@@ -84,7 +84,7 @@ public sealed class SchedulerConfigurationTests : JobIntegrationBase
             options.AddJob<TimeoutJob>(job => job.WithTimeout(TimeSpan.FromSeconds(1)))
                 .ExecuteWhen(faulted: dependency => dependency.RunJob<FaultDependencyJob>()));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = ServiceProvider
             .GetRequiredService<IInstantJobRegistry>()
@@ -92,7 +92,7 @@ public sealed class SchedulerConfigurationTests : JobIntegrationBase
 
         await WaitForOrchestrationState(orchestrationId, ExecutionState.Running);
         FakeTimer.Advance(TimeSpan.FromSeconds(2));
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await WaitForOrchestrationCompletion(orchestrationId);
 
         var states = Events.FilterByOrchestrationId(orchestrationId);
         states.ShouldContain(progress => progress.State == ExecutionState.Cancelled);

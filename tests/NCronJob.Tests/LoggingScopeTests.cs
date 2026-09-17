@@ -25,13 +25,13 @@ public sealed class LoggingScopeTests : JobIntegrationBase
         ServiceCollection.AddLogging(b => b.AddProvider(loggerProvider));
         ServiceCollection.AddNCronJob(n => n.AddJob<LoggingJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("LoggingJob")));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await WaitForOrchestrationCompletion(orchestrationId);
 
         var runId = Events.First(e => e.CorrelationId == orchestrationId && e.RunId is not null).RunId;
 
@@ -52,11 +52,11 @@ public sealed class LoggingScopeTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>()
             .ExecuteWhen(success: s => s.RunJob<LoggingJob>()));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<DummyJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await WaitForOrchestrationCompletion(orchestrationId);
 
         var rootRunId = Events.First(e => e.CorrelationId == orchestrationId && e.Type == typeof(DummyJob) && e.RunId is not null).RunId;
         var dependentRunId = Events.First(e => e.CorrelationId == orchestrationId && e.Type == typeof(LoggingJob) && e.RunId is not null).RunId;

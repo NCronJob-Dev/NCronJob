@@ -152,7 +152,8 @@ internal sealed partial class JobWorker
 
         runningJobs.TryAdd(jobTask, 0);
         jobTask.ContinueWith(
-            completedTask => runningJobs.TryRemove(completedTask, out _),
+            static (completedTask, state) => ((ConcurrentDictionary<Task, byte>)state!).TryRemove(completedTask, out _),
+            runningJobs,
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);

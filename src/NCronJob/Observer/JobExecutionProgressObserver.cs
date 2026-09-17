@@ -5,7 +5,6 @@ namespace NCronJob;
 internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgressReporter
 {
     private readonly ILogger<JobExecutionProgressObserver> logger;
-    private readonly List<Action<ExecutionProgress>> callbacks = [];
 
     public JobExecutionProgressObserver(ILogger<JobExecutionProgressObserver> logger)
     {
@@ -13,27 +12,37 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
     }
 
 #if NET9_0_OR_GREATER
-    private readonly Lock callbacksLock = new();
+    private readonly Lock subscribersLock = new();
 #else
-    private readonly object callbacksLock = new();
+    private readonly object subscribersLock = new();
 #endif
+
+    private Action<ExecutionProgress>[] subscribers = [];
 
     public IDisposable Register(Action<ExecutionProgress> callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
 
-        lock (callbacksLock)
+        lock (subscribersLock)
         {
-            callbacks.Add(callback);
+            subscribers = [.. subscribers, callback];
         }
 
-        return new ActionDisposer(() =>
+        return new ActionDisposer(() => Unregister(callback));
+    }
+
+    private void Unregister(Action<ExecutionProgress> callback)
+    {
+        lock (subscribersLock)
         {
-            lock (callbacksLock)
+            var index = Array.IndexOf(subscribers, callback);
+            if (index < 0)
             {
-                callbacks.Remove(callback);
+                return;
             }
-        });
+
+            subscribers = [.. subscribers[..index], .. subscribers[(index + 1)..]];
+        }
     }
 
     private static ExecutionProgress ToOrchestrationProgress(ExecutionProgress progress, ExecutionState state) =>
@@ -49,43 +58,35 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
 
     internal void Report(JobRun run)
     {
-        List<ExecutionProgress> progresses = [];
-
         var progress = run.ToExecutionProgress();
-        progresses.Add(progress);
 
         if (run.IsOrchestrationRoot && progress.State == ExecutionState.NotStarted)
         {
-            var orchestrationStarted = ToOrchestrationProgress(progress, ExecutionState.OrchestrationStarted);
-
-            progresses.Insert(0, orchestrationStarted);
+            Dispatch(ToOrchestrationProgress(progress, ExecutionState.OrchestrationStarted));
+            Dispatch(progress);
         }
         else if (run.IsCompleted && run.RootJobIsCompleted)
         {
-            var orchestrationCompleted = ToOrchestrationProgress(progress, ExecutionState.OrchestrationCompleted);
-
-            progresses.Add(orchestrationCompleted);
+            Dispatch(progress);
+            Dispatch(ToOrchestrationProgress(progress, ExecutionState.OrchestrationCompleted));
         }
-
-        // Take a snapshot of callbacks while holding the lock to avoid race conditions
-        Action<ExecutionProgress>[] callbacksSnapshot;
-        lock (callbacksLock)
+        else
         {
-            callbacksSnapshot = callbacks.ToArray();
+            Dispatch(progress);
         }
+    }
 
-        foreach (var callback in callbacksSnapshot)
+    private void Dispatch(ExecutionProgress progress)
+    {
+        foreach (var callback in Volatile.Read(ref subscribers))
         {
-            foreach (var entry in progresses)
+            try
             {
-                try
-                {
-                    callback(entry);
-                }
-                catch (Exception ex)
-                {
-                    LogCallbackFailed(entry.State, ex);
-                }
+                callback(progress);
+            }
+            catch (Exception ex)
+            {
+                LogCallbackFailed(progress.State, ex);
             }
         }
     }

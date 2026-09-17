@@ -53,14 +53,12 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        (var subscription, var events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        using var monitor = CreateExecutionProgressMonitor(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
 
-        subscription.Dispose();
-
-        events.Count(e => e.State == ExecutionState.Running).ShouldBe(1);
+        monitor.Events.Count(e => e.State == ExecutionState.Running).ShouldBe(1);
     }
 
     public static TheoryData<Action<NCronJobOptionBuilder>> CronAndRunAtStartupBuilders = new()
@@ -96,7 +94,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        (var subscription, var events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        using var monitor = CreateExecutionProgressMonitor(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -105,13 +103,11 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[1].ShouldBe("StartingService");
         Storage.Entries.Count.ShouldBe(2);
 
-        var orchestrationId = events[0].CorrelationId;
+        var orchestrationId = monitor.Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await monitor.WaitForStateAsync(orchestrationId, ExecutionState.OrchestrationCompleted);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = monitor.Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeInstantThenCompleted<DummyJob>();
     }
 
@@ -127,7 +123,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
         using var app = BuildApp(builder);
 
-        (var subscription, var events) = RegisterAnExecutionProgressSubscriber(app.Services);
+        using var monitor = CreateExecutionProgressMonitor(app.Services);
 
         await app.UseNCronJobAsync();
         await RunApp(app);
@@ -135,13 +131,11 @@ public class RunAtStartupJobTests : JobIntegrationBase
         Storage.Entries[0].ShouldBe("ExceptionHandler");
         Storage.Entries.Count.ShouldBe(1);
 
-        var orchestrationId = events[0].CorrelationId;
+        var orchestrationId = monitor.Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(events, orchestrationId);
+        await monitor.WaitForStateAsync(orchestrationId, ExecutionState.OrchestrationCompleted);
 
-        subscription.Dispose();
-
-        var filteredEvents = events.FilterByOrchestrationId(orchestrationId);
+        var filteredEvents = monitor.Events.FilterByOrchestrationId(orchestrationId);
         filteredEvents.ShouldBeInstantThenFaultedDuringRun<FailingJob>();
     }
 

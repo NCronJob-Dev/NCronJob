@@ -14,13 +14,13 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
 
@@ -41,13 +41,13 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(5));
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
 
@@ -71,13 +71,13 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJobRetryTwice>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
 
@@ -99,13 +99,13 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton(new MaxFailuresWrapper(2));
         ServiceCollection.AddNCronJob(n => n.AddJob<ExponentialBackoffJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var attemptTimes = Storage.TimedEntries
             .Select(e => DateTimeOffset.Parse(e.Item1, CultureInfo.InvariantCulture))
@@ -131,7 +131,7 @@ public sealed class RetryTests : JobIntegrationBase
         ServiceCollection.AddSingleton(new MaxFailuresWrapper(int.MaxValue)); // Always fail
         ServiceCollection.AddNCronJob(n => n.AddJob(jobAndState.jobType, p => p.WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var service = context.serviceRetriever(ServiceProvider);
 
@@ -139,11 +139,11 @@ public sealed class RetryTests : JobIntegrationBase
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationState(orchestrationId, jobAndState.state);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, jobAndState.state);
 
         context.serviceTriggerer(service);
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
 

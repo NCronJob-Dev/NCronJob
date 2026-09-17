@@ -24,11 +24,11 @@ public class NotificationHandlerTests : JobIntegrationBase
                 .AddNotificationHandler<ExceptionHandler>()
         );
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("ExceptionHandler - Exception: InvalidOperationException");
         Storage.Entries.Count.ShouldBe(1);
@@ -71,11 +71,11 @@ public class NotificationHandlerTests : JobIntegrationBase
                 .AddNotificationHandler<HandlerThatThrowsAggregateException>()
         );
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Events.FilterByOrchestrationId(orchestrationId).ShouldBeScheduledThenCompleted<DummyJob>();
         Storage.Entries.ShouldBe(["DummyJob - Parameter: ", "HandlerThatThrowsAggregateException"], ignoreOrder: false);
@@ -83,11 +83,11 @@ public class NotificationHandlerTests : JobIntegrationBase
 
     private async Task StartNCronJobAndAssertSimpleJobWasProcessedAndNotified()
     {
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
         Storage.Entries[1].ShouldBe("DummyJobHandler - Output: ");

@@ -15,10 +15,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(() => shouldRun)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
         Storage.Entries.Count.ShouldBe(1);
@@ -38,10 +38,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(() => shouldRun)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, ExecutionState.Skipped);
 
         Storage.Entries.Count.ShouldBe(0); // Job never executed
 
@@ -59,10 +59,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf((FeatureFlagService flags) => flags.IsEnabled("my-feature"))));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -83,10 +83,10 @@ public class ConditionalJobTests : JobIntegrationBase
                     return true;
                 })));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -105,10 +105,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(async (AsyncFeatureFlagService flags) => await flags.IsEnabledAsync("my-feature"))));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -129,10 +129,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf(() => condition1)
                 .OnlyIf(() => condition2)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -153,10 +153,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf(() => condition1)
                 .OnlyIf(() => condition2)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, ExecutionState.Skipped);
 
         Storage.Entries.Count.ShouldBe(0); // Job never executed
 
@@ -178,10 +178,10 @@ public class ConditionalJobTests : JobIntegrationBase
                     return true;
                 })));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         // Condition should be evaluated only once, even though retry happened
         evaluationCount.ShouldBe(1);
@@ -192,16 +192,19 @@ public class ConditionalJobTests : JobIntegrationBase
     [Fact]
     public async Task ConditionHandlerShouldBeCalledWhenConditionFails()
     {
+        var signal = new ConditionHandlerSignal();
+        ServiceCollection.AddSingleton(signal);
         ServiceCollection.AddNCronJob(n => n
             .AddJob<SimpleJob>(p => p
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(() => false))
             .AddConditionHandler<SimpleJobConditionHandler>());
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, ExecutionState.Skipped);
+        await signal.Completed.Task.WaitAsync(CancellationToken);
 
         Storage.Entries.Count.ShouldBe(1);
         Storage.Entries[0].ShouldBe("SimpleJob condition not met");
@@ -218,10 +221,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(() => false)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, ExecutionState.Skipped);
 
         // Constructor should not be called
         Storage.Entries.Count.ShouldBe(0);
@@ -240,15 +243,15 @@ public class ConditionalJobTests : JobIntegrationBase
                 .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(() => runCount++ < 2)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
-        await WaitForNthOrchestrationState(ExecutionState.Completed, 1);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        await WaitForNthOrchestrationState(ExecutionState.Completed, 2);
+        await AdvanceTimeUntilStateCount(ExecutionState.Completed, 1);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
-        await WaitForNthOrchestrationState(ExecutionState.Skipped, 1, stopMonitoringEvents: true);
+        await AdvanceTimeUntilStateCount(ExecutionState.Completed, 2);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+        await AdvanceTimeUntilStateCount(ExecutionState.Skipped, 1);
 
         Storage.Entries.Count.ShouldBe(2);
     }
@@ -267,10 +270,10 @@ public class ConditionalJobTests : JobIntegrationBase
                     return true;
                 })));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         cancellationTokenPassed.ShouldBeTrue();
         Storage.Entries[0].ShouldBe("SimpleJob executed");
@@ -286,10 +289,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf(() => shouldRun)
                 .WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
         Storage.Entries.Count.ShouldBe(1);
@@ -309,10 +312,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf(() => shouldRun)
                 .WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, ExecutionState.Skipped);
 
         Storage.Entries.Count.ShouldBe(0); // Job never executed
 
@@ -330,10 +333,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf((FeatureFlagService flags) => flags.IsEnabled("my-feature"))
                 .WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -354,10 +357,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 })
                 .WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -378,10 +381,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf(() => condition2)
                 .WithCronExpression(Cron.AtEveryMinute)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -398,12 +401,12 @@ public class ConditionalJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n
             .AddJob<SimpleJob>(p => p.OnlyIf(() => shouldRun)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
         var orchestrationId = instantJobRegistry.RunInstantJob<SimpleJob>(token: CancellationToken);
 
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
 
@@ -420,12 +423,12 @@ public class ConditionalJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n => n
             .AddJob<SimpleJob>(p => p.OnlyIf(() => shouldRun)));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
         var orchestrationId = instantJobRegistry.RunInstantJob<SimpleJob>(token: CancellationToken);
 
-        await WaitForOrchestrationState(orchestrationId, ExecutionState.Skipped, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationState(orchestrationId, ExecutionState.Skipped);
 
         Storage.Entries.Count.ShouldBe(0); // Job never executed
 
@@ -445,10 +448,10 @@ public class ConditionalJobTests : JobIntegrationBase
                 .OnlyIf((FeatureFlagService flags, ConfigService config) =>
                     flags.IsEnabled("my-feature") && config.GetValue("enabled") == "true")));
 
-        await StartNCronJob(startMonitoringEvents: true);
+        await StartNCronJob();
 
         var orchestrationId = Events[0].CorrelationId;
-        await WaitForOrchestrationCompletion(orchestrationId, stopMonitoringEvents: true);
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         Storage.Entries[0].ShouldBe("SimpleJob executed");
     }
@@ -499,13 +502,22 @@ public class ConditionalJobTests : JobIntegrationBase
         }
     }
 
-    private sealed class SimpleJobConditionHandler(Storage storage) : IJobConditionHandler<SimpleJob>
+    private sealed class SimpleJobConditionHandler(
+        Storage storage,
+        ConditionHandlerSignal signal) : IJobConditionHandler<SimpleJob>
     {
         public Task HandleConditionNotMetAsync(JobConditionContext context, CancellationToken cancellationToken)
         {
             storage.Add("SimpleJob condition not met");
+            signal.Completed.TrySetResult();
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class ConditionHandlerSignal
+    {
+        public TaskCompletionSource Completed { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     private sealed class FeatureFlagService

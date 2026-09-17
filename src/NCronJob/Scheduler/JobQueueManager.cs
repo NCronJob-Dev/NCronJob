@@ -177,6 +177,49 @@ internal sealed class JobQueueManager : IDisposable
         }
     }
 
+    internal async Task WaitUntilEmptyAsync(string queueName, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var dequeued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
+            {
+                if (sender is JobQueue queue
+                    && queue.Name == queueName
+                    && args.Action == NotifyCollectionChangedAction.Remove)
+                {
+                    dequeued.TrySetResult();
+                }
+            }
+
+            CollectionChanged += OnCollectionChanged;
+            try
+            {
+                Task queueChanged;
+                lock (syncLock)
+                {
+                    ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+                    if (!jobQueues.TryGetValue(queueName, out var queue) || queue.Count == 0)
+                    {
+                        return;
+                    }
+
+                    queueChanged = queueSignals[queueName].Task;
+                }
+
+                await Task.WhenAny(dequeued.Task, queueChanged)
+                    .WaitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                CollectionChanged -= OnCollectionChanged;
+            }
+        }
+    }
+
     public void Dispose()
     {
         if (IsDisposed)

@@ -7,14 +7,13 @@ namespace NCronJob.Tests;
 public abstract class JobIntegrationBase : IDisposable
 {
     private ServiceProvider? serviceProvider;
-    private readonly OrchestrationHelper orchestrationHelper;
+    private ExecutionProgressMonitor? progressMonitor;
 
     protected CancellationToken CancellationToken { get; }
     protected ServiceCollection ServiceCollection { get; }
     protected FakeTimeProvider FakeTimer { get; }
     protected Storage Storage { get; }
-    protected IList<ExecutionProgress> Events { get; private set; } = [];
-    private IDisposable? subscription;
+    protected IList<ExecutionProgress> Events => progressMonitor?.Events ?? [];
 
     protected JobIntegrationBase()
     {
@@ -31,8 +30,6 @@ public abstract class JobIntegrationBase : IDisposable
 
         Storage = new(FakeTimer);
         ServiceCollection.AddSingleton(Storage);
-
-        orchestrationHelper = new(FakeTimer, StopMonitoringEvents, CancellationToken);
     }
 
     public void Dispose()
@@ -51,7 +48,7 @@ public abstract class JobIntegrationBase : IDisposable
 #pragma warning disable IDISP023 // Don't use reference types in finalizer context
         // False positive (cf. https://github.com/DotNetAnalyzers/IDisposableAnalyzers/issues/176)
 
-        StopMonitoringEvents();
+        progressMonitor?.Dispose();
 
         serviceProvider?.Dispose();
 
@@ -61,98 +58,73 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected ServiceProvider ServiceProvider => serviceProvider ??= ServiceCollection.BuildServiceProvider();
 
-    protected async Task<IList<ExecutionProgress>> WaitForNthOrchestrationState(
+    protected Task<IList<ExecutionProgress>> WaitForNthOrchestrationState(ExecutionState state, int howMany) =>
+        ProgressMonitor.WaitForCountAsync(state, howMany);
+
+    protected Task WaitForOrchestrationCompletion(Guid orchestrationId) =>
+        ProgressMonitor.WaitForStateAsync(orchestrationId, ExecutionState.OrchestrationCompleted);
+
+    protected Task WaitForOrchestrationState(Guid orchestrationId, ExecutionState state) =>
+        ProgressMonitor.WaitForStateAsync(orchestrationId, state);
+
+    protected Task AdvanceTimeUntilOrchestrationCompletion(Guid orchestrationId) =>
+        AdvanceTimeUntilAsync(ProgressMonitor.WaitForStateAsync(orchestrationId, ExecutionState.OrchestrationCompleted));
+
+    protected Task AdvanceTimeUntilOrchestrationState(Guid orchestrationId, ExecutionState state) =>
+        AdvanceTimeUntilAsync(ProgressMonitor.WaitForStateAsync(orchestrationId, state));
+
+    protected Task<IList<ExecutionProgress>> AdvanceTimeUntilStateCount(ExecutionState state, int count) =>
+        AdvanceTimeUntilAsync(ProgressMonitor.WaitForCountAsync(state, count));
+
+    protected Task<ExecutionProgress> WaitForJobState(
         ExecutionState state,
-        int howMany,
-        Action? onAnyFoundButLast = null,
-        bool stopMonitoringEvents = false)
-    {
-        AssertEventsAreBeingMonitored();
+        string? name = null,
+        Type? type = null) =>
+        ProgressMonitor.WaitForStateAsync(state, name, type);
 
-        return await orchestrationHelper.WaitForNthOrchestrationState(
-            Events,
-            state,
-            howMany,
-            onAnyFoundButLast,
-            stopMonitoringEvents);
-    }
-
-    protected async Task WaitForOrchestrationCompletion(
-        IList<ExecutionProgress> events,
-        Guid orchestrationId)
-    {
-        await orchestrationHelper.WaitForOrchestrationState(
-            events,
-            orchestrationId,
-            ExecutionState.OrchestrationCompleted,
-            stopMonitoringEvents: false);
-    }
-
-    protected async Task WaitForOrchestrationCompletion(
-        Guid orchestrationId,
-        bool stopMonitoringEvents = false)
-    {
-        AssertEventsAreBeingMonitored();
-
-        await orchestrationHelper.WaitForOrchestrationState(
-            Events,
-            orchestrationId,
-            ExecutionState.OrchestrationCompleted,
-            stopMonitoringEvents);
-    }
-
-    protected async Task WaitForOrchestrationState(
-        Guid orchestrationId,
+    protected async Task<IList<ExecutionProgress>> AdvanceTimeAndWaitForStateCount(
+        TimeSpan interval,
+        int advances,
         ExecutionState state,
-        bool stopMonitoringEvents = false)
+        int expectedCount)
     {
-        AssertEventsAreBeingMonitored();
-
-        await orchestrationHelper.WaitForOrchestrationState(Events, orchestrationId, state, stopMonitoringEvents);
-    }
-
-    protected async Task WaitUntil(Func<bool> condition)
-    {
-        while (!condition())
+        for (var advance = 1; advance <= advances; advance++)
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken);
-        }
-    }
-
-    protected async Task StartNCronJob(
-        bool startMonitoringEvents = false)
-    {
-        if (startMonitoringEvents)
-        {
-            (subscription, var events) = RegisterAnExecutionProgressSubscriber(ServiceProvider);
-            Events = events;
+            FakeTimer.Advance(interval);
+            await WaitForNthOrchestrationState(state, Math.Min(advance, expectedCount));
         }
 
+        return await WaitForNthOrchestrationState(state, expectedCount);
+    }
+
+    private async Task<T> AdvanceTimeUntilAsync<T>(Task<T> task)
+    {
+        const int maximumAdvances = 500;
+
+        for (var advance = 0; advance < maximumAdvances && !task.IsCompleted; advance++)
+        {
+            var progressChanged = ProgressMonitor.WaitForChangeAsync();
+
+            FakeTimer.Advance(TimeSpan.FromSeconds(1));
+
+            await Task.WhenAny(
+                task,
+                progressChanged,
+                Task.Delay(TimeSpan.FromMilliseconds(1), CancellationToken));
+        }
+
+        return await task;
+    }
+
+    protected async Task StartNCronJob()
+    {
+        _ = ProgressMonitor;
         await ServiceProvider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
     }
 
-    protected (IDisposable subscription, IList<ExecutionProgress> events) RegisterAnExecutionProgressSubscriber(
-        IServiceProvider serviceProvider)
-    {
-        return orchestrationHelper.RegisterAnExecutionProgressSubscriber(serviceProvider);
-    }
+    protected ExecutionProgressMonitor CreateExecutionProgressMonitor(IServiceProvider serviceProvider) =>
+        new(serviceProvider, CancellationToken);
 
-    private void StopMonitoringEvents()
-    {
-        subscription?.Dispose();
-    }
-
-    private void AssertEventsAreBeingMonitored()
-    {
-        if (subscription is not null)
-        {
-            return;
-        }
-
-        throw new InvalidOperationException(
-            $"""
-            Events aren't monitored.
-            Invoke '{nameof(StartNCronJob)}' and explicitly set the appropriate parameter to do so.
-            """);
-    }
+    private ExecutionProgressMonitor ProgressMonitor =>
+        progressMonitor ??= CreateExecutionProgressMonitor(ServiceProvider);
 }
