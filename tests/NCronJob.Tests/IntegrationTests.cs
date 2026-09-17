@@ -156,6 +156,38 @@ public sealed class IntegrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task InstantJobWithoutArgumentsShouldInheritInitiallyDefinedParameter()
+    {
+        ServiceCollection.AddNCronJob(
+            n => n.AddJob<DummyJob>(o => o.WithCronExpression(Cron.Never).WithParameter("Hello from AddNCronJob")));
+
+        await StartNCronJob();
+        var registry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        // Arguments are deliberately omitted to guard against ambiguous overloads (#376)
+#pragma warning disable xUnit1051, CA2263
+        var orchestrationIds = new[]
+        {
+            registry.RunInstantJob<DummyJob>(),
+            registry.RunInstantJob(typeof(DummyJob)),
+            registry.ForceRunInstantJob<DummyJob>(),
+            registry.ForceRunInstantJob(typeof(DummyJob)),
+            registry.RunScheduledJob<DummyJob>(TimeSpan.Zero),
+            registry.ForceRunScheduledJob<DummyJob>(TimeSpan.Zero),
+            registry.RunScheduledJob(typeof(DummyJob), TimeSpan.Zero),
+        };
+#pragma warning restore xUnit1051, CA2263
+
+        foreach (var orchestrationId in orchestrationIds)
+        {
+            await WaitForOrchestrationCompletion(orchestrationId);
+        }
+
+        Storage.Entries.Count.ShouldBe(orchestrationIds.Length);
+        Storage.Entries.ShouldAllBe(e => e == "DummyJob - Parameter: Hello from AddNCronJob");
+    }
+
+    [Fact]
     public async Task InstantJobCanOverrideInitiallyDefinedParameter()
     {
         ServiceCollection.AddNCronJob(
