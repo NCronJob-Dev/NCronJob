@@ -30,21 +30,21 @@ public sealed class InstantJobRegistryCompatibilityTests
         public Guid RunScheduledJob(
             Type jobType,
             TimeSpan delay,
-            object? parameter = null,
+            object? parameter,
             CancellationToken token = default) =>
             Record(parameter);
 
         public Guid RunScheduledJob(
             string jobName,
             TimeSpan delay,
-            object? parameter = null,
+            object? parameter,
             CancellationToken token = default) =>
             Record(parameter);
 
 #pragma warning disable CS0618
         public Guid RunScheduledJob<TJob>(
             DateTimeOffset startDate,
-            object? parameter = null,
+            object? parameter,
             CancellationToken token = default)
             where TJob : IJob =>
             Record(parameter);
@@ -52,7 +52,7 @@ public sealed class InstantJobRegistryCompatibilityTests
         public Guid RunScheduledJob(
             string jobName,
             DateTimeOffset startDate,
-            object? parameter = null,
+            object? parameter,
             CancellationToken token = default) =>
             Record(parameter);
 #pragma warning restore CS0618
@@ -76,14 +76,14 @@ public sealed class InstantJobRegistryCompatibilityTests
         public Guid ForceRunScheduledJob(
             Type jobType,
             TimeSpan delay,
-            object? parameter = null,
+            object? parameter,
             CancellationToken token = default) =>
             Record(parameter);
 
         public Guid ForceRunScheduledJob(
             string jobName,
             TimeSpan delay,
-            object? parameter = null,
+            object? parameter,
             CancellationToken token = default) =>
             Record(parameter);
 

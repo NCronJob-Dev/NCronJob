@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- Calling instant-job overloads without a parameter (e.g. `RunInstantJob<TJob>()`) no longer fails with `CS0121` ambiguous call. Reported by [#376](https://github.com/NCronJob-Dev/NCronJob/issues/376).
+
 ## [v4.12.0] - 2026-09-17
 
 ### Added

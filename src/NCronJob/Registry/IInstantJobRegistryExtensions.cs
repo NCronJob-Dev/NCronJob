@@ -39,7 +39,7 @@ public static class IInstantJobRegistryExtensions
     /// </example>
     public static Guid RunInstantJob<TJob>(
         this IInstantJobRegistry instantJobRegistry,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
         where TJob : IJob
     {
@@ -69,7 +69,7 @@ public static class IInstantJobRegistryExtensions
     public static Guid RunInstantJob(
         this IInstantJobRegistry instantJobRegistry,
         Type jobType,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
@@ -122,7 +122,7 @@ public static class IInstantJobRegistryExtensions
     public static Guid RunInstantJob(
         this IInstantJobRegistry instantJobRegistry,
         string jobName,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
@@ -154,7 +154,7 @@ public static class IInstantJobRegistryExtensions
     public static Guid RunScheduledJob<TJob>(
         this IInstantJobRegistry instantJobRegistry,
         TimeSpan delay,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
         where TJob : IJob
     {
@@ -189,7 +189,7 @@ public static class IInstantJobRegistryExtensions
     public static Guid ForceRunScheduledJob<TJob>(
         this IInstantJobRegistry instantJobRegistry,
         TimeSpan delay,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
         where TJob : IJob
     {
@@ -231,7 +231,7 @@ public static class IInstantJobRegistryExtensions
     /// </example>
     public static Guid ForceRunInstantJob<TJob>(
         this IInstantJobRegistry instantJobRegistry,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
         where TJob : IJob
     {
@@ -274,7 +274,7 @@ public static class IInstantJobRegistryExtensions
     public static Guid ForceRunInstantJob(
         this IInstantJobRegistry instantJobRegistry,
         Type jobType,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
@@ -316,7 +316,7 @@ public static class IInstantJobRegistryExtensions
     public static Guid ForceRunInstantJob(
         this IInstantJobRegistry instantJobRegistry,
         string jobName,
-        object? parameter = null,
+        object? parameter,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(instantJobRegistry);
