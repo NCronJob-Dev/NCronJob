@@ -47,6 +47,38 @@ public class ExecutionProgressObserverTests
         received.ShouldBeGreaterThan(0);
     }
 
+    [Fact]
+    public async Task RootFinalStateIsReportedBeforeConcurrentDependentCompletesOrchestration()
+    {
+        var observer = new JobExecutionProgressObserver(NullLogger<JobExecutionProgressObserver>.Instance);
+        var received = new List<ExecutionProgress>();
+        var root = CreateRun(observer);
+        var dependent = root.CreateDependent(JobDefinition.CreateTyped(typeof(DummyJob), parameter: null), null, CancellationToken.None);
+        root.NotifyStateChange(JobStateType.Running);
+        dependent.NotifyStateChange(JobStateType.Running);
+        Task? dependentCompletion = null;
+
+        using var subscription = observer.Register(progress =>
+        {
+            if (progress.RunId == root.JobRunId && progress.State == ExecutionState.Faulted)
+            {
+                dependentCompletion = Task.Run(() => dependent.NotifyStateChange(JobStateType.Completed));
+                dependentCompletion.Wait(TimeSpan.FromMilliseconds(200));
+            }
+
+            lock (received)
+            {
+                received.Add(progress);
+            }
+        });
+
+        root.NotifyStateChange(JobStateType.Faulted, new InvalidOperationException());
+        await dependentCompletion.ShouldNotBeNull();
+
+        received.Count(p => p.State == ExecutionState.OrchestrationCompleted).ShouldBe(1);
+        received[^1].State.ShouldBe(ExecutionState.OrchestrationCompleted);
+    }
+
     private static JobRun CreateRun(JobExecutionProgressObserver observer) =>
         JobRun.CreateInstant(
             TimeProvider.System,

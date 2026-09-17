@@ -11,6 +11,11 @@ internal class JobRun
     private readonly Action<JobRun> progressReporter;
     private readonly JobRunActivationGate? activationGate;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
+#if NET9_0_OR_GREATER
+    private readonly Lock orchestrationStateLock = new();
+#else
+    private readonly object orchestrationStateLock = new();
+#endif
 
     private JobRun(
         TimeProvider timeProvider,
@@ -152,19 +157,24 @@ internal class JobRun
 
     private void SetState(JobState state)
     {
-        CurrentState = state;
-        progressReporter(this);
+        lock (rootJob.orchestrationStateLock)
+        {
+            CurrentState = state;
+            progressReporter(this);
+        }
     }
 
     public void NotifyStateChange(JobStateType type, Exception? fault = default)
     {
-        if (CurrentState.IsUnchangedAndNotRetrying(type) || CurrentState.IsFinalState())
+        lock (rootJob.orchestrationStateLock)
         {
-            return;
-        }
+            if (CurrentState.IsUnchangedAndNotRetrying(type) || CurrentState.IsFinalState())
+            {
+                return;
+            }
 
-        var state = new JobState(type, timeProvider.GetUtcNow(), fault);
-        SetState(state);
+            SetState(new JobState(type, timeProvider.GetUtcNow(), fault));
+        }
     }
 
     public ExecutionProgress ToExecutionProgress()
