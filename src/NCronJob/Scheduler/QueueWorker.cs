@@ -123,15 +123,13 @@ internal sealed partial class QueueWorker : BackgroundService
             return;
         }
 
-        if (jobRegistry.GetAllOneTimeJobs().Count == 0)
+        if (jobRegistry.GetAllStartupJobs().Count == 0)
         {
             return;
         }
 
         throw new InvalidOperationException(
-            $"""
-            Startup jobs have been registered. However, neither IHost.UseNCronJobAsync(), nor IHost.UseNCronJob() have been been called.
-            """);
+            "Startup jobs have been registered. However, neither IHost.UseNCronJobAsync(), nor IHost.UseNCronJob() have been called.");
     }
 
     private void CreateWorkerQueues(CancellationToken stopToken)
@@ -232,10 +230,10 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private void OnQueueAdded(string jobType)
+    private void OnQueueAdded(string queueName)
     {
-        AddWorkerTask(jobType, shutdown?.Token ?? CancellationToken.None);
-        LogNewQueueAdded(jobType);
+        AddWorkerTask(queueName, shutdown?.Token ?? CancellationToken.None);
+        LogNewQueueAdded(queueName);
     }
 
     private void HandleUpdate(object? sender, NotifyCollectionChangedEventArgs e)

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace NCronJob;
 
 internal sealed class JobRegistry
@@ -34,7 +32,7 @@ internal sealed class JobRegistry
         }
     }
 
-    public IReadOnlyCollection<JobDefinition> GetAllOneTimeJobs()
+    public IReadOnlyCollection<JobDefinition> GetAllStartupJobs()
     {
         lock (syncLock)
         {
@@ -73,6 +71,9 @@ internal sealed class JobRegistry
             return allRootJobs.FirstOrDefault(j => j.CustomName == jobName);
         }
     }
+
+    public JobDefinition FindRootJobDefinitionOrThrow(string jobName) =>
+        FindRootJobDefinition(jobName) ?? throw new InvalidOperationException($"Job with name '{jobName}' not found.");
 
     public void Add(JobDefinition jobDefinition)
     {
@@ -140,27 +141,19 @@ internal sealed class JobRegistry
         }
     }
 
-    public void RegisterJobDependency(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
+    private void RegisterJobDependencyUnsafe(IReadOnlyCollection<JobDefinition> parentJobDefinitions, DependentJobRegistryEntry entry)
     {
-        lock (syncLock)
-        {
-            RegisterJobDependencyUnsafe(parentJobdefinitions, entry);
-        }
-    }
-
-    private void RegisterJobDependencyUnsafe(IReadOnlyCollection<JobDefinition> parentJobdefinitions, DependentJobRegistryEntry entry)
-    {
-        foreach (var jobDefinition in parentJobdefinitions)
+        foreach (var jobDefinition in parentJobDefinitions)
         {
             var entries = dependentJobsPerJobDefinition.GetOrCreateList(jobDefinition);
             entries.Add(entry);
         }
     }
 
-    public IReadOnlyCollection<JobDefinition> GetDependentSuccessJobTypes(JobDefinition parentJobDefinition)
+    public IReadOnlyCollection<JobDefinition> GetDependentSuccessJobs(JobDefinition parentJobDefinition)
         => FilterByAndProject(parentJobDefinition, v => v.SelectMany(p => p.RunWhenSuccess));
 
-    public IReadOnlyCollection<JobDefinition> GetDependentFaultedJobTypes(JobDefinition parentJobDefinition)
+    public IReadOnlyCollection<JobDefinition> GetDependentFaultedJobs(JobDefinition parentJobDefinition)
         => FilterByAndProject(parentJobDefinition, v => v.SelectMany(p => p.RunWhenFaulted));
 
     public static void UpdateJobDefinitionsToRunAtStartup(
@@ -175,7 +168,7 @@ internal sealed class JobRegistry
                     $"Job '{jobDefinition.Name}' is already defined as a startup job.");
             }
 
-            jobDefinition.UpdateWith(new JobOption() { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
+            jobDefinition.UpdateWith(new JobOption { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
         }
     }
 
@@ -191,9 +184,9 @@ internal sealed class JobRegistry
         }
     }
 
-    private void EnsureCanBeRemoved(Func<JobDefinition, bool> jobDefintionFinder)
+    private void EnsureCanBeRemoved(Func<JobDefinition, bool> jobDefinitionFinder)
     {
-        var any = AllDependentJobDefinitions.Any(jobDefintionFinder);
+        var any = AllDependentJobDefinitions.Any(jobDefinitionFinder);
 
         if (!any)
         {
@@ -231,7 +224,7 @@ internal sealed class JobRegistry
 
     private void AssertOnlyOneUnnamedUnscheduledParameterizedTypedJob(JobDefinition jobDefinition)
     {
-        if (jobDefinition.IsUnnamedOrUnscheduledOrParameterlessTypedJob)
+        if (jobDefinition.IsExemptFromUniqueParameterizedTypedJobCheck)
         {
             return;
         }

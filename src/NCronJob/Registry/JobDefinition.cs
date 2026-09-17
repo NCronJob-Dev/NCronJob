@@ -113,7 +113,7 @@ internal sealed record JobDefinition
 
     public void Disable()
     {
-        UpdateSchedule(current => current with { CronExpression = NotReacheableCronDefinition });
+        UpdateSchedule(current => current with { CronExpression = NotReachableCronDefinition });
     }
 
     public void Enable()
@@ -212,7 +212,7 @@ internal sealed record JobDefinition
         return IsTypedJob ? (IJob?)scopedServiceProvider.GetService(Type) : new DynamicJobFactory(scopedServiceProvider, Delegate);
     }
 
-    public bool IsUnnamedOrUnscheduledOrParameterlessTypedJob =>
+    public bool IsExemptFromUniqueParameterizedTypedJobCheck =>
         CustomName is not null
         || CronExpression is not null
         || IsStartupJob
@@ -223,6 +223,13 @@ internal sealed record JobDefinition
 
     private static CronExpression GetCronExpression(string expression)
     {
+        if (expression.StartsWith('@'))
+        {
+            return CronExpression.TryParse(expression, CronFormat.IncludeSeconds, out var macroExpression)
+                ? macroExpression
+                : throw new ArgumentException($"Unknown cron macro '{expression}'.", nameof(expression));
+        }
+
         var precisionRequired = DetermineAndValidatePrecision(expression);
 
         var cf = precisionRequired ? CronFormat.IncludeSeconds : CronFormat.Standard;
@@ -247,7 +254,7 @@ internal sealed record JobDefinition
         return precisionRequired;
     }
 
-    private static readonly CronExpression NotReacheableCronDefinition = CronExpression.Parse("* * 31 2 *");
+    private static readonly CronExpression NotReachableCronDefinition = CronExpression.Parse("* * 31 2 *");
 
     private sealed record JobSchedule(
         string? UserDefinedCronExpression,
@@ -256,6 +263,6 @@ internal sealed record JobDefinition
     {
         public static readonly JobSchedule None = new(null, null, null);
 
-        public bool IsEnabled => CronExpression is null || CronExpression != NotReacheableCronDefinition;
+        public bool IsEnabled => CronExpression is null || CronExpression != NotReachableCronDefinition;
     }
 }

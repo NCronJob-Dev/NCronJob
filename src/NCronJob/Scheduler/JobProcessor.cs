@@ -68,10 +68,6 @@ internal sealed partial class JobProcessor
         {
             jobRun.NotifyStateChange(JobStateType.Faulted, ex);
         }
-        finally
-        {
-            jobRun.IncrementJobExecutionCount();
-        }
     }
 
     private static readonly Func<ILogger, string, Guid, Guid, TriggerType, IDisposable?> BeginJobRunScope =

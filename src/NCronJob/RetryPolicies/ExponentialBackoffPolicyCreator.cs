@@ -8,7 +8,7 @@ namespace NCronJob;
 /// <summary>
 /// A policy creator that configures an exponential back-off retry policy.
 /// </summary>
-internal partial class ExponentialBackoffPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
+internal sealed partial class ExponentialBackoffPolicyCreator : IPolicyCreator, IInitializablePolicyCreator
 {
     private ILogger<ExponentialBackoffPolicyCreator> logger = NullLogger<ExponentialBackoffPolicyCreator>.Instance;
     private TimeProvider timeProvider = TimeProvider.System;

@@ -5,7 +5,7 @@ namespace NCronJob;
 /// </summary>
 internal sealed class JobQueue : ObservablePriorityQueue<JobRun>
 {
-    public string Name { get; set; }
+    public string Name { get; }
 
     public JobQueue(string name) : base(new JobQueueTupleComparer())
     {

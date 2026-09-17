@@ -1,7 +1,3 @@
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace NCronJob;
@@ -40,6 +36,17 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
         });
     }
 
+    private static ExecutionProgress ToOrchestrationProgress(ExecutionProgress progress, ExecutionState state) =>
+        progress with
+        {
+            State = state,
+            RunId = null,
+            ParentRunId = null,
+            Name = null,
+            Type = null,
+            IsTypedJob = null,
+        };
+
     internal void Report(JobRun run)
     {
         List<ExecutionProgress> progresses = [];
@@ -49,31 +56,13 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
 
         if (run.IsOrchestrationRoot && progress.State == ExecutionState.NotStarted)
         {
-            var orchestrationStarted = progress
-            with
-            {
-                State = ExecutionState.OrchestrationStarted,
-                RunId = null,
-                ParentRunId = null,
-                Name = null,
-                Type = null,
-                IsTypedJob = null,
-            };
+            var orchestrationStarted = ToOrchestrationProgress(progress, ExecutionState.OrchestrationStarted);
 
             progresses.Insert(0, orchestrationStarted);
         }
         else if (run.IsCompleted && run.RootJobIsCompleted)
         {
-            var orchestrationCompleted = progress
-            with
-            {
-                State = ExecutionState.OrchestrationCompleted,
-                RunId = null,
-                ParentRunId = null,
-                Name = null,
-                Type = null,
-                IsTypedJob = null,
-            };
+            var orchestrationCompleted = ToOrchestrationProgress(progress, ExecutionState.OrchestrationCompleted);
 
             progresses.Add(orchestrationCompleted);
         }

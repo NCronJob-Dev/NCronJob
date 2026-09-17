@@ -190,8 +190,7 @@ internal sealed partial class JobWorker
                 return false;
             }
 
-            runningJobCounts[jobDefinition.JobFullName] = currentCount + 1;
-            totalRunningJobCount++;
+            IncrementSlotUnsafe(jobDefinition.JobFullName, currentCount);
             return true;
         }
     }
@@ -201,9 +200,14 @@ internal sealed partial class JobWorker
         lock (slotLock)
         {
             runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
-            runningJobCounts[jobDefinition.JobFullName] = currentCount + 1;
-            totalRunningJobCount++;
+            IncrementSlotUnsafe(jobDefinition.JobFullName, currentCount);
         }
+    }
+
+    private void IncrementSlotUnsafe(string jobFullName, int currentCount)
+    {
+        runningJobCounts[jobFullName] = currentCount + 1;
+        totalRunningJobCount++;
     }
 
     private void ReleaseSlot(JobDefinition jobDefinition)
@@ -244,7 +248,7 @@ internal sealed partial class JobWorker
         // before the scheduled time. Using utcNow directly could return the same cron
         // slot again, causing duplicate execution. Using the later of utcNow and the
         // last scheduled run time guarantees we always advance past the fired slot.
-        var baseTime = lastScheduledRunTime.HasValue && lastScheduledRunTime.Value > utcNow
+        var baseTime = lastScheduledRunTime > utcNow
             ? lastScheduledRunTime.Value
             : utcNow;
         var nextRunTime = job.GetNextCronOccurrence(baseTime);

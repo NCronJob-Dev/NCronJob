@@ -133,7 +133,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         };
 
         var concurrencyAttribute = cachedJobAttributes.ConcurrencyPolicy;
-        if (concurrencyAttribute != null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
+        if (concurrencyAttribute is not null && concurrencyAttribute.MaxDegreeOfParallelism > settings.MaxDegreeOfParallelism)
         {
             var name = jobIdentifier is Type type ? type.Name : ((MethodInfo)jobIdentifier).Name;
             throw new InvalidOperationException(
@@ -147,7 +147,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     {
         ValidateConcurrencySetting(jobType);
 
-        var jobDefinitions = new List<JobDefinition>();
+        List<JobDefinition> jobDefinitions = [];
 
         var builder = new JobOptionBuilder();
         options?.Invoke(builder);
@@ -172,7 +172,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 /// Represents a stage in the job lifecycle where the job is set to run at startup.
 /// </summary>
 /// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
-internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
+internal sealed class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
@@ -234,7 +234,7 @@ internal class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
 /// Represents a stage in the job lifecycle where notifications are handled for the job.
 /// </summary>
 /// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
-internal class NotificationStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+internal sealed class NotificationStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
@@ -385,28 +385,19 @@ internal static class ExecuteWhenHelper
     {
         if (success is not null)
         {
-            var dependencyBuilder = new DependencyBuilder();
-            success(dependencyBuilder);
-            var runWhenSuccess = dependencyBuilder.GetDependentJobOption();
-            var entry = new DependentJobRegistryEntry
-            {
-                RunWhenSuccess = runWhenSuccess,
-            };
-
-            jobDefinitionCollector.Add(parentJobDefinitions, entry);
+            jobDefinitionCollector.Add(parentJobDefinitions, new DependentJobRegistryEntry { RunWhenSuccess = Build(success) });
         }
 
         if (faulted is not null)
         {
-            var dependencyBuilder = new DependencyBuilder();
-            faulted(dependencyBuilder);
-            var runWhenFaulted = dependencyBuilder.GetDependentJobOption();
-            var entry = new DependentJobRegistryEntry
-            {
-                RunWhenFaulted = runWhenFaulted,
-            };
-
-            jobDefinitionCollector.Add(parentJobDefinitions, entry);
+            jobDefinitionCollector.Add(parentJobDefinitions, new DependentJobRegistryEntry { RunWhenFaulted = Build(faulted) });
         }
+    }
+
+    private static List<JobDefinition> Build(Action<DependencyBuilder> configure)
+    {
+        var dependencyBuilder = new DependencyBuilder();
+        configure(dependencyBuilder);
+        return dependencyBuilder.GetDependentJobOption();
     }
 }

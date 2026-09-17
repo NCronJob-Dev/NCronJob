@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NCronJob;
 
-internal partial class StartupJobManager(
+internal sealed partial class StartupJobManager(
     JobRegistry jobRegistry,
     JobProcessor jobProcessor,
     JobExecutionProgressObserver observer,
@@ -13,7 +13,7 @@ internal partial class StartupJobManager(
 {
     public async Task ProcessStartupJobs(CancellationToken stopToken)
     {
-        var startupJobs = jobRegistry.GetAllOneTimeJobs();
+        var startupJobs = jobRegistry.GetAllStartupJobs();
 
         if (startupJobs.Count == 0)
         {
@@ -37,8 +37,7 @@ internal partial class StartupJobManager(
 
         var faults = jobRuns
             .Where(jr => jr.JobDefinition.ShouldCrashOnStartupFailure == true && jr.CurrentState.Type == JobStateType.Faulted)
-            .Select(jr => jr.CurrentState.Fault)
-            .Cast<Exception>()
+            .Select(jr => jr.CurrentState.Fault!)
             .ToArray();
 
         if (faults.Length == 0)
@@ -56,8 +55,8 @@ internal partial class StartupJobManager(
         throw new InvalidOperationException(sb.ToString());
     }
 
-    private async Task CreateExecutionTask(JobRun job, CancellationToken stopToken) =>
-        await jobProcessor.ProcessJobAsync(job, stopToken).ConfigureAwait(false);
+    private Task CreateExecutionTask(JobRun job, CancellationToken stopToken) =>
+        jobProcessor.ProcessJobAsync(job, stopToken);
 
     [LoggerMessage(LogLevel.Information, "Triggering startup jobs execution at {at:o}")]
     private static partial void LogStartupJobsStart(ILogger logger, DateTimeOffset at);
