@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/features/timeouts-and-expiry/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Job timeouts and run expiry - NCronJob</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Job timeouts and run expiry";
+        var mkdocs_page_input_path = "features/timeouts-and-expiry.md";
+        var mkdocs_page_url = "/features/timeouts-and-expiry/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../..">
+          <img src="../../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../conditional-job-scheduling/">Conditional Job Scheduling</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Job timeouts and run expiry</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#execution-timeout">Execution timeout</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#queued-run-expiry">Queued-run expiry</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#choosing-values">Choosing values</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model-dependencies/">Model dependencies</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Logging and log scopes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Features</li>
+      <li class="breadcrumb-item active">Job timeouts and run expiry</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/features/timeouts-and-expiry.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="job-timeouts-and-run-expiry">Job Timeouts and Run Expiry<a class="headerlink" href="#job-timeouts-and-run-expiry" title="Permanent link">&para;</a></h1>
+<p>NCronJob provides two independent time limits:</p>
+<ul>
+<li><strong>Execution timeout</strong> limits how long a job run may execute.</li>
+<li><strong>Run expiry</strong> limits how late a queued job may start.</li>
+</ul>
+<h2 id="execution-timeout">Execution timeout<a class="headerlink" href="#execution-timeout" title="Permanent link">&para;</a></h2>
+<p>Use <code>WithTimeout</code> to cancel a job when its execution exceeds a duration:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ImportJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithTimeout</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="m">10</span><span class="p">))));</span>
+</code></pre></div>
+
+<p>The timeout starts when NCronJob begins executing the job, after queueing and condition evaluation. The cancellation token passed to <code>IJob.RunAsync</code> is cancelled when the timeout elapses. The timeout covers retry attempts as one complete execution window rather than restarting for every attempt.</p>
+<p>A timed-out run is reported as <code>Cancelled</code>. It does not trigger success or fault dependencies. Jobs should observe the supplied <code>CancellationToken</code> and stop promptly; NCronJob cannot forcibly terminate code that ignores cancellation.</p>
+<p>Use <code>Timeout.InfiniteTimeSpan</code> to explicitly disable the timeout. Jobs have no execution timeout by default.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">LongRunningJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithTimeout</span><span class="p">(</span><span class="n">Timeout</span><span class="p">.</span><span class="n">InfiniteTimeSpan</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">RunAtStartup</span><span class="p">()));</span>
+</code></pre></div>
+
+<p>Timeouts can also be configured for dependent jobs:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">options</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ImportJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">jobs</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jobs</span>
+<span class="w">        </span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">TransformJob</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="n">WithTimeout</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="m">5</span><span class="p">))));</span>
+</code></pre></div>
+
+<h2 id="queued-run-expiry">Queued-run expiry<a class="headerlink" href="#queued-run-expiry" title="Permanent link">&para;</a></h2>
+<p>A run can become stale while waiting for its scheduled time or scheduler capacity. By default, NCronJob marks it as <code>Expired</code> when it starts more than ten minutes after its intended run time. An expired run is removed without executing its job body.</p>
+<p>Configure the scheduler-wide grace period with <code>WithDefaultJobRunExpiry</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">options</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithDefaultJobRunExpiry</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="m">30</span><span class="p">))</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ImportJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">)));</span>
+</code></pre></div>
+
+<p>Override it for an individual job with <code>WithJobRunExpiry</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">TimeSensitiveJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithJobRunExpiry</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="m">2</span><span class="p">))));</span>
+</code></pre></div>
+
+<p><code>Timeout.InfiniteTimeSpan</code> disables expiry globally or for an individual job. Zero and other negative durations are rejected.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Expiry is not a misfire-recovery policy. An expired occurrence is skipped; NCronJob continues scheduling future cron occurrences normally.</p>
+</div>
+<h2 id="choosing-values">Choosing values<a class="headerlink" href="#choosing-values" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Set an execution timeout longer than the normal job duration, including expected retries.</li>
+<li>Set run expiry according to how long the work remains useful after its scheduled time.</li>
+<li>Ensure external operations receive and observe the job cancellation token.</li>
+<li>Use infinite values only when another layer provides appropriate cancellation or stale-work protection.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../concurrency-control/" class="btn btn-neutral float-left" title="Concurrency control"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../retry-support/" class="btn btn-neutral float-right" title="Retry support">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>©2024-Present <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../concurrency-control/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../retry-support/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

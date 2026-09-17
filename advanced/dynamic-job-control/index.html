@@ -65,6 +65,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/concurrency-control/">Concurrency control</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/timeouts-and-expiry/">Job timeouts and run expiry</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/retry-support/">Retry support</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/minimal-api/">Minimal API</a>
@@ -108,6 +110,10 @@
     <li class="toctree-l2"><a class="reference internal" href="#updating-the-parameter">Updating the parameter</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#retrieving-a-job-schedule-by-name">Retrieving a job schedule by name</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#retrieving-the-next-occurrence-of-a-job">Retrieving the next occurrence of a job</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#listing-all-recurring-jobs">Listing all recurring jobs</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#disabling-and-enabling-jobs">Disabling and enabling jobs</a>
     </li>
@@ -212,13 +218,25 @@
 <span class="p">});</span>
 </code></pre></div>
 
-<p>Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the &ldquo;old&rdquo; parameter will be cancelled and rescheduled with the new parameter.</p>
+<p>Updating a parameter will lead to the job being rescheduled with the new parameter. Any planned job with the &ldquo;old&rdquo; parameter will be cancelled and rescheduled with the new parameter. Passing <code>null</code> clears the configured parameter.</p>
 <h2 id="retrieving-a-job-schedule-by-name">Retrieving a job schedule by name<a class="headerlink" href="#retrieving-a-job-schedule-by-name" title="Permanent link">&para;</a></h2>
 <p>To retrieve the schedule of a job by name, use the <code>TryGetSchedule</code> method:</p>
 <div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">TryGetSchedule</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">cronExpression</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">TimeZoneInfo</span><span class="o">?</span><span class="w"> </span><span class="n">timeZone</span><span class="p">);</span>
 </code></pre></div>
 
 <p>The cron expression and time zone can be <code>null</code> even if the job was found. This indicates that the job has no schedule (like dependent jobs).</p>
+<h2 id="retrieving-the-next-occurrence-of-a-job">Retrieving the next occurrence of a job<a class="headerlink" href="#retrieving-the-next-occurrence-of-a-job" title="Permanent link">&para;</a></h2>
+<p>To find out when a named recurring job will next run, use the <code>TryGetNextOccurrence</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">TryGetNextOccurrence</span><span class="p">(</span><span class="s">&quot;MyName&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="o">?</span><span class="w"> </span><span class="n">nextRun</span><span class="p">);</span>
+</code></pre></div>
+
+<p>This returns <code>false</code> if the job doesn&rsquo;t exist, is disabled, or has no CRON-based schedule (like dependent or instant jobs).</p>
+<h2 id="listing-all-recurring-jobs">Listing all recurring jobs<a class="headerlink" href="#listing-all-recurring-jobs" title="Permanent link">&para;</a></h2>
+<p>To get an overview of every registered recurring (CRON) job, use <code>GetAllRecurringJobs</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">IReadOnlyCollection</span><span class="o">&lt;</span><span class="n">RecurringJobSchedule</span><span class="o">&gt;</span><span class="w"> </span><span class="n">jobs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="n">GetAllRecurringJobs</span><span class="p">();</span>
+</code></pre></div>
+
+<p>Each <code>RecurringJobSchedule</code> exposes the job&rsquo;s <code>JobName</code>, <code>CronExpression</code>, <code>IsEnabled</code> state, <code>TimeZone</code>, and the <code>Type</code> of a typed job (<code>IsTypedJob</code> distinguishes typed jobs from minimal-API delegate jobs).</p>
 <h2 id="disabling-and-enabling-jobs">Disabling and enabling jobs<a class="headerlink" href="#disabling-and-enabling-jobs" title="Permanent link">&para;</a></h2>
 <p>There are two ways to disable a job from the scheduler. By name or by type.</p>
 <p>To disable a job by name:</p>
@@ -230,7 +248,7 @@
 </code></pre></div>
 
 <p>That will prevent one job named <code>MyName</code> from being scheduled.</p>
-<p>In contrast disabling by type will disable all jobs of the given type (so zero to many jobs):</p>
+<p>In contrast disabling by type will disable all jobs of the given type. Unlike <code>RemoveJob</code>, both <code>DisableJob</code> and <code>EnableJob</code> throw an <code>InvalidOperationException</code> if no matching job is found, whether looked up by name or by type:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/disable-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">registry</span><span class="p">.</span><span class="n">DisableJob</span><span class="o">&lt;</span><span class="n">SampleJob</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// Alternatively DisableJob(typeof(SampleJob))</span>
