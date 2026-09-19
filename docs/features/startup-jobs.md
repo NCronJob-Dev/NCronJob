@@ -35,6 +35,10 @@ The `RunAtStartup` in combination with `UseNCronJobAsync` method ensures that th
 
 Failure to call `UseNCronJobAsync` when startup jobs are defined will lead to a fatal exception during the application start.
 
+!!! warning
+    Multiple startup jobs are executed together and awaited as a group before normal scheduling begins.
+    Do not rely on registration order between startup jobs. If one startup task depends on another, model that flow explicitly with dependent jobs.
+
 Of course, the call to `RunAtStartup` can also be chained to the registration of a standard CRON job. This setup may be useful, for instance, when one wants to prime a cache before the application starts, and then regularly refresh its content.
 
 It may happen that the specified startup job runs task that are allowed to fail without impairing the application setup. For those cases, when one can tolerate a startup job to fail, the `RunAtStartup` method accepts an optional parameter `shouldCrashOnFailure`:

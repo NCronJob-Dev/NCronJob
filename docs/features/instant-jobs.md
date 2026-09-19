@@ -64,7 +64,7 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 ```
 
 ## Starting a job at a specific date and time
-If you want to start a job at a specific date and time, you can use the `RunScheduledJob` method with a `DateTimeOffset` as a parameter. The same as before: The job has to be registered.
+If you want to start a job at a specific date and time, compute the delay until that moment and pass the resulting `TimeSpan` to `RunScheduledJob`. The job still has to be registered first.
 
 ```csharp
 app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) => 
@@ -76,10 +76,15 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
         Body = dto.Body
     };
 
-    jobRegistry.RunScheduledJob<MyJob>(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.FromHours(2)), parameterDto);
+    var startAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.FromHours(2));
+    var delay = startAt - DateTimeOffset.Now;
+    jobRegistry.RunScheduledJob<MyJob>(delay, parameterDto);
     return Results.Ok();
 });
 ```
+
+!!! note
+    Older `DateTimeOffset` overloads still exist for compatibility, but they are obsolete and scheduled for removal in the next major version.
 
 ## Priority
 
@@ -198,6 +203,8 @@ app.MapPost("/on-demand-report", (IInstantJobRegistry registry) => {
     return Results.Accepted();
 });
 ```
+
+When the same job type is registered multiple times intentionally, give each registration a unique name and trigger the desired one via `RunInstantJob("name")`.
 
 ## Instrumentation
 

@@ -64,6 +64,10 @@ app.MapDelete("/remove-job", (IRuntimeJobRegistry registry) =>
 });
 ```
 
+!!! warning
+    A job cannot be removed while another job still references it as a dependent job via `ExecuteWhen(...)`.
+    In that case NCronJob throws an `InvalidOperationException`.
+
 ## Updating the job schedule
 Updating the job schedule is done via the `UpdateSchedule` method. This method accepts a job name, a new CRON expression and optionally the time zone:
 

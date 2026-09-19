@@ -52,6 +52,7 @@ nav:
     - Global Concurrency: advanced/global-concurrency.md
     - Dynamic Job Control: advanced/dynamic-job-control.md
     - Observing progress of jobs: advanced/observing-job-progress.md
+    - Known gotchas: advanced/known-gotchas.md
 
 extra:
   generator: false
