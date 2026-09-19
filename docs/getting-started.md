@@ -18,7 +18,7 @@ Alternatively add the package reference to your `.csproj` file:
 ```
 
 ## 2. Create a job
-**NCronJob** offers a single way of defining jobs: by implementing the `IJob` interface with a single `RunAsync` method:
+One way to define a job is by implementing the `IJob` interface with a single `RunAsync` method:
 
 ```csharp
 public class PrintHelloWorld : IJob
@@ -62,7 +62,7 @@ app.Run();
 Now your `PrintHelloWorld` job will run every minute and log "Hello World" to the console. And that is all!
 
 ## Too complicated?
-We also over a "Minimal API" that allows you to define jobs similiar to the Minimal API for Controllers.
+NCronJob also offers a "Minimal API" that allows you to define jobs similarly to the Minimal API for Controllers.
 
 ```csharp
 builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
