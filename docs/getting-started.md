@@ -106,7 +106,7 @@ public sealed class WarmupJob(ILogger<WarmupJob> logger) : IJob
 }
 ```
 
-Without that call, startup jobs will fail fast during application startup. Regular recurring jobs and instant jobs do not require it.
+Without that call, startup jobs fail fast during application startup with: `Startup jobs have been registered. However, neither IHost.UseNCronJobAsync(), nor IHost.UseNCronJob() have been called.` Regular recurring jobs and instant jobs do not require it. See [Running Startup Jobs](features/startup-jobs.md) for the full flow.
 
 ## 6. Know the next building blocks
 
