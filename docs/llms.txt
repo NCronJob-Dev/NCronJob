@@ -9,7 +9,7 @@ Preferred docs:
 - Agent and automation guide: https://docs.ncronjob.dev/agent-guide/
 
 Compact Markdown reference:
-- https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms-full.md
+- https://docs.ncronjob.dev/llms-full/
 
 Important feature docs:
 - Recurring jobs: https://docs.ncronjob.dev/features/define-and-schedule-jobs/
