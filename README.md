@@ -168,6 +168,8 @@ builder.Services.AddNCronJob(options => options
 Call `UseNCronJobAsync()` or `UseNCronJob()` when you register startup jobs via `RunAtStartup(...)`.
 
 ```csharp
+var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddNCronJob(options =>
 {
     options.AddJob<MyJob>(j => j.RunAtStartup());
