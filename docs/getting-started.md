@@ -29,7 +29,7 @@ The generic-host examples below assume an ASP.NET app or a host-based project su
 
 ## 3. Minimal job API quick start
 
-This is the smallest useful setup and matches the minimal sample:
+This is the smallest useful setup:
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -38,10 +38,10 @@ using NCronJob;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
+builder.Services.AddNCronJob((ILogger<Program> logger) =>
 {
     if (logger.IsEnabled(LogLevel.Information))
-        logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
+        logger.LogInformation("Hello World from NCronJob.");
 }, "*/5 * * * * *");
 
 await builder.Build().RunAsync();
