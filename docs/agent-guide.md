@@ -59,4 +59,4 @@ When an example and prose disagree, prefer:
 ## Machine-friendly documentation files
 
 - [`llms.txt`](https://docs.ncronjob.dev/llms.txt) provides a compact discovery index
-- [llms-full.md](llms-full.md) provides a compact Markdown reference for retrieval and prompting
+- [llms-full.md](https://docs.ncronjob.dev/llms-full/) provides a compact Markdown reference for retrieval and prompting
