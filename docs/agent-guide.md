@@ -6,7 +6,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 
 ### Registration
 
-- `AddNCronJob(Action<NCronJobOptionBuilder>? options = null)` registers the scheduler and typed jobs
+- `AddNCronJob(...)` registers the scheduler and typed jobs
 - `AddNCronJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)` registers a delegate-based recurring job
 - `AddNCronJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string jobName)` registers a named delegate-based recurring job
 
