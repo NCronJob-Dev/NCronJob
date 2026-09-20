@@ -181,9 +181,9 @@ var app = builder.Build();
 await app.UseNCronJobAsync();
 await app.RunAsync();
 
-public sealed class MyJob(ILogger<MyJob> logger) : IJob
+public sealed class MyJob(ILogger<MyJob> logger) : NCronJob.IJob
 {
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(NCronJob.IJobExecutionContext context, CancellationToken token)
     {
         logger.LogInformation("Startup job executed.");
         return Task.CompletedTask;

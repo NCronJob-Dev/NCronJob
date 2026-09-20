@@ -96,9 +96,9 @@ var app = builder.Build();
 await app.UseNCronJobAsync();
 await app.RunAsync();
 
-public sealed class WarmupJob(ILogger<WarmupJob> logger) : IJob
+public sealed class WarmupJob(ILogger<WarmupJob> logger) : NCronJob.IJob
 {
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(NCronJob.IJobExecutionContext context, CancellationToken token)
     {
         logger.LogInformation("Startup warmup finished.");
         return Task.CompletedTask;
