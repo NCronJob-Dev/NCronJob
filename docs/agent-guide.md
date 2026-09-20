@@ -40,7 +40,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - `RunInstantJob<TJob>()` can become ambiguous if multiple registrations exist for the same job type; prefer `RunInstantJob("job-name")` in that case
 - Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution
 - Forced instant jobs (`ForceRunInstantJob` / `ForceRunScheduledJob`) bypass queue and concurrency protection
-- Startup jobs fail fast during host startup if `UseNCronJobAsync()` or `UseNCronJob()` is not called after registering `RunAtStartup(...)`; see [Running Startup Jobs](features/startup-jobs.md)
+- After `Build()`, call `UseNCronJobAsync()` or `UseNCronJob()` whenever `RunAtStartup(...)` is used; see [Running Startup Jobs](features/startup-jobs.md)
 
 ## Repository sample map
 
