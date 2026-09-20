@@ -29,12 +29,12 @@ Use this page to decide where to go next based on the way you plan to use **NCro
 
 1. [Model Dependencies](features/model-dependencies.md)
 2. [Conditional Job Scheduling](features/conditional-job-scheduling.md)
-3. [Exception handler](features/exception-handler.md)
+3. [Exception Handler](features/exception-handler.md)
 
 ### I want to change jobs at runtime
 
 1. [Dynamic Job Control](advanced/dynamic-job-control.md)
-2. [Registering multiple CRON expressions](features/multiple-cron-expressions.md)
+2. [Define and Schedule Jobs](features/define-and-schedule-jobs.md)
 3. [Known gotchas](advanced/known-gotchas.md)
 
 ## Sample applications

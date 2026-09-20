@@ -45,7 +45,6 @@ Only required when at least one job uses `RunAtStartup(...)`.
 - `IRuntimeJobRegistry.UpdateParameter(...)`
 - `IRuntimeJobRegistry.TryGetSchedule(...)`
 - `IRuntimeJobRegistry.TryGetNextOccurrence(...)`
-- `IRuntimeJobRegistry.GetAllRecurringJobs()`
 - `IRuntimeJobRegistry.EnableJob(...)`
 - `IRuntimeJobRegistry.DisableJob(...)`
 
