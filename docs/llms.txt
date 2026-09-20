@@ -1,0 +1,26 @@
+# NCronJob
+
+NCronJob is an in-process .NET job scheduler built on top of `IHostedService`.
+
+Preferred docs:
+- Human docs home: https://docs.ncronjob.dev/
+- Getting started: https://docs.ncronjob.dev/getting-started/
+- Documentation map: https://docs.ncronjob.dev/documentation-map/
+- Agent and automation guide: https://docs.ncronjob.dev/agent-guide/
+
+Compact Markdown reference:
+- https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms-full.md
+
+Important feature docs:
+- Recurring jobs: https://docs.ncronjob.dev/features/define-and-schedule-jobs/
+- Minimal API: https://docs.ncronjob.dev/features/minimal-api/
+- Instant jobs: https://docs.ncronjob.dev/features/instant-jobs/
+- Dependencies: https://docs.ncronjob.dev/features/model-dependencies/
+- Conditional scheduling: https://docs.ncronjob.dev/features/conditional-job-scheduling/
+- Dynamic job control: https://docs.ncronjob.dev/advanced/dynamic-job-control/
+- Known gotchas: https://docs.ncronjob.dev/advanced/known-gotchas/
+
+Repository samples:
+- Minimal sample: https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample
+- Full sample: https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample
+- Startup job sample: https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample

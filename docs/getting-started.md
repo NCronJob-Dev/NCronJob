@@ -1,76 +1,112 @@
 # Getting Started
 
-Using **NCronJob** is simple and easy. Just follow the steps below to get started.
+Use **NCronJob** when you want recurring or on-demand background work without introducing a database-backed scheduler.
 
 ## 1. Install the package
-[![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 
-Install the latest stable version of the package via NuGet:
+[![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 
 ```bash
 dotnet add package NCronJob
 ```
 
-Alternatively add the package reference to your `.csproj` file:
+If you prefer editing the project file directly, copy the current version from [NuGet](https://www.nuget.org/packages/NCronJob).
 
-```xml
-<PackageReference Include="NCronJob" Version="#{version}#" />
-```
+## 2. Choose a starting style
 
-## 2. Create a job
-One way to define a job is by implementing the `IJob` interface with a single `RunAsync` method:
+NCronJob supports two main authoring styles:
+
+- **Minimal job API** for small jobs and quick setup
+- **`IJob` implementations** when you want reusable job types, notification handlers, or richer configuration
+
+If you want a working sample first, start with:
+
+- [`sample/MinimalSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample) for the minimal API
+- [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample) for typed jobs, notifications, retries, and instant jobs
+- [`sample/RunOnceSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample) for startup jobs
+
+## 3. Minimal job API quick start
+
+This is the smallest useful setup and matches the minimal sample:
 
 ```csharp
-public class PrintHelloWorld : IJob
+using NCronJob;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
 {
-    private readonly ILogger<PrintHelloWorld> logger;
+    if (logger.IsEnabled(LogLevel.Information))
+        logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
+}, "*/5 * * * * *");
 
-    public PrintHelloWorld(ILogger<PrintHelloWorld> logger)
-    {
-        this.logger = logger;
-    }
+await builder.Build().RunAsync();
+```
 
+Use this style when you want to keep the job close to your application bootstrap and resolve dependencies directly from DI.
+
+## 4. Typed job quick start
+
+Use a typed job when you want a named class, richer composition, or related handlers.
+
+```csharp
+using NCronJob;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddNCronJob(options =>
+    options.AddJob<PrintHelloWorld>(job =>
+        job.WithCronExpression("* * * * *")
+           .WithParameter("Hello World")));
+
+await builder.Build().RunAsync();
+
+public sealed class PrintHelloWorld(ILogger<PrintHelloWorld> logger) : IJob
+{
     public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         logger.LogInformation("Hello World");
         logger.LogInformation("Parameter: {Parameter}", context.Parameter);
-
         return Task.CompletedTask;
     }
 }
 ```
 
-## 3. Register the service and the job
-The **NCronJob** library provides one easy entry point for all its magic, the `AddNCronJob` extension method on top of the `IServiceCollection` interface. Additionally call the `UseNCronJobAsync` method.
+## 5. Understand when `UseNCronJobAsync` is required
+
+You only need `UseNCronJobAsync` or `UseNCronJob` when you register **startup jobs** via `RunAtStartup(...)`.
 
 ```csharp
-builder.Services.AddNCronJob(options => 
-{
-    options.AddJob<PrintHelloWorld>(j => 
-    {
-        // Every minute and optional parameter
-        j.WithCronExpression("* * * * *")
-         .WithParameter("Hello World");
-    }));
-});
+using NCronJob;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddNCronJob(options =>
+    options.AddJob<WarmupJob>(job => job.RunAtStartup()));
 
 var app = builder.Build();
+
 await app.UseNCronJobAsync();
-app.Run();
+await app.RunAsync();
 ```
 
-Now your `PrintHelloWorld` job will run every minute and log "Hello World" to the console. And that is all!
+Without that call, startup jobs will fail fast during application startup. Regular recurring jobs and instant jobs do not require it.
 
-## Too complicated?
-NCronJob also offers a "Minimal API" that allows you to define jobs similarly to the Minimal API for Controllers.
+## 6. Know the next building blocks
 
-```csharp
-builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider) =>
-{
-    logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
-}, "*/5 * * * * *");
-```
+Once the first job is running, the next pages most users need are:
 
-The job will be defined "inline" and is capable of resolving services from the DI container.
+- [Define and Schedule Jobs](features/define-and-schedule-jobs.md)
+- [Passing Parameters](features/parameters.md)
+- [Triggering instant jobs](features/instant-jobs.md)
+- [Concurrency control](features/concurrency-control.md)
+- [Job timeouts and run expiry](features/timeouts-and-expiry.md)
+- [Retry support](features/retry-support.md)
+- [Running Startup Jobs](features/startup-jobs.md)
+- [Dynamic Job Control](advanced/dynamic-job-control.md)
 
-You can read more about this in the section [Minimal API](features/minimal-api.md).
+## 7. Need a documentation map?
+
+Use the [Documentation Map](documentation-map.md) for a guided tour of the docs, samples, and recommended reading order.
+
+If you are using an assistant or automation tool, also see the [Agent & Automation Guide](agent-guide.md).

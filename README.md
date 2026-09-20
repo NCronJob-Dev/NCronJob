@@ -30,15 +30,23 @@ jobs:
 
 The whole documentation can be found here: [NCronJob Documentation](https://docs.ncronjob.dev/)
 
+If you are new to the project, start with:
+
+- [Getting Started](https://docs.ncronjob.dev/getting-started/)
+- [Documentation Map](https://docs.ncronjob.dev/documentation-map/)
+- [Agent & Automation Guide](https://docs.ncronjob.dev/agent-guide/)
+- [`llms.txt`](https://docs.ncronjob.dev/llms.txt) for machine-friendly discovery
+- [`docs/llms-full.md`](docs/llms-full.md) for a compact Markdown reference in the repository
+
 - [NCronJob](#ncronjob)
   - [Features](#features)
   - [Not features](#not-features)
+  - [Choose your starting point](#choose-your-starting-point)
   - [Short example](#short-example)
     - [Minimal Job API](#minimal-job-api)
     - [Via the `IJob` interface](#via-the-ijob-interface)
-  - [Triggering an instant job](#triggering-an-instant-job)
-  - [Running a Job at Startup](#running-a-job-at-startup)
-  - [Defining Job Dependencies](#defining-job-dependencies)
+  - [When to call `UseNCronJobAsync`](#when-to-call-usencronjobasync)
+  - [Samples and detailed docs](#samples-and-detailed-docs)
   - [Support \& Contributing](#support--contributing)
 
 
@@ -65,6 +73,19 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
 - [ ] Job persistence - Jobs are not persisted between restarts of the application.
 - [ ] Job history - There is no history of jobs that have been run.
 
+## Choose your starting point
+
+- Use the **Minimal Job API** when you want the smallest setup and delegate-based jobs
+- Use **`IJob` implementations** when you want reusable job types, notification handlers, or richer orchestration
+- Use **named jobs** when you need runtime management or multiple registrations of the same job type
+- Use **startup jobs** when work must run during application startup
+
+Working samples live in:
+
+- [`sample/MinimalSample`](sample/MinimalSample)
+- [`sample/NCronJobSample`](sample/NCronJobSample)
+- [`sample/RunOnceSample`](sample/RunOnceSample)
+
 ## Short example
 
 There are two ways to define a job.
@@ -79,9 +100,7 @@ builder.Services.AddNCronJob((ILoggerFactory factory, TimeProvider timeProvider)
     logger.LogInformation("Hello World - The current date and time is {Time}", timeProvider.GetLocalNow());
 }, "*/5 * * * * *");
 
-var app = builder.Build();
-await app.UseNCronJobAsync();
-app.Run();
+await builder.Build().RunAsync();
 ```
 
 With this simple lambda, you can define a job that runs every 5 seconds. Pass in all dependencies, just like you would with a Minimal API.
@@ -143,7 +162,33 @@ builder.Services.AddNCronJob(options => options
 
 4. Run your application and see the magic happen!
 
-## Triggering an instant job
+## When to call `UseNCronJobAsync`
+
+Call `UseNCronJobAsync()` or `UseNCronJob()` when you register startup jobs via `RunAtStartup(...)`.
+
+```csharp
+builder.Services.AddNCronJob(options =>
+{
+    options.AddJob<MyJob>(j => j.RunAtStartup());
+});
+
+var app = builder.Build();
+await app.UseNCronJobAsync();
+await app.RunAsync();
+```
+
+Regular recurring jobs and instant jobs do not require this call.
+
+## Samples and detailed docs
+
+Detailed feature docs:
+
+- [Getting Started](https://docs.ncronjob.dev/getting-started/)
+- [Define and Schedule Jobs](https://docs.ncronjob.dev/features/define-and-schedule-jobs/)
+- [Triggering instant jobs](https://docs.ncronjob.dev/features/instant-jobs/)
+- [Model Dependencies](https://docs.ncronjob.dev/features/model-dependencies/)
+- [Dynamic Job Control](https://docs.ncronjob.dev/advanced/dynamic-job-control/)
+- [Known gotchas](https://docs.ncronjob.dev/advanced/known-gotchas/)
 
 If the need arises and you want to trigger a job instantly, you can do so:
 
@@ -159,51 +204,6 @@ public class MyService
   // Alternatively, you can also run an anonymous job
   public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
 }
-```
-
-## Running a Job at Startup
-
-If you want a job to run when the application starts, you can configure it to run at startup using the `RunAtStartup` configuration method. Here is an example:
-
-```csharp
-builder.Services.AddNCronJob(options =>
-{
-    options.AddJob<MyJob>(j => j.RunAtStartup());
-});
-
-var app = builder.Build();
-// Here the startup jobs will be executed
-await app.UseNCronJobAsync();
-app.Run();
-```
-
-In this example, the job of type 'MyJob' will be executed as soon as the application starts. This is
-useful for tasks that need to run immediately upon application startup, such as initial data loading or cleanup tasks.
-
-## Defining Job Dependencies
-
-First you need to import data and then transform it? Well, but how do you make sure that the data is imported before you transform it? Sure, you could just give a delay, but what if the import takes longer than expected? This is where job dependencies come in handy!
-
-```csharp
-builder.Services.AddNCronJob(options =>
-{
-    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
-     .ExecuteWhen(
-        success: s => s.RunJob<TransformData>("Optional Parameter"),
-        faulted: s => s.RunJob<Notify>("Another Optional Parameter"));
-});
-```
-
-You just want to trigger a service and don't want to define a whole new job? No problem! The Minimal API is available here as well:
-
-```csharp
-builder.Services.AddNCronJob(options =>
-{
-    options.AddJob<ImportData>(p => p.WithCronExpression("0 0 * * *")
-     .ExecuteWhen(
-        success: s => s.RunJob(async (ITransformer transformer) => await transformer.TransformDataAsync()),
-        faulted: s => s.RunJob(async (INotificationService notifier) => await notifier.NotifyAsync())
-});
 ```
 
 ## Support & Contributing
