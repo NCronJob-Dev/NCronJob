@@ -29,6 +29,9 @@ nav:
   - NCronJob: index.md
   - Overview:
     - Getting Started: getting-started.md
+    - Documentation Map: documentation-map.md
+    - Agent & Automation Guide: agent-guide.md
+    - Compact Markdown Reference: llms-full.md
   - Features:
     - Define and Schedule Jobs: features/define-and-schedule-jobs.md
     - Passing Parameters: features/parameters.md

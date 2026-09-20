@@ -15,6 +15,31 @@ jobs:
 
 ---
 
+## Start with the right guide
+
+- New user: [Getting Started](getting-started.md)
+- Need a guided overview: [Documentation Map](documentation-map.md)
+- Using a coding assistant or automation: [Agent & Automation Guide](agent-guide.md)
+
+## What to read next
+
+- [Define and Schedule Jobs](features/define-and-schedule-jobs.md)
+- [Triggering instant jobs](features/instant-jobs.md)
+- [Concurrency control](features/concurrency-control.md)
+- [Dynamic Job Control](advanced/dynamic-job-control.md)
+- [Known gotchas](advanced/known-gotchas.md)
+
+## Sample applications
+
+- [`sample/MinimalSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample)
+- [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample)
+- [`sample/RunOnceSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample)
+
+## Agent-friendly entry points
+
+- `/llms.txt`
+- [Compact Markdown Reference](llms-full.md)
+
 This library is possible because of these wonderful people:
 
 <a href="https://github.com/NCronJob-Dev/NCronJob/graphs/contributors">
