@@ -40,7 +40,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - `RunInstantJob<TJob>()` can become ambiguous if multiple registrations exist for the same job type; prefer `RunInstantJob("job-name")` in that case
 - Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution
 - Forced instant jobs (`ForceRunInstantJob` / `ForceRunScheduledJob`) bypass queue and concurrency protection
-- Startup jobs fail fast if `UseNCronJobAsync()` or `UseNCronJob()` is not called
+- Startup jobs fail fast with `Startup jobs have been registered. However, neither IHost.UseNCronJobAsync(), nor IHost.UseNCronJob() have been called.` if `UseNCronJobAsync()` or `UseNCronJob()` is not called
 
 ## Repository sample map
 
