@@ -43,8 +43,6 @@ If you are new to the project, start with:
   - [Not features](#not-features)
   - [Choose your starting point](#choose-your-starting-point)
   - [Short example](#short-example)
-    - [Minimal Job API](#minimal-job-api)
-    - [Via the `IJob` interface](#via-the-ijob-interface)
   - [When to call `UseNCronJobAsync`](#when-to-call-usencronjobasync)
   - [Samples and detailed docs](#samples-and-detailed-docs)
   - [Triggering an instant job](#triggering-an-instant-job)

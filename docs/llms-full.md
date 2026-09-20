@@ -19,7 +19,7 @@ NCronJob is an in-process .NET scheduler for recurring jobs, startup jobs, and m
 
 ### Register jobs
 
-- `AddNCronJob(Action<NCronJobOptionBuilder>? options = null)`
+- `AddNCronJob(...)` for typed jobs and builder-based registration
 - `AddNCronJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo = null)`
 - `AddNCronJob(Delegate jobDelegate, string cronExpression, TimeZoneInfo? timeZoneInfo, string jobName)`
 
