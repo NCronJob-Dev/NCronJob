@@ -37,7 +37,7 @@ jobs:
 
 ## Agent-friendly entry points
 
-- `/llms.txt`
+- [`llms.txt`](llms.txt)
 - [Compact Markdown Reference](llms-full.md)
 
 This library is possible because of these wonderful people:
