@@ -86,6 +86,8 @@ Working samples live in:
 - [`sample/NCronJobSample`](sample/NCronJobSample)
 - [`sample/RunOnceSample`](sample/RunOnceSample)
 
+For the generic-host examples below, use an ASP.NET app, a worker service, or another project that already references `Microsoft.Extensions.Hosting`.
+
 ## Short example
 
 There are two ways to define a job.
