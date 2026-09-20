@@ -59,28 +59,28 @@ Only required when at least one job uses `RunAtStartup(...)`.
 
 ## Best starting points
 
-- First setup: [Getting Started](getting-started.md)
-- Docs guide: [Documentation Map](documentation-map.md)
-- Agents: [Agent & Automation Guide](agent-guide.md)
+- First setup: [Getting Started](https://docs.ncronjob.dev/getting-started/)
+- Docs guide: [Documentation Map](https://docs.ncronjob.dev/documentation-map/)
+- Agents: [Agent & Automation Guide](https://docs.ncronjob.dev/agent-guide/)
 
 ## Feature index
 
-- [Define and Schedule Jobs](features/define-and-schedule-jobs.md)
-- [Passing Parameters](features/parameters.md)
-- [Triggering instant jobs](features/instant-jobs.md)
-- [Concurrency control](features/concurrency-control.md)
-- [Job timeouts and run expiry](features/timeouts-and-expiry.md)
-- [Retry support](features/retry-support.md)
-- [Minimal API](features/minimal-api.md)
-- [Running Startup Jobs](features/startup-jobs.md)
-- [Model Dependencies](features/model-dependencies.md)
-- [Notifications](features/notifications.md)
-- [Conditional Job Scheduling](features/conditional-job-scheduling.md)
-- [Dynamic Job Control](advanced/dynamic-job-control.md)
-- [Known gotchas](advanced/known-gotchas.md)
+- [Define and Schedule Jobs](https://docs.ncronjob.dev/features/define-and-schedule-jobs/)
+- [Passing Parameters](https://docs.ncronjob.dev/features/parameters/)
+- [Triggering instant jobs](https://docs.ncronjob.dev/features/instant-jobs/)
+- [Concurrency control](https://docs.ncronjob.dev/features/concurrency-control/)
+- [Job timeouts and run expiry](https://docs.ncronjob.dev/features/timeouts-and-expiry/)
+- [Retry support](https://docs.ncronjob.dev/features/retry-support/)
+- [Minimal API](https://docs.ncronjob.dev/features/minimal-api/)
+- [Running Startup Jobs](https://docs.ncronjob.dev/features/startup-jobs/)
+- [Model Dependencies](https://docs.ncronjob.dev/features/model-dependencies/)
+- [Notifications](https://docs.ncronjob.dev/features/notifications/)
+- [Conditional Job Scheduling](https://docs.ncronjob.dev/features/conditional-job-scheduling/)
+- [Dynamic Job Control](https://docs.ncronjob.dev/advanced/dynamic-job-control/)
+- [Known gotchas](https://docs.ncronjob.dev/advanced/known-gotchas/)
 
 ## Sample projects
 
-- `sample/MinimalSample`
-- `sample/NCronJobSample`
-- `sample/RunOnceSample`
+- `sample/MinimalSample` — https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample
+- `sample/NCronJobSample` — https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample
+- `sample/RunOnceSample` — https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample
