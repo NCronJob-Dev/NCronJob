@@ -172,6 +172,7 @@ using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Reuse the same IJob implementation shape shown in the typed-job example above.
 builder.Services.AddNCronJob(options =>
 {
     options.AddJob<MyJob>(j => j.RunAtStartup());
