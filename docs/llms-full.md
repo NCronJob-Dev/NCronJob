@@ -55,7 +55,7 @@ Only required when at least one job uses `RunAtStartup(...)`.
 - Name jobs when the same job type is registered more than once
 - Use `RunInstantJob("name")` to avoid ambiguity with duplicate job types
 - Parameters are passed by reference and are not serialized
-- Forced jobs bypass queue and concurrency safety
+- Forced instant and scheduled jobs bypass queueing and concurrency safeguards
 - Startup jobs require `UseNCronJobAsync()` or `UseNCronJob()`
 
 ## Best starting points

@@ -193,6 +193,12 @@ Detailed feature docs:
 - [Dynamic Job Control](https://docs.ncronjob.dev/advanced/dynamic-job-control/)
 - [Known gotchas](https://docs.ncronjob.dev/advanced/known-gotchas/)
 
+Sample applications:
+
+- [`sample/MinimalSample`](sample/MinimalSample)
+- [`sample/NCronJobSample`](sample/NCronJobSample)
+- [`sample/RunOnceSample`](sample/RunOnceSample)
+
 ## Triggering an instant job
 
 If the need arises and you want to trigger a job instantly, you can do so:
