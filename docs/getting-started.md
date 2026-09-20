@@ -62,7 +62,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddNCronJob(options =>
     options.AddJob<PrintHelloWorld>(job =>
-        job.WithCronExpression("* * * * *")
+        job.WithCronExpression("*/5 * * * * *")
            .WithParameter("Hello World")));
 
 await builder.Build().RunAsync();
