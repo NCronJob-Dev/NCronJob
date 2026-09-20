@@ -33,6 +33,9 @@ jobs:
             - name: Install mkdocs
               run: pip install --upgrade pip && pip install mkdocs mkdocs-gen-files
 
+            - name: Validate docs
+              run: mkdocs build --strict
+
             - name: Setup git
               run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
 

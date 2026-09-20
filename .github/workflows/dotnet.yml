@@ -43,3 +43,16 @@ jobs:
       uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Python
+      uses: actions/setup-python@v7
+    - name: Install MkDocs
+      run: pip install --upgrade pip && pip install mkdocs mkdocs-gen-files
+    - name: Validate docs
+      run: mkdocs build --strict
