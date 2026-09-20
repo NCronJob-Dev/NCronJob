@@ -106,7 +106,7 @@ public sealed class WarmupJob(ILogger<WarmupJob> logger) : IJob
 }
 ```
 
-Without that call, the host fails to start because startup jobs were registered without the required NCronJob initialization step. Regular recurring jobs and instant jobs do not require it. See [Running Startup Jobs](features/startup-jobs.md) for the full flow.
+Without that call, NCronJob rejects the startup-job configuration during host startup, so those jobs will not initialize. Regular recurring jobs and instant jobs do not require it. See [Running Startup Jobs](features/startup-jobs.md) for the full flow.
 
 ## 6. Know the next building blocks
 

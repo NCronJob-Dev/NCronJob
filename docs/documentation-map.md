@@ -29,7 +29,7 @@ Use this page to decide where to go next based on the way you plan to use **NCro
 
 1. [Model Dependencies](features/model-dependencies.md)
 2. [Conditional Job Scheduling](features/conditional-job-scheduling.md)
-3. [Exception Handler](features/exception-handler.md)
+3. [Exception handler](features/exception-handler.md)
 
 ### I want to change jobs at runtime
 
