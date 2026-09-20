@@ -83,11 +83,10 @@ public sealed class PrintHelloWorld(ILogger<PrintHelloWorld> logger) : IJob
 You only need `UseNCronJobAsync` or `UseNCronJob` when you register **startup jobs** via `RunAtStartup(...)`.
 
 ```csharp
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
 using NCronJob;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
 builder.Services.AddNCronJob(options =>
     options.AddJob<WarmupJob>(job => job.RunAtStartup()));
