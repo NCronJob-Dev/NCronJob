@@ -169,10 +169,11 @@ Call `UseNCronJobAsync()` or `UseNCronJob()` when you register startup jobs via 
 
 ```csharp
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
+using NCronJob;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Reuse the same IJob implementation shape shown in the typed-job example above.
 builder.Services.AddNCronJob(options =>
 {
     options.AddJob<MyJob>(j => j.RunAtStartup());
@@ -181,6 +182,15 @@ builder.Services.AddNCronJob(options =>
 var app = builder.Build();
 await app.UseNCronJobAsync();
 await app.RunAsync();
+
+public sealed class MyJob(ILogger<MyJob> logger) : IJob
+{
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    {
+        logger.LogInformation("Startup job executed.");
+        return Task.CompletedTask;
+    }
+}
 ```
 
 Regular recurring jobs and instant jobs do not require this call.
