@@ -25,11 +25,15 @@ If you want a working sample first, start with:
 - [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample) for typed jobs, notifications, retries, and instant jobs
 - [`sample/RunOnceSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample) for startup jobs
 
+The generic-host examples below assume an ASP.NET app or a host-based project such as `dotnet new worker`. If you start from a plain console app, add a reference to `Microsoft.Extensions.Hosting` first.
+
 ## 3. Minimal job API quick start
 
 This is the smallest useful setup and matches the minimal sample:
 
 ```csharp
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using NCronJob;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -50,6 +54,8 @@ Use this style when you want to keep the job close to your application bootstrap
 Use a typed job when you want a named class, richer composition, or related handlers.
 
 ```csharp
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using NCronJob;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -77,6 +83,7 @@ public sealed class PrintHelloWorld(ILogger<PrintHelloWorld> logger) : IJob
 You only need `UseNCronJobAsync` or `UseNCronJob` when you register **startup jobs** via `RunAtStartup(...)`.
 
 ```csharp
+using Microsoft.Extensions.Logging;
 using NCronJob;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -88,6 +95,15 @@ var app = builder.Build();
 
 await app.UseNCronJobAsync();
 await app.RunAsync();
+
+public sealed class WarmupJob(ILogger<WarmupJob> logger) : IJob
+{
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    {
+        logger.LogInformation("Startup warmup finished.");
+        return Task.CompletedTask;
+    }
+}
 ```
 
 Without that call, startup jobs will fail fast during application startup. Regular recurring jobs and instant jobs do not require it.
