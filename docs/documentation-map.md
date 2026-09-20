@@ -23,13 +23,13 @@ Use this page to decide where to go next based on the way you plan to use **NCro
 1. [Triggering instant jobs](features/instant-jobs.md)
 2. [Passing Parameters](features/parameters.md)
 3. [Notifications](features/notifications.md)
-4. [Observing job progress](advanced/observing-job-progress.md)
+4. [Dynamic Job Control](advanced/dynamic-job-control.md)
 
 ### I want orchestration between jobs
 
 1. [Model Dependencies](features/model-dependencies.md)
 2. [Conditional Job Scheduling](features/conditional-job-scheduling.md)
-3. [Exception Handler](features/exception-handler.md)
+3. [Notifications](features/notifications.md)
 
 ### I want to change jobs at runtime
 
