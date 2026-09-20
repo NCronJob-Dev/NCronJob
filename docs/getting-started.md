@@ -25,7 +25,7 @@ If you want a working sample first, start with:
 - [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample) for typed jobs, notifications, retries, and instant jobs
 - [`sample/RunOnceSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample) for startup jobs
 
-The generic-host examples below assume an ASP.NET app or a host-based project such as `dotnet new worker`. If you start from a plain console app, add a reference to `Microsoft.Extensions.Hosting` first.
+The generic-host examples below assume an ASP.NET app or a host-based project such as `dotnet new worker`. If you start from a plain console app, add the hosting and DI packages needed for `Host.CreateApplicationBuilder(args)` and `builder.Services`, or start from the worker template instead.
 
 ## 3. Minimal job API quick start
 
