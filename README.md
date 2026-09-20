@@ -38,15 +38,14 @@ If you are new to the project, start with:
 - [`llms.txt`](https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms.txt) for machine-friendly discovery
 - [Compact Markdown Reference](https://docs.ncronjob.dev/llms-full/)
 
-- [NCronJob](#ncronjob)
-  - [Features](#features)
-  - [Not features](#not-features)
-  - [Choose your starting point](#choose-your-starting-point)
-  - [Short example](#short-example)
-  - [When to call `UseNCronJobAsync`](#when-to-call-usencronjobasync)
-  - [Samples and detailed docs](#samples-and-detailed-docs)
-  - [Triggering an instant job](#triggering-an-instant-job)
-  - [Support \& Contributing](#support--contributing)
+- [Features](#features)
+- [Not features](#not-features)
+- [Choose your starting point](#choose-your-starting-point)
+- [Short example](#short-example)
+- [When to call `UseNCronJobAsync`](#when-to-call-usencronjobasync)
+- [Samples and detailed docs](#samples-and-detailed-docs)
+- [Triggering an instant job](#triggering-an-instant-job)
+- [Support \& Contributing](#support--contributing)
 
 
 ## Features
