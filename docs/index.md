@@ -37,7 +37,7 @@ jobs:
 
 ## Agent-friendly entry points
 
-- [`llms.txt`](https://docs.ncronjob.dev/llms.txt)
+- [`llms.txt`](https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms.txt)
 - [Compact Markdown Reference](llms-full.md)
 
 This library is possible because of these wonderful people:

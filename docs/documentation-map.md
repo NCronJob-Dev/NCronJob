@@ -60,5 +60,5 @@ Most pages in this site are written for human readers.
 If you are consuming the docs with an agent or want a compact machine-friendly entry point, use:
 
 - [Agent & Automation Guide](agent-guide.md)
-- [`llms.txt`](https://docs.ncronjob.dev/llms.txt)
+- [`llms.txt`](https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms.txt)
 - [Compact Markdown Reference](llms-full.md)

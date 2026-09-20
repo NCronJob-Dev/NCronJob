@@ -35,7 +35,7 @@ If you are new to the project, start with:
 - [Getting Started](https://docs.ncronjob.dev/getting-started/)
 - [Documentation Map](https://docs.ncronjob.dev/documentation-map/)
 - [Agent & Automation Guide](https://docs.ncronjob.dev/agent-guide/)
-- [`llms.txt`](https://docs.ncronjob.dev/llms.txt) for machine-friendly discovery
+- [`llms.txt`](https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms.txt) for machine-friendly discovery
 - [Compact Markdown Reference](https://docs.ncronjob.dev/llms-full/)
 
 - [NCronJob](#ncronjob)
