@@ -48,6 +48,12 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../documentation-map/">Documentation Map</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../agent-guide/">Agent & Automation Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../llms-full/">Compact Markdown Reference</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Features</span></p>
               <ul class="current">
@@ -114,6 +120,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/known-gotchas/">Known gotchas</a>
                   </li>
               </ul>
       </div>
@@ -196,7 +204,7 @@ So also CRON jobs can be triggered instantly.</p>
 </code></pre></div>
 
 <h2 id="starting-a-job-at-a-specific-date-and-time">Starting a job at a specific date and time<a class="headerlink" href="#starting-a-job-at-a-specific-date-and-time" title="Permanent link">&para;</a></h2>
-<p>If you want to start a job at a specific date and time, you can use the <code>RunScheduledJob</code> method with a <code>DateTimeOffset</code> as a parameter. The same as before: The job has to be registered.</p>
+<p>If you want to start a job at a specific date and time, compute the delay until that moment and pass the resulting <code>TimeSpan</code> to <code>RunScheduledJob</code>. The job still has to be registered first.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">RequestDto</span><span class="w"> </span><span class="n">dto</span><span class="p">,</span><span class="w"> </span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">parameterDto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterDto</span>
@@ -206,11 +214,17 @@ So also CRON jobs can be triggered instantly.</p>
 <span class="w">        </span><span class="n">Body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dto</span><span class="p">.</span><span class="n">Body</span>
 <span class="w">    </span><span class="p">};</span>
 
-<span class="w">    </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunScheduledJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">(</span><span class="m">2024</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromHours</span><span class="p">(</span><span class="m">2</span><span class="p">)),</span><span class="w"> </span><span class="n">parameterDto</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">startAt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">(</span><span class="m">2024</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromHours</span><span class="p">(</span><span class="m">2</span><span class="p">));</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">delay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">startAt</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+<span class="w">    </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunScheduledJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span><span class="w"> </span><span class="n">parameterDto</span><span class="p">);</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
 <span class="p">});</span>
 </code></pre></div>
 
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Older <code>DateTimeOffset</code> overloads still exist for compatibility, but they are obsolete and scheduled for removal in the next major version.</p>
+</div>
 <h2 id="priority">Priority<a class="headerlink" href="#priority" title="Permanent link">&para;</a></h2>
 <p>Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, only the instant job will be executed).</p>
 <h2 id="force-a-job-run">Force a job run<a class="headerlink" href="#force-a-job-run" title="Permanent link">&para;</a></h2>
@@ -311,6 +325,7 @@ So also CRON jobs can be triggered instantly.</p>
 <span class="p">});</span>
 </code></pre></div>
 
+<p>When the same job type is registered multiple times intentionally, give each registration a unique name and trigger the desired one via <code>RunInstantJob("name")</code>.</p>
 <h2 id="instrumentation">Instrumentation<a class="headerlink" href="#instrumentation" title="Permanent link">&para;</a></h2>
 <p>All members of the <code>IInstantJobRegistry</code> interface return the correlation id of the triggered job (See <a href="../model-dependencies/#tracing-requests-of-dependencies-via-correlationid"><em>&ldquo;Tracing requests of dependencies via <code>CorrelationId</code>&ldquo;</em></a>.).</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Guid</span><span class="w"> </span><span class="n">oneCorrelationId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunInstantJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">();</span>

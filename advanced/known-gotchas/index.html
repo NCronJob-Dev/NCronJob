@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/advanced/log-level/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/advanced/known-gotchas/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Logging and log scopes - NCronJob</title>
+    <title>Known gotchas - NCronJob</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Logging and log scopes";
-        var mkdocs_page_input_path = "advanced/log-level.md";
-        var mkdocs_page_url = "/advanced/log-level/";
+        var mkdocs_page_name = "Known gotchas";
+        var mkdocs_page_input_path = "advanced/known-gotchas.md";
+        var mkdocs_page_url = "/advanced/known-gotchas/";
       </script>
     
     <!--[if lt IE 9]>
@@ -95,11 +95,7 @@
               </ul>
               <p class="caption"><span class="caption-text">Advanced</span></p>
               <ul class="current">
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Logging and log scopes</a>
-    <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#log-scopes">Log scopes</a>
-    </li>
-    </ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../log-level/">Logging and log scopes</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../global-concurrency/">Global Concurrency</a>
                   </li>
@@ -107,7 +103,25 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../observing-job-progress/">Observing progress of jobs</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../known-gotchas/">Known gotchas</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Known gotchas</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#startup-jobs-run-together">Startup jobs run together</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#forced-jobs-bypass-queue-safeguards">Forced jobs bypass queue safeguards</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#conditions-are-not-re-evaluated-for-retries">Conditions are not re-evaluated for retries</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parameters-are-passed-by-reference">Parameters are passed by reference</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#instant-jobs-can-be-ambiguous">Instant jobs can be ambiguous</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#runtime-removal-has-limits">Runtime removal has limits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#duplicate-registrations-fail-fast">Duplicate registrations fail fast</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#scheduler-pressure-can-skip-work">Scheduler pressure can skip work</a>
+    </li>
+    </ul>
                   </li>
               </ul>
       </div>
@@ -125,9 +139,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Advanced</li>
-      <li class="breadcrumb-item active">Logging and log scopes</li>
+      <li class="breadcrumb-item active">Known gotchas</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/advanced/log-level.md">Edit on NCronJob-Dev/NCronJob</a>
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/advanced/known-gotchas.md">Edit on NCronJob-Dev/NCronJob</a>
     </li>
   </ul>
   <hr/>
@@ -135,72 +149,54 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="controlling-the-log-level">Controlling the log-level<a class="headerlink" href="#controlling-the-log-level" title="Permanent link">&para;</a></h1>
-<p>The <strong>NCronJob</strong> scheduler can be configured to log at a specific log level.</p>
-<div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;Logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;LogLevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;Default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Information&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;Microsoft.AspNetCore&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Warning&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;NCronJob&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Debug&quot;</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-
-<h2 id="log-scopes">Log scopes<a class="headerlink" href="#log-scopes" title="Permanent link">&para;</a></h2>
-<p>Every job run is executed within a <a href="https://learn.microsoft.com/dotnet/core/extensions/logging#log-scopes">log scope</a>. All log entries written during the run carry the following properties, including the ones written by your job through its injected <code>ILogger&lt;T&gt;</code>:</p>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>JobName</code></td>
-<td>The job type (for example <code>MyApp.PrintHelloWorldJob</code>). If a custom name was given, it comes first and the type follows in parentheses. For delegate (minimal API) jobs, the type part is <code>Untyped job &lt;name&gt;</code>, or a generated identifier when no name was given.</td>
-</tr>
-<tr>
-<td><code>JobRunId</code></td>
-<td>The unique identifier of this run.</td>
-</tr>
-<tr>
-<td><code>CorrelationId</code></td>
-<td>The identifier shared by a job and all of its dependent jobs (see <code>IJobExecutionContext.CorrelationId</code>).</td>
-</tr>
-<tr>
-<td><code>TriggerType</code></td>
-<td>How the run was started: <code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code>.</td>
-</tr>
-</tbody>
-</table>
-<p>This makes it possible to filter or group all log entries of a single run, or of a whole chain of dependent jobs, without passing any context around manually.</p>
-<p>Whether scopes end up in your logs depends on the logging provider and its configuration. Most structured logging providers can turn scopes into properties (for example Serilog via <code>Serilog.Extensions.Logging</code>, or OpenTelemetry with <code>IncludeScopes</code> enabled). The console logger only shows scopes when they are enabled:</p>
-<div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;Logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;Console&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;FormatterName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;FormatterOptions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;IncludeScopes&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">      </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-
-<p>With scopes enabled, a log entry of a job looks like this:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">info</span><span class="o">:</span><span class="w"> </span><span class="n">MyApp</span><span class="o">.</span><span class="na">PrintHelloWorldJob</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span>
-<span class="w">      </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Job</span><span class="w"> </span><span class="n">MyApp</span><span class="o">.</span><span class="na">PrintHelloWorldJob</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="mi">3</span><span class="n">f0c2a5e</span><span class="o">-...</span><span class="w"> </span><span class="o">(</span><span class="n">correlation</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="mi">9</span><span class="n">b1d7c44</span><span class="o">-...,</span><span class="w"> </span><span class="n">triggered</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">Cron</span><span class="o">)</span>
-<span class="w">      </span><span class="n">Hello</span><span class="w"> </span><span class="n">World</span>
-</code></pre></div>
+                <h1 id="known-gotchas">Known gotchas<a class="headerlink" href="#known-gotchas" title="Permanent link">&para;</a></h1>
+<p>This page collects the most common NCronJob pitfalls in one place. Use it as a quick checklist when a job does not behave the way you expected.</p>
+<h2 id="startup-jobs-run-together">Startup jobs run together<a class="headerlink" href="#startup-jobs-run-together" title="Permanent link">&para;</a></h2>
+<p>Startup jobs are all triggered when <code>UseNCronJob</code> or <code>UseNCronJobAsync</code> is called, and they must finish before regular CRON or instant jobs begin.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Startup jobs are awaited together, so their relative execution order is not guaranteed.
+If one startup job depends on another, model that dependency explicitly instead of relying on registration order.</p>
+</div>
+<h2 id="forced-jobs-bypass-queue-safeguards">Forced jobs bypass queue safeguards<a class="headerlink" href="#forced-jobs-bypass-queue-safeguards" title="Permanent link">&para;</a></h2>
+<p><code>ForceRunInstantJob</code> and <code>ForceRunScheduledJob</code> bypass the queue and ignore the usual concurrency limits.</p>
+<p>Use them only when you intentionally want to skip the built-in protections against overlapping work and resource contention.</p>
+<h2 id="conditions-are-not-re-evaluated-for-retries">Conditions are not re-evaluated for retries<a class="headerlink" href="#conditions-are-not-re-evaluated-for-retries" title="Permanent link">&para;</a></h2>
+<p><code>OnlyIf(...)</code> is evaluated before the job instance is created.</p>
+<p>If a job starts and then retries because of a retry policy, those retries continue even if the condition would later evaluate to <code>false</code>.</p>
+<h2 id="parameters-are-passed-by-reference">Parameters are passed by reference<a class="headerlink" href="#parameters-are-passed-by-reference" title="Permanent link">&para;</a></h2>
+<p>Parameters are not cloned. If you pass a mutable object and the job changes it, later executions can observe that mutated state.</p>
+<p>Prefer immutable parameter objects, or clone the parameter inside the job before mutating it.</p>
+<h2 id="instant-jobs-can-be-ambiguous">Instant jobs can be ambiguous<a class="headerlink" href="#instant-jobs-can-be-ambiguous" title="Permanent link">&para;</a></h2>
+<p>Triggering an instant job by type only works when NCronJob can uniquely identify the target registration.</p>
+<p>If you registered the same job type more than once, prefer giving each registration a unique name and trigger the intended one by name.</p>
+<h2 id="runtime-removal-has-limits">Runtime removal has limits<a class="headerlink" href="#runtime-removal-has-limits" title="Permanent link">&para;</a></h2>
+<p>Jobs that act as dependency targets cannot be removed while another job still references them as a dependent job.</p>
+<p>If you need to change that graph, update the dependency registrations first and then remove the job.</p>
+<h2 id="duplicate-registrations-fail-fast">Duplicate registrations fail fast<a class="headerlink" href="#duplicate-registrations-fail-fast" title="Permanent link">&para;</a></h2>
+<p>NCronJob rejects duplicate registrations and conflicting named registrations during setup.</p>
+<p>This is especially relevant when:</p>
+<ul>
+<li>the same job is registered multiple times with the same configuration</li>
+<li>two named jobs use the same custom name</li>
+<li>an unnamed typed instant job with a configured parameter is registered more than once</li>
+</ul>
+<h2 id="scheduler-pressure-can-skip-work">Scheduler pressure can skip work<a class="headerlink" href="#scheduler-pressure-can-skip-work" title="Permanent link">&para;</a></h2>
+<p>NCronJob has a global concurrency cap and queued runs can expire.</p>
+<p>If jobs run longer than their cadence, or if concurrency is set too low, scheduled runs can be skipped or expire before they ever start.</p>
+<p>See also:</p>
+<ul>
+<li><a href="../global-concurrency/">Global Concurrency</a></li>
+<li><a href="../../features/timeouts-and-expiry/">Job Timeouts and Run Expiry</a></li>
+<li><a href="../../features/instant-jobs/">Triggering instant jobs</a></li>
+<li><a href="../../features/conditional-job-scheduling/">Conditional Job Scheduling with OnlyIf</a></li>
+<li><a href="../dynamic-job-control/">Dynamic Job Control</a></li>
+</ul>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../migration/v2/" class="btn btn-neutral float-left" title="v2 Migration Guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../global-concurrency/" class="btn btn-neutral float-right" title="Global Concurrency">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../observing-job-progress/" class="btn btn-neutral float-left" title="Observing progress of jobs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -228,10 +224,8 @@
         </span>
     
     
-      <span><a href="../../migration/v2/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../observing-job-progress/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
-    
-      <span><a href="../global-concurrency/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

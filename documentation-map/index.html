@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/documentation-map/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Documentation Map - NCronJob</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Documentation Map";
+        var mkdocs_page_input_path = "documentation-map.md";
+        var mkdocs_page_url = "/documentation-map/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="..">
+          <img src="../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Documentation Map</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#start-here">Start here</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#common-user-journeys">Common user journeys</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#i-want-a-recurring-background-job">I want a recurring background job</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#i-want-to-trigger-work-from-an-http-endpoint-or-application-code">I want to trigger work from an HTTP endpoint or application code</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#i-want-orchestration-between-jobs">I want orchestration between jobs</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#i-want-to-change-jobs-at-runtime">I want to change jobs at runtime</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sample-applications">Sample applications</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#important-concepts-to-keep-in-mind">Important concepts to keep in mind</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#human-docs-vs-agent-docs">Human docs vs. agent docs</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../agent-guide/">Agent & Automation Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../llms-full/">Compact Markdown Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/conditional-job-scheduling/">Conditional Job Scheduling</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/timeouts-and-expiry/">Job timeouts and run expiry</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/model-dependencies/">Model dependencies</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/exception-handler/">Exception handler</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v4/">v4 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v3/">v3 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/log-level/">Logging and log scopes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/known-gotchas/">Known gotchas</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Overview</li>
+      <li class="breadcrumb-item active">Documentation Map</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/documentation-map.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="documentation-map">Documentation Map<a class="headerlink" href="#documentation-map" title="Permanent link">&para;</a></h1>
+<p>Use this page to decide where to go next based on the way you plan to use <strong>NCronJob</strong>.</p>
+<h2 id="start-here">Start here<a class="headerlink" href="#start-here" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../getting-started/">Getting Started</a> for the first working setup</li>
+<li><a href="../features/define-and-schedule-jobs/">Define and Schedule Jobs</a> for recurring jobs</li>
+<li><a href="../features/minimal-api/">Minimal API</a> for delegate-based jobs</li>
+</ul>
+<h2 id="common-user-journeys">Common user journeys<a class="headerlink" href="#common-user-journeys" title="Permanent link">&para;</a></h2>
+<h3 id="i-want-a-recurring-background-job">I want a recurring background job<a class="headerlink" href="#i-want-a-recurring-background-job" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="../getting-started/">Getting Started</a></li>
+<li><a href="../features/define-and-schedule-jobs/">Define and Schedule Jobs</a></li>
+<li><a href="../features/parameters/">Passing Parameters</a></li>
+<li><a href="../features/concurrency-control/">Concurrency control</a></li>
+<li><a href="../features/timeouts-and-expiry/">Job timeouts and run expiry</a></li>
+</ol>
+<h3 id="i-want-to-trigger-work-from-an-http-endpoint-or-application-code">I want to trigger work from an HTTP endpoint or application code<a class="headerlink" href="#i-want-to-trigger-work-from-an-http-endpoint-or-application-code" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="../features/instant-jobs/">Triggering instant jobs</a></li>
+<li><a href="../features/parameters/">Passing Parameters</a></li>
+<li><a href="../features/notifications/">Notifications</a></li>
+<li><a href="../advanced/dynamic-job-control/">Dynamic Job Control</a></li>
+</ol>
+<h3 id="i-want-orchestration-between-jobs">I want orchestration between jobs<a class="headerlink" href="#i-want-orchestration-between-jobs" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="../features/model-dependencies/">Model Dependencies</a></li>
+<li><a href="../features/conditional-job-scheduling/">Conditional Job Scheduling</a></li>
+<li><a href="../features/notifications/">Notifications</a></li>
+</ol>
+<h3 id="i-want-to-change-jobs-at-runtime">I want to change jobs at runtime<a class="headerlink" href="#i-want-to-change-jobs-at-runtime" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="../advanced/dynamic-job-control/">Dynamic Job Control</a></li>
+<li><a href="../features/define-and-schedule-jobs/">Define and Schedule Jobs</a></li>
+<li><a href="../advanced/known-gotchas/">Known gotchas</a></li>
+</ol>
+<h2 id="sample-applications">Sample applications<a class="headerlink" href="#sample-applications" title="Permanent link">&para;</a></h2>
+<p>The repository contains three useful starting points:</p>
+<ul>
+<li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample"><code>sample/MinimalSample</code></a>: smallest recurring job setup</li>
+<li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample"><code>sample/NCronJobSample</code></a>: typed jobs, retries, concurrency, notifications, and HTTP-triggered instant jobs</li>
+<li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample"><code>sample/RunOnceSample</code></a>: startup jobs via <code>RunAtStartup(...)</code> and <code>UseNCronJobAsync()</code></li>
+</ul>
+<h2 id="important-concepts-to-keep-in-mind">Important concepts to keep in mind<a class="headerlink" href="#important-concepts-to-keep-in-mind" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Jobs run in-process and are <strong>not persisted</strong> across restarts</li>
+<li>Parameters are passed by reference and are <strong>not serialized</strong></li>
+<li>Named jobs are the best choice when you want runtime management or to avoid ambiguity</li>
+<li>Forced instant jobs bypass queue and concurrency safeguards</li>
+<li>Startup jobs need <code>UseNCronJobAsync()</code> or <code>UseNCronJob()</code></li>
+</ul>
+<h2 id="human-docs-vs-agent-docs">Human docs vs. agent docs<a class="headerlink" href="#human-docs-vs-agent-docs" title="Permanent link">&para;</a></h2>
+<p>Most pages in this site are written for human readers.</p>
+<p>If you are consuming the docs with an agent or want a compact machine-friendly entry point, use:</p>
+<ul>
+<li><a href="../agent-guide/">Agent &amp; Automation Guide</a></li>
+<li><a href="https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms.txt"><code>llms.txt</code></a></li>
+<li><a href="../llms-full/">Compact Markdown Reference</a></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../getting-started/" class="btn btn-neutral float-left" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../agent-guide/" class="btn btn-neutral float-right" title="Agent & Automation Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>©2024-Present <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../getting-started/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../agent-guide/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

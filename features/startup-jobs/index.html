@@ -48,6 +48,12 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../documentation-map/">Documentation Map</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../agent-guide/">Agent & Automation Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../llms-full/">Compact Markdown Reference</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Features</span></p>
               <ul class="current">
@@ -109,6 +115,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/known-gotchas/">Known gotchas</a>
+                  </li>
               </ul>
       </div>
     </div>
@@ -163,6 +171,11 @@
 
 <p>The <code>RunAtStartup</code> in combination with <code>UseNCronJobAsync</code> method ensures that the job is executed as soon as the application starts. This method is useful for scenarios where certain tasks need to be performed immediately upon application launch.</p>
 <p>Failure to call <code>UseNCronJobAsync</code> when startup jobs are defined will lead to a fatal exception during the application start.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Multiple startup jobs are executed together and awaited as a group before normal scheduling begins.
+Do not rely on registration order between startup jobs. If one startup task depends on another, model that flow explicitly with dependent jobs.</p>
+</div>
 <p>Of course, the call to <code>RunAtStartup</code> can also be chained to the registration of a standard CRON job. This setup may be useful, for instance, when one wants to prime a cache before the application starts, and then regularly refresh its content.</p>
 <p>It may happen that the specified startup job runs task that are allowed to fail without impairing the application setup. For those cases, when one can tolerate a startup job to fail, the <code>RunAtStartup</code> method accepts an optional parameter <code>shouldCrashOnFailure</code>:
 - When set to <code>false</code>, any exception thrown by the job will be ignored.

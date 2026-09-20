@@ -48,6 +48,12 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../documentation-map/">Documentation Map</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../agent-guide/">Agent & Automation Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../llms-full/">Compact Markdown Reference</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Features</span></p>
               <ul>
@@ -120,6 +126,8 @@
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../known-gotchas/">Known gotchas</a>
                   </li>
               </ul>
       </div>
@@ -199,6 +207,11 @@
 <span class="p">});</span>
 </code></pre></div>
 
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>A job cannot be removed while another job still references it as a dependent job via <code>ExecuteWhen(...)</code>.
+In that case NCronJob throws an <code>InvalidOperationException</code>.</p>
+</div>
 <h2 id="updating-the-job-schedule">Updating the job schedule<a class="headerlink" href="#updating-the-job-schedule" title="Permanent link">&para;</a></h2>
 <p>Updating the job schedule is done via the <code>UpdateSchedule</code> method. This method accepts a job name, a new CRON expression and optionally the time zone:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPut</span><span class="p">(</span><span class="s">&quot;/update-job&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">IRuntimeJobRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
