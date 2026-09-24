@@ -11,11 +11,7 @@ internal class JobRun
     private readonly Action<JobRun> progressReporter;
     private readonly JobRunActivationGate? activationGate;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
-#if NET9_0_OR_GREATER
-    private readonly Lock orchestrationStateLock = new();
-#else
-    private readonly object orchestrationStateLock = new();
-#endif
+    private readonly SyncLock orchestrationStateLock = new();
 
     private JobRun(
         TimeProvider timeProvider,
@@ -216,21 +212,3 @@ internal class JobRun
     }
 }
 
-internal sealed class JobRunActivationGate
-{
-    private readonly TaskCompletionSource<bool> completion =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    public Task<bool> WaitAsync() => completion.Task;
-
-    public void Activate() => completion.TrySetResult(true);
-
-    public void Reject() => completion.TrySetResult(false);
-}
-
-internal readonly record struct OptionalParameter(bool IsSpecified, object? Value)
-{
-    public static OptionalParameter Unspecified => default;
-
-    public static OptionalParameter FromValue(object? value) => new(true, value);
-}

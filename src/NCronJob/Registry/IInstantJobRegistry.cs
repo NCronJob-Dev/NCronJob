@@ -338,40 +338,28 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
     }
 
     /// <inheritdoc />
-    public Guid RunScheduledJob(Type jobType, TimeSpan delay, object? parameter, CancellationToken token = default)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunJob(jobType, utcNow + delay, OptionalParameter.FromValue(parameter), false, token);
-    }
+    public Guid RunScheduledJob(Type jobType, TimeSpan delay, object? parameter, CancellationToken token = default) =>
+        RunJob(jobType, At(delay), OptionalParameter.FromValue(parameter), false, token);
 
     Guid IOptionalParameterInstantJobRegistry.RunWithOptionalParameter(
         Type jobType,
         TimeSpan delay,
         OptionalParameter parameter,
         bool forceExecution,
-        CancellationToken token)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunJob(jobType, utcNow + delay, parameter, forceExecution, token);
-    }
+        CancellationToken token) =>
+        RunJob(jobType, At(delay), parameter, forceExecution, token);
 
     /// <inheritdoc />
-    public Guid RunScheduledJob(string jobName, TimeSpan delay, object? parameter, CancellationToken token = default)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunJob(jobName, utcNow + delay, OptionalParameter.FromValue(parameter), false, token);
-    }
+    public Guid RunScheduledJob(string jobName, TimeSpan delay, object? parameter, CancellationToken token = default) =>
+        RunJob(jobName, At(delay), OptionalParameter.FromValue(parameter), false, token);
 
     Guid IOptionalParameterInstantJobRegistry.RunWithOptionalParameter(
         string jobName,
         TimeSpan delay,
         OptionalParameter parameter,
         bool forceExecution,
-        CancellationToken token)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunJob(jobName, utcNow + delay, parameter, forceExecution, token);
-    }
+        CancellationToken token) =>
+        RunJob(jobName, At(delay), parameter, forceExecution, token);
 
     /// <inheritdoc />
     public Guid RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter, CancellationToken token = default)
@@ -397,40 +385,30 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
         => RunJob(jobName, startDate, parameter, false, token);
 
     /// <inheritdoc />
-    public Guid RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunDelegateJob(jobDelegate, utcNow + delay, false, token);
-    }
+    public Guid RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default) =>
+        RunDelegateJob(jobDelegate, At(delay), false, token);
 
     /// <inheritdoc />
     public Guid RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
         RunDelegateJob(jobDelegate, startDate, false, token);
 
     /// <inheritdoc />
-    public Guid ForceRunScheduledJob(Type jobType, TimeSpan delay, object? parameter, CancellationToken token = default)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunJob(jobType, utcNow + delay, OptionalParameter.FromValue(parameter), true, token);
-    }
+    public Guid ForceRunScheduledJob(Type jobType, TimeSpan delay, object? parameter, CancellationToken token = default) =>
+        RunJob(jobType, At(delay), OptionalParameter.FromValue(parameter), true, token);
 
     /// <inheritdoc />
-    public Guid ForceRunScheduledJob(string jobName, TimeSpan delay, object? parameter, CancellationToken token = default)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunJob(jobName, utcNow + delay, OptionalParameter.FromValue(parameter), true, token);
-    }
+    public Guid ForceRunScheduledJob(string jobName, TimeSpan delay, object? parameter, CancellationToken token = default) =>
+        RunJob(jobName, At(delay), OptionalParameter.FromValue(parameter), true, token);
 
     /// <inheritdoc />
-    public Guid ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default)
-    {
-        var utcNow = timeProvider.GetUtcNow();
-        return RunDelegateJob(jobDelegate, utcNow + delay, true, token);
-    }
+    public Guid ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default) =>
+        RunDelegateJob(jobDelegate, At(delay), true, token);
 
     /// <inheritdoc />
     public Guid ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
         RunDelegateJob(jobDelegate, startDate, true, token);
+
+    private DateTimeOffset At(TimeSpan delay) => timeProvider.GetUtcNow() + delay;
 
     private Guid RunDelegateJob(Delegate jobDelegate, DateTimeOffset startDate, bool forceExecution = false, CancellationToken token = default)
     {

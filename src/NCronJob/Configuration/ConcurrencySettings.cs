@@ -19,4 +19,16 @@ internal sealed class ConcurrencySettings
     /// The default time a scheduled job may remain queued after its intended run time.
     /// </summary>
     public TimeSpan DefaultJobRunExpiry { get; set; } = TimeSpan.FromMinutes(10);
+
+    public ConcurrencySettings Snapshot() => new()
+    {
+        MaxDegreeOfParallelism = MaxDegreeOfParallelism,
+        DefaultJobRunExpiry = DefaultJobRunExpiry,
+    };
+
+    public void Restore(ConcurrencySettings snapshot)
+    {
+        MaxDegreeOfParallelism = snapshot.MaxDegreeOfParallelism;
+        DefaultJobRunExpiry = snapshot.DefaultJobRunExpiry;
+    }
 }

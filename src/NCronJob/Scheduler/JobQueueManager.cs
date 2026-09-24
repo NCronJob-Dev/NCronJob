@@ -7,12 +7,8 @@ namespace NCronJob;
 internal sealed class JobQueueManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
-    private readonly Dictionary<string, TaskCompletionSource> queueSignals = [];
-#if NET9_0_OR_GREATER
-    private readonly Lock syncLock = new();
-#else
-    private readonly object syncLock = new();
-#endif
+    private readonly Dictionary<string, AsyncSignal> queueSignals = [];
+    private readonly SyncLock syncLock = new();
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event Action<string>? QueueAdded;
@@ -46,7 +42,7 @@ internal sealed class JobQueueManager : IDisposable
                 isCreating = true;
                 var queue = new JobQueue(jt);
                 queue.CollectionChanged += CallCollectionChanged;
-                queueSignals[jt] = CreateSignal();
+                queueSignals[jt] = new AsyncSignal();
                 return queue;
             });
 
@@ -78,12 +74,7 @@ internal sealed class JobQueueManager : IDisposable
             cancellableRuns = jobQueue.Where(j => j.IsCancellable).ToList();
 
             jobQueue.Clear();
-            jobQueue.CollectionChanged -= CallCollectionChanged;
-
-            if (queueSignals.Remove(queueName, out var signal))
-            {
-                signal.TrySetResult();
-            }
+            DetachQueueUnsafe(queueName, jobQueue);
         }
 
         // Progress callbacks run user code, so they must not be invoked while holding the lock.
@@ -106,8 +97,6 @@ internal sealed class JobQueueManager : IDisposable
         var createdQueueSet = createdQueueNames is null
             ? []
             : new HashSet<string>(createdQueueNames, StringComparer.Ordinal);
-        var signals = new List<TaskCompletionSource>();
-
         lock (syncLock)
         {
             if (!IsDisposed)
@@ -125,25 +114,14 @@ internal sealed class JobQueueManager : IDisposable
                     if (jobQueue.Count == 0)
                     {
                         jobQueues.TryRemove(queueName, out _);
-                        jobQueue.CollectionChanged -= CallCollectionChanged;
-
-                        if (queueSignals.Remove(queueName, out var removedSignal))
-                        {
-                            signals.Add(removedSignal);
-                        }
+                        DetachQueueUnsafe(queueName, jobQueue);
                     }
-                    else if (queueSignals.TryGetValue(queueName, out var changedSignal))
+                    else
                     {
-                        queueSignals[queueName] = CreateSignal();
-                        signals.Add(changedSignal);
+                        SignalJobQueueUnsafe(queueName);
                     }
                 }
             }
-        }
-
-        foreach (var signal in signals)
-        {
-            signal.TrySetResult();
         }
 
         foreach (var run in runs.Where(run => run.IsCancellable))
@@ -173,7 +151,7 @@ internal sealed class JobQueueManager : IDisposable
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         lock (syncLock)
         {
-            return queueSignals.TryGetValue(queueName, out var signal) ? signal.Task : Task.CompletedTask;
+            return queueSignals.TryGetValue(queueName, out var signal) ? signal.WaitAsync() : Task.CompletedTask;
         }
     }
 
@@ -206,7 +184,7 @@ internal sealed class JobQueueManager : IDisposable
                         return;
                     }
 
-                    queueChanged = queueSignals[queueName].Task;
+                    queueChanged = queueSignals[queueName].WaitAsync();
                 }
 
                 await Task.WhenAny(dequeued.Task, queueChanged)
@@ -227,18 +205,12 @@ internal sealed class JobQueueManager : IDisposable
 
         lock (syncLock)
         {
-            foreach (var jobQueue in jobQueues.Values)
+            foreach (var (queueName, jobQueue) in jobQueues)
             {
-                jobQueue.CollectionChanged -= CallCollectionChanged;
-            }
-
-            foreach (var signal in queueSignals.Values)
-            {
-                signal.TrySetResult();
+                DetachQueueUnsafe(queueName, jobQueue);
             }
 
             jobQueues.Clear();
-            queueSignals.Clear();
 
             IsDisposed = true;
         }
@@ -248,13 +220,25 @@ internal sealed class JobQueueManager : IDisposable
     {
         lock (syncLock)
         {
-            if (!queueSignals.TryGetValue(queueName, out var signal))
-            {
-                return;
-            }
+            SignalJobQueueUnsafe(queueName);
+        }
+    }
 
-            queueSignals[queueName] = CreateSignal();
-            signal.TrySetResult();
+    private void SignalJobQueueUnsafe(string queueName)
+    {
+        if (queueSignals.TryGetValue(queueName, out var signal))
+        {
+            signal.Pulse();
+        }
+    }
+
+    private void DetachQueueUnsafe(string queueName, JobQueue jobQueue)
+    {
+        jobQueue.CollectionChanged -= CallCollectionChanged;
+
+        if (queueSignals.Remove(queueName, out var signal))
+        {
+            signal.Complete();
         }
     }
 
@@ -267,6 +251,4 @@ internal sealed class JobQueueManager : IDisposable
 
         CollectionChanged?.Invoke(sender, e);
     }
-
-    private static TaskCompletionSource CreateSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -140,28 +140,22 @@ internal sealed partial class JobExecutor : IDisposable
         InformDependentJobs(runContext, exc is null);
     }
 
-    private async Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct)
-    {
-        if (!runContext.JobRun.JobDefinition.IsTypedJob)
-        {
-            return;
-        }
-
-        await using var scope = serviceProvider.CreateAsyncScope();
-        var notificationServiceType = typeof(IJobNotificationHandler<>).MakeGenericType(runContext.JobRun.JobDefinition.Type);
-
-        if (scope.ServiceProvider.GetService(notificationServiceType) is IJobNotificationHandler notificationService)
-        {
-            try
+    private Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct) =>
+        TypedJobHandlerInvoker.InvokeAsync<IJobNotificationHandler>(
+            serviceProvider,
+            typeof(IJobNotificationHandler<>),
+            runContext.JobRun.JobDefinition,
+            async notificationService =>
             {
-                await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
-            }
-            catch (Exception innerExc) when (innerExc is not OperationCanceledException || !ct.IsCancellationRequested)
-            {
-                LogNotificationHandlerFailed(notificationService.GetType(), innerExc);
-            }
-        }
-    }
+                try
+                {
+                    await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
+                }
+                catch (Exception innerExc) when (innerExc is not OperationCanceledException || !ct.IsCancellationRequested)
+                {
+                    LogNotificationHandlerFailed(notificationService.GetType(), innerExc);
+                }
+            });
 
     private void InformDependentJobs(JobExecutionContext context, bool success)
     {

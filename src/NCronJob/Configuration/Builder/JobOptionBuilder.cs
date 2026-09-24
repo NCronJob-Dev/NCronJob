@@ -14,10 +14,7 @@ public sealed class JobOptionBuilder
     /// <returns>A builder that allows further configuration of this job.</returns>
     public CronAndParameterAndRunAtStartupBuilder WithTimeout(TimeSpan timeout)
     {
-        var jobOption = new JobOption();
-        jobOption.SetTimeout(timeout);
-        jobOptions.Add(jobOption);
-        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.SetTimeout(timeout)));
     }
 
     /// <summary>
@@ -27,10 +24,7 @@ public sealed class JobOptionBuilder
     /// <returns>A builder that allows further configuration of this job.</returns>
     public CronAndParameterAndRunAtStartupBuilder WithJobRunExpiry(TimeSpan expiry)
     {
-        var jobOption = new JobOption();
-        jobOption.SetJobRunExpiry(expiry);
-        jobOptions.Add(jobOption);
-        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.SetJobRunExpiry(expiry)));
     }
 
     /// <summary>
@@ -43,15 +37,11 @@ public sealed class JobOptionBuilder
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        var jobOption = new JobOption
+        return new ParameterBuilder(this, AddOption(o =>
         {
-            CronExpression = cronExpression,
-            TimeZoneInfo = timeZoneInfo
-        };
-
-        jobOptions.Add(jobOption);
-
-        return new ParameterBuilder(this, jobOption);
+            o.CronExpression = cronExpression;
+            o.TimeZoneInfo = timeZoneInfo;
+        }));
     }
 
     /// <summary>
@@ -62,14 +52,7 @@ public sealed class JobOptionBuilder
     /// <remarks>The job name should be unique over all job instances.</remarks>
     public CronAndParameterAndRunAtStartupBuilder WithName(string jobName)
     {
-        var jobOption = new JobOption
-        {
-            Name = jobName,
-        };
-
-        jobOptions.Add(jobOption);
-
-        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.Name = jobName));
     }
 
     /// <summary>
@@ -80,14 +63,7 @@ public sealed class JobOptionBuilder
     /// <returns>Returns a <see cref="RunAtStartupBuilder"/> that allows configuring the job to run at startup.</returns>
     public RunAtStartupBuilder WithParameter(object? parameter)
     {
-        var jobOption = new JobOption
-        {
-            Parameter = parameter,
-        };
-
-        jobOptions.Add(jobOption);
-
-        return new RunAtStartupBuilder(this, jobOption);
+        return new RunAtStartupBuilder(this, AddOption(o => o.Parameter = parameter));
     }
 
     /// <summary>
@@ -101,14 +77,7 @@ public sealed class JobOptionBuilder
     /// <returns>Returns a <see cref="IOptionChainerBuilder"/> that allows chaining new options.</returns>
     public IOptionChainerBuilder RunAtStartup(bool shouldCrashOnFailure = true)
     {
-        var jobOption = new JobOption
-        {
-            ShouldCrashOnStartupFailure = shouldCrashOnFailure,
-        };
-
-        jobOptions.Add(jobOption);
-
-        return new RunAtStartupBuilder(this, jobOption);
+        return new RunAtStartupBuilder(this, AddOption(o => o.ShouldCrashOnStartupFailure = shouldCrashOnFailure));
     }
 
     /// <summary>
@@ -124,12 +93,7 @@ public sealed class JobOptionBuilder
     /// </remarks>
     public CronAndParameterAndRunAtStartupBuilder OnlyIf(Func<bool> predicate)
     {
-        var jobOption = new JobOption();
-        jobOption.AddCondition(predicate);
-
-        jobOptions.Add(jobOption);
-
-        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.AddCondition(predicate)));
     }
 
     /// <summary>
@@ -149,12 +113,7 @@ public sealed class JobOptionBuilder
     /// </remarks>
     public CronAndParameterAndRunAtStartupBuilder OnlyIf(Delegate predicate)
     {
-        var jobOption = new JobOption();
-        jobOption.AddCondition(predicate);
-
-        jobOptions.Add(jobOption);
-
-        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.AddCondition(predicate)));
     }
 
     /// <summary>
@@ -170,12 +129,15 @@ public sealed class JobOptionBuilder
     /// </remarks>
     public CronAndParameterAndRunAtStartupBuilder OnlyIf(Func<Task<bool>> predicate)
     {
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.AddCondition(predicate)));
+    }
+
+    private JobOption AddOption(Action<JobOption> configure)
+    {
         var jobOption = new JobOption();
-        jobOption.AddCondition(predicate);
-
+        configure(jobOption);
         jobOptions.Add(jobOption);
-
-        return new CronAndParameterAndRunAtStartupBuilder(this, jobOption);
+        return jobOption;
     }
 
     internal List<JobOption> GetJobOptions()

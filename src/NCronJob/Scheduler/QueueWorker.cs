@@ -13,12 +13,8 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly MissingMethodCalledHandler missingMethodCalledHandler;
     private CancellationTokenSource? shutdown;
     private readonly Dictionary<string, Task> workerTasks = [];
-    private TaskCompletionSource workerTasksChanged = CreateSignal();
-#if NET9_0_OR_GREATER
-    private readonly Lock workerTasksLock = new();
-#else
-    private readonly object workerTasksLock = new();
-#endif
+    private readonly AsyncSignal workerTasksChanged = new();
+    private readonly SyncLock workerTasksLock = new();
     private volatile bool isStopping;
     private volatile bool isDisposed;
 
@@ -74,7 +70,7 @@ internal sealed partial class QueueWorker : BackgroundService
             }
 
             isDisposed = true;
-            SignalWorkerTasksChangedUnsafe();
+            workerTasksChanged.Pulse();
         }
 
         shutdown?.Dispose();
@@ -170,7 +166,7 @@ internal sealed partial class QueueWorker : BackgroundService
                 }
 
                 workerTasks[jobQueueName] = workerTask;
-                SignalWorkerTasksChangedUnsafe();
+                workerTasksChanged.Pulse();
 
                 workerTask.ContinueWith(
                     completedTask => OnWorkerCompleted(jobQueueName, completedTask, stopToken),
@@ -199,7 +195,7 @@ internal sealed partial class QueueWorker : BackgroundService
             if (workerTasks.TryGetValue(jobQueueName, out var currentTask) && currentTask == completedTask)
             {
                 workerTasks.Remove(jobQueueName);
-                SignalWorkerTasksChangedUnsafe();
+                workerTasksChanged.Pulse();
             }
         }
 
@@ -239,18 +235,11 @@ internal sealed partial class QueueWorker : BackgroundService
                     return;
                 }
 
-                changed = workerTasksChanged.Task;
+                changed = workerTasksChanged.WaitAsync();
             }
 
             await changed.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
-    }
-
-    private void SignalWorkerTasksChangedUnsafe()
-    {
-        var signal = workerTasksChanged;
-        workerTasksChanged = CreateSignal();
-        signal.TrySetResult();
     }
 
     private Task[] GetWorkerTasksSnapshot()
@@ -298,7 +287,4 @@ internal sealed partial class QueueWorker : BackgroundService
                 throw new ArgumentOutOfRangeException(nameof(e), e.Action, $"Unexpected collection change action in {nameof(HandleUpdate)}");
         }
     }
-
-    private static TaskCompletionSource CreateSignal() =>
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

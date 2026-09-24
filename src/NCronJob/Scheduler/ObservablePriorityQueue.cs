@@ -14,11 +14,7 @@ internal class ObservablePriorityQueue<TElement, TPriority> : IEnumerable<TEleme
     where TPriority : IComparable<TPriority>
 {
     protected readonly PriorityQueue<TElement, TPriority> PriorityQueue;
-#if NET9_0_OR_GREATER
-    protected readonly Lock Lock = new();
-#else
-    protected readonly object Lock = new();
-#endif
+    protected readonly SyncLock Lock = new();
 
     public ObservablePriorityQueue(IComparer<TPriority> comparer)
     {
