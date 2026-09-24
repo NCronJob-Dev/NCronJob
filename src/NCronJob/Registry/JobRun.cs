@@ -212,21 +212,3 @@ internal class JobRun
     }
 }
 
-internal sealed class JobRunActivationGate
-{
-    private readonly TaskCompletionSource<bool> completion =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    public Task<bool> WaitAsync() => completion.Task;
-
-    public void Activate() => completion.TrySetResult(true);
-
-    public void Reject() => completion.TrySetResult(false);
-}
-
-internal readonly record struct OptionalParameter(bool IsSpecified, object? Value)
-{
-    public static OptionalParameter Unspecified => default;
-
-    public static OptionalParameter FromValue(object? value) => new(true, value);
-}
