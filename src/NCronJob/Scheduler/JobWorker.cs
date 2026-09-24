@@ -284,34 +284,4 @@ internal sealed partial class JobWorker
 
         return run;
     }
-
-    public void RemoveJobByName(string jobName)
-    {
-        RemoveJob(() => registry.RemoveByName(jobName));
-    }
-
-    public void RemoveJobByType(Type type)
-    {
-        RemoveJob(() => registry.RemoveByType(type));
-    }
-
-    private void RemoveJob(Func<string?> unregistrator)
-    {
-        var jobDefinitionFullName = unregistrator();
-
-        if (jobDefinitionFullName is null)
-        {
-            return;
-        }
-
-        jobQueueManager.RemoveQueue(jobDefinitionFullName);
-    }
-
-    public void RescheduleJob(JobDefinition jobDefinition)
-    {
-        ArgumentNullException.ThrowIfNull(jobDefinition);
-
-        jobQueueManager.RemoveQueue(jobDefinition.JobFullName);
-        ScheduleJob(jobDefinition);
-    }
 }

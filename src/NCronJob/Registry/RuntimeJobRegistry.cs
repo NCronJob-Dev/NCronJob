@@ -226,10 +226,10 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     }
 
     /// <inheritdoc />
-    public void RemoveJob(string jobName) => jobWorker.RemoveJobByName(jobName);
+    public void RemoveJob(string jobName) => RemoveJob(() => jobRegistry.RemoveByName(jobName));
 
     /// <inheritdoc />
-    public void RemoveJob(Type type) => jobWorker.RemoveJobByType(type);
+    public void RemoveJob(Type type) => RemoveJob(() => jobRegistry.RemoveByType(type));
 
     /// <inheritdoc />
     public void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
@@ -240,7 +240,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
         job.UpdateWith(new JobOption { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
 
-        jobWorker.RescheduleJob(job);
+        RescheduleJob(job);
     }
 
     /// <inheritdoc />
@@ -251,7 +251,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
         job.UpdateWith(new JobOption { Parameter = parameter });
 
-        jobWorker.RescheduleJob(job);
+        RescheduleJob(job);
     }
 
     /// <inheritdoc />
@@ -355,9 +355,20 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         RescheduleJob(job);
     }
 
+    private void RemoveJob(Func<string?> unregister)
+    {
+        var jobFullName = unregister();
+
+        if (jobFullName is not null)
+        {
+            jobQueueManager.RemoveQueue(jobFullName);
+        }
+    }
+
     private void RescheduleJob(JobDefinition job)
     {
-        jobWorker.RescheduleJob(job);
+        jobQueueManager.RemoveQueue(job.JobFullName);
+        jobWorker.ScheduleJob(job);
     }
 
     private static void TryRollback(Action rollback, List<Exception> exceptions)
