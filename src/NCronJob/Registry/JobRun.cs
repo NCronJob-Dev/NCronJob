@@ -11,11 +11,7 @@ internal class JobRun
     private readonly Action<JobRun> progressReporter;
     private readonly JobRunActivationGate? activationGate;
     private readonly ConcurrentBag<JobRun> pendingDependents = [];
-#if NET9_0_OR_GREATER
-    private readonly Lock orchestrationStateLock = new();
-#else
-    private readonly object orchestrationStateLock = new();
-#endif
+    private readonly SyncLock orchestrationStateLock = new();
 
     private JobRun(
         TimeProvider timeProvider,

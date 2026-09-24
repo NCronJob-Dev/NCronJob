@@ -134,11 +134,7 @@ public sealed record RecurringJobSchedule(string? JobName, string CronExpression
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
-#if NET9_0_OR_GREATER
-    private readonly Lock registrationLock = new();
-#else
-    private readonly object registrationLock = new();
-#endif
+    private readonly SyncLock registrationLock = new();
 
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;

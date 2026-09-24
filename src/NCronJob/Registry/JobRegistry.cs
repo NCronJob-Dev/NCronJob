@@ -2,11 +2,7 @@ namespace NCronJob;
 
 internal sealed class JobRegistry
 {
-#if NET9_0_OR_GREATER
-    private readonly Lock syncLock = new();
-#else
-    private readonly object syncLock = new();
-#endif
+    private readonly SyncLock syncLock = new();
 
     private readonly List<JobDefinition> allRootJobs = [];
 

@@ -15,12 +15,8 @@ internal sealed partial class JobWorker
     private readonly Dictionary<string, int> runningJobCounts = [];
     private readonly ConcurrentDictionary<Task, byte> runningJobs = new();
     private int totalRunningJobCount;
-    private TaskCompletionSource capacitySignal = CreateSignal();
-#if NET9_0_OR_GREATER
-    private readonly Lock slotLock = new();
-#else
-    private readonly object slotLock = new();
-#endif
+    private readonly AsyncSignal capacitySignal = new();
+    private readonly SyncLock slotLock = new();
 
     public JobWorker(
         JobQueueManager jobQueueManager,
@@ -220,26 +216,21 @@ internal sealed partial class JobWorker
 
     private void ReleaseSlot(JobDefinition jobDefinition)
     {
-        TaskCompletionSource signal;
-
         lock (slotLock)
         {
             runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
             runningJobCounts[jobDefinition.JobFullName] = Math.Max(0, currentCount - 1);
             totalRunningJobCount = Math.Max(0, totalRunningJobCount - 1);
 
-            signal = capacitySignal;
-            capacitySignal = CreateSignal();
+            capacitySignal.Pulse();
         }
-
-        signal.TrySetResult();
     }
 
     private Task GetCapacitySignal()
     {
         lock (slotLock)
         {
-            return capacitySignal.Task;
+            return capacitySignal.WaitAsync();
         }
     }
 
@@ -323,6 +314,4 @@ internal sealed partial class JobWorker
         jobQueueManager.RemoveQueue(jobDefinition.JobFullName);
         ScheduleJob(jobDefinition);
     }
-
-    private static TaskCompletionSource CreateSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }
