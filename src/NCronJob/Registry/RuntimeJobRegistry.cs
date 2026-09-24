@@ -165,8 +165,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         lock (registrationLock)
         {
             var trackedServices = new TrackingServiceCollection(services);
-            var previousMaxDegreeOfParallelism = concurrencySettings.MaxDegreeOfParallelism;
-            var previousDefaultJobRunExpiry = concurrencySettings.DefaultJobRunExpiry;
+            var previousSettings = concurrencySettings.Snapshot();
             JobRegistryRegistration? registration = null;
             List<JobRun> scheduledRuns = [];
             List<string> createdQueueNames = [];
@@ -209,11 +208,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
                 }
 
                 TryRollback(trackedServices.Rollback, rollbackExceptions);
-                TryRollback(() =>
-                {
-                    concurrencySettings.MaxDegreeOfParallelism = previousMaxDegreeOfParallelism;
-                    concurrencySettings.DefaultJobRunExpiry = previousDefaultJobRunExpiry;
-                }, rollbackExceptions);
+                TryRollback(() => concurrencySettings.Restore(previousSettings), rollbackExceptions);
 
                 exception = rollbackExceptions.Count == 0
                     ? ex
@@ -237,10 +232,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         ArgumentNullException.ThrowIfNull(jobName);
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
-        job.UpdateWith(new JobOption { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
-
-        RescheduleJob(job);
+        UpdateAndReschedule(jobName, new JobOption { CronExpression = cronExpression, TimeZoneInfo = timeZoneInfo });
     }
 
     /// <inheritdoc />
@@ -248,10 +240,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         ArgumentNullException.ThrowIfNull(jobName);
 
-        var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
-        job.UpdateWith(new JobOption { Parameter = parameter });
-
-        RescheduleJob(job);
+        UpdateAndReschedule(jobName, new JobOption { Parameter = parameter });
     }
 
     /// <inheritdoc />
@@ -363,6 +352,14 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         {
             jobQueueManager.RemoveQueue(jobFullName);
         }
+    }
+
+    private void UpdateAndReschedule(string jobName, JobOption option)
+    {
+        var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
+        job.UpdateWith(option);
+
+        RescheduleJob(job);
     }
 
     private void RescheduleJob(JobDefinition job)

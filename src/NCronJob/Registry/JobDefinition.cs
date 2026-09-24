@@ -219,6 +219,16 @@ internal sealed record JobDefinition
         }
     }
 
+    public void MarkAsStartupJob(bool shouldCrashOnFailure)
+    {
+        if (IsStartupJob)
+        {
+            throw new InvalidOperationException($"Job '{Name}' is already defined as a startup job.");
+        }
+
+        UpdateWith(new JobOption { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
+    }
+
     public IJob? ResolveJob(IServiceProvider scopedServiceProvider)
     {
         return IsTypedJob ? (IJob?)scopedServiceProvider.GetService(Type) : new DynamicJobFactory(scopedServiceProvider, Delegate);

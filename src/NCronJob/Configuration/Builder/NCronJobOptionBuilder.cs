@@ -293,7 +293,10 @@ internal sealed class StartupStage<TJob> : JobStage<TJob>, IStartupStage<TJob> w
     /// <inheritdoc />
     public INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false)
     {
-        JobRegistry.UpdateJobDefinitionsToRunAtStartup(JobDefinitions, shouldCrashOnFailure);
+        foreach (var jobDefinition in JobDefinitions)
+        {
+            jobDefinition.MarkAsStartupJob(shouldCrashOnFailure);
+        }
 
         return AsNotificationStage();
     }

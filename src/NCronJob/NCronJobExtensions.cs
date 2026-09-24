@@ -31,8 +31,7 @@ public static class NCronJobExtensions
 
         var settings = services.FirstOrDefault(d => d.ServiceType == typeof(ConcurrencySettings))?.ImplementationInstance as ConcurrencySettings
                        ?? new ConcurrencySettings();
-        var previousMaxDegreeOfParallelism = settings.MaxDegreeOfParallelism;
-        var previousDefaultJobRunExpiry = settings.DefaultJobRunExpiry;
+        var previousSettings = settings.Snapshot();
 
         var jdc = new JobDefinitionCollector();
 
@@ -45,8 +44,7 @@ public static class NCronJobExtensions
         }
         catch
         {
-            settings.MaxDegreeOfParallelism = previousMaxDegreeOfParallelism;
-            settings.DefaultJobRunExpiry = previousDefaultJobRunExpiry;
+            settings.Restore(previousSettings);
             throw;
         }
 
@@ -59,7 +57,7 @@ public static class NCronJobExtensions
         services.TryAddSingleton<JobExecutor>();
         services.TryAddSingleton<IRetryHandler, RetryHandler>();
         services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
-        services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>(sp => new RuntimeJobRegistry(
+        services.TryAddSingleton<IRuntimeJobRegistry>(sp => new RuntimeJobRegistry(
             services,
             jobRegistry,
             sp.GetRequiredService<JobWorker>(),
@@ -67,7 +65,7 @@ public static class NCronJobExtensions
             sp.GetRequiredService<ConcurrencySettings>(),
             sp.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<JobExecutionProgressObserver>();
-        services.TryAddSingleton<IJobExecutionProgressReporter, JobExecutionProgressObserver>(sp =>
+        services.TryAddSingleton<IJobExecutionProgressReporter>(sp =>
             sp.GetRequiredService<JobExecutionProgressObserver>());
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
@@ -179,18 +177,4 @@ public static class NCronJobExtensions
         return host;
     }
 
-    // Inspired by https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.DependencyInjection.Abstractions/src/Extensions/ServiceCollectionDescriptorExtensions.cs
-    // License MIT
-    private static void TryAddSingleton<TService, TImplementation>(this IServiceCollection services,
-        Func<IServiceProvider, TImplementation> implementationFactory)
-        where TService : class
-        where TImplementation : class, TService
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(implementationFactory);
-
-        var descriptor = ServiceDescriptor.Singleton<TService, TImplementation>(implementationFactory);
-
-        services.TryAdd(descriptor);
-    }
 }

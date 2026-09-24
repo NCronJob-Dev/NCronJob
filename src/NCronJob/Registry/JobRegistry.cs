@@ -152,22 +152,6 @@ internal sealed class JobRegistry
     public IReadOnlyCollection<JobDefinition> GetDependentFaultedJobs(JobDefinition parentJobDefinition)
         => FilterByAndProject(parentJobDefinition, v => v.SelectMany(p => p.RunWhenFaulted));
 
-    public static void UpdateJobDefinitionsToRunAtStartup(
-        IReadOnlyCollection<JobDefinition> jobDefinitions,
-        bool shouldCrashOnFailure = false)
-    {
-        foreach (var jobDefinition in jobDefinitions)
-        {
-            if (jobDefinition.IsStartupJob)
-            {
-                throw new InvalidOperationException(
-                    $"Job '{jobDefinition.Name}' is already defined as a startup job.");
-            }
-
-            jobDefinition.UpdateWith(new JobOption { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
-        }
-    }
-
     private JobDefinition[] FilterByAndProject(
         JobDefinition parentJobDefinition,
         Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<DependentJobDefinition>> transform)
