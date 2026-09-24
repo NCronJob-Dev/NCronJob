@@ -83,30 +83,24 @@ internal sealed partial class JobProcessor
     [LoggerMessage(LogLevel.Trace, "Job '{JobName}' condition was satisfied. Proceeding with execution.")]
     private partial void LogJobConditionSatisfied(string jobName);
 
-    private async Task TriggerConditionHandlers(JobRun jobRun, CancellationToken cancellationToken)
-    {
-        if (!jobRun.JobDefinition.IsTypedJob)
-        {
-            return;
-        }
-
-        await using var scope = serviceProvider.CreateAsyncScope();
-        var handlerType = typeof(IJobConditionHandler<>).MakeGenericType(jobRun.JobDefinition.Type);
-
-        if (scope.ServiceProvider.GetService(handlerType) is IJobConditionHandler handler)
-        {
-            try
+    private Task TriggerConditionHandlers(JobRun jobRun, CancellationToken cancellationToken) =>
+        TypedJobHandlerInvoker.InvokeAsync<IJobConditionHandler>(
+            serviceProvider,
+            typeof(IJobConditionHandler<>),
+            jobRun.JobDefinition,
+            async handler =>
             {
-                var context = new JobConditionContext(jobRun);
-                await handler.HandleConditionNotMetAsync(context, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // Don't throw exceptions from condition handlers
-                LogConditionHandlerFailed(jobRun.JobDefinition.Name, ex);
-            }
-        }
-    }
+                try
+                {
+                    var context = new JobConditionContext(jobRun);
+                    await handler.HandleConditionNotMetAsync(context, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Don't throw exceptions from condition handlers
+                    LogConditionHandlerFailed(jobRun.JobDefinition.Name, ex);
+                }
+            });
 
     [LoggerMessage(LogLevel.Warning, "Condition handler for job '{JobName}' threw an exception.")]
     private partial void LogConditionHandlerFailed(string jobName, Exception exception);
