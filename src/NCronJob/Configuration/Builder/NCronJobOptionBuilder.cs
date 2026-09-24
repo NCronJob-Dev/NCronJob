@@ -220,122 +220,104 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     }
 }
 
-/// <summary>
-/// Represents a stage in the job lifecycle where the job is set to run at startup.
-/// </summary>
-/// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
-internal sealed class StartupStage<TJob> : IStartupStage<TJob> where TJob : class, IJob
+internal abstract class JobStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
 {
-    private readonly IServiceCollection services;
-    private readonly ConcurrencySettings settings;
-    private readonly JobDefinitionCollector jobDefinitionCollector;
-    private readonly IReadOnlyCollection<JobDefinition> jobDefinitions;
-
-    internal StartupStage(
+    protected JobStage(
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
         ConcurrencySettings settings,
         JobDefinitionCollector jobDefinitionCollector)
     {
-        this.jobDefinitions = jobDefinitions;
-        this.services = services;
-        this.settings = settings;
-        this.jobDefinitionCollector = jobDefinitionCollector;
+        Services = services;
+        JobDefinitions = jobDefinitions;
+        Settings = settings;
+        JobDefinitionCollector = jobDefinitionCollector;
     }
 
-    /// <inheritdoc />
-    public INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false)
-    {
-        JobRegistry.UpdateJobDefinitionsToRunAtStartup(jobDefinitions, shouldCrashOnFailure);
+    protected IServiceCollection Services { get; }
 
-        return new NotificationStage<TJob>(services, jobDefinitions, settings, jobDefinitionCollector);
-    }
+    protected IReadOnlyCollection<JobDefinition> JobDefinitions { get; }
+
+    protected ConcurrencySettings Settings { get; }
+
+    protected JobDefinitionCollector JobDefinitionCollector { get; }
 
     /// <inheritdoc />
     public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
     {
-        services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return new NotificationStage<TJob>(services, jobDefinitions, settings, jobDefinitionCollector);
+        Services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
+        return AsNotificationStage();
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> AddConditionHandler<TJobConditionHandler>() where TJobConditionHandler : class, IJobConditionHandler<TJob>
     {
-        services.TryAddScoped<IJobConditionHandler<TJob>, TJobConditionHandler>();
-        return new NotificationStage<TJob>(services, jobDefinitions, settings, jobDefinitionCollector);
+        Services.TryAddScoped<IJobConditionHandler<TJob>, TJobConditionHandler>();
+        return AsNotificationStage();
     }
 
     /// <inheritdoc />
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder>? success = null, Action<DependencyBuilder>? faulted = null)
     {
-        ExecuteWhenHelper.AddRegistration(jobDefinitionCollector, jobDefinitions, success, faulted);
+        ExecuteWhenHelper.AddRegistration(JobDefinitionCollector, JobDefinitions, success, faulted);
 
         return this;
     }
 
     /// <inheritdoc />
     public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob
-        => new NCronJobOptionBuilder(services, settings, jobDefinitionCollector).AddJob<TNewJob>(options);
+        => new NCronJobOptionBuilder(Services, Settings, JobDefinitionCollector).AddJob<TNewJob>(options);
 
     /// <inheritdoc />
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
-        => new NCronJobOptionBuilder(services, settings, jobDefinitionCollector).AddJob(jobType, options);
+        => new NCronJobOptionBuilder(Services, Settings, JobDefinitionCollector).AddJob(jobType, options);
+
+    protected abstract INotificationStage<TJob> AsNotificationStage();
+}
+
+/// <summary>
+/// Represents a stage in the job lifecycle where the job is set to run at startup.
+/// </summary>
+/// <typeparam name="TJob">The type of the job to be run at startup.</typeparam>
+internal sealed class StartupStage<TJob> : JobStage<TJob>, IStartupStage<TJob> where TJob : class, IJob
+{
+    internal StartupStage(
+        IServiceCollection services,
+        IReadOnlyCollection<JobDefinition> jobDefinitions,
+        ConcurrencySettings settings,
+        JobDefinitionCollector jobDefinitionCollector)
+        : base(services, jobDefinitions, settings, jobDefinitionCollector)
+    {
+    }
+
+    /// <inheritdoc />
+    public INotificationStage<TJob> RunAtStartup(bool shouldCrashOnFailure = false)
+    {
+        JobRegistry.UpdateJobDefinitionsToRunAtStartup(JobDefinitions, shouldCrashOnFailure);
+
+        return AsNotificationStage();
+    }
+
+    protected override INotificationStage<TJob> AsNotificationStage() =>
+        new NotificationStage<TJob>(Services, JobDefinitions, Settings, JobDefinitionCollector);
 }
 
 /// <summary>
 /// Represents a stage in the job lifecycle where notifications are handled for the job.
 /// </summary>
 /// <typeparam name="TJob">The type of the job for which notifications are handled.</typeparam>
-internal sealed class NotificationStage<TJob> : INotificationStage<TJob> where TJob : class, IJob
+internal sealed class NotificationStage<TJob> : JobStage<TJob> where TJob : class, IJob
 {
-    private readonly IServiceCollection services;
-    private readonly ConcurrencySettings settings;
-    private readonly JobDefinitionCollector jobDefinitionCollector;
-    private readonly IReadOnlyCollection<JobDefinition> jobDefinitions;
-
     internal NotificationStage(
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
         ConcurrencySettings settings,
         JobDefinitionCollector jobDefinitionCollector)
+        : base(services, jobDefinitions, settings, jobDefinitionCollector)
     {
-        this.services = services;
-        this.settings = settings;
-        this.jobDefinitionCollector = jobDefinitionCollector;
-        this.jobDefinitions = jobDefinitions;
     }
 
-    /// <inheritdoc />
-    public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class
-        , IJobNotificationHandler<TJob>
-    {
-        services.TryAddScoped<IJobNotificationHandler<TJob>, TJobNotificationHandler>();
-        return this;
-    }
-
-    /// <inheritdoc />
-    public INotificationStage<TJob> AddConditionHandler<TJobConditionHandler>() where TJobConditionHandler : class, IJobConditionHandler<TJob>
-    {
-        services.TryAddScoped<IJobConditionHandler<TJob>, TJobConditionHandler>();
-        return this;
-    }
-
-    /// <inheritdoc />
-    public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder>? success = null,
-        Action<DependencyBuilder>? faulted = null)
-    {
-        ExecuteWhenHelper.AddRegistration(jobDefinitionCollector, jobDefinitions, success, faulted);
-
-        return this;
-    }
-
-    /// <inheritdoc />
-    public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob =>
-        new NCronJobOptionBuilder(services, settings, jobDefinitionCollector).AddJob<TNewJob>(options);
-
-    /// <inheritdoc />
-    public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
-        => new NCronJobOptionBuilder(services, settings, jobDefinitionCollector).AddJob(jobType, options);
+    protected override INotificationStage<TJob> AsNotificationStage() => this;
 }
 
 /// <summary>
