@@ -41,12 +41,13 @@ internal sealed class JobQueueManager : IDisposable
             {
                 isCreating = true;
                 var queue = new JobQueue(jt);
-                queue.CollectionChanged += CallCollectionChanged;
+                queue.CollectionChanged += OnJobQueueChanged;
                 queueSignals[jt] = new AsyncSignal();
                 return queue;
             });
 
             jobQueue.EnqueueForDirectExecution(run);
+            SignalJobQueueUnsafe(queueName);
         }
 
         if (isCreating)
@@ -216,14 +217,6 @@ internal sealed class JobQueueManager : IDisposable
         }
     }
 
-    private void SignalJobQueue(string queueName)
-    {
-        lock (syncLock)
-        {
-            SignalJobQueueUnsafe(queueName);
-        }
-    }
-
     private void SignalJobQueueUnsafe(string queueName)
     {
         if (queueSignals.TryGetValue(queueName, out var signal))
@@ -234,7 +227,7 @@ internal sealed class JobQueueManager : IDisposable
 
     private void DetachQueueUnsafe(string queueName, JobQueue jobQueue)
     {
-        jobQueue.CollectionChanged -= CallCollectionChanged;
+        jobQueue.CollectionChanged -= OnJobQueueChanged;
 
         if (queueSignals.Remove(queueName, out var signal))
         {
@@ -242,13 +235,8 @@ internal sealed class JobQueueManager : IDisposable
         }
     }
 
-    private void CallCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void OnJobQueueChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (sender is JobQueue jobQueue && e.Action == NotifyCollectionChangedAction.Add)
-        {
-            SignalJobQueue(jobQueue.Name);
-        }
-
         CollectionChanged?.Invoke(sender, e);
     }
 }

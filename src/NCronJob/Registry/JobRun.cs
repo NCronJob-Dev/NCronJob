@@ -85,7 +85,7 @@ internal class JobRun
         ConcurrencySettings? settings = null)
     => new(timeProvider, jobDefinition, timeProvider.GetUtcNow(), OptionalParameter.Unspecified, progressReporter, TriggerType.Startup, settings ?? new ConcurrencySettings());
 
-    public static JobRun Create(
+    public static JobRun CreateCron(
         TimeProvider timeProvider,
         Action<JobRun> progressReporter,
         JobDefinition jobDefinition,

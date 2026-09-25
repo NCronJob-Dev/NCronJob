@@ -8,6 +8,7 @@ internal sealed partial class QueueWorker : BackgroundService
 {
     private readonly JobQueueManager jobQueueManager;
     private readonly JobWorker jobWorker;
+    private readonly CronRunScheduler cronRunScheduler;
     private readonly JobRegistry jobRegistry;
     private readonly ILogger<QueueWorker> logger;
     private readonly MissingMethodCalledHandler missingMethodCalledHandler;
@@ -21,6 +22,7 @@ internal sealed partial class QueueWorker : BackgroundService
     public QueueWorker(
         JobQueueManager jobQueueManager,
         JobWorker jobWorker,
+        CronRunScheduler cronRunScheduler,
         JobRegistry jobRegistry,
         ILogger<QueueWorker> logger,
         MissingMethodCalledHandler missingMethodCalledHandler,
@@ -28,13 +30,14 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         this.jobQueueManager = jobQueueManager;
         this.jobWorker = jobWorker;
+        this.cronRunScheduler = cronRunScheduler;
         this.jobRegistry = jobRegistry;
         this.logger = logger;
         this.missingMethodCalledHandler = missingMethodCalledHandler;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
 
-        this.jobQueueManager.CollectionChanged += HandleUpdate;
+        this.jobQueueManager.CollectionChanged += LogQueueChange;
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -74,7 +77,7 @@ internal sealed partial class QueueWorker : BackgroundService
         }
 
         shutdown?.Dispose();
-        jobQueueManager.CollectionChanged -= HandleUpdate;
+        jobQueueManager.CollectionChanged -= LogQueueChange;
         jobQueueManager.QueueAdded -= OnQueueAdded;
 
         base.Dispose();
@@ -162,7 +165,7 @@ internal sealed partial class QueueWorker : BackgroundService
                 // They must not capture that job's execution context and its log scope.
                 using (ExecutionContext.SuppressFlow())
                 {
-                    workerTask = jobWorker.WorkerAsync(jobQueueName, stopToken);
+                    workerTask = jobWorker.ProcessQueueAsync(jobQueueName, stopToken);
                 }
 
                 workerTasks[jobQueueName] = workerTask;
@@ -254,7 +257,7 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         foreach (var job in jobRegistry.GetAllCronJobs())
         {
-            jobWorker.ScheduleJob(job);
+            cronRunScheduler.ScheduleNextRun(job);
         }
     }
 
@@ -264,7 +267,7 @@ internal sealed partial class QueueWorker : BackgroundService
         LogNewQueueAdded(queueName);
     }
 
-    private void HandleUpdate(object? sender, NotifyCollectionChangedEventArgs e)
+    private void LogQueueChange(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
         {
@@ -284,7 +287,7 @@ internal sealed partial class QueueWorker : BackgroundService
             case NotifyCollectionChangedAction.Move:
             case NotifyCollectionChangedAction.Reset:
             default:
-                throw new ArgumentOutOfRangeException(nameof(e), e.Action, $"Unexpected collection change action in {nameof(HandleUpdate)}");
+                throw new ArgumentOutOfRangeException(nameof(e), e.Action, $"Unexpected collection change action in {nameof(LogQueueChange)}");
         }
     }
 }

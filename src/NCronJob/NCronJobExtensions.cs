@@ -52,6 +52,8 @@ public static class NCronJobExtensions
         services.AddHostedService<QueueWorker>();
         services.TryAddSingleton(jobRegistry);
         services.TryAddSingleton<JobQueueManager>();
+        services.TryAddSingleton<JobConcurrencyLimiter>();
+        services.TryAddSingleton<CronRunScheduler>();
         services.TryAddSingleton<JobWorker>();
         services.TryAddSingleton<JobProcessor>();
         services.TryAddSingleton<JobExecutor>();
@@ -60,7 +62,7 @@ public static class NCronJobExtensions
         services.TryAddSingleton<IRuntimeJobRegistry>(sp => new RuntimeJobRegistry(
             services,
             jobRegistry,
-            sp.GetRequiredService<JobWorker>(),
+            sp.GetRequiredService<CronRunScheduler>(),
             sp.GetRequiredService<JobQueueManager>(),
             sp.GetRequiredService<ConcurrencySettings>(),
             sp.GetRequiredService<TimeProvider>()));

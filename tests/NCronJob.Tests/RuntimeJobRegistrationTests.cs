@@ -157,7 +157,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         var serviceDescriptors = ServiceCollection.ToArray();
         var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
-        var jobWorker = ServiceProvider.GetRequiredService<JobWorker>();
+        var cronRunScheduler = ServiceProvider.GetRequiredService<CronRunScheduler>();
         var queueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
         var settings = ServiceProvider.GetRequiredService<ConcurrencySettings>();
         var previousMaxDegreeOfParallelism = settings.MaxDegreeOfParallelism;
@@ -165,7 +165,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         var existingJob = jobRegistry.FindRootJobDefinition("Existing");
         existingJob.ShouldNotBeNull();
 
-        jobWorker.ScheduleJob(existingJob);
+        cronRunScheduler.ScheduleNextRun(existingJob);
         queueManager.TryGetQueue(typeof(DummyJob).FullName!, out var sharedQueue).ShouldBeTrue();
         var existingRun = sharedQueue.Single();
 
