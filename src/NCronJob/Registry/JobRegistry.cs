@@ -172,15 +172,14 @@ internal sealed class JobRegistry
     }
 
     private List<DependentJobRegistryEntry>? FindDependentJobEntries(JobDefinition parentJobDefinition)
-    {
-        if (!parentJobDefinition.IsDependent)
-        {
-            return dependentJobsPerJobDefinition.GetValueOrDefault(parentJobDefinition);
-        }
+        => parentJobDefinition.IsDependent
+            ? FindDependentJobEntriesOfRootRegistration(parentJobDefinition.Type)
+            : dependentJobsPerJobDefinition.GetValueOrDefault(parentJobDefinition);
 
-        // A dependent run carries a fresh definition, so it inherits the dependents of its type's root registration.
-        var root = allRootJobs.Find(j => j.Type == parentJobDefinition.Type);
-        return root is null ? null : dependentJobsPerJobDefinition.GetValueOrDefault(root);
+    private List<DependentJobRegistryEntry>? FindDependentJobEntriesOfRootRegistration(Type? jobType)
+    {
+        var rootRegistration = allRootJobs.Find(j => j.Type == jobType);
+        return rootRegistration is null ? null : dependentJobsPerJobDefinition.GetValueOrDefault(rootRegistration);
     }
 
     private void AssertNoAmbiguousDependentChains()
