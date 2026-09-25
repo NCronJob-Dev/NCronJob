@@ -1,6 +1,4 @@
 
-using System.Collections.Concurrent;
-
 namespace NCronJob;
 
 internal class JobRun
@@ -10,7 +8,7 @@ internal class JobRun
     private readonly ConcurrencySettings settings;
     private readonly Action<JobRun> progressReporter;
     private readonly JobRunActivationGate? activationGate;
-    private readonly ConcurrentBag<JobRun> pendingDependents = [];
+    private List<JobRun>? pendingDependents;
     private readonly SyncLock orchestrationStateLock = new();
 
     private JobRun(
@@ -133,12 +131,24 @@ internal class JobRun
             CancellationToken = token,
         };
 
-        pendingDependents.Add(run);
+        lock (rootJob.orchestrationStateLock)
+        {
+            (pendingDependents ??= []).Add(run);
+        }
 
         return run;
     }
 
-    public bool RootJobIsCompleted => rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
+    public bool RootJobIsCompleted
+    {
+        get
+        {
+            lock (rootJob.orchestrationStateLock)
+            {
+                return rootJob.IsCompleted && !rootJob.HasPendingDependentJobs();
+            }
+        }
+    }
 
     public ValueTask<bool> WaitForActivationAsync() =>
         activationGate is null
@@ -208,7 +218,7 @@ internal class JobRun
 
     private bool HasPendingDependentJobs()
     {
-        return !pendingDependents.IsEmpty && pendingDependents.Any(j => !j.IsCompleted || j.HasPendingDependentJobs());
+        return pendingDependents is not null && pendingDependents.Exists(j => !j.IsCompleted || j.HasPendingDependentJobs());
     }
 }
 

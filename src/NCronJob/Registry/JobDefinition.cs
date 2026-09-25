@@ -15,6 +15,7 @@ internal sealed record JobDefinition
         Type = type;
         IsTypedJob = true;
         JobFullName = type.FullName!;
+        Name = BuildName(customName, JobFullName);
 
         Parameter = parameter;
         JobPolicyMetadata = new JobExecutionAttributes(type);
@@ -31,11 +32,12 @@ internal sealed record JobDefinition
         JobFullName = customName is not null ?
             $"Untyped job {customName}" :
             $"Untyped job {typeof(DynamicJobFactory).Namespace}.{DynamicJobNameGenerator.GenerateJobName(jobDelegate)}";
+        Name = BuildName(customName, JobFullName);
 
         JobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
     }
 
-    public string Name => CustomName is not null ? $"{CustomName} ({JobFullName})" : JobFullName;
+    public string Name { get; }
 
     public Type? Type { get; }
 
@@ -242,6 +244,9 @@ internal sealed record JobDefinition
         || Parameter is null;
 
     private Delegate? Delegate { get; }
+
+    private static string BuildName(string? customName, string jobFullName) =>
+        customName is not null ? $"{customName} ({jobFullName})" : jobFullName;
 
     private static CronExpression GetCronExpression(string expression)
     {
