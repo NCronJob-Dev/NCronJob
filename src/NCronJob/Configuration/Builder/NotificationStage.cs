@@ -12,8 +12,8 @@ internal sealed class NotificationStage<TJob> : JobStage<TJob> where TJob : clas
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
         ConcurrencySettings settings,
-        JobDefinitionCollector jobDefinitionCollector)
-        : base(services, jobDefinitions, settings, jobDefinitionCollector)
+        PendingJobDefinitions pendingJobDefinitions)
+        : base(services, jobDefinitions, settings, pendingJobDefinitions)
     {
     }
 

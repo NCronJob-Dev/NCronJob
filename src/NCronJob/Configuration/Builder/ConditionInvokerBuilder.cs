@@ -7,7 +7,7 @@ internal static class ConditionInvokerBuilder
         var method = predicate.Method;
         var returnType = method.ReturnType;
         var parameters = method.GetParameters();
-        var serviceResolvers = ServiceResolverHelper.BuildServiceResolvers(parameters);
+        var serviceResolvers = DelegateParameterResolver.BuildServiceResolvers(parameters);
 
         if (returnType == typeof(bool))
         {
@@ -31,6 +31,6 @@ internal static class ConditionInvokerBuilder
             $"The condition predicate must return bool, Task<bool>, or ValueTask<bool>. Found: {returnType.Name}");
 
         object[] ResolveArguments(IServiceProvider sp, CancellationToken ct)
-            => ServiceResolverHelper.ResolveArguments(sp, parameters, serviceResolvers, null, ct);
+            => DelegateParameterResolver.ResolveArguments(sp, parameters, serviceResolvers, null, ct);
     }
 }

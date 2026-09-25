@@ -65,7 +65,7 @@ public sealed class DependentJobBuilder
     public DependentJobBuilder RunJob<TJob>(object? parameter = null)
         where TJob : IJob
     {
-        ApplyJobOption();
+        CommitPendingOption();
         return dependencyBuilder.RunJob<TJob>(parameter);
     }
 
@@ -77,11 +77,11 @@ public sealed class DependentJobBuilder
     /// <returns>Returns a <see cref="DependentJobBuilder"/> for the newly added job.</returns>
     public DependentJobBuilder RunJob(Delegate jobDelegate, string? jobName = null)
     {
-        ApplyJobOption();
+        CommitPendingOption();
         return dependencyBuilder.RunJob(jobDelegate, jobName);
     }
 
-    internal void ApplyJobOption()
+    internal void CommitPendingOption()
     {
         if (jobOption is not null)
         {

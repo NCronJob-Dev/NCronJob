@@ -9,12 +9,12 @@ internal abstract class JobStage<TJob> : INotificationStage<TJob> where TJob : c
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
         ConcurrencySettings settings,
-        JobDefinitionCollector jobDefinitionCollector)
+        PendingJobDefinitions pendingJobDefinitions)
     {
         Services = services;
         JobDefinitions = jobDefinitions;
         Settings = settings;
-        JobDefinitionCollector = jobDefinitionCollector;
+        PendingJobDefinitions = pendingJobDefinitions;
     }
 
     protected IServiceCollection Services { get; }
@@ -23,7 +23,7 @@ internal abstract class JobStage<TJob> : INotificationStage<TJob> where TJob : c
 
     protected ConcurrencySettings Settings { get; }
 
-    protected JobDefinitionCollector JobDefinitionCollector { get; }
+    protected PendingJobDefinitions PendingJobDefinitions { get; }
 
     /// <inheritdoc />
     public INotificationStage<TJob> AddNotificationHandler<TJobNotificationHandler>() where TJobNotificationHandler : class, IJobNotificationHandler<TJob>
@@ -42,18 +42,18 @@ internal abstract class JobStage<TJob> : INotificationStage<TJob> where TJob : c
     /// <inheritdoc />
     public INotificationStage<TJob> ExecuteWhen(Action<DependencyBuilder>? success = null, Action<DependencyBuilder>? faulted = null)
     {
-        ExecuteWhenHelper.AddRegistration(JobDefinitionCollector, JobDefinitions, success, faulted);
+        DependentJobRegistration.Register(PendingJobDefinitions, JobDefinitions, success, faulted);
 
         return this;
     }
 
     /// <inheritdoc />
     public IStartupStage<TNewJob> AddJob<TNewJob>(Action<JobOptionBuilder>? options = null) where TNewJob : class, IJob
-        => new NCronJobOptionBuilder(Services, Settings, JobDefinitionCollector).AddJob<TNewJob>(options);
+        => new NCronJobOptionBuilder(Services, Settings, PendingJobDefinitions).AddJob<TNewJob>(options);
 
     /// <inheritdoc />
     public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
-        => new NCronJobOptionBuilder(Services, Settings, JobDefinitionCollector).AddJob(jobType, options);
+        => new NCronJobOptionBuilder(Services, Settings, PendingJobDefinitions).AddJob(jobType, options);
 
     protected abstract INotificationStage<TJob> AsNotificationStage();
 }

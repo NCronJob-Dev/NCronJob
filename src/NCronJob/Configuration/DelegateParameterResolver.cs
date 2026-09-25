@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace NCronJob;
 
-internal static class ServiceResolverHelper
+internal static class DelegateParameterResolver
 {
     public static Func<IServiceProvider, object>?[] BuildServiceResolvers(ParameterInfo[] parameters)
     {

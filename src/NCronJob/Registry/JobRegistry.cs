@@ -235,25 +235,25 @@ internal sealed class JobRegistry
             """);
     }
 
-    public JobRegistryRegistration FeedFrom(JobDefinitionCollector jdc)
+    public JobRegistryRegistration FeedFrom(PendingJobDefinitions pendingJobDefinitions)
     {
         lock (syncLock)
         {
             var validatedRootJobs = new List<JobDefinition>(allRootJobs);
             var registeredDependencies = new List<RegisteredJobDependency>();
 
-            foreach (var jobDefinition in jdc.Entries.Keys)
+            foreach (var jobDefinition in pendingJobDefinitions.Entries.Keys)
             {
                 AddUnsafe(validatedRootJobs, jobDefinition);
             }
 
-            var registration = new JobRegistryRegistration([.. jdc.Entries.Keys], registeredDependencies);
+            var registration = new JobRegistryRegistration([.. pendingJobDefinitions.Entries.Keys], registeredDependencies);
 
             try
             {
-                allRootJobs.AddRange(jdc.Entries.Keys);
+                allRootJobs.AddRange(pendingJobDefinitions.Entries.Keys);
 
-                foreach (var (jobDefinition, dependentJobs) in jdc.Entries)
+                foreach (var (jobDefinition, dependentJobs) in pendingJobDefinitions.Entries)
                 {
                     List<JobDefinition> value = [jobDefinition];
 

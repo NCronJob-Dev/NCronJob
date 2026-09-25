@@ -12,8 +12,8 @@ internal sealed class StartupStage<TJob> : JobStage<TJob>, IStartupStage<TJob> w
         IServiceCollection services,
         IReadOnlyCollection<JobDefinition> jobDefinitions,
         ConcurrencySettings settings,
-        JobDefinitionCollector jobDefinitionCollector)
-        : base(services, jobDefinitions, settings, jobDefinitionCollector)
+        PendingJobDefinitions pendingJobDefinitions)
+        : base(services, jobDefinitions, settings, pendingJobDefinitions)
     {
     }
 
@@ -29,5 +29,5 @@ internal sealed class StartupStage<TJob> : JobStage<TJob>, IStartupStage<TJob> w
     }
 
     protected override INotificationStage<TJob> AsNotificationStage() =>
-        new NotificationStage<TJob>(Services, JobDefinitions, Settings, JobDefinitionCollector);
+        new NotificationStage<TJob>(Services, JobDefinitions, Settings, PendingJobDefinitions);
 }

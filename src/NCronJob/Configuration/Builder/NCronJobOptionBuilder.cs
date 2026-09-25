@@ -12,16 +12,16 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 {
     private readonly IServiceCollection services;
     private readonly ConcurrencySettings settings;
-    private readonly JobDefinitionCollector jobDefinitionCollector;
+    private readonly PendingJobDefinitions pendingJobDefinitions;
 
     internal NCronJobOptionBuilder(
         IServiceCollection services,
         ConcurrencySettings settings,
-        JobDefinitionCollector jobDefinitionCollector)
+        PendingJobDefinitions pendingJobDefinitions)
     {
         this.services = services;
         this.settings = settings;
-        this.jobDefinitionCollector = jobDefinitionCollector;
+        this.pendingJobDefinitions = pendingJobDefinitions;
     }
 
     /// <summary>
@@ -66,9 +66,9 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     {
         var jobDefinitions = AddJobInternal(typeof(T), options);
 
-        jobDefinitionCollector.Add(jobDefinitions);
+        pendingJobDefinitions.Add(jobDefinitions);
 
-        return new StartupStage<T>(services, jobDefinitions, settings, jobDefinitionCollector);
+        return new StartupStage<T>(services, jobDefinitions, settings, pendingJobDefinitions);
     }
 
     /// <summary>
@@ -90,9 +90,9 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 
         var jobDefinitions = AddJobInternal(jobType, options);
 
-        jobDefinitionCollector.Add(jobDefinitions);
+        pendingJobDefinitions.Add(jobDefinitions);
 
-        return new StartupStage<IJob>(services, jobDefinitions, settings, jobDefinitionCollector);
+        return new StartupStage<IJob>(services, jobDefinitions, settings, pendingJobDefinitions);
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
         var jobDefinition = JobDefinition.CreateUntyped(jobName, jobDelegate);
         jobDefinition.UpdateWith(jobOption);
 
-        jobDefinitionCollector.Add(jobDefinition);
+        pendingJobDefinitions.Add(jobDefinition);
 
         return this;
     }
@@ -149,12 +149,12 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 
     internal void ValidateConcurrencySettings(IReadOnlyCollection<JobDefinition> existingJobDefinitions)
     {
-        foreach (var jobDefinition in existingJobDefinitions.Concat(jobDefinitionCollector.Entries.Keys))
+        foreach (var jobDefinition in existingJobDefinitions.Concat(pendingJobDefinitions.Entries.Keys))
         {
             ValidateConcurrencySetting(jobDefinition.Name, jobDefinition.ConcurrencyPolicy);
         }
 
-        var dependentJobDefinitions = jobDefinitionCollector.Entries.Values
+        var dependentJobDefinitions = pendingJobDefinitions.Entries.Values
             .SelectMany(entries => entries)
             .SelectMany(entry => entry.RunWhenSuccess.Concat(entry.RunWhenFaulted));
 
