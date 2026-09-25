@@ -60,6 +60,7 @@ internal sealed class DependentJobDefinition
         var jobDefinition = IsTypedJob
             ? JobDefinition.CreateTyped(CustomName, Type!, Parameter)
             : JobDefinition.CreateUntyped(CustomName, jobDelegate!);
+        jobDefinition.MarkAsDependent();
 
         foreach (var jobOption in jobOptions)
         {

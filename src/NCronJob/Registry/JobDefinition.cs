@@ -45,6 +45,8 @@ internal sealed record JobDefinition
 
     public bool? ShouldCrashOnStartupFailure { get; private set; }
 
+    public bool IsDependent { get; private set; }
+
     public string? CustomName { get; }
 
     private JobSchedule schedule = JobSchedule.None;
@@ -164,6 +166,8 @@ internal sealed record JobDefinition
             IsEnabled: current.IsEnabled,
             TimeZone: current.TimeZone ?? TimeZoneInfo.Utc);
     }
+
+    public void MarkAsDependent() => IsDependent = true;
 
     public void UpdateWith(JobOption? jobOption)
     {

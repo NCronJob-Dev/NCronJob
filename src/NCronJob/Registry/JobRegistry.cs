@@ -173,16 +173,14 @@ internal sealed class JobRegistry
 
     private List<DependentJobRegistryEntry>? FindDependentJobEntries(JobDefinition parentJobDefinition)
     {
-        if (allRootJobs.Exists(root => ReferenceEquals(root, parentJobDefinition)))
+        if (!parentJobDefinition.IsDependent)
         {
             return dependentJobsPerJobDefinition.GetValueOrDefault(parentJobDefinition);
         }
 
         // A dependent run carries a fresh definition, so it inherits the dependents of its type's root registration.
-        return dependentJobsPerJobDefinition
-            .Where(kvp => kvp.Key.Type == parentJobDefinition.Type)
-            .Select(kvp => kvp.Value)
-            .FirstOrDefault();
+        var root = allRootJobs.Find(j => j.Type == parentJobDefinition.Type);
+        return root is null ? null : dependentJobsPerJobDefinition.GetValueOrDefault(root);
     }
 
     private void AssertNoAmbiguousDependentChains()
@@ -194,9 +192,9 @@ internal sealed class JobRegistry
 
         foreach (var type in dependentJobTypes)
         {
-            var distinctDependencySets = dependentJobsPerJobDefinition
-                .Where(kvp => kvp.Key.Type == type)
-                .Select(kvp => kvp.Value)
+            var distinctDependencySets = allRootJobs
+                .Where(j => j.Type == type)
+                .Select(j => dependentJobsPerJobDefinition.GetValueOrDefault(j) ?? [])
                 .Distinct(DependencySetComparer.Instance)
                 .Count();
 
@@ -204,7 +202,7 @@ internal sealed class JobRegistry
             {
                 throw new InvalidOperationException(
                     $"""
-                    Ambiguous dependent job chain for type '{type.Name}' detected. The job is used as a dependent job, but multiple registrations define their own dependent jobs.
+                    Ambiguous dependent job chain for type '{type.Name}' detected. The job is used as a dependent job, but its registrations define different dependent jobs.
                     Please define the dependent jobs on a single registration or use distinct job types.
                     """);
             }
