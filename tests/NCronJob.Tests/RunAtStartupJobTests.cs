@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -11,7 +10,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
     [Fact]
     public async Task UseNCronJobIsMandatoryWhenStartupJobsAreDefined()
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
@@ -27,7 +26,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
     [Fact]
     public async Task UseNCronJobShouldTriggerStartupJobs()
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
@@ -45,7 +44,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
     [MemberData(nameof(CronAndRunAtStartupBuilders))]
     public async Task StartupJobsShouldOnlyRunOnceWhenAlsoConfiguredAsCron(Action<NCronJobOptionBuilder> nBuilder)
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(nBuilder);
@@ -85,7 +84,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
     [Fact]
     public async Task ShouldStartStartupJobsBeforeApplicationIsSpunUp()
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
@@ -115,7 +114,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
     [MemberData(nameof(CrashingCronAndForgivingRunAtStartupBuilders))]
     public async Task StartupJobThatThrowsShouldNotPreventHostFromStarting(Action<NCronJobOptionBuilder> nBuilder)
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(nBuilder);
@@ -143,7 +142,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
     [MemberData(nameof(CrashingCronAndNonForgivingRunAtStartupBuilders))]
     public async Task StartupJobCanBeConfiguredToPreventHostFromStartingOnFailure(Action<NCronJobOptionBuilder> nBuilder)
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
             services.AddNCronJob(nBuilder);
@@ -197,7 +196,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         },
     };
 
-    private IHost BuildApp(IHostBuilder builder)
+    private IHost BuildApp(HostBuilder builder)
     {
         builder.ConfigureServices(services =>
         {
@@ -208,17 +207,10 @@ public class RunAtStartupJobTests : JobIntegrationBase
         return builder.Build();
     }
 
-    [SuppressMessage("Major Code Smell", "S108:Nested blocks of code should not be left empty", Justification = "On purpose")]
-    private static async Task RunApp(IHost app, TimeSpan? runtime = null)
+    private static async Task RunApp(IHost app)
     {
-        using var cts = new CancellationTokenSource(runtime ?? TimeSpan.FromSeconds(1));
-        try
-        {
-            await app.RunAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
+        await app.StartAsync(TestContext.Current.CancellationToken);
+        await app.StopAsync(TestContext.Current.CancellationToken);
     }
 
     private sealed class StartingService : IHostedService

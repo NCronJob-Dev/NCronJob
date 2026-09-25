@@ -109,17 +109,31 @@ public static class EventsHelper
         ShouldBeInstantThenExpired(events, null, name);
     }
 
+    private static void ShouldFollowStates(
+        IList<ExecutionProgress> events,
+        Type? type,
+        string? name,
+        params ExecutionState[] expectedStates)
+    {
+        for (var i = 0; i < expectedStates.Length; i++)
+        {
+            events[i].ShouldBeWellFormed(type, name, expectedStates[i]);
+        }
+
+        events.Count.ShouldBe(expectedStates.Length);
+    }
+
     private static void ShouldBeScheduledThenCancelled(
         IList<ExecutionProgress> events,
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Scheduled);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.Cancelled);
-        events[4].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(5);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Cancelled,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeScheduledThenCompleted(
@@ -127,15 +141,15 @@ public static class EventsHelper
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Scheduled);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.Initializing);
-        events[4].ShouldBeWellFormed(type, name, ExecutionState.Running);
-        events[5].ShouldBeWellFormed(type, name, ExecutionState.Completing);
-        events[6].ShouldBeWellFormed(type, name, ExecutionState.Completed);
-        events[7].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(8);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Completing,
+            ExecutionState.Completed,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeScheduledThenFaultedDuringInitialization(
@@ -143,13 +157,13 @@ public static class EventsHelper
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Scheduled);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.Initializing);
-        events[4].ShouldBeWellFormed(type, name, ExecutionState.Faulted);
-        events[5].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(6);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Faulted,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeScheduledThenFaultedDuringRun(
@@ -157,14 +171,14 @@ public static class EventsHelper
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Scheduled);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.Initializing);
-        events[4].ShouldBeWellFormed(type, name, ExecutionState.Running);
-        events[5].ShouldBeWellFormed(type, name, ExecutionState.Faulted);
-        events[6].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(7);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Faulted,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeInstantThenCompleted(
@@ -172,14 +186,14 @@ public static class EventsHelper
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Initializing);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.Running);
-        events[4].ShouldBeWellFormed(type, name, ExecutionState.Completing);
-        events[5].ShouldBeWellFormed(type, name, ExecutionState.Completed);
-        events[6].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(7);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Completing,
+            ExecutionState.Completed,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeInstantThenFaultedDuringRun(
@@ -187,13 +201,13 @@ public static class EventsHelper
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Initializing);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.Running);
-        events[4].ShouldBeWellFormed(type, name, ExecutionState.Faulted);
-        events[5].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(6);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Faulted,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeInstantThenExpired(
@@ -201,11 +215,11 @@ public static class EventsHelper
         Type? type,
         string? name)
     {
-        events[0].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationStarted);
-        events[1].ShouldBeWellFormed(type, name, ExecutionState.NotStarted);
-        events[2].ShouldBeWellFormed(type, name, ExecutionState.Expired);
-        events[3].ShouldBeWellFormed(type, name, ExecutionState.OrchestrationCompleted);
-        events.Count.ShouldBe(4);
+        ShouldFollowStates(events, type, name,
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Expired,
+            ExecutionState.OrchestrationCompleted);
     }
 
     private static void ShouldBeWellFormed(
