@@ -1,6 +1,6 @@
 namespace NCronJob;
 
-internal sealed class DependentJobDefinition : IEquatable<DependentJobDefinition>
+internal sealed class DependentJobDefinition
 {
     private readonly Delegate? jobDelegate;
     private readonly List<JobOption> jobOptions = [];
@@ -49,18 +49,6 @@ internal sealed class DependentJobDefinition : IEquatable<DependentJobDefinition
         return new DependentJobDefinition(customName, jobDelegate);
     }
 
-    public static DependentJobDefinition FromRoot(JobDefinition jobDefinition)
-    {
-        ArgumentNullException.ThrowIfNull(jobDefinition);
-
-        if (!jobDefinition.IsTypedJob)
-        {
-            throw new InvalidOperationException("Only typed jobs can define dependent jobs.");
-        }
-
-        return new DependentJobDefinition(jobDefinition.CustomName, jobDefinition.Type, jobDefinition.Parameter);
-    }
-
     public void UpdateWith(JobOption jobOption)
     {
         ArgumentNullException.ThrowIfNull(jobOption);
@@ -80,17 +68,4 @@ internal sealed class DependentJobDefinition : IEquatable<DependentJobDefinition
 
         return jobDefinition;
     }
-
-    public bool Equals(DependentJobDefinition? other) =>
-        ReferenceEquals(this, other)
-        || (other is not null
-            && IsTypedJob
-            && other.IsTypedJob
-            && Type == other.Type
-            && Parameter == other.Parameter
-            && CustomName == other.CustomName);
-
-    public override bool Equals(object? obj) => obj is DependentJobDefinition other && Equals(other);
-
-    public override int GetHashCode() => HashCode.Combine(Type, Parameter, CustomName);
 }

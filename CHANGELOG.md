@@ -6,6 +6,14 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Registering a job type multiple times with different `ExecuteWhen` while it is used as a dependent job now fails fast with an ambiguity error.
+
+### Fixed
+
+- Dependent jobs are now bound to the registration that declared them, so multiple schedules of the same job no longer trigger each other's dependent jobs. Reported by [@nulltoken](https://github.com/nulltoken) in [#108](https://github.com/NCronJob-Dev/NCronJob/issues/108).
+
 ## [v4.12.2] - 2026-09-25
 
 ### Changed

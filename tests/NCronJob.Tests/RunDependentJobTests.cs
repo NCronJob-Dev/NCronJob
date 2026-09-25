@@ -255,6 +255,123 @@ public class RunDependentJobTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task SameJobOnDifferentSchedulesWithoutParameterRunsOnlyItsOwnDependents()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DummyJob>(s => s.WithCronExpression("1 0 1 * *"))
+                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Add("1")));
+            n.AddJob<DummyJob>(s => s.WithCronExpression("1 0 2 * *"))
+                .ExecuteWhen(s => s.RunJob((Storage storage) => storage.Add("2")));
+        });
+
+        await StartNCronJob();
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        await AdvanceTimeUntilOrchestrationCompletion(Events[0].CorrelationId);
+
+        Storage.Entries.ShouldBe(["DummyJob - Parameter: ", "1"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task UpdatingTheParameterKeepsDependentJobs()
+    {
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never).WithName("Root"))
+            .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>()));
+
+        await StartNCronJob();
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().UpdateParameter("Root", "updated");
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob("Root", token: CancellationToken);
+
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
+
+        Storage.Entries.ShouldBe(["DummyJob - Parameter: updated", "AnotherDummyJob - Parameter: "]);
+    }
+
+    [Fact]
+    public async Task NamedJobInAChainRunsItsOwnDependentJobs()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never).WithName("Dummy"))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+        });
+
+        await StartNCronJob();
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
+
+        Storage.Entries.ShouldBe(["PrincipalJob: Success", "DummyJob - Parameter: ", "AnotherDummyJob - Parameter: "]);
+    }
+
+    [Fact]
+    public void RegistrationsOfTheSameDependentJobWithDifferentDependentJobsAreRejected()
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<ExceptionJob>());
+        });
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain("Ambiguous dependent job chain for type 'DummyJob' detected.");
+    }
+
+    [Fact]
+    public void RuntimeRegistrationCausingAnAmbiguousDependentChainIsRolledBack()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+        });
+
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        var rootJobs = jobRegistry.GetAllRootJobs();
+
+        var successful = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().TryRegister(
+            builder => ((NCronJobOptionBuilder)builder)
+                .AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<ExceptionJob>()),
+            out var exception);
+
+        successful.ShouldBeFalse();
+        exception.ShouldBeOfType<InvalidOperationException>()
+            .Message.ShouldContain("Ambiguous dependent job chain for type 'DummyJob' detected.");
+        jobRegistry.GetAllRootJobs().ShouldBe(rootJobs);
+    }
+
+    [Fact]
+    public async Task DependentJobWithMultipleSchedulesSharingDependentJobsIsNotAmbiguous()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5).And.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+        });
+
+        await StartNCronJob();
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<PrincipalJob>(true, token: CancellationToken);
+
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
+
+        Storage.Entries.ShouldBe(["PrincipalJob: Success", "DummyJob - Parameter: ", "AnotherDummyJob - Parameter: "]);
+    }
+
+    [Fact]
     public async Task WhenJobIsNotCreated_DependentFailureJobShouldRun()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<JobThatThrowsInCtor>()

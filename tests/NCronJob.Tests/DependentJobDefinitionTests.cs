@@ -28,22 +28,6 @@ public sealed class DependentJobDefinitionTests
         (await definition.Condition(null!, CancellationToken.None)).ShouldBeTrue();
     }
 
-    [Fact]
-    public void DescriptorIdentityMatchesRootJobIdentityOnly()
-    {
-        var parameter = new object();
-        var root = JobDefinition.CreateTyped("job", typeof(ConfiguredJob), parameter);
-        root.UpdateWith(new JobOption { CronExpression = Cron.AtEveryMinute });
-
-        var identity = DependentJobDefinition.FromRoot(root);
-        var matching = DependentJobDefinition.CreateTyped(typeof(ConfiguredJob), parameter, "job");
-        matching.UpdateWith(new JobOption { Timeout = TimeSpan.FromSeconds(1) });
-        var differentParameter = DependentJobDefinition.CreateTyped(typeof(ConfiguredJob), new object(), "job");
-
-        identity.ShouldBe(matching);
-        identity.ShouldNotBe(differentParameter);
-    }
-
     [RetryPolicy(retryCount: 2)]
     [SupportsConcurrency(2)]
     private sealed class ConfiguredJob : IJob
