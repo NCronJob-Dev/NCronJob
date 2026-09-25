@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.12.3] - 2026-09-25
+
 ### Changed
 
 - Registering a job type multiple times with different `ExecuteWhen` while it is used as a dependent job now fails fast with an ambiguity error.
@@ -660,7 +662,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.2...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.3...HEAD
+[v4.12.3]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.2...v4.12.3
 [v4.12.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.1...v4.12.2
 [v4.12.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.0...v4.12.1
 [v4.12.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.11.0...v4.12.0
