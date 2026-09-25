@@ -40,6 +40,12 @@ Jobs that act as dependency targets cannot be removed while another job still re
 
 If you need to change that graph, update the dependency registrations first and then remove the job.
 
+## Dependent job chains must be unambiguous
+
+A job used as a dependent job runs the dependent jobs of its own registration. If that job type is registered multiple times with different `ExecuteWhen` calls, the registration fails with an ambiguity error.
+
+Define the dependent jobs on a single registration, or use distinct job types.
+
 ## Duplicate registrations fail fast
 
 NCronJob rejects duplicate registrations and conflicting named registrations during setup.

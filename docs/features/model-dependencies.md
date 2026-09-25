@@ -239,3 +239,21 @@ Services.AddNCronJob(options =>
     options.AddJob<JobC>();
 });
 ```
+
+## Dependent jobs belong to their registration
+Dependent jobs are bound to the registration that declares them. Registering the same job on different schedules with different `ExecuteWhen` calls keeps them independent:
+
+```csharp
+Services.AddNCronJob(options =>
+{
+    options.AddJob<AnalysisJob>(p => p.WithCronExpression("0 * * * *"))
+        .ExecuteWhen(success: s => s.RunJob<ReportToProductOwnerJob>());
+
+    options.AddJob<AnalysisJob>(p => p.WithCronExpression("0 0 1 * *"))
+        .ExecuteWhen(success: s => s.RunJob<ReportToStakeholdersJob>());
+});
+```
+
+The hourly run only triggers `ReportToProductOwnerJob`, the monthly run only triggers `ReportToStakeholdersJob`.
+
+When a job runs as a dependent job (like `JobB` in the chain above), it runs the dependent jobs of its own registration. If such a job is registered multiple times with different `ExecuteWhen` calls, NCronJob can't tell which chain to follow and rejects the registration with an ambiguity error.

@@ -10,7 +10,7 @@ internal sealed class JobRegistry
         .SelectMany(v => v)
         .SelectMany(v => v.RunWhenSuccess.Concat(v.RunWhenFaulted));
 
-    private readonly Dictionary<DependentJobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition = [];
+    private readonly Dictionary<JobDefinition, List<DependentJobRegistryEntry>> dependentJobsPerJobDefinition = new(ReferenceEqualityComparer.Instance);
 
     public IReadOnlyCollection<JobDefinition> GetAllRootJobs()
     {
@@ -141,7 +141,7 @@ internal sealed class JobRegistry
     {
         foreach (var jobDefinition in parentJobDefinitions)
         {
-            var entries = dependentJobsPerJobDefinition.GetOrCreateList(DependentJobDefinition.FromRoot(jobDefinition));
+            var entries = dependentJobsPerJobDefinition.GetOrCreateList(jobDefinition);
             entries.Add(entry);
         }
     }
@@ -163,11 +163,51 @@ internal sealed class JobRegistry
                 return [];
             }
 
-            var dependentJobIdentity = DependentJobDefinition.FromRoot(parentJobDefinition);
+            var entries = FindDependentJobEntries(parentJobDefinition);
 
-            return !dependentJobsPerJobDefinition.TryGetValue(dependentJobIdentity, out var types)
+            return entries is null
                 ? []
-                : transform(types).Select(definition => definition.ToJobDefinition()).ToArray();
+                : transform(entries).Select(definition => definition.ToJobDefinition()).ToArray();
+        }
+    }
+
+    private List<DependentJobRegistryEntry>? FindDependentJobEntries(JobDefinition parentJobDefinition)
+    {
+        if (allRootJobs.Exists(root => ReferenceEquals(root, parentJobDefinition)))
+        {
+            return dependentJobsPerJobDefinition.GetValueOrDefault(parentJobDefinition);
+        }
+
+        // A dependent run carries a fresh definition, so it inherits the dependents of its type's root registration.
+        return dependentJobsPerJobDefinition
+            .Where(kvp => kvp.Key.Type == parentJobDefinition.Type)
+            .Select(kvp => kvp.Value)
+            .FirstOrDefault();
+    }
+
+    private void AssertNoAmbiguousDependentChains()
+    {
+        var dependentJobTypes = AllDependentJobDefinitions
+            .Where(d => d.IsTypedJob)
+            .Select(d => d.Type!)
+            .Distinct();
+
+        foreach (var type in dependentJobTypes)
+        {
+            var distinctDependencySets = dependentJobsPerJobDefinition
+                .Where(kvp => kvp.Key.Type == type)
+                .Select(kvp => kvp.Value)
+                .Distinct(DependencySetComparer.Instance)
+                .Count();
+
+            if (distinctDependencySets > 1)
+            {
+                throw new InvalidOperationException(
+                    $"""
+                    Ambiguous dependent job chain for type '{type.Name}' detected. The job is used as a dependent job, but multiple registrations define their own dependent jobs.
+                    Please define the dependent jobs on a single registration or use distinct job types.
+                    """);
+            }
         }
     }
 
@@ -189,7 +229,7 @@ internal sealed class JobRegistry
 
         if (jobDefinition.IsTypedJob)
         {
-            dependentJobsPerJobDefinition.Remove(DependentJobDefinition.FromRoot(jobDefinition));
+            dependentJobsPerJobDefinition.Remove(jobDefinition);
         }
     }
 
@@ -260,11 +300,11 @@ internal sealed class JobRegistry
                     foreach (var entry in dependentJobs)
                     {
                         RegisterJobDependencyUnsafe(value, entry);
-                        registeredDependencies.Add(new RegisteredJobDependency(
-                            DependentJobDefinition.FromRoot(jobDefinition),
-                            entry));
+                        registeredDependencies.Add(new RegisteredJobDependency(jobDefinition, entry));
                     }
                 }
+
+                AssertNoAmbiguousDependentChains();
 
                 return registration;
             }
@@ -304,6 +344,16 @@ internal sealed class JobRegistry
         {
             allRootJobs.RemoveAll(candidate => ReferenceEquals(candidate, jobDefinition));
         }
+    }
+
+    private sealed class DependencySetComparer : IEqualityComparer<List<DependentJobRegistryEntry>>
+    {
+        public static readonly DependencySetComparer Instance = new();
+
+        public bool Equals(List<DependentJobRegistryEntry>? x, List<DependentJobRegistryEntry>? y)
+            => ReferenceEquals(x, y) || (x is not null && y is not null && x.SequenceEqual(y));
+
+        public int GetHashCode(List<DependentJobRegistryEntry> obj) => obj.Count;
     }
 
     private sealed class JobDefinitionEqualityComparer : IEqualityComparer<JobDefinition>
@@ -347,5 +397,5 @@ internal sealed record JobRegistryRegistration(
     IReadOnlyCollection<RegisteredJobDependency> Dependencies);
 
 internal sealed record RegisteredJobDependency(
-    DependentJobDefinition Parent,
+    JobDefinition Parent,
     DependentJobRegistryEntry Entry);
