@@ -312,6 +312,39 @@ public class RunDependentJobTests : JobIntegrationBase
     }
 
     [Fact]
+    public void RegistrationsOfTheSameDependentJobWithAndWithoutDependentJobsAreRejected()
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never));
+        });
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain("Ambiguous dependent job chain for type 'DummyJob' detected.");
+    }
+
+    [Fact]
+    public void RemovedRootDoesNotInheritDependentJobsOfAnotherRegistration()
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5).WithName("Removed"));
+            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never).WithName("Kept"))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+        });
+
+        var jobRegistry = ServiceProvider.GetRequiredService<JobRegistry>();
+        var removedRoot = jobRegistry.FindRootJobDefinitionOrThrow("Removed");
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().RemoveJob("Removed");
+
+        jobRegistry.GetDependentSuccessJobs(removedRoot).ShouldBeEmpty();
+    }
+
+    [Fact]
     public void RegistrationsOfTheSameDependentJobWithDifferentDependentJobsAreRejected()
     {
         Action act = () => ServiceCollection.AddNCronJob(n =>
