@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Notification and condition handler lookup no longer creates a DI scope when no handler is registered for the job.
+
 ## [v4.12.1] - 2026-09-17
 
 ### Fixed
