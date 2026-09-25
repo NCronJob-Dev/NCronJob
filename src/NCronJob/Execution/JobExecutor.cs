@@ -71,7 +71,7 @@ internal sealed partial class JobExecutor : IDisposable
             var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
             await ExecuteJob(runContext, job);
         }
-        catch (Exception exc) when (exc is not OperationCanceledException || !linkedCts.Token.IsCancellationRequested)
+        catch (Exception exc) when (!IsRequestedCancellation(exc, linkedCts.Token))
         {
             LogJobFailed(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
@@ -141,9 +141,8 @@ internal sealed partial class JobExecutor : IDisposable
     }
 
     private Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct) =>
-        TypedJobHandlerInvoker.InvokeAsync<IJobNotificationHandler>(
+        TypedJobHandlerInvoker.InvokeNotificationHandlerAsync(
             serviceProvider,
-            typeof(IJobNotificationHandler<>),
             runContext.JobRun.JobDefinition,
             async notificationService =>
             {
@@ -151,11 +150,14 @@ internal sealed partial class JobExecutor : IDisposable
                 {
                     await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
                 }
-                catch (Exception innerExc) when (innerExc is not OperationCanceledException || !ct.IsCancellationRequested)
+                catch (Exception innerExc) when (!IsRequestedCancellation(innerExc, ct))
                 {
                     LogNotificationHandlerFailed(notificationService.GetType(), innerExc);
                 }
             });
+
+    private static bool IsRequestedCancellation(Exception exception, CancellationToken token) =>
+        exception is OperationCanceledException && token.IsCancellationRequested;
 
     private void InformDependentJobs(JobExecutionContext context, bool success)
     {

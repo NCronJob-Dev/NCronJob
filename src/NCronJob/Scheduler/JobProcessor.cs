@@ -84,9 +84,8 @@ internal sealed partial class JobProcessor
     private partial void LogJobConditionSatisfied(string jobName);
 
     private Task TriggerConditionHandlers(JobRun jobRun, CancellationToken cancellationToken) =>
-        TypedJobHandlerInvoker.InvokeAsync<IJobConditionHandler>(
+        TypedJobHandlerInvoker.InvokeConditionHandlerAsync(
             serviceProvider,
-            typeof(IJobConditionHandler<>),
             jobRun.JobDefinition,
             async handler =>
             {
