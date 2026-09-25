@@ -37,7 +37,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         lock (registrationLock)
         {
             var trackedServices = new TrackingServiceCollection(services);
-            var previousSettings = concurrencySettings.Snapshot();
+            var previousSettings = concurrencySettings.Clone();
             JobRegistryRegistration? registration = null;
             List<JobRun> scheduledRuns = [];
             List<string> createdQueueNames = [];
@@ -45,14 +45,14 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
             try
             {
-                var jdc = new JobDefinitionCollector();
-                var builder = new NCronJobOptionBuilder(trackedServices, concurrencySettings, jdc);
+                var pendingJobDefinitions = new PendingJobDefinitions();
+                var builder = new NCronJobOptionBuilder(trackedServices, concurrencySettings, pendingJobDefinitions);
                 jobBuilder(builder);
                 builder.ValidateConcurrencySettings(jobRegistry.GetAllRootJobs());
 
-                registration = jobRegistry.FeedFrom(jdc);
+                registration = jobRegistry.FeedFrom(pendingJobDefinitions);
 
-                foreach (var jobDefinition in jdc.Entries.Keys)
+                foreach (var jobDefinition in pendingJobDefinitions.Entries.Keys)
                 {
                     cronRunScheduler.ScheduleNextRun(
                         jobDefinition,
@@ -80,7 +80,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
                 }
 
                 TryRollback(trackedServices.Rollback, rollbackExceptions);
-                TryRollback(() => concurrencySettings.Restore(previousSettings), rollbackExceptions);
+                TryRollback(() => concurrencySettings.RestoreFrom(previousSettings), rollbackExceptions);
 
                 exception = rollbackExceptions.Count == 0
                     ? ex

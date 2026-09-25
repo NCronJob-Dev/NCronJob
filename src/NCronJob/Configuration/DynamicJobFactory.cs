@@ -21,7 +21,7 @@ internal sealed class DynamicJobFactory : IJob
 
     public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
-        var arguments = ServiceResolverHelper.ResolveArguments(
+        var arguments = DelegateParameterResolver.ResolveArguments(
             serviceProvider,
             compiledJob.Parameters,
             compiledJob.ServiceResolvers,
@@ -36,7 +36,7 @@ internal sealed class DynamicJobFactory : IJob
         public CompiledJob(Delegate jobAction)
         {
             Parameters = jobAction.Method.GetParameters();
-            ServiceResolvers = ServiceResolverHelper.BuildServiceResolvers(Parameters);
+            ServiceResolvers = DelegateParameterResolver.BuildServiceResolvers(Parameters);
             Invoker = BuildInvoker(jobAction);
         }
 

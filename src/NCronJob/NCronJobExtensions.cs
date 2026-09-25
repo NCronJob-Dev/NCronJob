@@ -26,25 +26,22 @@ public static class NCronJobExtensions
         this IServiceCollection services,
         Action<NCronJobOptionBuilder>? options = null)
     {
-        var jobRegistry = services.FirstOrDefault(d => d.ServiceType == typeof(JobRegistry))?.ImplementationInstance as JobRegistry
-                            ?? new JobRegistry();
+        var jobRegistry = FindRegisteredInstanceOrCreate<JobRegistry>(services);
+        var settings = FindRegisteredInstanceOrCreate<ConcurrencySettings>(services);
+        var previousSettings = settings.Clone();
 
-        var settings = services.FirstOrDefault(d => d.ServiceType == typeof(ConcurrencySettings))?.ImplementationInstance as ConcurrencySettings
-                       ?? new ConcurrencySettings();
-        var previousSettings = settings.Snapshot();
+        var pendingJobDefinitions = new PendingJobDefinitions();
 
-        var jdc = new JobDefinitionCollector();
-
-        var builder = new NCronJobOptionBuilder(services, settings, jdc);
+        var builder = new NCronJobOptionBuilder(services, settings, pendingJobDefinitions);
         try
         {
             options?.Invoke(builder);
             builder.ValidateConcurrencySettings(jobRegistry.GetAllRootJobs());
-            jobRegistry.FeedFrom(jdc);
+            jobRegistry.FeedFrom(pendingJobDefinitions);
         }
         catch
         {
-            settings.Restore(previousSettings);
+            settings.RestoreFrom(previousSettings);
             throw;
         }
 
@@ -179,4 +176,7 @@ public static class NCronJobExtensions
         return host;
     }
 
+    private static T FindRegisteredInstanceOrCreate<T>(IServiceCollection services)
+        where T : class, new() =>
+        services.FirstOrDefault(d => d.ServiceType == typeof(T))?.ImplementationInstance as T ?? new T();
 }

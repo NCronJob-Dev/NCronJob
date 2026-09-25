@@ -1,21 +1,21 @@
 namespace NCronJob;
 
-internal static class ExecuteWhenHelper
+internal static class DependentJobRegistration
 {
-    public static void AddRegistration(
-        JobDefinitionCollector jobDefinitionCollector,
+    public static void Register(
+        PendingJobDefinitions pendingJobDefinitions,
         IReadOnlyCollection<JobDefinition> parentJobDefinitions,
         Action<DependencyBuilder>? success,
         Action<DependencyBuilder>? faulted)
     {
         if (success is not null)
         {
-            jobDefinitionCollector.Add(parentJobDefinitions, new DependentJobRegistryEntry { RunWhenSuccess = Build(success) });
+            pendingJobDefinitions.Add(parentJobDefinitions, new DependentJobRegistryEntry { RunWhenSuccess = Build(success) });
         }
 
         if (faulted is not null)
         {
-            jobDefinitionCollector.Add(parentJobDefinitions, new DependentJobRegistryEntry { RunWhenFaulted = Build(faulted) });
+            pendingJobDefinitions.Add(parentJobDefinitions, new DependentJobRegistryEntry { RunWhenFaulted = Build(faulted) });
         }
     }
 

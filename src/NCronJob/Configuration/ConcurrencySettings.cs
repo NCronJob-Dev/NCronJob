@@ -20,13 +20,13 @@ internal sealed class ConcurrencySettings
     /// </summary>
     public TimeSpan DefaultJobRunExpiry { get; set; } = TimeSpan.FromMinutes(10);
 
-    public ConcurrencySettings Snapshot() => new()
+    public ConcurrencySettings Clone() => new()
     {
         MaxDegreeOfParallelism = MaxDegreeOfParallelism,
         DefaultJobRunExpiry = DefaultJobRunExpiry,
     };
 
-    public void Restore(ConcurrencySettings snapshot)
+    public void RestoreFrom(ConcurrencySettings snapshot)
     {
         MaxDegreeOfParallelism = snapshot.MaxDegreeOfParallelism;
         DefaultJobRunExpiry = snapshot.DefaultJobRunExpiry;

@@ -17,8 +17,7 @@ public sealed class DependencyBuilder
     public DependentJobBuilder RunJob<TJob>(object? parameter = null)
         where TJob : IJob
     {
-        // Apply any pending job options from the last builder
-        lastBuilder?.ApplyJobOption();
+        lastBuilder?.CommitPendingOption();
         
         var jobDefinition = DependentJobDefinition.CreateTyped(typeof(TJob), parameter);
         dependentJobOptions.Add(jobDefinition);
@@ -35,8 +34,7 @@ public sealed class DependencyBuilder
     {
         ArgumentNullException.ThrowIfNull(jobDelegate);
 
-        // Apply any pending job options from the last builder
-        lastBuilder?.ApplyJobOption();
+        lastBuilder?.CommitPendingOption();
 
         var jobDefinition = DependentJobDefinition.CreateUntyped(jobName, jobDelegate);
         dependentJobOptions.Add(jobDefinition);
@@ -46,8 +44,7 @@ public sealed class DependencyBuilder
 
     internal List<DependentJobDefinition> GetDependentJobOption()
     {
-        // Apply any pending job options from the last builder before returning
-        lastBuilder?.ApplyJobOption();
+        lastBuilder?.CommitPendingOption();
         return dependentJobOptions;
     }
 }
