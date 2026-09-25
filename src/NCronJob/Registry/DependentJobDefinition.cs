@@ -58,7 +58,7 @@ internal sealed class DependentJobDefinition : IEquatable<DependentJobDefinition
             throw new InvalidOperationException("Only typed jobs can define dependent jobs.");
         }
 
-        return CreateTyped(jobDefinition.Type, jobDefinition.Parameter, jobDefinition.CustomName);
+        return new DependentJobDefinition(jobDefinition.CustomName, jobDefinition.Type, jobDefinition.Parameter);
     }
 
     public void UpdateWith(JobOption jobOption)

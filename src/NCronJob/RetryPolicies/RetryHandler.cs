@@ -49,7 +49,14 @@ internal sealed partial class RetryHandler : IRetryHandler
         try
         {
             var jobDefinition = runContext.JobRun.JobDefinition;
-            var retryPolicy = jobDefinition.RetryPolicy?.CreatePolicy(serviceProvider) ?? Policy.NoOpAsync();
+            if (jobDefinition.RetryPolicy is null)
+            {
+                runContext.Attempts++;
+                await operation(cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            var retryPolicy = jobDefinition.RetryPolicy.CreatePolicy(serviceProvider);
 
             // Execute the operation using the given retry policy
             await retryPolicy.ExecuteAsync(ct =>

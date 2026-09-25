@@ -54,6 +54,11 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
 
     internal void Report(JobRun run)
     {
+        if (Volatile.Read(ref subscribers).Length == 0)
+        {
+            return;
+        }
+
         var progress = run.ToExecutionProgress();
 
         if (run.IsOrchestrationRoot && progress.State == ExecutionState.NotStarted)
