@@ -7,36 +7,29 @@ internal sealed partial class JobWorker
 {
     private readonly JobQueueManager jobQueueManager;
     private readonly JobProcessor jobProcessor;
-    private readonly JobRegistry registry;
+    private readonly CronRunScheduler cronRunScheduler;
     private readonly TimeProvider timeProvider;
-    private readonly JobExecutionProgressObserver observer;
     private readonly ILogger<JobWorker> logger;
-    private readonly ConcurrencySettings concurrencySettings;
-    private readonly Dictionary<string, int> runningJobCounts = [];
+    private readonly JobConcurrencyLimiter concurrencyLimiter;
     private readonly ConcurrentDictionary<Task, byte> runningJobs = new();
-    private int totalRunningJobCount;
-    private readonly AsyncSignal capacitySignal = new();
-    private readonly SyncLock slotLock = new();
 
     public JobWorker(
         JobQueueManager jobQueueManager,
         JobProcessor jobProcessor,
-        JobRegistry registry,
+        CronRunScheduler cronRunScheduler,
         TimeProvider timeProvider,
-        ConcurrencySettings concurrencySettings,
-        JobExecutionProgressObserver observer,
+        JobConcurrencyLimiter concurrencyLimiter,
         ILogger<JobWorker> logger)
     {
         this.jobQueueManager = jobQueueManager;
         this.jobProcessor = jobProcessor;
-        this.registry = registry;
+        this.cronRunScheduler = cronRunScheduler;
         this.timeProvider = timeProvider;
-        this.observer = observer;
         this.logger = logger;
-        this.concurrencySettings = concurrencySettings;
+        this.concurrencyLimiter = concurrencyLimiter;
     }
 
-    public async Task WorkerAsync(string queueName, CancellationToken cancellationToken)
+    public async Task ProcessQueueAsync(string queueName, CancellationToken cancellationToken)
     {
         try
         {
@@ -63,8 +56,8 @@ internal sealed partial class JobWorker
                     continue;
                 }
 
-                var capacityChanged = GetCapacitySignal();
-                if (!TryReserveSlot(nextJob.JobDefinition))
+                var capacityChanged = concurrencyLimiter.WaitForReleaseAsync();
+                if (!concurrencyLimiter.TryAcquire(nextJob.JobDefinition))
                 {
                     await Task.WhenAny(queueChanged, capacityChanged).WaitAsync(cancellationToken).ConfigureAwait(false);
                     continue;
@@ -72,14 +65,14 @@ internal sealed partial class JobWorker
 
                 if (!jobQueue.TryDequeueIf(nextJob))
                 {
-                    ReleaseSlot(nextJob.JobDefinition);
+                    concurrencyLimiter.Release(nextJob.JobDefinition);
                     continue;
                 }
 
                 if (!await nextJob.WaitForActivationAsync().ConfigureAwait(false))
                 {
                     nextJob.NotifyStateChange(JobStateType.Cancelled);
-                    ReleaseSlot(nextJob.JobDefinition);
+                    concurrencyLimiter.Release(nextJob.JobDefinition);
                     continue;
                 }
 
@@ -87,7 +80,7 @@ internal sealed partial class JobWorker
 
                 if (nextJob.TriggerType == TriggerType.Cron)
                 {
-                    ScheduleJob(nextJob.JobDefinition, priority.NextRunTime);
+                    cronRunScheduler.ScheduleNextRun(nextJob.JobDefinition, priority.NextRunTime);
                 }
             }
         }
@@ -106,7 +99,7 @@ internal sealed partial class JobWorker
     /// </summary>
     public Task WaitForRunningJobsAsync() => Task.WhenAll(runningJobs.Keys);
 
-    public async Task InvokeJob(JobRun jobRun, CancellationToken cancellationToken)
+    public async Task RunImmediatelyAsync(JobRun jobRun, CancellationToken cancellationToken)
     {
         try
         {
@@ -122,7 +115,7 @@ internal sealed partial class JobWorker
             return;
         }
 
-        AcquireSlot(jobRun.JobDefinition);
+        concurrencyLimiter.AcquireIgnoringLimits(jobRun.JobDefinition);
         await StartJobProcessingAsync(jobRun, cancellationToken).ConfigureAwait(false);
     }
 
@@ -141,7 +134,7 @@ internal sealed partial class JobWorker
                 }
                 finally
                 {
-                    ReleaseSlot(jobRun.JobDefinition);
+                    concurrencyLimiter.Release(jobRun.JobDefinition);
                 }
             }, CancellationToken.None);
         }
@@ -181,107 +174,4 @@ internal sealed partial class JobWorker
         cancellationToken.ThrowIfCancellationRequested();
     }
 
-    private bool TryReserveSlot(JobDefinition jobDefinition)
-    {
-        var maxAllowed = jobDefinition.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
-
-        lock (slotLock)
-        {
-            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
-
-            if (currentCount >= maxAllowed || totalRunningJobCount >= concurrencySettings.MaxDegreeOfParallelism)
-            {
-                return false;
-            }
-
-            IncrementSlotUnsafe(jobDefinition.JobFullName, currentCount);
-            return true;
-        }
-    }
-
-    private void AcquireSlot(JobDefinition jobDefinition)
-    {
-        lock (slotLock)
-        {
-            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
-            IncrementSlotUnsafe(jobDefinition.JobFullName, currentCount);
-        }
-    }
-
-    private void IncrementSlotUnsafe(string jobFullName, int currentCount)
-    {
-        runningJobCounts[jobFullName] = currentCount + 1;
-        totalRunningJobCount++;
-    }
-
-    private void ReleaseSlot(JobDefinition jobDefinition)
-    {
-        lock (slotLock)
-        {
-            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
-            runningJobCounts[jobDefinition.JobFullName] = Math.Max(0, currentCount - 1);
-            totalRunningJobCount = Math.Max(0, totalRunningJobCount - 1);
-
-            capacitySignal.Pulse();
-        }
-    }
-
-    private Task GetCapacitySignal()
-    {
-        lock (slotLock)
-        {
-            return capacitySignal.WaitAsync();
-        }
-    }
-
-    public JobRun? ScheduleJob(
-        JobDefinition job,
-        DateTimeOffset? lastScheduledRunTime = null,
-        Action<JobRun>? onRunCreated = null,
-        Action<string>? onQueueCreated = null,
-        JobRunActivationGate? activationGate = null)
-    {
-        if (!job.IsEnabled)
-        {
-            return null;
-        }
-
-        var utcNow = timeProvider.GetUtcNow();
-
-        // When rescheduling after a job fires, the timer may have triggered slightly
-        // before the scheduled time. Using utcNow directly could return the same cron
-        // slot again, causing duplicate execution. Using the later of utcNow and the
-        // last scheduled run time guarantees we always advance past the fired slot.
-        var baseTime = lastScheduledRunTime > utcNow
-            ? lastScheduledRunTime.Value
-            : utcNow;
-        var nextRunTime = job.GetNextCronOccurrence(baseTime);
-
-        if (!nextRunTime.HasValue)
-        {
-            return null;
-        }
-
-        LogNextJobRun(job.Name, nextRunTime.Value);
-        var run = JobRun.Create(
-            timeProvider,
-            observer.Report,
-            job,
-            nextRunTime.Value,
-            concurrencySettings,
-            activationGate);
-        onRunCreated?.Invoke(run);
-        run.NotifyStateChange(JobStateType.Scheduled);
-
-        // Checked atomically with queue removal, so a job removed concurrently isn't brought back by a pending reschedule.
-        if (!jobQueueManager.Enqueue(
-                run,
-                () => registry.IsRootJob(job),
-                onQueueCreated))
-        {
-            run.NotifyStateChange(JobStateType.Cancelled);
-        }
-
-        return run;
-    }
 }

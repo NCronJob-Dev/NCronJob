@@ -10,7 +10,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;
-    private readonly JobWorker jobWorker;
+    private readonly CronRunScheduler cronRunScheduler;
     private readonly JobQueueManager jobQueueManager;
     private readonly ConcurrencySettings concurrencySettings;
     private readonly TimeProvider timeProvider;
@@ -18,14 +18,14 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     public RuntimeJobRegistry(
         IServiceCollection services,
         JobRegistry jobRegistry,
-        JobWorker jobWorker,
+        CronRunScheduler cronRunScheduler,
         JobQueueManager jobQueueManager,
         ConcurrencySettings concurrencySettings,
         TimeProvider timeProvider)
     {
         this.services = services;
         this.jobRegistry = jobRegistry;
-        this.jobWorker = jobWorker;
+        this.cronRunScheduler = cronRunScheduler;
         this.jobQueueManager = jobQueueManager;
         this.concurrencySettings = concurrencySettings;
         this.timeProvider = timeProvider;
@@ -54,7 +54,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
                 foreach (var jobDefinition in jdc.Entries.Keys)
                 {
-                    jobWorker.ScheduleJob(
+                    cronRunScheduler.ScheduleNextRun(
                         jobDefinition,
                         onRunCreated: scheduledRuns.Add,
                         onQueueCreated: createdQueueNames.Add,
@@ -237,7 +237,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     private void RescheduleJob(JobDefinition job)
     {
         jobQueueManager.RemoveQueue(job.JobFullName);
-        jobWorker.ScheduleJob(job);
+        cronRunScheduler.ScheduleNextRun(job);
     }
 
     private static void TryRollback(Action rollback, List<Exception> exceptions)

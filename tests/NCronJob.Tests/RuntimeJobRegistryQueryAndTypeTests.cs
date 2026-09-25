@@ -287,7 +287,7 @@ public class RuntimeJobRegistryQueryAndTypeTests : JobIntegrationBase
         var orphan = JobDefinition.CreateUntyped("Orphan", () => { });
         orphan.UpdateWith(new JobOption { CronExpression = Cron.AtEveryMinute });
 
-        ServiceProvider.GetRequiredService<JobWorker>().ScheduleJob(orphan);
+        ServiceProvider.GetRequiredService<CronRunScheduler>().ScheduleNextRun(orphan);
 
         ServiceProvider.GetRequiredService<JobQueueManager>().GetAllJobQueueNames().ShouldBeEmpty();
     }

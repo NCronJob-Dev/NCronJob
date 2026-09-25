@@ -125,8 +125,8 @@ public sealed class SchedulerConfigurationTests : JobIntegrationBase
         overriddenDefinition.UpdateWith(new JobOption { JobRunExpiry = TimeSpan.FromMinutes(5) });
         var runAt = timeProvider.GetUtcNow();
 
-        var globalRun = JobRun.Create(timeProvider, _ => { }, globalDefinition, runAt, settings);
-        var overriddenRun = JobRun.Create(timeProvider, _ => { }, overriddenDefinition, runAt, settings);
+        var globalRun = JobRun.CreateCron(timeProvider, _ => { }, globalDefinition, runAt, settings);
+        var overriddenRun = JobRun.CreateCron(timeProvider, _ => { }, overriddenDefinition, runAt, settings);
 
         timeProvider.Advance(TimeSpan.FromMinutes(4));
 
@@ -140,7 +140,7 @@ public sealed class SchedulerConfigurationTests : JobIntegrationBase
         var timeProvider = new FakeTimeProvider();
         var settings = new ConcurrencySettings { DefaultJobRunExpiry = Timeout.InfiniteTimeSpan };
         var definition = JobDefinition.CreateTyped(typeof(TimeoutJob), null);
-        var run = JobRun.Create(timeProvider, _ => { }, definition, timeProvider.GetUtcNow(), settings);
+        var run = JobRun.CreateCron(timeProvider, _ => { }, definition, timeProvider.GetUtcNow(), settings);
 
         timeProvider.Advance(TimeSpan.FromDays(365));
 
