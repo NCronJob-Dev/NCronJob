@@ -126,6 +126,8 @@ public sealed class CronJobExecutionTests : JobIntegrationBase
     [Fact]
     public async Task CanRunSecondPrecisionAndMinutePrecisionJobs()
     {
+        // Auto-advancing drifts the clock by more than a second over 61 steps, which skips a second-precision slot.
+        FakeTimer.AutoAdvanceAmount = TimeSpan.Zero;
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(
             p => p.WithCronExpression(Cron.AtEverySecond).WithParameter("Second")
                 .And.WithCronExpression(Cron.AtEveryMinute).WithParameter("Minute")));
