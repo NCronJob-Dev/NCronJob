@@ -105,6 +105,9 @@ public class RunDependentJobTests : JobIntegrationBase
 
         Storage.Entries.Count.ShouldBe(1);
 
+        var principalJobRun = Events[1];
+        var dependentJobEvents = Events.Skip(6).Take(4).ToList();
+
         Events[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
         Events[1].State.ShouldBe(ExecutionState.NotStarted);
         Events[2].State.ShouldBe(ExecutionState.Initializing);
@@ -112,17 +115,16 @@ public class RunDependentJobTests : JobIntegrationBase
         Events[4].State.ShouldBe(ExecutionState.Completing);
         Events[5].State.ShouldBe(ExecutionState.WaitingForDependency);
 
-        // Assess the dependent jobs
-        Events[1].RunId.ShouldBe(Events[6].ParentRunId);
-        Events[6].State.ShouldBe(ExecutionState.NotStarted);
-        Events[1].RunId.ShouldBe(Events[7].ParentRunId);
-        Events[7].State.ShouldBe(ExecutionState.Skipped);
-        Events[1].RunId.ShouldBe(Events[8].ParentRunId);
-        Events[8].State.ShouldBe(ExecutionState.NotStarted);
-        Events[1].RunId.ShouldBe(Events[9].ParentRunId);
-        Events[9].State.ShouldBe(ExecutionState.Skipped);
+        dependentJobEvents[0].State.ShouldBe(ExecutionState.NotStarted);
+        dependentJobEvents[1].State.ShouldBe(ExecutionState.Skipped);
+        dependentJobEvents[2].State.ShouldBe(ExecutionState.NotStarted);
+        dependentJobEvents[3].State.ShouldBe(ExecutionState.Skipped);
 
-        Events[6].RunId.ShouldNotBe(Events[8].RunId);
+        principalJobRun.RunId.ShouldBe(dependentJobEvents[0].ParentRunId);
+        principalJobRun.RunId.ShouldBe(dependentJobEvents[1].ParentRunId);
+        principalJobRun.RunId.ShouldBe(dependentJobEvents[2].ParentRunId);
+        principalJobRun.RunId.ShouldBe(dependentJobEvents[3].ParentRunId);
+        dependentJobEvents[0].RunId.ShouldNotBe(dependentJobEvents[2].RunId);
 
         Events[10].State.ShouldBe(ExecutionState.Completed);
         Events[11].State.ShouldBe(ExecutionState.OrchestrationCompleted);
@@ -541,6 +543,29 @@ public class RunDependentJobTests : JobIntegrationBase
         cancellationTokenPassed.ShouldBeTrue();
         Storage.Entries[0].ShouldBe("PrincipalJob: Success");
         Storage.Entries[1].ShouldBe("DummyJob - Parameter: Message");
+    }
+
+    [Theory]
+    [MemberData(nameof(InstantJobRunners))]
+    public async Task ShouldThrowRuntimeExceptionWhenTriggeringThroughTheInstantJobRegistryAnAmbiguousTypeReference(
+        Func<IInstantJobRegistry, TimeProvider, object?, CancellationToken, Guid> instantJobRunner)
+    {
+        ServiceCollection.AddNCronJob(n =>
+        {
+            n.AddJob<DummyJob>(s => s.WithCronExpression(Cron.AtMinute5))
+                .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
+            n.AddJob<DummyJob>(s => s.WithCronExpression(Cron.Never))
+                .ExecuteWhen(success: s => s.RunJob<ExceptionJob>());
+        });
+
+        await StartNCronJob();
+
+        var instantJobRegistry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        Action act = () => instantJobRunner(instantJobRegistry, FakeTimer, "Hello from InstantJob", CancellationToken);
+
+        act.ShouldThrow<InvalidOperationException>()
+            .Message.ShouldContain("Ambiguous job reference for type 'DummyJob' detected.");
     }
 
     private sealed class FeatureFlagService

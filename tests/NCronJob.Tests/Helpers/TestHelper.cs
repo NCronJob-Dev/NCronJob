@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Time.Testing;
 
 namespace NCronJob.Tests;
 
@@ -11,14 +10,26 @@ public abstract class JobIntegrationBase : IDisposable
 
     protected CancellationToken CancellationToken { get; }
     protected ServiceCollection ServiceCollection { get; }
-    protected FakeTimeProvider FakeTimer { get; }
+    protected TimerAwareFakeTimeProvider FakeTimer { get; }
     protected Storage Storage { get; }
     protected IList<ExecutionProgress> Events => progressMonitor?.Events ?? [];
 
+    protected static Delegate UntypedJob { get; } = (IJobExecutionContext context, Storage storage, CancellationToken token)
+        => { storage.Add($"Done - Parameter : {context.Parameter}"); };
+
+    public static TheoryData<Func<IInstantJobRegistry, TimeProvider, object?, CancellationToken, Guid>> InstantJobRunners()
+    {
+        var t = new TheoryData<Func<IInstantJobRegistry, TimeProvider, object?, CancellationToken, Guid>>();
+        t.Add((i, f, p, t) => i.RunInstantJob<DummyJob>(p, t));
+        t.Add((i, f, p, t) => i.RunScheduledJob<DummyJob>(f.GetUtcNow(), p, t));
+        t.Add((i, f, p, t) => i.ForceRunInstantJob<DummyJob>(p, t));
+        t.Add((i, f, p, t) => i.ForceRunScheduledJob<DummyJob>(TimeSpan.Zero, p, t));
+        return t;
+    }
+
     protected JobIntegrationBase()
     {
-        FakeTimeProvider fakeTimeProvider = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
-        FakeTimer = fakeTimeProvider;
+        FakeTimer = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
 
         var cancellationToken = TestContext.Current.CancellationToken;
         CancellationToken = cancellationToken;
@@ -82,16 +93,16 @@ public abstract class JobIntegrationBase : IDisposable
         Type? type = null) =>
         ProgressMonitor.WaitForStateAsync(state, name, type);
 
-    protected async Task<IList<ExecutionProgress>> AdvanceTimeAndWaitForStateCount(
+    protected async Task<IList<ExecutionProgress>> AdvanceTimeStepwiseUntilStateCount(
         TimeSpan interval,
-        int advances,
+        int steps,
         ExecutionState state,
         int expectedCount)
     {
-        for (var advance = 1; advance <= advances; advance++)
+        for (var step = 1; step <= steps; step++)
         {
             FakeTimer.Advance(interval);
-            await WaitForNthOrchestrationState(state, Math.Min(advance, expectedCount));
+            await WaitForNthOrchestrationState(state, Math.Min(step, expectedCount));
         }
 
         return await WaitForNthOrchestrationState(state, expectedCount);
@@ -100,17 +111,34 @@ public abstract class JobIntegrationBase : IDisposable
     private async Task<T> AdvanceTimeUntilAsync<T>(Task<T> task)
     {
         const int maximumAdvances = 500;
+        const int quietWindowsBeforeFastForward = 3;
+        var remainingQuietWindows = quietWindowsBeforeFastForward;
 
         for (var advance = 0; advance < maximumAdvances && !task.IsCompleted; advance++)
         {
             var progressChanged = ProgressMonitor.WaitForChangeAsync();
+            var firedTimerCountBeforeAdvance = FakeTimer.FiredTimerCount;
 
             FakeTimer.Advance(TimeSpan.FromSeconds(1));
+
+            if (FakeTimer.FiredTimerCount != firedTimerCountBeforeAdvance || ProgressMonitor.HasActiveRuns)
+            {
+                remainingQuietWindows = quietWindowsBeforeFastForward;
+            }
+
+            if (remainingQuietWindows == 0 && !progressChanged.IsCompleted)
+            {
+                continue;
+            }
 
             await Task.WhenAny(
                 task,
                 progressChanged,
                 Task.Delay(TimeSpan.FromMilliseconds(20), CancellationToken));
+
+            remainingQuietWindows = progressChanged.IsCompleted
+                ? quietWindowsBeforeFastForward
+                : remainingQuietWindows - 1;
         }
 
         return await task;

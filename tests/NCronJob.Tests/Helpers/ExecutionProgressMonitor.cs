@@ -7,6 +7,7 @@ public sealed class ExecutionProgressMonitor : IDisposable
 {
     private readonly object sync = new();
     private readonly List<ExecutionProgress> events = [];
+    private readonly Dictionary<Guid, ExecutionState> latestStateByRunId = [];
     private readonly IDisposable subscription;
     private readonly CancellationToken cancellationToken;
     private readonly TimeSpan waitTimeout;
@@ -32,6 +33,17 @@ public sealed class ExecutionProgressMonitor : IDisposable
             lock (sync)
             {
                 return [.. events];
+            }
+        }
+    }
+
+    internal bool HasActiveRuns
+    {
+        get
+        {
+            lock (sync)
+            {
+                return latestStateByRunId.Values.Any(IsActive);
             }
         }
     }
@@ -160,12 +172,24 @@ public sealed class ExecutionProgressMonitor : IDisposable
             }
 
             events.Add(progress);
+            if (progress.RunId is { } runId)
+            {
+                latestStateByRunId[runId] = progress.State;
+            }
+
             signal = eventsChanged;
             eventsChanged = CreateSignal();
         }
 
         signal.TrySetResult();
     }
+
+    private static bool IsActive(ExecutionState state) =>
+        state is ExecutionState.Initializing
+            or ExecutionState.Running
+            or ExecutionState.Retrying
+            or ExecutionState.Completing
+            or ExecutionState.WaitingForDependency;
 
     private static TaskCompletionSource CreateSignal() =>
         new(TaskCreationOptions.RunContinuationsAsynchronously);

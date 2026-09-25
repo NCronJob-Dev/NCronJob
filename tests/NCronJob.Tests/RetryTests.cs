@@ -11,7 +11,8 @@ public sealed class RetryTests : JobIntegrationBase
     [Fact]
     public async Task JobShouldRetryOnFailure()
     {
-        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(2));
+        const int failuresBeforeSuccess = 2;
+        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(failuresBeforeSuccess));
         ServiceCollection.AddNCronJob(n => n.AddJob<FailingJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
         await StartNCronJob();
@@ -22,23 +23,27 @@ public sealed class RetryTests : JobIntegrationBase
 
         await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
-        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        Events.FilterByOrchestrationId(orchestrationId).Select(e => e.State).ShouldBe([
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Retrying,
+            ExecutionState.Retrying,
+            ExecutionState.Completing,
+            ExecutionState.Completed,
+            ExecutionState.OrchestrationCompleted]);
 
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[6].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[7].State.ShouldBe(ExecutionState.Completing);
-        filteredEvents.Count.ShouldBe(10);
-
-        // Validate that the job was retried the correct number of times
-        Storage.Entries[0].ShouldBe("3"); // 2 retries + 1 success
-        Storage.Entries.Count.ShouldBe(1);
+        const int attemptsIncludingSuccess = failuresBeforeSuccess + 1;
+        Storage.Entries.ShouldBe([attemptsIncludingSuccess.ToString(CultureInfo.InvariantCulture)]);
     }
 
     [Fact]
     public async Task JobWithCustomPolicyShouldRetryOnFailure()
     {
-        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(5));
+        const int failuresBeforeSuccess = 5;
+        ServiceCollection.AddSingleton<MaxFailuresWrapper>(new MaxFailuresWrapper(failuresBeforeSuccess));
         ServiceCollection.AddNCronJob(n => n.AddJob<JobUsingCustomPolicy>(p => p.WithCronExpression(Cron.AtEveryMinute)));
 
         await StartNCronJob();
@@ -49,20 +54,23 @@ public sealed class RetryTests : JobIntegrationBase
 
         await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
-        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        Events.FilterByOrchestrationId(orchestrationId).Select(e => e.State).ShouldBe([
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Retrying,
+            ExecutionState.Retrying,
+            ExecutionState.Retrying,
+            ExecutionState.Retrying,
+            ExecutionState.Retrying,
+            ExecutionState.Completing,
+            ExecutionState.Completed,
+            ExecutionState.OrchestrationCompleted]);
 
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[6].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[7].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[8].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[9].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[10].State.ShouldBe(ExecutionState.Completing);
-        filteredEvents.Count.ShouldBe(13);
-
-        // Validate that the job was retried the correct number of times
-        Storage.Entries[0].ShouldBe("6"); // 5 retries + 1 success
-        Storage.Entries.Count.ShouldBe(1);
+        const int attemptsIncludingSuccess = failuresBeforeSuccess + 1;
+        Storage.Entries.ShouldBe([attemptsIncludingSuccess.ToString(CultureInfo.InvariantCulture)]);
     }
 
     [Fact]
@@ -79,18 +87,21 @@ public sealed class RetryTests : JobIntegrationBase
 
         await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
-        var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
+        Events.FilterByOrchestrationId(orchestrationId).Select(e => e.State).ShouldBe([
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Running,
+            ExecutionState.Retrying,
+            ExecutionState.Retrying,
+            ExecutionState.Faulted,
+            ExecutionState.OrchestrationCompleted]);
 
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
-        filteredEvents[5].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[6].State.ShouldBe(ExecutionState.Retrying);
-        filteredEvents[7].State.ShouldBe(ExecutionState.Faulted);
-        filteredEvents.Count.ShouldBe(9);
-
-        // 1 initial + 2 retries, all 3 failed
-        Storage.Entries[0].ShouldBe($"{orchestrationId} Failed - 1");
-        Storage.Entries[1].ShouldBe($"{orchestrationId} Failed - 2");
-        Storage.Entries[2].ShouldBe($"{orchestrationId} Failed - 3");
+        Storage.Entries.ShouldBe([
+            $"{orchestrationId} Failed - 1",
+            $"{orchestrationId} Failed - 2",
+            $"{orchestrationId} Failed - 3"]);
     }
 
     [Fact]
@@ -147,11 +158,12 @@ public sealed class RetryTests : JobIntegrationBase
 
         var filteredEvents = Events.FilterByOrchestrationId(orchestrationId);
 
-        filteredEvents[0].State.ShouldBe(ExecutionState.OrchestrationStarted);
-        filteredEvents[1].State.ShouldBe(ExecutionState.NotStarted);
-        filteredEvents[2].State.ShouldBe(ExecutionState.Scheduled);
-        filteredEvents[3].State.ShouldBe(ExecutionState.Initializing);
-        filteredEvents[4].State.ShouldBe(ExecutionState.Running);
+        filteredEvents.Take(5).Select(e => e.State).ShouldBe([
+            ExecutionState.OrchestrationStarted,
+            ExecutionState.NotStarted,
+            ExecutionState.Scheduled,
+            ExecutionState.Initializing,
+            ExecutionState.Running]);
 
         filteredEvents[filteredEvents.Count - 3].State.ShouldBe(jobAndState.state);
         filteredEvents[filteredEvents.Count - 2].State.ShouldBe(ExecutionState.Cancelled);
@@ -272,6 +284,6 @@ public sealed class RetryTests : JobIntegrationBase
         public IAsyncPolicy CreatePolicy(int maxRetryAttempts = 3, double delayFactor = 2) =>
             Policy.Handle<Exception>()
                 .WaitAndRetryAsync(maxRetryAttempts,
-                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(delayFactor, retryAttempt)));
+                    _ => TimeSpan.Zero);
     }
 }
