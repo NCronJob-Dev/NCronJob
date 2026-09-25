@@ -113,6 +113,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#construct-complex-dependencies">Construct complex dependencies</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dependent-jobs-belong-to-their-registration">Dependent jobs belong to their registration</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
@@ -364,6 +366,21 @@ If you need to ensure the order of execution, see the next section.</p>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">();</span>
 <span class="p">});</span>
 </code></pre></div>
+
+<h2 id="dependent-jobs-belong-to-their-registration">Dependent jobs belong to their registration<a class="headerlink" href="#dependent-jobs-belong-to-their-registration" title="Permanent link">&para;</a></h2>
+<p>Dependent jobs are bound to the registration that declares them. Registering the same job on different schedules with different <code>ExecuteWhen</code> calls keeps them independent:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">AnalysisJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 * * * *&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">ReportToProductOwnerJob</span><span class="o">&gt;</span><span class="p">());</span>
+
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">AnalysisJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 1 * *&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">ReportToStakeholdersJob</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p>The hourly run only triggers <code>ReportToProductOwnerJob</code>, the monthly run only triggers <code>ReportToStakeholdersJob</code>.</p>
+<p>When a job runs as a dependent job (like <code>JobB</code> in the chain above), it runs the dependent jobs of its own registration. If such a job is registered multiple times with different <code>ExecuteWhen</code> calls, NCronJob can&rsquo;t tell which chain to follow and rejects the registration with an ambiguity error.</p>
               
             </div>
           </div><footer>

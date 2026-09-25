@@ -117,6 +117,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#runtime-removal-has-limits">Runtime removal has limits</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dependent-job-chains-must-be-unambiguous">Dependent job chains must be unambiguous</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#duplicate-registrations-fail-fast">Duplicate registrations fail fast</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#scheduler-pressure-can-skip-work">Scheduler pressure can skip work</a>
@@ -173,6 +175,9 @@ If one startup job depends on another, model that dependency explicitly instead 
 <h2 id="runtime-removal-has-limits">Runtime removal has limits<a class="headerlink" href="#runtime-removal-has-limits" title="Permanent link">&para;</a></h2>
 <p>Jobs that act as dependency targets cannot be removed while another job still references them as a dependent job.</p>
 <p>If you need to change that graph, update the dependency registrations first and then remove the job.</p>
+<h2 id="dependent-job-chains-must-be-unambiguous">Dependent job chains must be unambiguous<a class="headerlink" href="#dependent-job-chains-must-be-unambiguous" title="Permanent link">&para;</a></h2>
+<p>A job used as a dependent job runs the dependent jobs of its own registration. If that job type is registered multiple times with different <code>ExecuteWhen</code> calls, the registration fails with an ambiguity error.</p>
+<p>Define the dependent jobs on a single registration, or use distinct job types.</p>
 <h2 id="duplicate-registrations-fail-fast">Duplicate registrations fail fast<a class="headerlink" href="#duplicate-registrations-fail-fast" title="Permanent link">&para;</a></h2>
 <p>NCronJob rejects duplicate registrations and conflicting named registrations during setup.</p>
 <p>This is especially relevant when:</p>
