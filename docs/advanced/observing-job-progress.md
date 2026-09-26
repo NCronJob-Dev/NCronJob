@@ -280,6 +280,27 @@ Given the orchestration defined above, with jobs of varying durations, the gener
 [...]
 ```
 
+## Tracing with OpenTelemetry
+
+Every job run is emitted as an `Activity` from the `ActivitySource` named `NCronJobDiagnostics.ActivitySourceName` (`"NCronJob"`). Subscribe to it to see job runs in your traces:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource(NCronJobDiagnostics.ActivitySourceName));
+```
+
+The activity is named after the job and carries these tags:
+
+| Tag | Description |
+|-----|-------------|
+| `ncronjob.job.name` | Name of the job |
+| `ncronjob.correlation_id` | Correlation identifier shared by a job and its dependent jobs |
+| `ncronjob.trigger_type` | `Cron`, `Instant`, `Startup` or `Dependent` |
+| `ncronjob.attempts` | Number of attempts, including retries |
+| `error.type` | Exception type, when the run failed |
+
+A failed run sets the activity status to `Error`.
+
 ## Known limitations
 
 As global NCronJob observability is still under development, it's not feature complete yet.

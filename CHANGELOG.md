@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Job runs are traced as `Activity` instances from the `NCronJob` `ActivitySource` (`NCronJobDiagnostics.ActivitySourceName`), so they show up in OpenTelemetry traces.
+
 ## [v4.12.3] - 2026-09-25
 
 ### Changed
