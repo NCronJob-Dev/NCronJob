@@ -65,6 +65,7 @@ internal sealed partial class JobExecutor : IDisposable
 
         await using var scope = serviceProvider.CreateAsyncScope();
         var runContext = new JobExecutionContext(run);
+        using var activity = StartActivity(runContext);
 
         try
         {
@@ -73,11 +74,27 @@ internal sealed partial class JobExecutor : IDisposable
         }
         catch (Exception exc) when (!IsRequestedCancellation(exc, linkedCts.Token))
         {
+            activity?.SetStatus(ActivityStatusCode.Error, exc.Message);
+            activity?.SetTag("error.type", exc.GetType().FullName);
             LogJobFailed(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
             await NotifyExceptionHandlers(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
             runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
         }
+        finally
+        {
+            activity?.SetTag("ncronjob.attempts", runContext.Attempts);
+        }
+    }
+
+    private static Activity? StartActivity(JobExecutionContext runContext)
+    {
+        var activity = NCronJobDiagnostics.ActivitySource.StartActivity(runContext.JobRun.JobDefinition.Name);
+        activity?
+            .SetTag("ncronjob.job.name", runContext.JobRun.JobDefinition.Name)
+            .SetTag("ncronjob.correlation_id", runContext.CorrelationId.ToString())
+            .SetTag("ncronjob.trigger_type", runContext.TriggerType.ToString());
+        return activity;
     }
 
     private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
