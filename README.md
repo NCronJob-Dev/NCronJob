@@ -13,6 +13,10 @@
 [![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![Coverage](https://codecov.io/gh/NCronJob-Dev/NCronJob/graph/badge.svg?token=HM8G8TCYUC)](https://codecov.io/gh/NCronJob-Dev/NCronJob)
 
+<p align="center">
+  <img src="/assets/showcase.svg" alt="NCronJob showcase: cron with time zones, job chains, conditional runs, runtime control, instant jobs" width="880"/>
+</p>
+
 # NCronJob
 
 A Job Scheduler sitting on top of `IHostedService` in .NET.
