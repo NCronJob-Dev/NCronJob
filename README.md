@@ -1,13 +1,5 @@
 <h1 align="center">NCronJob</h1>
 
-<p align="center">
-  <img src="/assets/logo_small.png" alt="logo" width="120px" height="120px"/>
-  <br>
-  <em>Scheduling made easy</em>
-  <br>
-</p>
-
-
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
