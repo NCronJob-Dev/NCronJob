@@ -74,6 +74,7 @@ Unknown macros throw an `ArgumentException`.
 
 - **Log scopes**: every job run executes in a log scope, so all entries written during the run (including the job's own `ILogger<T>`) carry `JobName`, `JobRunId`, `CorrelationId` and `TriggerType` (`Cron`, `Instant`, `Startup` or `Dependent`). Scopes must be enabled in the logging provider, e.g. `IncludeScopes` for the console logger
 - **Tracing**: each job run is an `Activity` from the `ActivitySource` named `NCronJobDiagnostics.ActivitySourceName` (`"NCronJob"`). Subscribe with `AddOpenTelemetry().WithTracing(t => t.AddSource(NCronJobDiagnostics.ActivitySourceName))`. Tags: `ncronjob.job.name`, `ncronjob.correlation_id`, `ncronjob.trigger_type`, `ncronjob.attempts` and `error.type` on failure; a failed run sets the status to `Error`
+- **Metrics**: a `Meter` named `NCronJobDiagnostics.MeterName` (`"NCronJob"`). Subscribe with `AddOpenTelemetry().WithMetrics(m => m.AddMeter(NCronJobDiagnostics.MeterName))`. Counters `ncronjob.job.runs`, `ncronjob.job.failures`, `ncronjob.job.retries`, `ncronjob.job.skipped`, `ncronjob.job.expired` and histogram `ncronjob.job.duration` (seconds, including retries), tagged with `ncronjob.job.name` and `ncronjob.trigger_type`
 - **Progress**: `IJobExecutionProgressReporter` observes run state changes
 
 ## Practical rules
@@ -107,7 +108,7 @@ Unknown macros throw an `ArgumentException`.
 - [Notifications](https://docs.ncronjob.dev/features/notifications/)
 - [Conditional Job Scheduling](https://docs.ncronjob.dev/features/conditional-job-scheduling/)
 - [Dynamic Job Control](https://docs.ncronjob.dev/advanced/dynamic-job-control/)
-- [Observing job progress and tracing](https://docs.ncronjob.dev/advanced/observing-job-progress/)
+- [Observing job progress, tracing and metrics](https://docs.ncronjob.dev/advanced/observing-job-progress/)
 - [Log level and log scopes](https://docs.ncronjob.dev/advanced/log-level/)
 - [Known gotchas](https://docs.ncronjob.dev/advanced/known-gotchas/)
 
