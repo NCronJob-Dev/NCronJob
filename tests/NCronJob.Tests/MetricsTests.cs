@@ -55,7 +55,7 @@ public sealed class MetricsTests : JobIntegrationBase
 
         Sum("ncronjob.job.runs").ShouldBe(1);
         Sum("ncronjob.job.failures").ShouldBe(1);
-        Sum("ncronjob.job.duration").ShouldBeGreaterThanOrEqualTo(0);
+        measurements.ShouldContain(m => m.Instrument == "ncronjob.job.duration" && m.Value >= 0);
     }
 
     [Fact]
@@ -67,6 +67,7 @@ public sealed class MetricsTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         await AdvanceTimeUntilOrchestrationCompletion(Events[0].CorrelationId);
+        await WaitForMeasurement("ncronjob.job.failures");
 
         Sum("ncronjob.job.runs").ShouldBe(1);
         Sum("ncronjob.job.retries").ShouldBe(2);
