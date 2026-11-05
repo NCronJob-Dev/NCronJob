@@ -31,6 +31,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 
 - Every run executes in a log scope with `JobName`, `JobRunId`, `CorrelationId` and `TriggerType`; see [Log level and log scopes](advanced/log-level.md#log-scopes)
 - Every run is an `Activity` from the `"NCronJob"` `ActivitySource` (`NCronJobDiagnostics.ActivitySourceName`); see [Tracing with OpenTelemetry](advanced/observing-job-progress.md#tracing-with-opentelemetry)
+- Runs, failures, retries, skipped/expired runs and run duration are metrics of the `"NCronJob"` `Meter` (`NCronJobDiagnostics.MeterName`); see [Metrics with OpenTelemetry](advanced/observing-job-progress.md#metrics-with-opentelemetry)
 
 ### Runtime interaction
 
