@@ -181,6 +181,8 @@ internal class JobRun
 
             SetState(new JobState(type, timeProvider.GetUtcNow(), fault));
         }
+
+        NCronJobMetrics.RecordStateChange(this, type);
     }
 
     public ExecutionProgress ToExecutionProgress()

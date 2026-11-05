@@ -132,7 +132,15 @@ internal sealed partial class JobExecutor : IDisposable
         runContext.JobRun.NotifyStateChange(JobStateType.Running);
         LogRunningJob(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
 
-        await retryHandler.ExecuteAsync(token => job.RunAsync(runContext, token), runContext, stoppingToken);
+        var startTimestamp = Stopwatch.GetTimestamp();
+        try
+        {
+            await retryHandler.ExecuteAsync(token => job.RunAsync(runContext, token), runContext, stoppingToken);
+        }
+        finally
+        {
+            NCronJobMetrics.RecordDuration(runContext.JobRun, startTimestamp);
+        }
 
         stoppingToken.ThrowIfCancellationRequested();
 

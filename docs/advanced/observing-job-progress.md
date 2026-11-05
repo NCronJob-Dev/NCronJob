@@ -301,6 +301,26 @@ The activity is named after the job and carries these tags:
 
 A failed run sets the activity status to `Error`.
 
+## Metrics with OpenTelemetry
+
+Job runs are also measured by a `Meter` named `NCronJobDiagnostics.MeterName` (`"NCronJob"`):
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics.AddMeter(NCronJobDiagnostics.MeterName));
+```
+
+| Instrument | Type | Unit | Description |
+|------------|------|------|-------------|
+| `ncronjob.job.runs` | Counter | `{run}` | Runs that started executing |
+| `ncronjob.job.failures` | Counter | `{run}` | Runs that ended as faulted |
+| `ncronjob.job.retries` | Counter | `{retry}` | Retry attempts |
+| `ncronjob.job.skipped` | Counter | `{run}` | Runs skipped, e.g. because a condition was not met |
+| `ncronjob.job.expired` | Counter | `{run}` | Runs that expired before they could start |
+| `ncronjob.job.duration` | Histogram | `s` | Duration of a run, including retries |
+
+All instruments carry the tags `ncronjob.job.name` and `ncronjob.trigger_type` (`Cron`, `Instant`, `Startup` or `Dependent`).
+
 ## Known limitations
 
 As global NCronJob observability is still under development, it's not feature complete yet.
