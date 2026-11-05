@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+Entry as NuGet publish was failing 
+
 ## [v4.13.0] - 2026-11-05
 
 ### Added
