@@ -171,7 +171,7 @@ By default jobs are not executed concurrently if the <code>SupportsConcurrency</
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;ConcurrentJob with Id {context.Id} is running.&quot;</span><span class="p">);</span>
 <span class="w">        </span><span class="c1">// Simulate some work by delaying</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$&quot;ConcurrentJob with Id {context.Id} has completed.&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>

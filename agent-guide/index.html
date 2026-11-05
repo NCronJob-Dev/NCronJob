@@ -60,6 +60,10 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#job-authoring">Job authoring</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scheduling-options">Scheduling options</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#observability">Observability</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#runtime-interaction">Runtime interaction</a>
     </li>
         </ul>
@@ -175,6 +179,18 @@
 <li><code>IJobExecutionContext</code> provides the parameter, attempt count, correlation id, and execution metadata</li>
 <li>The minimal API style resolves services directly from the delegate signature</li>
 </ul>
+<h3 id="scheduling-options">Scheduling options<a class="headerlink" href="#scheduling-options" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>WithCronExpression(...)</code> accepts cron expressions (with optional seconds) and macros such as <code>@hourly</code>, <code>@daily</code>, <code>@weekly</code>, <code>@monthly</code>, <code>@yearly</code>, <code>@every_minute</code> and <code>@every_second</code>; see <a href="../features/define-and-schedule-jobs/#cron-macros">Cron macros</a></li>
+<li><code>WithTimeout(TimeSpan)</code> cancels a run that executes too long; see <a href="../features/timeouts-and-expiry/">Timeouts and run expiry</a></li>
+<li><code>WithMaxDegreeOfParallelism(int)</code> limits concurrently executing jobs scheduler-wide; see <a href="../advanced/global-concurrency/">Global concurrency</a></li>
+</ul>
+<h3 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Every run executes in a log scope with <code>JobName</code>, <code>JobRunId</code>, <code>CorrelationId</code> and <code>TriggerType</code>; see <a href="../advanced/log-level/#log-scopes">Log level and log scopes</a></li>
+<li>Every run is an <code>Activity</code> from the <code>"NCronJob"</code> <code>ActivitySource</code> (<code>NCronJobDiagnostics.ActivitySourceName</code>); see <a href="../advanced/observing-job-progress/#tracing-with-opentelemetry">Tracing with OpenTelemetry</a></li>
+<li>Runs, failures, retries, skipped/expired runs and run duration are metrics of the <code>"NCronJob"</code> <code>Meter</code> (<code>NCronJobDiagnostics.MeterName</code>); see <a href="../advanced/observing-job-progress/#metrics-with-opentelemetry">Metrics with OpenTelemetry</a></li>
+</ul>
 <h3 id="runtime-interaction">Runtime interaction<a class="headerlink" href="#runtime-interaction" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>IInstantJobRegistry</code> triggers instant and delayed jobs</li>
@@ -185,7 +201,10 @@
 <li><a href="../getting-started/">Getting Started</a></li>
 <li><a href="../features/define-and-schedule-jobs/">Define and Schedule Jobs</a></li>
 <li><a href="../features/instant-jobs/">Triggering instant jobs</a></li>
+<li><a href="../features/timeouts-and-expiry/">Timeouts and run expiry</a></li>
+<li><a href="../advanced/global-concurrency/">Global concurrency</a></li>
 <li><a href="../advanced/dynamic-job-control/">Dynamic Job Control</a></li>
+<li><a href="../advanced/observing-job-progress/">Observing job progress</a> and <a href="../advanced/log-level/">log scopes</a></li>
 <li><a href="../advanced/known-gotchas/">Known gotchas</a></li>
 </ol>
 <h2 id="high-signal-behavioral-notes">High-signal behavioral notes<a class="headerlink" href="#high-signal-behavioral-notes" title="Permanent link">&para;</a></h2>
@@ -194,6 +213,7 @@
 <li><code>RunInstantJob&lt;TJob&gt;()</code> can become ambiguous if multiple registrations exist for the same job type; prefer <code>RunInstantJob("job-name")</code> in that case</li>
 <li>Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution</li>
 <li>Forced instant jobs (<code>ForceRunInstantJob</code> / <code>ForceRunScheduledJob</code>) bypass queue and concurrency protection</li>
+<li>A timed-out run is <code>Cancelled</code> and does not trigger dependencies; jobs must honor the <code>CancellationToken</code></li>
 <li>After <code>Build()</code>, call <code>UseNCronJobAsync()</code> or <code>UseNCronJob()</code> whenever <code>RunAtStartup(...)</code> is used; see <a href="../features/startup-jobs/">Running Startup Jobs</a></li>
 </ul>
 <h2 id="repository-sample-map">Repository sample map<a class="headerlink" href="#repository-sample-map" title="Permanent link">&para;</a></h2>

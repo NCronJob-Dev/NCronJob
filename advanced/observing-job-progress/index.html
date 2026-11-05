@@ -115,6 +115,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#sample-usage">Sample usage</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#tracing-with-opentelemetry">Tracing with OpenTelemetry</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#metrics-with-opentelemetry">Metrics with OpenTelemetry</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#known-limitations">Known limitations</a>
     </li>
     </ul>
@@ -242,7 +246,7 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[A]: Starting processing...&quot;</span><span class="p">);</span>
 
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
 
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[A]: Processing is done.&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
@@ -258,7 +262,7 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[B]: Starting processing...&quot;</span><span class="p">);</span>
 
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
 
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[B]: Processing is done.&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
@@ -274,7 +278,7 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[C]: Starting processing...&quot;</span><span class="p">);</span>
 
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
 
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[C]: Processing is done.&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
@@ -290,7 +294,7 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[D]: Starting processing...&quot;</span><span class="p">);</span>
 
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Delay</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
 
 <span class="w">        </span><span class="n">Logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;[D]: Processing is done.&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
@@ -339,15 +343,15 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <span class="w">            </span><span class="p">{</span>
 <span class="w">                </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span>
 <span class="w">                    </span><span class="s">&quot;Orchestration {CorrelationId} - {Status}&quot;</span><span class="p">,</span>
-<span class="w">                    </span><span class="n">progress</span><span class="p">.</span><span class="n">CorrelationId</span><span class="p">.</span><span class="n">ToString</span><span class="p">()[</span><span class="m">1.</span><span class="p">.</span><span class="m">8</span><span class="p">],</span>
+<span class="w">                    </span><span class="n">progress</span><span class="p">.</span><span class="n">CorrelationId</span><span class="p">.</span><span class="n">ToString</span><span class="p">()[</span><span class="mi">1</span><span class="p">.</span><span class="mf">.8</span><span class="p">],</span>
 <span class="w">                    </span><span class="n">progress</span><span class="p">.</span><span class="n">State</span><span class="p">);</span>
 
 <span class="w">                </span><span class="k">return</span><span class="p">;</span>
 <span class="w">            </span><span class="p">}</span>
 
 <span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;Job {CorrelationId}/{JobRunId} - {Type} - {Status}&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">CorrelationId</span><span class="p">.</span><span class="n">ToString</span><span class="p">()[</span><span class="m">1.</span><span class="p">.</span><span class="m">8</span><span class="p">],</span>
-<span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">RunId</span><span class="p">.</span><span class="n">ToString</span><span class="p">()[</span><span class="m">1.</span><span class="p">.</span><span class="m">8</span><span class="p">],</span>
+<span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">CorrelationId</span><span class="p">.</span><span class="n">ToString</span><span class="p">()[</span><span class="mi">1</span><span class="p">.</span><span class="mf">.8</span><span class="p">],</span>
+<span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">RunId</span><span class="p">.</span><span class="n">ToString</span><span class="p">()[</span><span class="mi">1</span><span class="p">.</span><span class="mf">.8</span><span class="p">],</span>
 <span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">Type</span><span class="p">,</span>
 <span class="w">                </span><span class="n">progress</span><span class="p">.</span><span class="n">State</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
@@ -403,6 +407,99 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 [...]
 </code></pre></div>
 
+<h2 id="tracing-with-opentelemetry">Tracing with OpenTelemetry<a class="headerlink" href="#tracing-with-opentelemetry" title="Permanent link">&para;</a></h2>
+<p>Every job run is emitted as an <code>Activity</code> from the <code>ActivitySource</code> named <code>NCronJobDiagnostics.ActivitySourceName</code> (<code>"NCronJob"</code>). Subscribe to it to see job runs in your traces:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddOpenTelemetry</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithTracing</span><span class="p">(</span><span class="n">tracing</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">tracing</span><span class="p">.</span><span class="n">AddSource</span><span class="p">(</span><span class="n">NCronJobDiagnostics</span><span class="p">.</span><span class="n">ActivitySourceName</span><span class="p">));</span>
+</code></pre></div>
+
+<p>The activity is named after the job and carries these tags:</p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ncronjob.job.name</code></td>
+<td>Name of the job</td>
+</tr>
+<tr>
+<td><code>ncronjob.correlation_id</code></td>
+<td>Correlation identifier shared by a job and its dependent jobs</td>
+</tr>
+<tr>
+<td><code>ncronjob.trigger_type</code></td>
+<td><code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code></td>
+</tr>
+<tr>
+<td><code>ncronjob.attempts</code></td>
+<td>Number of attempts, including retries</td>
+</tr>
+<tr>
+<td><code>error.type</code></td>
+<td>Exception type, when the run failed</td>
+</tr>
+</tbody>
+</table>
+<p>A failed run sets the activity status to <code>Error</code>.</p>
+<h2 id="metrics-with-opentelemetry">Metrics with OpenTelemetry<a class="headerlink" href="#metrics-with-opentelemetry" title="Permanent link">&para;</a></h2>
+<p>Job runs are also measured by a <code>Meter</code> named <code>NCronJobDiagnostics.MeterName</code> (<code>"NCronJob"</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddOpenTelemetry</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithMetrics</span><span class="p">(</span><span class="n">metrics</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">metrics</span><span class="p">.</span><span class="n">AddMeter</span><span class="p">(</span><span class="n">NCronJobDiagnostics</span><span class="p">.</span><span class="n">MeterName</span><span class="p">));</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Instrument</th>
+<th>Type</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ncronjob.job.runs</code></td>
+<td>Counter</td>
+<td><code>{run}</code></td>
+<td>Runs that started executing</td>
+</tr>
+<tr>
+<td><code>ncronjob.job.failures</code></td>
+<td>Counter</td>
+<td><code>{run}</code></td>
+<td>Runs that ended as faulted</td>
+</tr>
+<tr>
+<td><code>ncronjob.job.retries</code></td>
+<td>Counter</td>
+<td><code>{retry}</code></td>
+<td>Retry attempts</td>
+</tr>
+<tr>
+<td><code>ncronjob.job.skipped</code></td>
+<td>Counter</td>
+<td><code>{run}</code></td>
+<td>Runs skipped, e.g. because a condition was not met</td>
+</tr>
+<tr>
+<td><code>ncronjob.job.expired</code></td>
+<td>Counter</td>
+<td><code>{run}</code></td>
+<td>Runs that expired before they could start</td>
+</tr>
+<tr>
+<td><code>ncronjob.job.duration</code></td>
+<td>Histogram</td>
+<td><code>s</code></td>
+<td>Duration of a run, including retries</td>
+</tr>
+</tbody>
+</table>
+<p>All instruments carry the tags <code>ncronjob.job.name</code> and <code>ncronjob.trigger_type</code> (<code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code>).</p>
 <h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
 <p>As global NCronJob observability is still under development, it&rsquo;s not feature complete yet.</p>
 <p>Below are know missing parts of it. Would you find other releated areas of interest that may be worth investigating, please submit a request in the issue tracker.</p>

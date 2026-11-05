@@ -162,7 +162,7 @@
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;RetryJob simulating failure.&quot;</span><span class="p">);</span>
 <span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in RetryJob.&quot;</span><span class="p">);</span>
@@ -182,7 +182,7 @@
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;FixedIntervalRetryJob simulating failure.&quot;</span><span class="p">);</span>
 <span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in FixedIntervalRetryJob.&quot;</span><span class="p">);</span>
@@ -203,7 +203,7 @@
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">attemptCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attemptCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="s">&quot;FixedIntervalRetryJob simulating failure.&quot;</span><span class="p">);</span>
 <span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">&quot;Simulated operation failure in FixedIntervalRetryJob.&quot;</span><span class="p">);</span>
@@ -216,7 +216,7 @@
 
 <span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomPolicyCreator</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IPolicyCreator</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">IAsyncPolicy</span><span class="w"> </span><span class="nf">CreatePolicy</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">maxRetryAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">delayFactor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">IAsyncPolicy</span><span class="w"> </span><span class="nf">CreatePolicy</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">maxRetryAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">delayFactor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Policy</span><span class="p">.</span><span class="n">Handle</span><span class="o">&lt;</span><span class="n">Exception</span><span class="o">&gt;</span><span class="p">()</span>
 <span class="w">            </span><span class="p">.</span><span class="n">WaitAndRetryAsync</span><span class="p">(</span><span class="n">maxRetryAttempts</span><span class="p">,</span>

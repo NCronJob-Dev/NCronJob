@@ -166,7 +166,7 @@ handler via <code>IJobExecutionContext.Output</code> instead.</p>
 
 <span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">HandleAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="o">?</span><span class="w"> </span><span class="n">exception</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">exception</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">exception</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">LogError</span><span class="p">(</span><span class="n">exception</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Job failed&quot;</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>

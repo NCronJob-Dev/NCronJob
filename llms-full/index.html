@@ -68,6 +68,12 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#manage-recurring-jobs-at-runtime">Manage recurring jobs at runtime</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configure-scheduling-limits">Configure scheduling limits</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cron-expressions-and-macros">Cron expressions and macros</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#observability">Observability</a>
+    </li>
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#practical-rules">Practical rules</a>
@@ -201,6 +207,60 @@
 <li><code>IRuntimeJobRegistry.EnableJob(...)</code></li>
 <li><code>IRuntimeJobRegistry.DisableJob(...)</code></li>
 </ul>
+<h3 id="configure-scheduling-limits">Configure scheduling limits<a class="headerlink" href="#configure-scheduling-limits" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>WithTimeout(TimeSpan)</code> on a job cancels a run once its execution exceeds the duration (retries share one window); <code>Timeout.InfiniteTimeSpan</code> disables it. A timed-out run is reported as <code>Cancelled</code> and triggers no success or fault dependencies. Also available for dependent jobs and startup jobs</li>
+<li><code>WithJobRunExpiry(TimeSpan)</code> on a job and <code>WithDefaultJobRunExpiry(TimeSpan)</code> on the options limit how late a queued run may start (default: 10 minutes); expired runs are dropped without executing</li>
+<li><code>WithMaxDegreeOfParallelism(int)</code> on the options builder sets the scheduler-wide maximum of concurrently executing jobs; the value must be greater than zero</li>
+</ul>
+<h3 id="cron-expressions-and-macros">Cron expressions and macros<a class="headerlink" href="#cron-expressions-and-macros" title="Permanent link">&para;</a></h3>
+<p><code>WithCronExpression(...)</code> and <code>AddNCronJob(Delegate, ...)</code> accept 5-part expressions, 6-part expressions with seconds, or one of these macros (evaluated in the configured time zone):</p>
+<table>
+<thead>
+<tr>
+<th>Macro</th>
+<th>Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@every_second</code></td>
+<td><code>* * * * * *</code></td>
+</tr>
+<tr>
+<td><code>@every_minute</code></td>
+<td><code>* * * * *</code></td>
+</tr>
+<tr>
+<td><code>@hourly</code></td>
+<td><code>0 * * * *</code></td>
+</tr>
+<tr>
+<td><code>@daily</code> / <code>@midnight</code></td>
+<td><code>0 0 * * *</code></td>
+</tr>
+<tr>
+<td><code>@weekly</code></td>
+<td><code>0 0 * * 0</code></td>
+</tr>
+<tr>
+<td><code>@monthly</code></td>
+<td><code>0 0 1 * *</code></td>
+</tr>
+<tr>
+<td><code>@yearly</code> / <code>@annually</code></td>
+<td><code>0 0 1 1 *</code></td>
+</tr>
+</tbody>
+</table>
+<p>Unknown macros throw an <code>ArgumentException</code>.</p>
+<h3 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Log scopes</strong>: every job run executes in a log scope, so all entries written during the run (including the job&rsquo;s own <code>ILogger&lt;T&gt;</code>) carry <code>JobName</code>, <code>JobRunId</code>, <code>CorrelationId</code> and <code>TriggerType</code> (<code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code>). Scopes must be enabled in the logging provider, e.g. <code>IncludeScopes</code> for the console logger</li>
+<li><strong>Tracing</strong>: each job run is an <code>Activity</code> from the <code>ActivitySource</code> named <code>NCronJobDiagnostics.ActivitySourceName</code> (<code>"NCronJob"</code>). Subscribe with <code>AddOpenTelemetry().WithTracing(t =&gt; t.AddSource(NCronJobDiagnostics.ActivitySourceName))</code>. Tags: <code>ncronjob.job.name</code>, <code>ncronjob.correlation_id</code>, <code>ncronjob.trigger_type</code>, <code>ncronjob.attempts</code> and <code>error.type</code> on failure; a failed run sets the status to <code>Error</code></li>
+<li><strong>Metrics</strong>: a <code>Meter</code> named <code>NCronJobDiagnostics.MeterName</code> (<code>"NCronJob"</code>). Subscribe with <code>AddOpenTelemetry().WithMetrics(m =&gt; m.AddMeter(NCronJobDiagnostics.MeterName))</code>. Counters <code>ncronjob.job.runs</code>, <code>ncronjob.job.failures</code>, <code>ncronjob.job.retries</code>, <code>ncronjob.job.skipped</code>, <code>ncronjob.job.expired</code> and histogram <code>ncronjob.job.duration</code> (seconds, including retries), tagged with <code>ncronjob.job.name</code> and <code>ncronjob.trigger_type</code></li>
+<li><strong>Progress</strong>: <code>IJobExecutionProgressReporter</code> observes run state changes</li>
+</ul>
 <h2 id="practical-rules">Practical rules<a class="headerlink" href="#practical-rules" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Name jobs when you need runtime management</li>
@@ -209,6 +269,7 @@
 <li>Parameters are passed by reference and are not serialized</li>
 <li>Forced instant and scheduled jobs bypass queueing and concurrency safeguards</li>
 <li>Startup jobs require <code>UseNCronJobAsync()</code> or <code>UseNCronJob()</code></li>
+<li>Jobs have no execution timeout by default; jobs must observe the <code>CancellationToken</code> for <code>WithTimeout</code> to take effect</li>
 </ul>
 <h2 id="best-starting-points">Best starting points<a class="headerlink" href="#best-starting-points" title="Permanent link">&para;</a></h2>
 <ul>
@@ -222,6 +283,7 @@
 <li><a href="https://docs.ncronjob.dev/features/parameters/">Passing Parameters</a></li>
 <li><a href="https://docs.ncronjob.dev/features/instant-jobs/">Triggering instant jobs</a></li>
 <li><a href="https://docs.ncronjob.dev/features/concurrency-control/">Concurrency control</a></li>
+<li><a href="https://docs.ncronjob.dev/advanced/global-concurrency/">Global concurrency</a></li>
 <li><a href="https://docs.ncronjob.dev/features/timeouts-and-expiry/">Job timeouts and run expiry</a></li>
 <li><a href="https://docs.ncronjob.dev/features/retry-support/">Retry support</a></li>
 <li><a href="https://docs.ncronjob.dev/features/minimal-api/">Minimal API</a></li>
@@ -230,6 +292,8 @@
 <li><a href="https://docs.ncronjob.dev/features/notifications/">Notifications</a></li>
 <li><a href="https://docs.ncronjob.dev/features/conditional-job-scheduling/">Conditional Job Scheduling</a></li>
 <li><a href="https://docs.ncronjob.dev/advanced/dynamic-job-control/">Dynamic Job Control</a></li>
+<li><a href="https://docs.ncronjob.dev/advanced/observing-job-progress/">Observing job progress, tracing and metrics</a></li>
+<li><a href="https://docs.ncronjob.dev/advanced/log-level/">Log level and log scopes</a></li>
 <li><a href="https://docs.ncronjob.dev/advanced/known-gotchas/">Known gotchas</a></li>
 </ul>
 <h2 id="sample-projects">Sample projects<a class="headerlink" href="#sample-projects" title="Permanent link">&para;</a></h2>
