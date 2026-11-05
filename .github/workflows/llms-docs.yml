@@ -1,0 +1,22 @@
+name: llms-full.md freshness
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-llms-check') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - name: Check llms-full.md is updated with public API changes
+      run: .github/scripts/check-llms-full.sh "origin/${{ github.base_ref }}"

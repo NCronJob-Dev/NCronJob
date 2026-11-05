@@ -21,6 +21,17 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - `IJobExecutionContext` provides the parameter, attempt count, correlation id, and execution metadata
 - The minimal API style resolves services directly from the delegate signature
 
+### Scheduling options
+
+- `WithCronExpression(...)` accepts cron expressions (with optional seconds) and macros such as `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly`, `@every_minute` and `@every_second`; see [Cron macros](features/define-and-schedule-jobs.md#cron-macros)
+- `WithTimeout(TimeSpan)` cancels a run that executes too long; see [Timeouts and run expiry](features/timeouts-and-expiry.md)
+- `WithMaxDegreeOfParallelism(int)` limits concurrently executing jobs scheduler-wide; see [Global concurrency](advanced/global-concurrency.md)
+
+### Observability
+
+- Every run executes in a log scope with `JobName`, `JobRunId`, `CorrelationId` and `TriggerType`; see [Log level and log scopes](advanced/log-level.md#log-scopes)
+- Every run is an `Activity` from the `"NCronJob"` `ActivitySource` (`NCronJobDiagnostics.ActivitySourceName`); see [Tracing with OpenTelemetry](advanced/observing-job-progress.md#tracing-with-opentelemetry)
+
 ### Runtime interaction
 
 - `IInstantJobRegistry` triggers instant and delayed jobs
@@ -31,8 +42,11 @@ This page is a compact entry point for assistants, scripts, and contributors who
 1. [Getting Started](getting-started.md)
 2. [Define and Schedule Jobs](features/define-and-schedule-jobs.md)
 3. [Triggering instant jobs](features/instant-jobs.md)
-4. [Dynamic Job Control](advanced/dynamic-job-control.md)
-5. [Known gotchas](advanced/known-gotchas.md)
+4. [Timeouts and run expiry](features/timeouts-and-expiry.md)
+5. [Global concurrency](advanced/global-concurrency.md)
+6. [Dynamic Job Control](advanced/dynamic-job-control.md)
+7. [Observing job progress](advanced/observing-job-progress.md) and [log scopes](advanced/log-level.md)
+8. [Known gotchas](advanced/known-gotchas.md)
 
 ## High-signal behavioral notes
 
@@ -40,6 +54,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - `RunInstantJob<TJob>()` can become ambiguous if multiple registrations exist for the same job type; prefer `RunInstantJob("job-name")` in that case
 - Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution
 - Forced instant jobs (`ForceRunInstantJob` / `ForceRunScheduledJob`) bypass queue and concurrency protection
+- A timed-out run is `Cancelled` and does not trigger dependencies; jobs must honor the `CancellationToken`
 - After `Build()`, call `UseNCronJobAsync()` or `UseNCronJob()` whenever `RunAtStartup(...)` is used; see [Running Startup Jobs](features/startup-jobs.md)
 
 ## Repository sample map
