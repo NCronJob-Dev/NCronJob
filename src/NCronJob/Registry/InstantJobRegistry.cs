@@ -128,8 +128,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry jobRegistry;
     private readonly JobWorker jobWorker;
-    private readonly ConcurrencySettings settings;
-    private readonly JobExecutionProgressObserver observer;
+    private readonly JobRunFactory jobRunFactory;
     private readonly ILogger<InstantJobRegistry> logger;
 
     public InstantJobRegistry(
@@ -137,16 +136,14 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
         JobQueueManager jobQueueManager,
         JobRegistry jobRegistry,
         JobWorker jobWorker,
-        ConcurrencySettings settings,
-        JobExecutionProgressObserver observer,
+        JobRunFactory jobRunFactory,
         ILogger<InstantJobRegistry> logger)
     {
         this.timeProvider = timeProvider;
         this.jobQueueManager = jobQueueManager;
         this.jobRegistry = jobRegistry;
         this.jobWorker = jobWorker;
-        this.settings = settings;
-        this.observer = observer;
+        this.jobRunFactory = jobRunFactory;
         this.logger = logger;
     }
 
@@ -307,14 +304,7 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
         bool forceExecution,
         CancellationToken token)
     {
-        var run = JobRun.CreateInstant(
-            timeProvider,
-            observer.Report,
-            jobDefinition,
-            startDate,
-            parameter,
-            token,
-            settings);
+        var run = jobRunFactory.CreateInstant(jobDefinition, startDate, parameter, token);
 
         run.Priority = JobPriority.High;
 

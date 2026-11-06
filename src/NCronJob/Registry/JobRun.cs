@@ -182,40 +182,7 @@ internal class JobRun
             SetState(new JobState(type, timeProvider.GetUtcNow(), fault));
         }
 
-        NCronJobMetrics.RecordStateChange(this, type);
-    }
-
-    public ExecutionProgress ToExecutionProgress()
-    {
-        return new ExecutionProgress(
-            timeProvider.GetUtcNow(),
-            CorrelationId,
-            MapFrom(CurrentState.Type),
-            JobRunId,
-            ParentJobRunId,
-            JobDefinition.CustomName,
-            JobDefinition.Type,
-            JobDefinition.IsTypedJob);
-    }
-
-    private static ExecutionState MapFrom(JobStateType currentState)
-    {
-        return currentState switch
-        {
-            JobStateType.NotStarted => ExecutionState.NotStarted,
-            JobStateType.Scheduled => ExecutionState.Scheduled,
-            JobStateType.Initializing => ExecutionState.Initializing,
-            JobStateType.Running => ExecutionState.Running,
-            JobStateType.Retrying => ExecutionState.Retrying,
-            JobStateType.Completing => ExecutionState.Completing,
-            JobStateType.WaitingForDependency => ExecutionState.WaitingForDependency,
-            JobStateType.Skipped => ExecutionState.Skipped,
-            JobStateType.Completed => ExecutionState.Completed,
-            JobStateType.Faulted => ExecutionState.Faulted,
-            JobStateType.Cancelled => ExecutionState.Cancelled,
-            JobStateType.Expired => ExecutionState.Expired,
-            _ => ExecutionState.Undetermined,
-        };
+        NCronJobMetrics.RecordStateChange(JobDefinition.Name, TriggerType, type);
     }
 
     private bool HasPendingDependentJobs()

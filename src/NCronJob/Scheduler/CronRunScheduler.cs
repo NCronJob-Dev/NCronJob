@@ -7,24 +7,29 @@ internal sealed partial class CronRunScheduler
     private readonly JobQueueManager jobQueueManager;
     private readonly JobRegistry registry;
     private readonly TimeProvider timeProvider;
-    private readonly JobExecutionProgressObserver observer;
-    private readonly ConcurrencySettings concurrencySettings;
+    private readonly JobRunFactory jobRunFactory;
     private readonly ILogger<CronRunScheduler> logger;
 
     public CronRunScheduler(
         JobQueueManager jobQueueManager,
         JobRegistry registry,
         TimeProvider timeProvider,
-        JobExecutionProgressObserver observer,
-        ConcurrencySettings concurrencySettings,
+        JobRunFactory jobRunFactory,
         ILogger<CronRunScheduler> logger)
     {
         this.jobQueueManager = jobQueueManager;
         this.registry = registry;
         this.timeProvider = timeProvider;
-        this.observer = observer;
-        this.concurrencySettings = concurrencySettings;
+        this.jobRunFactory = jobRunFactory;
         this.logger = logger;
+    }
+
+    public void ScheduleInitialRuns()
+    {
+        foreach (var job in registry.GetAllCronJobs())
+        {
+            ScheduleNextRun(job);
+        }
     }
 
     public JobRun? ScheduleNextRun(
@@ -56,13 +61,7 @@ internal sealed partial class CronRunScheduler
         }
 
         LogNextJobRun(job.Name, nextRunTime.Value);
-        var run = JobRun.CreateCron(
-            timeProvider,
-            observer.Report,
-            job,
-            nextRunTime.Value,
-            concurrencySettings,
-            activationGate);
+        var run = jobRunFactory.CreateCron(job, nextRunTime.Value, activationGate);
         onRunCreated?.Invoke(run);
         run.NotifyStateChange(JobStateType.Scheduled);
 

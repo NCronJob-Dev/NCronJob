@@ -52,6 +52,35 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
             IsTypedJob = null,
         };
 
+    private static ExecutionProgress ToExecutionProgress(JobRun run) =>
+        new(
+            run.CurrentState.Timestamp,
+            run.CorrelationId,
+            MapFrom(run.CurrentState.Type),
+            run.JobRunId,
+            run.ParentJobRunId,
+            run.JobDefinition.CustomName,
+            run.JobDefinition.Type,
+            run.JobDefinition.IsTypedJob);
+
+    private static ExecutionState MapFrom(JobStateType currentState) =>
+        currentState switch
+        {
+            JobStateType.NotStarted => ExecutionState.NotStarted,
+            JobStateType.Scheduled => ExecutionState.Scheduled,
+            JobStateType.Initializing => ExecutionState.Initializing,
+            JobStateType.Running => ExecutionState.Running,
+            JobStateType.Retrying => ExecutionState.Retrying,
+            JobStateType.Completing => ExecutionState.Completing,
+            JobStateType.WaitingForDependency => ExecutionState.WaitingForDependency,
+            JobStateType.Skipped => ExecutionState.Skipped,
+            JobStateType.Completed => ExecutionState.Completed,
+            JobStateType.Faulted => ExecutionState.Faulted,
+            JobStateType.Cancelled => ExecutionState.Cancelled,
+            JobStateType.Expired => ExecutionState.Expired,
+            _ => ExecutionState.Undetermined,
+        };
+
     internal void Report(JobRun run)
     {
         if (Volatile.Read(ref subscribers).Length == 0)
@@ -59,7 +88,7 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
             return;
         }
 
-        var progress = run.ToExecutionProgress();
+        var progress = ToExecutionProgress(run);
 
         if (run.IsOrchestrationRoot && progress.State == ExecutionState.NotStarted)
         {

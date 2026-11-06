@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <ServerGarbageCollector>false</ServerGarbageCollector>
+        <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+        <TieredPGO>false</TieredPGO>
+        <!-- Measurement harness, not shipped code: forced GCs and global-namespace helper types are intentional. -->
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <NoWarn>$(NoWarn);S3903;S1215;CA1305;CA1812;CA1852</NoWarn>
+        <!-- Overridable so the very same harness can be pointed at another checkout of the library. -->
+        <NCronJobProject Condition="'$(NCronJobProject)' == ''">$(MSBuildThisFileDirectory)..\..\src\NCronJob\NCronJob.csproj</NCronJobProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="$(NCronJobProject)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" />
+        <PackageReference Include="Polly" />
+    </ItemGroup>
+
+</Project>

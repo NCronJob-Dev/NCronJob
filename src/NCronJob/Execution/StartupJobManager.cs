@@ -7,9 +7,8 @@ namespace NCronJob;
 internal sealed partial class StartupJobManager(
     JobRegistry jobRegistry,
     JobProcessor jobProcessor,
-    JobExecutionProgressObserver observer,
+    JobRunFactory jobRunFactory,
     TimeProvider timeProvider,
-    ConcurrencySettings settings,
     ILogger<StartupJobManager> logger)
 {
     public async Task ProcessStartupJobs(CancellationToken stopToken)
@@ -26,7 +25,7 @@ internal sealed partial class StartupJobManager(
         List<JobRun> jobRuns = [];
         var startupTasks = startupJobs.Select(definition =>
         {
-            var jobRun = JobRun.CreateStartupJob(timeProvider, observer.Report, definition, settings);
+            var jobRun = jobRunFactory.CreateStartup(definition);
 
             jobRuns.Add(jobRun);
             return CreateExecutionTask(jobRun, stopToken);
