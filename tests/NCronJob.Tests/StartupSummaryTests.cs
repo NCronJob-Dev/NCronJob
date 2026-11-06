@@ -46,6 +46,19 @@ public sealed class StartupSummaryTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task SummaryKeepsSecondsForSecondPrecisionSchedules()
+    {
+        ServiceCollection.AddLogging(b => b.AddProvider(loggerProvider));
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEverySecond)));
+
+        await StartNCronJob();
+
+        var summary = loggerProvider.Entries.Single(e => e.Message.StartsWith("NCronJob started with", StringComparison.Ordinal));
+
+        summary.Message.ShouldMatch(@"next \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$");
+    }
+
+    [Fact]
     public async Task QueueChangesAreNotLoggedAboveDebug()
     {
         ServiceCollection.AddLogging(b => b.SetMinimumLevel(LogLevel.Debug).AddProvider(loggerProvider));

@@ -5,7 +5,8 @@ namespace NCronJob;
 
 internal static class StartupSummaryFormatter
 {
-    private const string NextRunFormat = "yyyy-MM-dd HH:mm";
+    private const string MinutePrecisionFormat = "yyyy-MM-dd HH:mm";
+    private const string SecondPrecisionFormat = "yyyy-MM-dd HH:mm:ss";
 
     public static string Format(IReadOnlyCollection<(JobDefinition Job, JobRun? FirstRun)> scheduledJobs)
     {
@@ -54,7 +55,9 @@ internal static class StartupSummaryFormatter
     {
         if (entry.FirstRun is { } run)
         {
-            return "next " + TimeZoneInfo.ConvertTime(run.RunAt, timeZone).ToString(NextRunFormat, CultureInfo.InvariantCulture);
+            var nextRun = TimeZoneInfo.ConvertTime(run.RunAt, timeZone);
+            var format = nextRun.Second == 0 ? MinutePrecisionFormat : SecondPrecisionFormat;
+            return "next " + nextRun.ToString(format, CultureInfo.InvariantCulture);
         }
 
         return entry.Job.IsEnabled ? "no upcoming run" : "disabled";
