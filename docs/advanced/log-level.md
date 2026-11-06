@@ -14,6 +14,18 @@ The **NCronJob** scheduler can be configured to log at a specific log level.
 }
 ```
 
+## Startup summary
+
+At startup, NCronJob logs one `Information` entry listing all cron jobs with their schedule, time zone and next run. This answers whether a job is scheduled at all:
+
+```
+NCronJob started with 2 jobs:
+  nightly-import   0 2 * * *   Europe/Helsinki next 2026-11-07 02:00
+  cache-warmup     */5 * * * * UTC             next 2026-11-06 19:10
+```
+
+Disabled jobs show `disabled` instead of the next run. Adding and removing jobs from the internal queue is logged at `Debug`.
+
 ## Log scopes
 
 Every job run is executed within a [log scope](https://learn.microsoft.com/dotnet/core/extensions/logging#log-scopes). All log entries written during the run carry the following properties, including the ones written by your job through its injected `ILogger<T>`:

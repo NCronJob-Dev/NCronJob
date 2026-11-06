@@ -53,9 +53,9 @@ internal sealed partial class QueueChangeLogger : IHostedService, IDisposable
         }
     }
 
-    [LoggerMessage(LogLevel.Information, "Job added to queue: '{JobName}' at {RunAt:o}")]
+    [LoggerMessage(LogLevel.Debug, "Job added to queue: '{JobName}' at {RunAt:o}")]
     private partial void LogJobAddedToQueue(string jobName, DateTimeOffset? runAt);
 
-    [LoggerMessage(LogLevel.Information, "Job removed from queue: '{JobName}' at {RunAt:o}")]
+    [LoggerMessage(LogLevel.Debug, "Job removed from queue: '{JobName}' at {RunAt:o}")]
     private partial void LogJobRemovedFromQueue(string jobName, DateTimeOffset? runAt);
 }
