@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.13.5] - 2026-11-06
+
 ### Changed
 
 - Quieter default logs: "Job added to queue" and "Job removed from queue" are now logged at `Debug` instead of `Information`. Instead, a single `Information` summary listing every scheduled cron job (name, cron expression, time zone and next run) is logged at startup.
@@ -682,7 +684,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.2...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.5...HEAD
+[v4.13.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.2...v4.13.5
 [v4.13.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.1...v4.13.2
 [v4.13.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.0...v4.13.1
 [v4.13.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.12.3...v4.13.0
