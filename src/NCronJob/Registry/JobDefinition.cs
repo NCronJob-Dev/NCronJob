@@ -1,6 +1,7 @@
 using Cronos;
 using System.Diagnostics.CodeAnalysis;
 
+
 namespace NCronJob;
 
 internal sealed record JobDefinition
@@ -27,7 +28,7 @@ internal sealed record JobDefinition
     {
         CustomName = customName;
 
-        Delegate = jobDelegate;
+        JobDelegate = jobDelegate;
         IsTypedJob = false;
         JobFullName = customName is not null ?
             $"Untyped job {customName}" :
@@ -89,7 +90,7 @@ internal sealed record JobDefinition
     public Func<IServiceProvider, CancellationToken, ValueTask<bool>>? Condition { get; private set; }
 
     [MemberNotNullWhen(true, nameof(Type))]
-    [MemberNotNullWhen(false, nameof(Delegate))]
+    [MemberNotNullWhen(false, nameof(JobDelegate))]
     public bool IsTypedJob { get; }
 
     public bool IsEnabled => schedule.IsEnabled;
@@ -117,20 +118,9 @@ internal sealed record JobDefinition
         Delegate jobDelegate)
     => new(name, jobDelegate);
 
-    public void Disable()
-    {
-        UpdateSchedule(current => current with { CronExpression = NotReachableCronDefinition });
-    }
+    public void Disable() => UpdateSchedule(current => current.Disable());
 
-    public void Enable()
-    {
-        UpdateSchedule(current => current with
-        {
-            CronExpression = current.UserDefinedCronExpression is not null
-                ? GetCronExpression(current.UserDefinedCronExpression.Trim())
-                : null
-        });
-    }
+    public void Enable() => UpdateSchedule(current => current.Enable());
 
     // Compare-and-swap so a concurrent schedule change is never overwritten by a stale snapshot.
     private void UpdateSchedule(Func<JobSchedule, JobSchedule> update)
@@ -145,14 +135,13 @@ internal sealed record JobDefinition
 
     public DateTimeOffset? GetNextCronOccurrence(DateTimeOffset utcNow)
     {
-        var current = schedule;
-        return current.CronExpression?.GetNextOccurrence(utcNow, current.TimeZone ?? TimeZoneInfo.Utc);
+        return schedule.GetNextOccurrence(utcNow);
     }
 
     public (string? UserDefinedCronExpression, TimeZoneInfo? TimeZone) GetSchedule()
     {
         var current = schedule;
-        return (current.UserDefinedCronExpression, current.UserDefinedCronExpression is null ? null : current.TimeZone ?? TimeZoneInfo.Utc);
+        return (current.UserDefinedCronExpression, current.UserDefinedCronExpression is null ? null : current.EffectiveTimeZone);
     }
 
     public RecurringJobSchedule ToRecurringJobSchedule()
@@ -164,7 +153,7 @@ internal sealed record JobDefinition
             IsTypedJob: IsTypedJob,
             CronExpression: current.UserDefinedCronExpression!,
             IsEnabled: current.IsEnabled,
-            TimeZone: current.TimeZone ?? TimeZoneInfo.Utc);
+            TimeZone: current.EffectiveTimeZone);
     }
 
     public void MarkAsDependent() => IsDependent = true;
@@ -178,10 +167,7 @@ internal sealed record JobDefinition
 
         if (jobOption.CronExpression is not null)
         {
-            schedule = new JobSchedule(
-                jobOption.CronExpression,
-                GetCronExpression(jobOption.CronExpression.Trim()),
-                jobOption.TimeZoneInfo);
+            schedule = JobSchedule.Parse(jobOption.CronExpression, jobOption.TimeZoneInfo);
         }
 
         if (jobOption.HasParameter)
@@ -206,22 +192,7 @@ internal sealed record JobDefinition
 
         if (jobOption.Conditions is { Count: > 0 })
         {
-            var previousCondition = Condition;
-            var addedConditions = jobOption.Conditions.ToArray();
-
-            Condition = async (sp, ct) =>
-            {
-                if (previousCondition is not null && !await previousCondition(sp, ct).ConfigureAwait(false))
-                    return false;
-
-                foreach (var condition in addedConditions)
-                {
-                    if (!await condition(sp, ct).ConfigureAwait(false))
-                        return false;
-                }
-
-                return true;
-            };
+            Condition = JobConditionChain.Append(Condition, jobOption.Conditions);
         }
     }
 
@@ -235,11 +206,6 @@ internal sealed record JobDefinition
         UpdateWith(new JobOption { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
     }
 
-    public IJob? ResolveJob(IServiceProvider scopedServiceProvider)
-    {
-        return IsTypedJob ? (IJob?)scopedServiceProvider.GetService(Type) : new DynamicJobFactory(scopedServiceProvider, Delegate);
-    }
-
     public bool IsExemptFromUniqueParameterizedTypedJobCheck =>
         CustomName is not null
         || CronExpression is not null
@@ -247,53 +213,8 @@ internal sealed record JobDefinition
         || !IsTypedJob
         || Parameter is null;
 
-    private Delegate? Delegate { get; }
+    internal Delegate? JobDelegate { get; }
 
     private static string BuildName(string? customName, string jobFullName) =>
         customName is not null ? $"{customName} ({jobFullName})" : jobFullName;
-
-    private static CronExpression GetCronExpression(string expression)
-    {
-        if (expression.StartsWith('@'))
-        {
-            return CronExpression.TryParse(expression, CronFormat.IncludeSeconds, out var macroExpression)
-                ? macroExpression
-                : throw new ArgumentException($"Unknown cron macro '{expression}'.", nameof(expression));
-        }
-
-        var precisionRequired = DetermineAndValidatePrecision(expression);
-
-        var cf = precisionRequired ? CronFormat.IncludeSeconds : CronFormat.Standard;
-
-        return CronExpression.TryParse(expression, cf, out var cronExpression)
-            ? cronExpression
-            : throw new InvalidOperationException("Invalid cron expression");
-    }
-
-    private static bool DetermineAndValidatePrecision(string cronExpression)
-    {
-        var parts = cronExpression.Split(' ');
-        var precisionRequired = parts.Length == 6;
-
-        var expectedLength = precisionRequired ? 6 : 5;
-        if (parts.Length != expectedLength)
-        {
-            var precisionText = precisionRequired ? "second precision" : "minute precision";
-            throw new ArgumentException($"Invalid cron expression format for {precisionText}.", nameof(cronExpression));
-        }
-
-        return precisionRequired;
-    }
-
-    private static readonly CronExpression NotReachableCronDefinition = CronExpression.Parse("* * 31 2 *");
-
-    private sealed record JobSchedule(
-        string? UserDefinedCronExpression,
-        CronExpression? CronExpression,
-        TimeZoneInfo? TimeZone)
-    {
-        public static readonly JobSchedule None = new(null, null, null);
-
-        public bool IsEnabled => CronExpression is null || CronExpression != NotReachableCronDefinition;
-    }
 }

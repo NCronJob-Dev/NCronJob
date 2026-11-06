@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,10 +10,10 @@ internal sealed partial class JobExecutor : IDisposable
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<JobExecutor> logger;
     private readonly IRetryHandler retryHandler;
-    private readonly JobQueueManager jobQueueManager;
-    private readonly JobRegistry jobRegistry;
+    private readonly JobResolver jobResolver;
+    private readonly DependentJobDispatcher dependentJobDispatcher;
+    private readonly ExceptionHandlerPipeline exceptionHandlerPipeline;
     private readonly TimeProvider timeProvider;
-    private readonly ImmutableArray<IExceptionHandler> exceptionHandlers;
     private volatile bool isDisposed;
     private readonly CancellationTokenSource shutdown = new();
 
@@ -23,18 +22,18 @@ internal sealed partial class JobExecutor : IDisposable
         ILogger<JobExecutor> logger,
         IHostApplicationLifetime lifetime,
         IRetryHandler retryHandler,
-        JobQueueManager jobQueueManager,
-        JobRegistry jobRegistry,
-        TimeProvider timeProvider,
-        IEnumerable<IExceptionHandler> exceptionHandlers)
+        JobResolver jobResolver,
+        DependentJobDispatcher dependentJobDispatcher,
+        ExceptionHandlerPipeline exceptionHandlerPipeline,
+        TimeProvider timeProvider)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         this.retryHandler = retryHandler;
-        this.jobQueueManager = jobQueueManager;
-        this.jobRegistry = jobRegistry;
+        this.jobResolver = jobResolver;
+        this.dependentJobDispatcher = dependentJobDispatcher;
+        this.exceptionHandlerPipeline = exceptionHandlerPipeline;
         this.timeProvider = timeProvider;
-        this.exceptionHandlers = [.. exceptionHandlers];
 
         lifetime.ApplicationStopping.Register(OnApplicationStopping);
     }
@@ -69,7 +68,7 @@ internal sealed partial class JobExecutor : IDisposable
 
         try
         {
-            var job = ResolveJob(scope.ServiceProvider, run.JobDefinition);
+            var job = jobResolver.Resolve(scope.ServiceProvider, run.JobDefinition);
             await ExecuteJob(runContext, job);
         }
         catch (Exception exc) when (!IsRequestedCancellation(exc, linkedCts.Token))
@@ -77,7 +76,7 @@ internal sealed partial class JobExecutor : IDisposable
             activity?.SetStatus(ActivityStatusCode.Error, exc.Message);
             activity?.SetTag("error.type", exc.GetType().FullName);
             LogJobFailed(runContext.JobRun.JobDefinition.Name, runContext.CorrelationId);
-            await NotifyExceptionHandlers(runContext, exc, stoppingToken);
+            await exceptionHandlerPipeline.HandleAsync(runContext, exc, stoppingToken);
             await AfterJobCompletionTask(runContext, exc, linkedCts.Token);
             runContext.JobRun.NotifyStateChange(JobStateType.Faulted, exc);
         }
@@ -95,21 +94,6 @@ internal sealed partial class JobExecutor : IDisposable
             .SetTag("ncronjob.correlation_id", runContext.CorrelationId.ToString())
             .SetTag("ncronjob.trigger_type", runContext.TriggerType.ToString());
         return activity;
-    }
-
-    private IJob ResolveJob(IServiceProvider scopedServiceProvider, JobDefinition definition)
-    {
-        var job = definition.ResolveJob(scopedServiceProvider);
-        if (job is not null)
-        {
-            return job;
-        }
-
-        Debug.Assert(definition.IsTypedJob);
-
-        LogUnregisteredJob(definition.Name);
-
-        return (IJob)ActivatorUtilities.CreateInstance(scopedServiceProvider, definition.Type);
     }
 
     public void Dispose()
@@ -139,7 +123,7 @@ internal sealed partial class JobExecutor : IDisposable
         }
         finally
         {
-            NCronJobMetrics.RecordDuration(runContext.JobRun, startTimestamp);
+            NCronJobMetrics.RecordDuration(runContext.JobRun.JobDefinition.Name, runContext.TriggerType, startTimestamp);
         }
 
         stoppingToken.ThrowIfCancellationRequested();
@@ -162,7 +146,7 @@ internal sealed partial class JobExecutor : IDisposable
 
         await TriggerNotifications(runContext, exc, ct);
 
-        InformDependentJobs(runContext, exc is null);
+        dependentJobDispatcher.Dispatch(runContext, exc is null);
     }
 
     private Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct) =>
@@ -183,54 +167,6 @@ internal sealed partial class JobExecutor : IDisposable
 
     private static bool IsRequestedCancellation(Exception exception, CancellationToken token) =>
         exception is OperationCanceledException && token.IsCancellationRequested;
-
-    private void InformDependentJobs(JobExecutionContext context, bool success)
-    {
-        var jobRun = context.JobRun;
-        var dependencies = success
-            ? jobRegistry.GetDependentSuccessJobs(jobRun.JobDefinition)
-            : jobRegistry.GetDependentFaultedJobs(jobRun.JobDefinition);
-
-        if (dependencies.Count > 0)
-            jobRun.NotifyStateChange(JobStateType.WaitingForDependency);
-
-        foreach (var dependentJob in dependencies)
-        {
-            var newRun = jobRun.CreateDependent(
-                dependentJob,
-                dependentJob.Parameter,
-                jobRun.CancellationToken);
-
-            newRun.ParentOutput = context.Output;
-
-            if (!context.ExecuteChildren)
-            {
-                newRun.NotifyStateChange(JobStateType.Skipped);
-                continue;
-            }
-
-            jobQueueManager.Enqueue(newRun);
-        }
-    }
-
-    private async Task NotifyExceptionHandlers(JobExecutionContext runContext, Exception exc,
-        CancellationToken stoppingToken)
-    {
-        foreach (var exceptionHandler in exceptionHandlers)
-        {
-            try
-            {
-                if (await exceptionHandler.TryHandleAsync(runContext, exc, stoppingToken))
-                {
-                    break;
-                }
-            }
-            catch (Exception handlerException)
-            {
-                LogExceptionHandlerError(handlerException, exceptionHandler.GetType());
-            }
-        }
-    }
 
     private void OnApplicationStopping()
     {

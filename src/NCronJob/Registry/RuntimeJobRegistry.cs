@@ -1,96 +1,33 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace NCronJob;
 
 /// <inheritdoc />
 internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 {
-    private readonly SyncLock registrationLock = new();
-
-    private readonly IServiceCollection services;
+    private readonly RuntimeJobRegistrar registrar;
     private readonly JobRegistry jobRegistry;
     private readonly CronRunScheduler cronRunScheduler;
     private readonly JobQueueManager jobQueueManager;
-    private readonly ConcurrencySettings concurrencySettings;
     private readonly TimeProvider timeProvider;
 
     public RuntimeJobRegistry(
-        IServiceCollection services,
+        RuntimeJobRegistrar registrar,
         JobRegistry jobRegistry,
         CronRunScheduler cronRunScheduler,
         JobQueueManager jobQueueManager,
-        ConcurrencySettings concurrencySettings,
         TimeProvider timeProvider)
     {
-        this.services = services;
+        this.registrar = registrar;
         this.jobRegistry = jobRegistry;
         this.cronRunScheduler = cronRunScheduler;
         this.jobQueueManager = jobQueueManager;
-        this.concurrencySettings = concurrencySettings;
         this.timeProvider = timeProvider;
     }
 
     /// <inheritdoc />
-    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception)
-    {
-        lock (registrationLock)
-        {
-            var trackedServices = new TrackingServiceCollection(services);
-            var previousSettings = concurrencySettings.Clone();
-            JobRegistryRegistration? registration = null;
-            List<JobRun> scheduledRuns = [];
-            List<string> createdQueueNames = [];
-            var activationGate = new JobRunActivationGate();
-
-            try
-            {
-                var pendingJobDefinitions = new PendingJobDefinitions();
-                var builder = new NCronJobOptionBuilder(trackedServices, concurrencySettings, pendingJobDefinitions);
-                jobBuilder(builder);
-                builder.ValidateConcurrencySettings(jobRegistry.GetAllRootJobs());
-
-                registration = jobRegistry.FeedFrom(pendingJobDefinitions);
-
-                foreach (var jobDefinition in pendingJobDefinitions.Entries.Keys)
-                {
-                    cronRunScheduler.ScheduleNextRun(
-                        jobDefinition,
-                        onRunCreated: scheduledRuns.Add,
-                        onQueueCreated: createdQueueNames.Add,
-                        activationGate: activationGate);
-                }
-
-                activationGate.Activate();
-                exception = null;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                List<Exception> rollbackExceptions = [];
-                activationGate.Reject();
-
-                TryRollback(
-                    () => jobQueueManager.RemoveRuns(scheduledRuns, createdQueueNames),
-                    rollbackExceptions);
-
-                if (registration is not null)
-                {
-                    TryRollback(() => jobRegistry.Rollback(registration), rollbackExceptions);
-                }
-
-                TryRollback(trackedServices.Rollback, rollbackExceptions);
-                TryRollback(() => concurrencySettings.RestoreFrom(previousSettings), rollbackExceptions);
-
-                exception = rollbackExceptions.Count == 0
-                    ? ex
-                    : new AggregateException(
-                        "Runtime job registration failed and rollback encountered additional errors.",
-                        new[] { ex }.Concat(rollbackExceptions));
-                return false;
-            }
-        }
-    }
+    public bool TryRegister(Action<IRuntimeJobBuilder> jobBuilder, [NotNullWhen(false)] out Exception? exception) =>
+        registrar.TryRegister(jobBuilder, out exception);
 
     /// <inheritdoc />
     public void RemoveJob(string jobName) => RemoveJob(() => jobRegistry.RemoveByName(jobName));
@@ -238,77 +175,5 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
     {
         jobQueueManager.RemoveQueue(job.JobFullName);
         cronRunScheduler.ScheduleNextRun(job);
-    }
-
-    private static void TryRollback(Action rollback, List<Exception> exceptions)
-    {
-        try
-        {
-            rollback();
-        }
-        catch (Exception exception)
-        {
-            exceptions.Add(exception);
-        }
-    }
-
-    private sealed class TrackingServiceCollection(IServiceCollection services) : IServiceCollection
-    {
-        private readonly List<ServiceDescriptor> addedDescriptors = [];
-
-        public ServiceDescriptor this[int index]
-        {
-            get => services[index];
-            set => services[index] = value;
-        }
-
-        public int Count => services.Count;
-
-        public bool IsReadOnly => services.IsReadOnly;
-
-        public void Add(ServiceDescriptor item)
-        {
-            services.Add(item);
-            addedDescriptors.Add(item);
-        }
-
-        public void Clear() => services.Clear();
-
-        public bool Contains(ServiceDescriptor item) => services.Contains(item);
-
-        public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => services.CopyTo(array, arrayIndex);
-
-        public IEnumerator<ServiceDescriptor> GetEnumerator() => services.GetEnumerator();
-
-        public int IndexOf(ServiceDescriptor item) => services.IndexOf(item);
-
-        public void Insert(int index, ServiceDescriptor item)
-        {
-            services.Insert(index, item);
-            addedDescriptors.Add(item);
-        }
-
-        public bool Remove(ServiceDescriptor item) => services.Remove(item);
-
-        public void RemoveAt(int index) => services.RemoveAt(index);
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public void Rollback()
-        {
-            foreach (var descriptor in addedDescriptors.AsEnumerable().Reverse())
-            {
-                for (var index = services.Count - 1; index >= 0; index--)
-                {
-                    if (!ReferenceEquals(services[index], descriptor))
-                    {
-                        continue;
-                    }
-
-                    services.RemoveAt(index);
-                    break;
-                }
-            }
-        }
     }
 }

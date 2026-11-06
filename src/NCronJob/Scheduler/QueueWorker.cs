@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Collections.Specialized;
 
 namespace NCronJob;
 
@@ -9,21 +8,17 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly JobQueueManager jobQueueManager;
     private readonly JobWorker jobWorker;
     private readonly CronRunScheduler cronRunScheduler;
-    private readonly JobRegistry jobRegistry;
     private readonly ILogger<QueueWorker> logger;
     private readonly MissingMethodCalledHandler missingMethodCalledHandler;
+    private readonly WorkerTaskRegistry workerTasks = new();
     private CancellationTokenSource? shutdown;
-    private readonly Dictionary<string, Task> workerTasks = [];
-    private readonly AsyncSignal workerTasksChanged = new();
-    private readonly SyncLock workerTasksLock = new();
     private volatile bool isStopping;
-    private volatile bool isDisposed;
+    private int isDisposed;
 
     public QueueWorker(
         JobQueueManager jobQueueManager,
         JobWorker jobWorker,
         CronRunScheduler cronRunScheduler,
-        JobRegistry jobRegistry,
         ILogger<QueueWorker> logger,
         MissingMethodCalledHandler missingMethodCalledHandler,
         IHostApplicationLifetime lifetime)
@@ -31,18 +26,15 @@ internal sealed partial class QueueWorker : BackgroundService
         this.jobQueueManager = jobQueueManager;
         this.jobWorker = jobWorker;
         this.cronRunScheduler = cronRunScheduler;
-        this.jobRegistry = jobRegistry;
         this.logger = logger;
         this.missingMethodCalledHandler = missingMethodCalledHandler;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
-
-        this.jobQueueManager.CollectionChanged += LogQueueChange;
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (isDisposed)
+        if (Volatile.Read(ref isDisposed) == 1)
         {
             return;
         }
@@ -56,7 +48,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
         LogQueueWorkerDraining();
 
-        await Task.WhenAll(GetWorkerTasksSnapshot()).WaitAsync(cancellationToken);
+        await Task.WhenAll(workerTasks.GetTasks()).WaitAsync(cancellationToken);
         await jobWorker.WaitForRunningJobsAsync().WaitAsync(cancellationToken);
 
         LogQueueWorkerStopping();
@@ -65,19 +57,14 @@ internal sealed partial class QueueWorker : BackgroundService
 
     public override void Dispose()
     {
-        lock (workerTasksLock)
+        if (Interlocked.Exchange(ref isDisposed, 1) == 1)
         {
-            if (isDisposed)
-            {
-                return;
-            }
-
-            isDisposed = true;
-            workerTasksChanged.Pulse();
+            return;
         }
 
+        workerTasks.Close();
+
         shutdown?.Dispose();
-        jobQueueManager.CollectionChanged -= LogQueueChange;
         jobQueueManager.QueueAdded -= OnQueueAdded;
 
         base.Dispose();
@@ -85,7 +72,7 @@ internal sealed partial class QueueWorker : BackgroundService
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        AssertUseNCronJobWasCalled();
+        missingMethodCalledHandler.EnsureUseWasCalledWhenStartupJobsExist();
 
         shutdown?.Dispose();
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -96,7 +83,7 @@ internal sealed partial class QueueWorker : BackgroundService
         {
             jobQueueManager.QueueAdded += OnQueueAdded;
 
-            ScheduleInitialJobs();
+            cronRunScheduler.ScheduleInitialRuns();
 
             CreateWorkerQueues(stopToken);
         }
@@ -112,7 +99,7 @@ internal sealed partial class QueueWorker : BackgroundService
     {
         try
         {
-            await Task.WhenAll(GetWorkerTasksSnapshot()).ConfigureAwait(false);
+            await Task.WhenAll(workerTasks.GetTasks()).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -124,21 +111,10 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    private void AssertUseNCronJobWasCalled()
-    {
-        if (missingMethodCalledHandler.UseWasCalled)
-        {
-            return;
-        }
+    internal IReadOnlyCollection<string> GetActiveWorkerQueueNames() => workerTasks.GetQueueNames();
 
-        if (jobRegistry.GetAllStartupJobs().Count == 0)
-        {
-            return;
-        }
-
-        throw new InvalidOperationException(
-            "Startup jobs have been registered. However, neither IHost.UseNCronJobAsync(), nor IHost.UseNCronJob() have been called.");
-    }
+    internal Task WaitForWorkerRemovalAsync(string queueName, CancellationToken cancellationToken) =>
+        workerTasks.WaitForRemovalAsync(queueName, cancellationToken);
 
     private void CreateWorkerQueues(CancellationToken stopToken)
     {
@@ -150,38 +126,42 @@ internal sealed partial class QueueWorker : BackgroundService
 
     private void AddWorkerTask(string jobQueueName, CancellationToken stopToken)
     {
-        lock (workerTasksLock)
+        try
         {
-            if (isStopping || stopToken.IsCancellationRequested || workerTasks.ContainsKey(jobQueueName))
+            if (!workerTasks.TryStart(
+                    jobQueueName,
+                    (Worker: this, QueueName: jobQueueName, StopToken: stopToken),
+                    static state => state.Worker.isStopping || state.StopToken.IsCancellationRequested,
+                    static state => state.Worker.StartWorker(state.QueueName, state.StopToken),
+                    out var workerTask))
             {
                 return;
             }
 
-            try
-            {
-                Task workerTask;
-
-                // Workers may be created from within a running job, for example when it enqueues a dependent job.
-                // They must not capture that job's execution context and its log scope.
-                using (ExecutionContext.SuppressFlow())
-                {
-                    workerTask = jobWorker.ProcessQueueAsync(jobQueueName, stopToken);
-                }
-
-                workerTasks[jobQueueName] = workerTask;
-                workerTasksChanged.Pulse();
-
-                workerTask.ContinueWith(
-                    completedTask => OnWorkerCompleted(jobQueueName, completedTask, stopToken),
-                    CancellationToken.None,
-                    TaskContinuationOptions.None,
-                    TaskScheduler.Default);
-            }
-            catch (Exception ex)
-            {
-                LogQueueWorkerCreationError(jobQueueName, ex);
-            }
+            workerTask.ContinueWith(
+                completedTask => OnWorkerCompleted(jobQueueName, completedTask, stopToken),
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
         }
+        catch (Exception ex)
+        {
+            LogQueueWorkerCreationError(jobQueueName, ex);
+        }
+    }
+
+    private Task StartWorker(string jobQueueName, CancellationToken stopToken)
+    {
+        Task workerTask;
+
+        // Workers may be created from within a running job, for example when it enqueues a dependent job.
+        // They must not capture that job's execution context and its log scope.
+        using (ExecutionContext.SuppressFlow())
+        {
+            workerTask = jobWorker.ProcessQueueAsync(jobQueueName, stopToken);
+        }
+
+        return workerTask;
     }
 
     private void OnWorkerCompleted(string jobQueueName, Task completedTask, CancellationToken stopToken)
@@ -193,14 +173,7 @@ internal sealed partial class QueueWorker : BackgroundService
         else
             LogJobQueueCompleted(jobQueueName);
 
-        lock (workerTasksLock)
-        {
-            if (workerTasks.TryGetValue(jobQueueName, out var currentTask) && currentTask == completedTask)
-            {
-                workerTasks.Remove(jobQueueName);
-                workerTasksChanged.Pulse();
-            }
-        }
+        workerTasks.Remove(jobQueueName, completedTask);
 
         try
         {
@@ -216,78 +189,9 @@ internal sealed partial class QueueWorker : BackgroundService
         }
     }
 
-    internal IReadOnlyCollection<string> GetActiveWorkerQueueNames()
-    {
-        lock (workerTasksLock)
-        {
-            return [.. workerTasks.Keys];
-        }
-    }
-
-    internal async Task WaitForWorkerRemovalAsync(string queueName, CancellationToken cancellationToken)
-    {
-        while (true)
-        {
-            Task changed;
-            lock (workerTasksLock)
-            {
-                ObjectDisposedException.ThrowIf(isDisposed, this);
-
-                if (!workerTasks.ContainsKey(queueName))
-                {
-                    return;
-                }
-
-                changed = workerTasksChanged.WaitAsync();
-            }
-
-            await changed.WaitAsync(cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private Task[] GetWorkerTasksSnapshot()
-    {
-        lock (workerTasksLock)
-        {
-            return [.. workerTasks.Values];
-        }
-    }
-
-    private void ScheduleInitialJobs()
-    {
-        foreach (var job in jobRegistry.GetAllCronJobs())
-        {
-            cronRunScheduler.ScheduleNextRun(job);
-        }
-    }
-
     private void OnQueueAdded(string queueName)
     {
         AddWorkerTask(queueName, shutdown?.Token ?? CancellationToken.None);
         LogNewQueueAdded(queueName);
-    }
-
-    private void LogQueueChange(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        switch (e.Action)
-        {
-            case NotifyCollectionChangedAction.Add:
-                foreach (JobRun job in e.NewItems!)
-                {
-                    LogJobAddedToQueue(job.JobDefinition.Name, job.RunAt);
-                }
-                break;
-            case NotifyCollectionChangedAction.Remove:
-                foreach (JobRun job in e.OldItems!)
-                {
-                    LogJobRemovedFromQueue(job.JobDefinition.Name, job.RunAt);
-                }
-                break;
-            case NotifyCollectionChangedAction.Replace:
-            case NotifyCollectionChangedAction.Move:
-            case NotifyCollectionChangedAction.Reset:
-            default:
-                throw new ArgumentOutOfRangeException(nameof(e), e.Action, $"Unexpected collection change action in {nameof(LogQueueChange)}");
-        }
     }
 }

@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Internal refactoring for better separation of concerns, with no public API change. Some log messages are now emitted under the category of a new internal type (`ExceptionHandlerPipeline`, `JobResolver`, `QueueChangeLogger`).
+
 ## [v4.13.2] - 2026-11-05
 
 Another try

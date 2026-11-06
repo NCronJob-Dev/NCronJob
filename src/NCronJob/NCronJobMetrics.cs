@@ -27,7 +27,7 @@ internal static class NCronJobMetrics
     private static readonly Histogram<double> Duration = Meter.CreateHistogram<double>(
         "ncronjob.job.duration", "s", "Duration of job runs, including retries.");
 
-    public static void RecordStateChange(JobRun run, JobStateType state)
+    public static void RecordStateChange(string jobName, TriggerType triggerType, JobStateType state)
     {
         var counter = state switch
         {
@@ -41,21 +41,21 @@ internal static class NCronJobMetrics
 
         if (counter is { Enabled: true })
         {
-            counter.Add(1, TagsFor(run));
+            counter.Add(1, TagsFor(jobName, triggerType));
         }
     }
 
-    public static void RecordDuration(JobRun run, long startTimestamp)
+    public static void RecordDuration(string jobName, TriggerType triggerType, long startTimestamp)
     {
         if (Duration.Enabled)
         {
-            Duration.Record(Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds, TagsFor(run));
+            Duration.Record(Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds, TagsFor(jobName, triggerType));
         }
     }
 
-    private static TagList TagsFor(JobRun run) => new()
+    private static TagList TagsFor(string jobName, TriggerType triggerType) => new()
     {
-        { "ncronjob.job.name", run.JobDefinition.Name },
-        { "ncronjob.trigger_type", run.TriggerType.ToString() },
+        { "ncronjob.job.name", jobName },
+        { "ncronjob.trigger_type", triggerType.ToString() },
     };
 }
