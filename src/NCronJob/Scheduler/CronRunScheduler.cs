@@ -26,9 +26,16 @@ internal sealed partial class CronRunScheduler
 
     public void ScheduleInitialRuns()
     {
+        var scheduledJobs = new List<(JobDefinition Job, JobRun? FirstRun)>();
+
         foreach (var job in registry.GetAllCronJobs())
         {
-            ScheduleNextRun(job);
+            scheduledJobs.Add((job, ScheduleNextRun(job)));
+        }
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            LogStartupSummary(StartupSummaryFormatter.Format(scheduledJobs));
         }
     }
 
@@ -76,6 +83,9 @@ internal sealed partial class CronRunScheduler
 
         return run;
     }
+
+    [LoggerMessage(LogLevel.Information, "{Summary}")]
+    private partial void LogStartupSummary(string summary);
 
     [LoggerMessage(LogLevel.Trace, "Next run of job '{JobName}' is at {NextRun:o}")]
     private partial void LogNextJobRun(string jobName, DateTimeOffset nextRun);

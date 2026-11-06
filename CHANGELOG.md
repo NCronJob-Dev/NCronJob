@@ -8,6 +8,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Changed
 
+- Quieter default logs: "Job added to queue" and "Job removed from queue" are now logged at `Debug` instead of `Information`. Instead, a single `Information` summary listing every scheduled cron job (name, cron expression, time zone and next run) is logged at startup.
 - Internal refactoring for better separation of concerns, with no public API change. Some log messages are now emitted under the category of a new internal type (`ExceptionHandlerPipeline`, `JobResolver`, `QueueChangeLogger`).
 
 ## [v4.13.2] - 2026-11-05
