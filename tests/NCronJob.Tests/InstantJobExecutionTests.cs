@@ -316,6 +316,88 @@ public sealed class InstantJobExecutionTests : JobIntegrationBase
         Storage.Entries.Count(e => e.EndsWith("CRON", StringComparison.Ordinal)).ShouldBe(cronSlots);
     }
 
+    [Fact]
+    public async Task ForceRunBypassesTheConcurrencyLimitWhileRunWaitsForASlot()
+    {
+        var gate = new GatedJobGate();
+        ServiceCollection.AddSingleton(gate);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SingleSlotGatedJob>());
+        await StartNCronJob();
+        var registry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        var firstRun = registry.RunInstantJob<SingleSlotGatedJob>(token: CancellationToken);
+        await WaitForOrchestrationState(firstRun, ExecutionState.Running);
+
+        var queuedRun = registry.RunInstantJob<SingleSlotGatedJob>(token: CancellationToken);
+        await AssertStaysQueued(queuedRun);
+
+        var forcedRun = registry.ForceRunInstantJob<SingleSlotGatedJob>(token: CancellationToken);
+
+        await WaitForOrchestrationState(forcedRun, ExecutionState.Running);
+        await AssertStaysQueued(queuedRun);
+
+        gate.Release.TrySetResult();
+        await WaitForOrchestrationCompletion(queuedRun);
+    }
+
+    [Fact]
+    public async Task ForceRunScheduledJobBypassesTheConcurrencyLimit()
+    {
+        var gate = new GatedJobGate();
+        ServiceCollection.AddSingleton(gate);
+        ServiceCollection.AddNCronJob(n => n.AddJob<SingleSlotGatedJob>());
+        await StartNCronJob();
+        var registry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+
+        var firstRun = registry.RunInstantJob<SingleSlotGatedJob>(token: CancellationToken);
+        await WaitForOrchestrationState(firstRun, ExecutionState.Running);
+
+        var forcedRun = registry.ForceRunScheduledJob(typeof(SingleSlotGatedJob), TimeSpan.Zero, CancellationToken);
+
+        await WaitForOrchestrationState(forcedRun, ExecutionState.Running);
+
+        Events.FilterByOrchestrationId(firstRun).ShouldNotContain(e => e.State == ExecutionState.OrchestrationCompleted);
+        gate.Release.TrySetResult();
+    }
+
+    [Fact]
+    public async Task ScheduledInstantJobStartsNoEarlierThanTheRequestedDelay()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>());
+        await StartNCronJob();
+        var registry = ServiceProvider.GetRequiredService<IInstantJobRegistry>();
+        var delay = TimeSpan.FromMinutes(5);
+        var requestedAt = FakeTimer.GetUtcNow();
+
+        var orchestrationId = registry.RunScheduledJob<DummyJob>(delay, token: CancellationToken);
+
+        FakeTimer.Advance(delay - TimeSpan.FromSeconds(1));
+        Storage.Entries.ShouldBeEmpty();
+
+        await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
+
+        var runningEvent = Events.FilterByOrchestrationId(orchestrationId).Single(e => e.State == ExecutionState.Running);
+        runningEvent.Timestamp.ShouldBeGreaterThanOrEqualTo(requestedAt + delay);
+        Storage.Entries.Count.ShouldBe(1);
+    }
+
+    private Task<TimeoutException> AssertStaysQueued(Guid orchestrationId) =>
+        Should.ThrowAsync<TimeoutException>(
+            () => WaitForOrchestrationState(orchestrationId, ExecutionState.Running)
+                .WaitAsync(TimeSpan.FromMilliseconds(300), CancellationToken));
+
+    private sealed class GatedJobGate
+    {
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    [SupportsConcurrency(1)]
+    private sealed class SingleSlotGatedJob(GatedJobGate gate) : IJob
+    {
+        public async Task RunAsync(IJobExecutionContext context, CancellationToken token) =>
+            await gate.Release.Task.WaitAsync(token);
+    }
+
     private async Task StartNCronJobAndExecuteInstantTypedJob()
     {
         await StartNCronJob();

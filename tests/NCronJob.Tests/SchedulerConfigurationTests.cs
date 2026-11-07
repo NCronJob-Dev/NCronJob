@@ -38,6 +38,114 @@ public sealed class SchedulerConfigurationTests : JobIntegrationBase
         }));
     }
 
+    [Fact]
+    public void LoweringTheGlobalLimitAfterAddingAJobIsValidated()
+    {
+        var exception = Should.Throw<InvalidOperationException>(() => ServiceCollection.AddNCronJob(options =>
+        {
+            options.AddJob<ConcurrentJob>();
+            options.WithMaxDegreeOfParallelism(1);
+        }));
+
+        exception.Message.ShouldStartWith("The MaxDegreeOfParallelism for ");
+        exception.Message.ShouldEndWith("ConcurrentJob (2) cannot exceed the global limit (1).");
+    }
+
+    [Fact]
+    public void LoweringTheGlobalLimitIsValidatedAgainstAlreadyRegisteredJobs()
+    {
+        ServiceCollection.AddNCronJob(options => options.AddJob<ConcurrentJob>());
+
+        Should.Throw<InvalidOperationException>(() =>
+            ServiceCollection.AddNCronJob(options => options.WithMaxDegreeOfParallelism(1)));
+    }
+
+    [Fact]
+    public void DependentJobsOnSuccessAreValidatedAgainstTheGlobalLimit()
+    {
+        var exception = Should.Throw<InvalidOperationException>(() => ServiceCollection.AddNCronJob(options =>
+        {
+            options.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .ExecuteWhen(success: d => d.RunJob<ConcurrentJob>());
+            options.WithMaxDegreeOfParallelism(1);
+        }));
+
+        exception.Message.ShouldContain("ConcurrentJob");
+    }
+
+    [Fact]
+    public void DependentJobsOnFailureAreValidatedAgainstTheGlobalLimit()
+    {
+        var exception = Should.Throw<InvalidOperationException>(() => ServiceCollection.AddNCronJob(options =>
+        {
+            options.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+                .ExecuteWhen(faulted: d => d.RunJob<ConcurrentJob>());
+            options.WithMaxDegreeOfParallelism(1);
+        }));
+
+        exception.Message.ShouldContain("ConcurrentJob");
+    }
+
+    [Fact]
+    public void DelegateJobsAreValidatedAgainstTheGlobalLimit()
+    {
+        ServiceCollection.AddNCronJob(options => options.WithMaxDegreeOfParallelism(1));
+
+        Should.Throw<InvalidOperationException>(() => ServiceCollection.AddNCronJob(options =>
+            options.AddJob(ConcurrentDelegate, Cron.AtEveryMinute)));
+    }
+
+    [Fact]
+    public void FailedRegistrationRestoresTheSchedulerSettings()
+    {
+        ServiceCollection.AddNCronJob(options => options
+            .WithMaxDegreeOfParallelism(4)
+            .WithDefaultJobRunExpiry(TimeSpan.FromMinutes(3)));
+        var settings = ServiceCollection
+            .Single(d => d.ServiceType == typeof(ConcurrencySettings))
+            .ImplementationInstance.ShouldBeOfType<ConcurrencySettings>();
+
+        Should.Throw<InvalidOperationException>(() => ServiceCollection.AddNCronJob(options =>
+        {
+            options.WithMaxDegreeOfParallelism(1).WithDefaultJobRunExpiry(TimeSpan.FromMinutes(1));
+            options.AddJob<ConcurrentJob>();
+        }));
+
+        settings.MaxDegreeOfParallelism.ShouldBe(4);
+        settings.DefaultJobRunExpiry.ShouldBe(TimeSpan.FromMinutes(3));
+    }
+
+    [Fact]
+    public void AddingJobsValidatesItsArguments()
+    {
+        ServiceCollection.AddNCronJob(options =>
+        {
+            Should.Throw<ArgumentNullException>(() => options.AddJob((Type)null!));
+            Should.Throw<ArgumentNullException>(() => options.AddJob((Delegate)null!, Cron.AtEveryMinute));
+            Should.Throw<ArgumentException>(() => options.AddJob(() => { }, string.Empty));
+            Should.Throw<ArgumentNullException>(() => options.AddJob(() => { }, null!));
+        });
+    }
+
+    [Fact]
+    public void JobsAddedByTypeAreRegisteredInTheContainer()
+    {
+#pragma warning disable CA2263
+        ServiceCollection.AddNCronJob(options => options.AddJob(typeof(DummyJob)));
+#pragma warning restore CA2263
+
+        ServiceCollection.ShouldContain(d => d.ServiceType == typeof(DummyJob) && d.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Fact]
+    public void ExpiryDefaultMustBePositive()
+    {
+        var exception = Should.Throw<ArgumentOutOfRangeException>(() =>
+            ServiceCollection.AddNCronJob(options => options.WithDefaultJobRunExpiry(TimeSpan.Zero)));
+
+        exception.ParamName.ShouldBe("expiry");
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -152,6 +260,8 @@ public sealed class SchedulerConfigurationTests : JobIntegrationBase
         TimeSpan.Zero,
         TimeSpan.FromTicks(-2),
     };
+
+    private static readonly Delegate ConcurrentDelegate = [SupportsConcurrency(2)] () => { };
 
     [SupportsConcurrency(2)]
     private sealed class ConcurrentJob : IJob
