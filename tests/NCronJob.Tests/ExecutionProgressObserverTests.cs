@@ -33,6 +33,38 @@ public class ExecutionProgressObserverTests
     }
 
     [Fact]
+    public void DisposingTheFirstSubscriptionOnlyStopsThatSubscriber()
+    {
+        var observer = new JobExecutionProgressObserver(NullLogger<JobExecutionProgressObserver>.Instance);
+        var firstReceived = 0;
+        var secondReceived = 0;
+        var firstSubscription = observer.Register(_ => firstReceived++);
+        using var secondSubscription = observer.Register(_ => secondReceived++);
+
+        firstSubscription.Dispose();
+        _ = CreateRun(observer);
+
+        firstReceived.ShouldBe(0);
+        secondReceived.ShouldBe(2);
+    }
+
+    [Fact]
+    public void DisposingTheLastSubscriptionKeepsEarlierSubscribers()
+    {
+        var observer = new JobExecutionProgressObserver(NullLogger<JobExecutionProgressObserver>.Instance);
+        var firstReceived = 0;
+        var secondReceived = 0;
+        using var firstSubscription = observer.Register(_ => firstReceived++);
+        var secondSubscription = observer.Register(_ => secondReceived++);
+
+        secondSubscription.Dispose();
+        _ = CreateRun(observer);
+
+        firstReceived.ShouldBe(2);
+        secondReceived.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task ConcurrentRegistrationReportingAndDisposalIsSafe()
     {
         var observer = new JobExecutionProgressObserver(NullLogger<JobExecutionProgressObserver>.Instance);

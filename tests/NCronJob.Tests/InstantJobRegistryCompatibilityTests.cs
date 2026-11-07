@@ -21,25 +21,27 @@ public sealed class InstantJobRegistryCompatibilityTests
 
         implementation.Parameters.Count.ShouldBe(6);
         implementation.Parameters.ShouldBe([null, null, null, null, null, null]);
+        implementation.ForcedFlags.ShouldBe([false, false, false, false, true, true]);
     }
 
     private sealed class LegacyInstantJobRegistry : IInstantJobRegistry
     {
         public List<object?> Parameters { get; } = [];
+        public List<bool> ForcedFlags { get; } = [];
 
         public Guid RunScheduledJob(
             Type jobType,
             TimeSpan delay,
             object? parameter,
             CancellationToken token = default) =>
-            Record(parameter);
+            Record(parameter, forced: false);
 
         public Guid RunScheduledJob(
             string jobName,
             TimeSpan delay,
             object? parameter,
             CancellationToken token = default) =>
-            Record(parameter);
+            Record(parameter, forced: false);
 
 #pragma warning disable CS0618
         public Guid RunScheduledJob<TJob>(
@@ -47,14 +49,14 @@ public sealed class InstantJobRegistryCompatibilityTests
             object? parameter,
             CancellationToken token = default)
             where TJob : IJob =>
-            Record(parameter);
+            Record(parameter, forced: false);
 
         public Guid RunScheduledJob(
             string jobName,
             DateTimeOffset startDate,
             object? parameter,
             CancellationToken token = default) =>
-            Record(parameter);
+            Record(parameter, forced: false);
 #pragma warning restore CS0618
 
         public Guid RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default) =>
@@ -78,18 +80,19 @@ public sealed class InstantJobRegistryCompatibilityTests
             TimeSpan delay,
             object? parameter,
             CancellationToken token = default) =>
-            Record(parameter);
+            Record(parameter, forced: true);
 
         public Guid ForceRunScheduledJob(
             string jobName,
             TimeSpan delay,
             object? parameter,
             CancellationToken token = default) =>
-            Record(parameter);
+            Record(parameter, forced: true);
 
-        private Guid Record(object? parameter)
+        private Guid Record(object? parameter, bool forced)
         {
             Parameters.Add(parameter);
+            ForcedFlags.Add(forced);
             return Guid.NewGuid();
         }
     }
