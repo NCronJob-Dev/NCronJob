@@ -9,7 +9,7 @@ dotnet build benchmarks/NCronJob.Benchmarks -c Release
 dotnet benchmarks/NCronJob.Benchmarks/bin/Release/net10.0/NCronJob.Benchmarks.dll <scenario> <size>
 ```
 
-Scenarios: `instant`, `dependent`, `startup-cron`, `runtime-churn`. Each run prints one JSON line.
+Scenarios: `instant`, `dependent`, `startup-cron`, `runtime-churn`, `cron-burst` (many second-precision cron jobs due at once). Each run prints one JSON line.
 
 To compare two checkouts, build the harness once per checkout (`-p:NCronJobProject=<path to NCronJob.csproj>`),
 copy both outputs somewhere and run

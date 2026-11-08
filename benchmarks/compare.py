@@ -10,7 +10,7 @@ import statistics
 import subprocess
 import sys
 
-SCENARIOS = [("instant", 100_000), ("dependent", 50_000), ("startup-cron", 5_000), ("runtime-churn", 3_000)]
+SCENARIOS = [("instant", 100_000), ("dependent", 50_000), ("startup-cron", 5_000), ("runtime-churn", 3_000), ("cron-burst", 1_000)]
 METRICS = [
     ("WallMs", "wall ms"),
     ("CpuMs", "CPU ms"),

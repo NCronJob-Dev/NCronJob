@@ -16,6 +16,7 @@ var result = scenario switch
     "dependent" => await Scenarios.InstantJobs(count, dependents: true),
     "startup-cron" => await Scenarios.StartupCronJobs(count),
     "runtime-churn" => await Scenarios.RuntimeChurn(count),
+    "cron-burst" => await Scenarios.CronBurst(count),
     _ => throw new ArgumentException($"Unknown scenario '{scenario}'."),
 };
 
@@ -141,6 +142,29 @@ internal static class Scenarios
         {
             await host.StartAsync();
             await Task.Delay(500);
+            await host.StopAsync();
+        });
+    }
+
+    // Every job fires on the same second, so all of them compete for the global parallelism limit at once.
+    // Wall time is bound by the clock; CPU time and allocations are what this scenario measures.
+    public static async Task<Measurement> CronBurst(int count)
+    {
+        const int ticks = 5;
+        using var host = BuildHost(o =>
+        {
+            for (var i = 0; i < count; i++)
+            {
+                o.AddJob(JobCompleted, "* * * * * *", null, $"job-{i}");
+            }
+        });
+
+        Arm(count * ticks);
+
+        return await Measure(async () =>
+        {
+            await host.StartAsync();
+            await allDone.Task;
             await host.StopAsync();
         });
     }
