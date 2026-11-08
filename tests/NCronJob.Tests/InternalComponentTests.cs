@@ -212,6 +212,157 @@ public sealed class ObservablePriorityQueueTests
         JobRun.CreateCron(timeProvider, _ => { }, JobDefinition.CreateTyped(typeof(DummyJob), null), runAt);
 }
 
+public sealed class AsyncSignalTests
+{
+    [Fact]
+    public void PulseCompletesOnlyWaitsTakenBeforeIt()
+    {
+        var signal = new AsyncSignal();
+        var before = signal.WaitAsync();
+
+        signal.Pulse();
+        var after = signal.WaitAsync();
+
+        before.IsCompletedSuccessfully.ShouldBeTrue();
+        after.IsCompleted.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void CompleteCompletesPendingAndFutureWaits()
+    {
+        var signal = new AsyncSignal();
+        var pending = signal.WaitAsync();
+
+        signal.Complete();
+
+        pending.IsCompletedSuccessfully.ShouldBeTrue();
+        signal.WaitAsync().IsCompletedSuccessfully.ShouldBeTrue();
+    }
+}
+
+public sealed class JobQueueManagerSignalTests
+{
+    private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(5);
+    private readonly FakeTimeProvider timeProvider = new();
+    private readonly JobDefinition jobDefinition = JobDefinition.CreateTyped(typeof(DummyJob), null);
+
+    [Fact]
+    public async Task EnqueueCompletesAWaitTakenBeforeIt()
+    {
+        using var queueManager = new JobQueueManager();
+        queueManager.Enqueue(CreateRun());
+        var changed = queueManager.WaitForChangeAsync(jobDefinition.JobFullName);
+        changed.IsCompleted.ShouldBeFalse();
+
+        queueManager.Enqueue(CreateRun());
+
+        await changed.WaitAsync(WaitTimeout, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task RemovingTheQueueCompletesAWaitTakenBeforeIt()
+    {
+        using var queueManager = new JobQueueManager();
+        queueManager.Enqueue(CreateRun());
+        var changed = queueManager.WaitForChangeAsync(jobDefinition.JobFullName);
+
+        queueManager.RemoveQueue(jobDefinition.JobFullName);
+
+        await changed.WaitAsync(WaitTimeout, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task WaitsOnARecreatedQueueCompleteOnItsNextChange()
+    {
+        using var queueManager = new JobQueueManager();
+        queueManager.Enqueue(CreateRun());
+        var oldGeneration = queueManager.WaitForChangeAsync(jobDefinition.JobFullName);
+        queueManager.RemoveQueue(jobDefinition.JobFullName);
+        queueManager.Enqueue(CreateRun());
+
+        var newGeneration = queueManager.WaitForChangeAsync(jobDefinition.JobFullName);
+        newGeneration.IsCompleted.ShouldBeFalse();
+        queueManager.Enqueue(CreateRun());
+
+        await oldGeneration.WaitAsync(WaitTimeout, TestContext.Current.CancellationToken);
+        await newGeneration.WaitAsync(WaitTimeout, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AWorkerIsNeverStrandedWhileTheQueueIsRemovedAndRecreatedConcurrently()
+    {
+        using var queueManager = new JobQueueManager();
+        var queueName = jobDefinition.JobFullName;
+        var lastRun = CreateRun();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var worker = Task.Run(async () =>
+        {
+            while (true)
+            {
+                var changed = queueManager.WaitForChangeAsync(queueName);
+                if (queueManager.TryGetQueue(queueName, out var queue)
+                    && queue.TryPeek(out var run, out _)
+                    && queue.TryDequeueIf(run))
+                {
+                    if (ReferenceEquals(run, lastRun))
+                    {
+                        return;
+                    }
+
+                    continue;
+                }
+
+                await changed.WaitAsync(stop.Token);
+            }
+        }, stop.Token);
+
+        await Task.Run(() =>
+        {
+            for (var i = 0; i < 2_000; i++)
+            {
+                queueManager.Enqueue(CreateRun());
+                if (i % 7 == 0)
+                {
+                    queueManager.RemoveQueue(queueName);
+                }
+            }
+
+            queueManager.Enqueue(lastRun);
+        }, TestContext.Current.CancellationToken);
+
+        try
+        {
+            await worker.WaitAsync(WaitTimeout, TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            await stop.CancelAsync();
+        }
+    }
+
+    private JobRun CreateRun() => JobRun.CreateCron(timeProvider, _ => { }, jobDefinition, timeProvider.GetUtcNow());
+}
+
+public sealed class JobConcurrencyLimiterTests
+{
+    [Fact]
+    public async Task ReleaseCompletesAWaitTakenBeforeIt()
+    {
+        var limiter = new JobConcurrencyLimiter(new ConcurrencySettings { MaxDegreeOfParallelism = 1 });
+        var jobDefinition = JobDefinition.CreateTyped(typeof(DummyJob), null);
+        limiter.TryAcquire(jobDefinition).ShouldBeTrue();
+        var released = limiter.WaitForReleaseAsync();
+        limiter.TryAcquire(jobDefinition).ShouldBeFalse();
+        released.IsCompleted.ShouldBeFalse();
+
+        limiter.Release(jobDefinition);
+
+        await released.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        limiter.TryAcquire(jobDefinition).ShouldBeTrue();
+    }
+}
+
 public sealed class QueueChangeLoggerTests
 {
     [Fact]
