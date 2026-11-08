@@ -52,13 +52,7 @@ internal sealed class JobConcurrencyLimiter
         }
     }
 
-    public Task WaitForReleaseAsync()
-    {
-        lock (slotLock)
-        {
-            return capacitySignal.WaitAsync();
-        }
-    }
+    public Task WaitForReleaseAsync() => capacitySignal.WaitAsync();
 
     private void IncrementUnsafe(string jobFullName, int currentCount)
     {

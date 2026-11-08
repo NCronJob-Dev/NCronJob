@@ -33,6 +33,8 @@ internal sealed partial class QueueChangeLogger : IHostedService, IDisposable
     {
         switch (e.Action)
         {
+            case NotifyCollectionChangedAction.Add or NotifyCollectionChangedAction.Remove when !logger.IsEnabled(LogLevel.Debug):
+                break;
             case NotifyCollectionChangedAction.Add:
                 foreach (JobRun job in e.NewItems!)
                 {

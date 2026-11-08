@@ -7,7 +7,7 @@ namespace NCronJob;
 internal sealed class JobQueueManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
-    private readonly Dictionary<string, AsyncSignal> queueSignals = [];
+    private readonly ConcurrentDictionary<string, AsyncSignal> queueSignals = new();
     private readonly SyncLock syncLock = new();
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
@@ -37,14 +37,14 @@ internal sealed class JobQueueManager : IDisposable
                 return false;
             }
 
-            var jobQueue = jobQueues.GetOrAdd(queueName, jt =>
+            if (!jobQueues.TryGetValue(queueName, out var jobQueue))
             {
                 isCreating = true;
-                var queue = new JobQueue(jt);
-                queue.CollectionChanged += OnJobQueueChanged;
-                queueSignals[jt] = new AsyncSignal();
-                return queue;
-            });
+                jobQueue = new JobQueue(queueName);
+                jobQueue.CollectionChanged += OnJobQueueChanged;
+                queueSignals[queueName] = new AsyncSignal();
+                jobQueues[queueName] = jobQueue;
+            }
 
             jobQueue.EnqueueForDirectExecution(run);
             SignalJobQueueUnsafe(queueName);
@@ -150,10 +150,7 @@ internal sealed class JobQueueManager : IDisposable
     public Task WaitForChangeAsync(string queueName)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
-        lock (syncLock)
-        {
-            return queueSignals.TryGetValue(queueName, out var signal) ? signal.WaitAsync() : Task.CompletedTask;
-        }
+        return queueSignals.TryGetValue(queueName, out var signal) ? signal.WaitAsync() : Task.CompletedTask;
     }
 
     internal async Task WaitUntilEmptyAsync(string queueName, CancellationToken cancellationToken)
@@ -229,7 +226,7 @@ internal sealed class JobQueueManager : IDisposable
     {
         jobQueue.CollectionChanged -= OnJobQueueChanged;
 
-        if (queueSignals.Remove(queueName, out var signal))
+        if (queueSignals.TryRemove(queueName, out var signal))
         {
             signal.Complete();
         }

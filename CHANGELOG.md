@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Less lock contention and fewer allocations when many jobs run concurrently: queue workers no longer take a global lock to wait for queue or capacity changes, and delegate jobs skip the dependent-job lookup lock.
+
 ## [v4.13.5] - 2026-11-06
 
 ### Changed

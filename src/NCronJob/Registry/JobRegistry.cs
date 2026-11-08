@@ -156,13 +156,13 @@ internal sealed class JobRegistry
         JobDefinition parentJobDefinition,
         Func<IEnumerable<DependentJobRegistryEntry>, IEnumerable<DependentJobDefinition>> transform)
     {
+        if (!parentJobDefinition.IsTypedJob)
+        {
+            return [];
+        }
+
         lock (syncLock)
         {
-            if (!parentJobDefinition.IsTypedJob)
-            {
-                return [];
-            }
-
             var entries = FindDependentJobEntries(parentJobDefinition);
 
             return entries is null

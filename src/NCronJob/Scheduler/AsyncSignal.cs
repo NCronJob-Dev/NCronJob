@@ -1,22 +1,17 @@
 namespace NCronJob;
 
 /// <summary>
-/// A re-armable signal. Not thread-safe; callers synchronize access.
+/// A re-armable signal. <see cref="WaitAsync"/> is thread-safe; callers synchronize <see cref="Pulse"/> and <see cref="Complete"/>.
 /// </summary>
 internal sealed class AsyncSignal
 {
     private TaskCompletionSource current = Create();
 
-    public Task WaitAsync() => current.Task;
+    public Task WaitAsync() => Volatile.Read(ref current).Task;
 
-    public void Pulse()
-    {
-        var previous = current;
-        current = Create();
-        previous.TrySetResult();
-    }
+    public void Pulse() => Interlocked.Exchange(ref current, Create()).TrySetResult();
 
-    public void Complete() => current.TrySetResult();
+    public void Complete() => Volatile.Read(ref current).TrySetResult();
 
     private static TaskCompletionSource Create() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }
