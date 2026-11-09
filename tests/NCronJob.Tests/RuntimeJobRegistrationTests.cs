@@ -227,22 +227,9 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         var queueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
         var firstQueueAdded = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var continueRegistration = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var queueAdditions = 0;
+        var holdFirstQueueThenFail = HoldFirstQueueAdditionThenFail(firstQueueAdded, continueRegistration.Task);
 
-        void DequeueFirstRunThenFail(string queueName)
-        {
-            queueAdditions++;
-            if (queueAdditions == 1)
-            {
-                firstQueueAdded.TrySetResult(queueName);
-                continueRegistration.Task.GetAwaiter().GetResult();
-                return;
-            }
-
-            throw new InvalidOperationException("Scheduling failed.");
-        }
-
-        queueManager.QueueAdded += DequeueFirstRunThenFail;
+        queueManager.QueueAdded += holdFirstQueueThenFail;
         var registrationTask = Task.Run(() =>
         {
             var successful = runtimeJobRegistry.TryRegister(builder =>
@@ -276,7 +263,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         }
         finally
         {
-            queueManager.QueueAdded -= DequeueFirstRunThenFail;
+            queueManager.QueueAdded -= holdFirstQueueThenFail;
         }
 
         var (successful, exception) = result;
@@ -322,22 +309,9 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
 
         var firstQueueAdded = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var continueRegistration = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var queueAdditions = 0;
+        var holdFirstQueueThenFail = HoldFirstQueueAdditionThenFail(firstQueueAdded, continueRegistration.Task);
 
-        void HoldFirstQueueThenFail(string queueName)
-        {
-            queueAdditions++;
-            if (queueAdditions == 1)
-            {
-                firstQueueAdded.TrySetResult(queueName);
-                continueRegistration.Task.GetAwaiter().GetResult();
-                return;
-            }
-
-            throw new InvalidOperationException("Scheduling failed.");
-        }
-
-        queueManager.QueueAdded += HoldFirstQueueThenFail;
+        queueManager.QueueAdded += holdFirstQueueThenFail;
         var registrationTask = Task.Run(() => runtimeJobRegistry.TryRegister(builder =>
         {
             builder.AddJob(
@@ -365,13 +339,32 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         }
         finally
         {
-            queueManager.QueueAdded -= HoldFirstQueueThenFail;
+            queueManager.QueueAdded -= holdFirstQueueThenFail;
         }
 
         await WaitForJobState(ExecutionState.Cancelled, name: "Earlier");
 
         Events.ShouldNotContain(e => e.Name == "Earlier" && e.State == ExecutionState.Skipped);
         Events.Count(e => e.Name == "Earlier" && e.State == ExecutionState.Scheduled).ShouldBe(1);
+    }
+
+    private static Action<string> HoldFirstQueueAdditionThenFail(
+        TaskCompletionSource<string> firstQueueAdded,
+        Task continueRegistration)
+    {
+        var queueAdditions = 0;
+        return queueName =>
+        {
+            queueAdditions++;
+            if (queueAdditions == 1)
+            {
+                firstQueueAdded.TrySetResult(queueName);
+                continueRegistration.GetAwaiter().GetResult();
+                return;
+            }
+
+            throw new InvalidOperationException("Scheduling failed.");
+        };
     }
 
     [Fact]
