@@ -104,6 +104,20 @@ public sealed class BuilderOptionChainingTests
     }
 
     [Fact]
+    public void SkipIfStillRunningIsKeptOnEveryStage()
+    {
+        var builder = new JobOptionBuilder();
+
+        builder.SkipIfStillRunning()
+            .And.WithName("a").SkipIfStillRunning()
+            .And.WithCronExpression(Cron.AtEveryMinute).SkipIfStillRunning()
+            .And.WithName("b").WithCronExpression(Cron.AtEveryMinute).SkipIfStillRunning()
+            .WithParameter("p").SkipIfStillRunning();
+
+        builder.GetJobOptions().ShouldAllBe(o => o.SkipIfStillRunning);
+    }
+
+    [Fact]
     public async Task DependentJobKeepsAllOptionsOfOneChain()
     {
         var dependencyBuilder = new DependencyBuilder();

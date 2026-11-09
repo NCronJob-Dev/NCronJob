@@ -6,6 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- `CronSchedule.IsValid` validates a cron expression and `CronSchedule.GetNextOccurrences` previews its upcoming occurrences, both using the same rules as `WithCronExpression`.
+- `SkipIfStillRunning()` drops a cron occurrence as `Skipped` when the job is still running at its own concurrency limit, instead of queueing it.
+- Testing guide covering `FakeTimeProvider` and NCronJob's scheduling rules.
+
 ## [v4.13.5] - 2026-11-06
 
 ### Changed

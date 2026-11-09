@@ -17,6 +17,7 @@ Use this page to decide where to go next based on the way you plan to use **NCro
 3. [Passing Parameters](features/parameters.md)
 4. [Concurrency control](features/concurrency-control.md)
 5. [Job timeouts and run expiry](features/timeouts-and-expiry.md)
+6. [Testing jobs and schedules](advanced/testing.md)
 
 ### I want to trigger work from an HTTP endpoint or application code
 

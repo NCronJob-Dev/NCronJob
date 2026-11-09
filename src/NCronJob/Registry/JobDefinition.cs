@@ -81,6 +81,7 @@ internal sealed record JobDefinition
     public SupportsConcurrencyAttribute? ConcurrencyPolicy => JobPolicyMetadata.ConcurrencyPolicy;
     public TimeSpan Timeout { get; private set; } = System.Threading.Timeout.InfiniteTimeSpan;
     public TimeSpan? JobRunExpiry { get; private set; }
+    public bool SkipIfStillRunning { get; private set; }
 
     /// <summary>
     /// Conditional predicate that must return true for the job to execute.
@@ -188,6 +189,11 @@ internal sealed record JobDefinition
         if (jobOption.JobRunExpiry is not null)
         {
             JobRunExpiry = jobOption.JobRunExpiry.Value;
+        }
+
+        if (jobOption.SkipIfStillRunning)
+        {
+            SkipIfStillRunning = true;
         }
 
         if (jobOption.Conditions is { Count: > 0 })

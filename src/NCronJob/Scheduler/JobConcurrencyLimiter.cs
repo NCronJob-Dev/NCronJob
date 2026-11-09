@@ -15,13 +15,11 @@ internal sealed class JobConcurrencyLimiter
 
     public bool TryAcquire(JobDefinition jobDefinition)
     {
-        var maxAllowed = jobDefinition.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
-
         lock (slotLock)
         {
             runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
 
-            if (currentCount >= maxAllowed || totalRunningJobCount >= concurrencySettings.MaxDegreeOfParallelism)
+            if (currentCount >= MaxAllowed(jobDefinition) || totalRunningJobCount >= concurrencySettings.MaxDegreeOfParallelism)
             {
                 return false;
             }
@@ -30,6 +28,18 @@ internal sealed class JobConcurrencyLimiter
             return true;
         }
     }
+
+    public bool IsJobAtCapacity(JobDefinition jobDefinition)
+    {
+        lock (slotLock)
+        {
+            runningJobCounts.TryGetValue(jobDefinition.JobFullName, out var currentCount);
+            return currentCount >= MaxAllowed(jobDefinition);
+        }
+    }
+
+    private static int MaxAllowed(JobDefinition jobDefinition) =>
+        jobDefinition.ConcurrencyPolicy?.MaxDegreeOfParallelism ?? 1;
 
     public void AcquireIgnoringLimits(JobDefinition jobDefinition)
     {
