@@ -59,7 +59,7 @@ public static class CronSchedule
              next is not null && occurrences.Count < count;
              next = schedule.GetNextOccurrence(next.Value))
         {
-            occurrences.Add(next.Value);
+            occurrences.Add(next.Value.ToUniversalTime());
         }
 
         return occurrences;

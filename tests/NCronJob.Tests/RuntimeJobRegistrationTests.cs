@@ -307,6 +307,74 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task FailedRegistrationCancelsASkippableRunInsteadOfSchedulingItsSuccessor()
+    {
+        var signal = new LongRunningJobSignal();
+        ServiceCollection.AddSingleton(signal);
+        ServiceCollection.AddNCronJob(builder => builder.AddJob<LongRunningJob>(p => p.WithName("Busy")));
+
+        await StartNCronJob();
+
+        var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+        var queueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
+        ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<LongRunningJob>(CancellationToken);
+        await signal.Started.Task.WaitAsync(CancellationToken);
+
+        var firstQueueAdded = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var continueRegistration = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queueAdditions = 0;
+
+        void HoldFirstQueueThenFail(string queueName)
+        {
+            queueAdditions++;
+            if (queueAdditions == 1)
+            {
+                firstQueueAdded.TrySetResult(queueName);
+                continueRegistration.Task.GetAwaiter().GetResult();
+                return;
+            }
+
+            throw new InvalidOperationException("Scheduling failed.");
+        }
+
+        queueManager.QueueAdded += HoldFirstQueueThenFail;
+        var registrationTask = Task.Run(() => runtimeJobRegistry.TryRegister(builder =>
+        {
+            builder.AddJob(
+                typeof(LongRunningJob),
+                p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Earlier").SkipIfStillRunning());
+            builder.AddJob(
+                typeof(AnotherDummyJob),
+                p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Failure"));
+        }, out _), CancellationToken);
+
+        try
+        {
+            var queueName = await firstQueueAdded.Task.WaitAsync(CancellationToken);
+            FakeTimer.Advance(TimeSpan.FromMinutes(1));
+            await queueManager.WaitUntilEmptyAsync(queueName, CancellationToken);
+        }
+        finally
+        {
+            continueRegistration.TrySetResult();
+        }
+
+        try
+        {
+            (await registrationTask.WaitAsync(CancellationToken)).ShouldBeFalse();
+        }
+        finally
+        {
+            queueManager.QueueAdded -= HoldFirstQueueThenFail;
+        }
+
+        await WaitForJobState(ExecutionState.Cancelled, name: "Earlier");
+
+        Events.ShouldNotContain(e => e.Name == "Earlier" && e.State == ExecutionState.Skipped);
+        Events.Count(e => e.Name == "Earlier" && e.State == ExecutionState.Scheduled).ShouldBe(1);
+    }
+
+    [Fact]
     public void RegisteringDuplicateDuringRuntimeLeadsToException()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute)));
