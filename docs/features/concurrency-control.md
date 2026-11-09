@@ -41,3 +41,15 @@ When using concurrency, it's essential to ensure that each job instance is idemp
 
 ### Resource Allocation Caution
 Jobs that are marked to support concurrency should be designed carefully to avoid contention over shared resources. This includes, but is not limited to, database connections, file handles, or any external systems. In scenarios where shared resources are unavoidable, proper synchronization mechanisms or concurrency control techniques, such as semaphores, mutexes, or transactional control, should be implemented to prevent race conditions and ensure data integrity.
+
+## Skipping overlapping cron runs
+
+When a cron occurrence comes due while the previous run of the same job is still going, NCronJob queues it and starts it as soon as a slot frees up. That suits catch-up work, but not jobs where a late run is worthless, such as polling or cache refreshes. Opt out with `SkipIfStillRunning`:
+
+```csharp
+builder.Services.AddNCronJob(options => options.AddJob<RefreshCacheJob>(job => job
+    .WithCronExpression("*/5 * * * *")
+    .SkipIfStillRunning()));
+```
+
+The occurrence is dropped as `Skipped`, which counts towards the `ncronjob.job.skipped` metric, and the next occurrence is scheduled as usual. A job counts as still running once it has reached its own `SupportsConcurrency` limit (one by default). Runs held back only by the [global concurrency limit](../advanced/global-concurrency.md) still wait, and instant and dependent runs are never skipped.

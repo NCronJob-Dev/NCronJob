@@ -70,4 +70,11 @@ public sealed class RunAtStartupBuilder : OptionChainerBuilder
         jobOption.SetJobRunExpiry(expiry);
         return this;
     }
+
+    /// <inheritdoc cref="JobOptionBuilder.SkipIfStillRunning"/>
+    public RunAtStartupBuilder SkipIfStillRunning()
+    {
+        jobOption.SkipIfStillRunning = true;
+        return this;
+    }
 }

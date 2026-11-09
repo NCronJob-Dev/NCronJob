@@ -52,6 +52,7 @@ Only required when at least one job uses `RunAtStartup(...)`.
 
 - `WithTimeout(TimeSpan)` on a job cancels a run once its execution exceeds the duration (retries share one window); `Timeout.InfiniteTimeSpan` disables it. A timed-out run is reported as `Cancelled` and triggers no success or fault dependencies. Also available for dependent jobs and startup jobs
 - `WithJobRunExpiry(TimeSpan)` on a job and `WithDefaultJobRunExpiry(TimeSpan)` on the options limit how late a queued run may start (default: 10 minutes); expired runs are dropped without executing
+- `SkipIfStillRunning()` on a job drops a cron occurrence as `Skipped` when the job is still running at its own concurrency limit, instead of queueing it
 - `WithMaxDegreeOfParallelism(int)` on the options builder sets the scheduler-wide maximum of concurrently executing jobs; the value must be greater than zero
 
 ### Cron expressions and macros
@@ -70,6 +71,8 @@ Only required when at least one job uses `RunAtStartup(...)`.
 
 Unknown macros throw an `ArgumentException`.
 
+`CronSchedule.IsValid(expression, out error)` validates an expression with the same rules, and `CronSchedule.GetNextOccurrences(expression, count, from, timeZone)` previews its upcoming UTC occurrences.
+
 ### Observability
 
 - **Log scopes**: every job run executes in a log scope, so all entries written during the run (including the job's own `ILogger<T>`) carry `JobName`, `JobRunId`, `CorrelationId` and `TriggerType` (`Cron`, `Instant`, `Startup` or `Dependent`). Scopes must be enabled in the logging provider, e.g. `IncludeScopes` for the console logger
@@ -85,6 +88,7 @@ Unknown macros throw an `ArgumentException`.
 - Parameters are passed by reference and are not serialized
 - Forced instant and scheduled jobs bypass queueing and concurrency safeguards
 - Startup jobs require `UseNCronJobAsync()` or `UseNCronJob()`
+- In tests, register `FakeTimeProvider` before `AddNCronJob` and `Advance` it to fire cron runs
 - Jobs have no execution timeout by default; jobs must observe the `CancellationToken` for `WithTimeout` to take effect
 
 ## Best starting points
@@ -110,6 +114,7 @@ Unknown macros throw an `ArgumentException`.
 - [Dynamic Job Control](https://docs.ncronjob.dev/advanced/dynamic-job-control/)
 - [Observing job progress, tracing and metrics](https://docs.ncronjob.dev/advanced/observing-job-progress/)
 - [Log level and log scopes](https://docs.ncronjob.dev/advanced/log-level/)
+- [Testing jobs and schedules](https://docs.ncronjob.dev/advanced/testing/)
 - [Known gotchas](https://docs.ncronjob.dev/advanced/known-gotchas/)
 
 ## Sample projects

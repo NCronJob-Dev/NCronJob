@@ -59,6 +59,11 @@ internal sealed partial class JobWorker
                 var capacityChanged = concurrencyLimiter.WaitForReleaseAsync();
                 if (!concurrencyLimiter.TryAcquire(nextJob.JobDefinition))
                 {
+                    if (TrySkipOverlappingCronRun(jobQueue, nextJob, priority.NextRunTime))
+                    {
+                        continue;
+                    }
+
                     await Task.WhenAny(queueChanged, capacityChanged).WaitAsync(cancellationToken).ConfigureAwait(false);
                     continue;
                 }
@@ -92,6 +97,23 @@ internal sealed partial class JobWorker
         {
             LogJobQueueManagerDisposed();
         }
+    }
+
+    private bool TrySkipOverlappingCronRun(JobQueue jobQueue, JobRun run, DateTimeOffset scheduledRunTime)
+    {
+        var job = run.JobDefinition;
+        if (run.TriggerType != TriggerType.Cron
+            || !job.SkipIfStillRunning
+            || !concurrencyLimiter.IsJobAtCapacity(job)
+            || !jobQueue.TryDequeueIf(run))
+        {
+            return false;
+        }
+
+        LogSkippingOverlappingRun(job.Name);
+        run.NotifyStateChange(JobStateType.Skipped);
+        cronRunScheduler.ScheduleNextRun(job, scheduledRunTime);
+        return true;
     }
 
     /// <summary>

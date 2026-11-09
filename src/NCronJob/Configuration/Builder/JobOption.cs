@@ -52,6 +52,8 @@ internal sealed class JobOption
     /// </summary>
     public TimeSpan? JobRunExpiry { get; set; }
 
+    public bool SkipIfStillRunning { get; set; }
+
     /// <summary>
     /// The job name given by the user, which can be used to identify the job.
     /// </summary>

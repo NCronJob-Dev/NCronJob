@@ -91,4 +91,11 @@ public sealed class ParameterBuilder : OptionChainerBuilder
         jobOption.SetJobRunExpiry(expiry);
         return this;
     }
+
+    /// <inheritdoc cref="JobOptionBuilder.SkipIfStillRunning"/>
+    public ParameterBuilder SkipIfStillRunning()
+    {
+        jobOption.SkipIfStillRunning = true;
+        return this;
+    }
 }

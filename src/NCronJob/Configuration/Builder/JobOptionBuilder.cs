@@ -28,6 +28,20 @@ public sealed class JobOptionBuilder
     }
 
     /// <summary>
+    /// Skips a cron occurrence that comes due while this job is still running at its concurrency limit,
+    /// instead of queueing it until the running instance finishes.
+    /// </summary>
+    /// <remarks>
+    /// The skipped run is reported as <see cref="ExecutionState.Skipped"/> and the next occurrence is scheduled.
+    /// Runs held back only by the global concurrency limit still wait. Instant and dependent runs are never skipped.
+    /// </remarks>
+    /// <returns>A builder that allows further configuration of this job.</returns>
+    public CronAndParameterAndRunAtStartupBuilder SkipIfStillRunning()
+    {
+        return new CronAndParameterAndRunAtStartupBuilder(this, AddOption(o => o.SkipIfStillRunning = true));
+    }
+
+    /// <summary>
     /// Adds a cron expression for the given job.
     /// </summary>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>

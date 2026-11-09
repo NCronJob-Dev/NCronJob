@@ -9,4 +9,7 @@ internal sealed partial class JobWorker
 
     [LoggerMessage(LogLevel.Trace, "Worker for queue '{QueueName}' stopped due to cancellation.")]
     private partial void LogWorkerCancelled(string queueName);
+
+    [LoggerMessage(LogLevel.Debug, "Skipping run of job '{JobName}' because the previous run is still in progress.")]
+    private partial void LogSkippingOverlappingRun(string jobName);
 }
