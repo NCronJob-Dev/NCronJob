@@ -2,6 +2,26 @@
 
 NCronJob takes all time from the registered `TimeProvider`: cron timers, delays of scheduled instant jobs, retry back-off, timeouts and expiry. Swap it for a `FakeTimeProvider` and tests can fire cron jobs without waiting for real time to pass.
 
+## Unit testing the job itself
+
+Start here. `IJob` and `IJobExecutionContext` are interfaces, so a job's logic can be tested by calling `RunAsync` directly: no host, no scheduler, no time provider. Any mocking library or a hand-written fake works:
+
+```csharp
+[Fact]
+public async Task DeletesExpiredFiles()
+{
+    var context = Substitute.For<IJobExecutionContext>();
+    context.Parameter.Returns("/uploads");
+    var job = new CleanupJob(new InMemoryFileStore(expiredFiles: 2));
+
+    await job.RunAsync(context, CancellationToken.None);
+
+    context.Output.ShouldBe(2);
+}
+```
+
+Reach for the host setup below only when the test is about scheduling: cron timing, retries, timeouts, concurrency or dependencies between jobs.
+
 ## Driving cron jobs with `FakeTimeProvider`
 
 Add the `Microsoft.Extensions.TimeProvider.Testing` package to the test project. Register the fake **before** `AddNCronJob`, because NCronJob only adds `TimeProvider.System` when no provider is registered yet.
