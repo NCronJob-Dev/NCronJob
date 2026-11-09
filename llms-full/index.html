@@ -135,6 +135,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../advanced/observing-job-progress/">Observing progress of jobs</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/testing/">Testing</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../advanced/known-gotchas/">Known gotchas</a>
                   </li>
               </ul>
@@ -211,6 +213,7 @@
 <ul>
 <li><code>WithTimeout(TimeSpan)</code> on a job cancels a run once its execution exceeds the duration (retries share one window); <code>Timeout.InfiniteTimeSpan</code> disables it. A timed-out run is reported as <code>Cancelled</code> and triggers no success or fault dependencies. Also available for dependent jobs and startup jobs</li>
 <li><code>WithJobRunExpiry(TimeSpan)</code> on a job and <code>WithDefaultJobRunExpiry(TimeSpan)</code> on the options limit how late a queued run may start (default: 10 minutes); expired runs are dropped without executing</li>
+<li><code>SkipIfStillRunning()</code> on a job drops a cron occurrence as <code>Skipped</code> when the job is still running at its own concurrency limit, instead of queueing it</li>
 <li><code>WithMaxDegreeOfParallelism(int)</code> on the options builder sets the scheduler-wide maximum of concurrently executing jobs; the value must be greater than zero</li>
 </ul>
 <h3 id="cron-expressions-and-macros">Cron expressions and macros<a class="headerlink" href="#cron-expressions-and-macros" title="Permanent link">&para;</a></h3>
@@ -254,6 +257,7 @@
 </tbody>
 </table>
 <p>Unknown macros throw an <code>ArgumentException</code>.</p>
+<p><code>CronSchedule.IsValid(expression, out error)</code> validates an expression with the same rules, and <code>CronSchedule.GetNextOccurrences(expression, count, from, timeZone)</code> previews its upcoming UTC occurrences.</p>
 <h3 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Log scopes</strong>: every job run executes in a log scope, so all entries written during the run (including the job&rsquo;s own <code>ILogger&lt;T&gt;</code>) carry <code>JobName</code>, <code>JobRunId</code>, <code>CorrelationId</code> and <code>TriggerType</code> (<code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code>). Scopes must be enabled in the logging provider, e.g. <code>IncludeScopes</code> for the console logger</li>
@@ -269,6 +273,7 @@
 <li>Parameters are passed by reference and are not serialized</li>
 <li>Forced instant and scheduled jobs bypass queueing and concurrency safeguards</li>
 <li>Startup jobs require <code>UseNCronJobAsync()</code> or <code>UseNCronJob()</code></li>
+<li>In tests, register <code>FakeTimeProvider</code> before <code>AddNCronJob</code> and <code>Advance</code> it to fire cron runs</li>
 <li>Jobs have no execution timeout by default; jobs must observe the <code>CancellationToken</code> for <code>WithTimeout</code> to take effect</li>
 </ul>
 <h2 id="best-starting-points">Best starting points<a class="headerlink" href="#best-starting-points" title="Permanent link">&para;</a></h2>
@@ -294,6 +299,7 @@
 <li><a href="https://docs.ncronjob.dev/advanced/dynamic-job-control/">Dynamic Job Control</a></li>
 <li><a href="https://docs.ncronjob.dev/advanced/observing-job-progress/">Observing job progress, tracing and metrics</a></li>
 <li><a href="https://docs.ncronjob.dev/advanced/log-level/">Log level and log scopes</a></li>
+<li><a href="https://docs.ncronjob.dev/advanced/testing/">Testing jobs and schedules</a></li>
 <li><a href="https://docs.ncronjob.dev/advanced/known-gotchas/">Known gotchas</a></li>
 </ul>
 <h2 id="sample-projects">Sample projects<a class="headerlink" href="#sample-projects" title="Permanent link">&para;</a></h2>

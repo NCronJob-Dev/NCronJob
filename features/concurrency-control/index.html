@@ -87,6 +87,12 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#skipping-overlapping-cron-runs">Skipping overlapping cron runs</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#concurrency-limit-vs-skipifstillrunning">Concurrency limit vs SkipIfStillRunning</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../timeouts-and-expiry/">Job timeouts and run expiry</a>
@@ -120,6 +126,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/testing/">Testing</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../advanced/known-gotchas/">Known gotchas</a>
                   </li>
@@ -182,6 +190,48 @@ By default jobs are not executed concurrently if the <code>SupportsConcurrency</
 <p>When using concurrency, it&rsquo;s essential to ensure that each job instance is idempotent. This means that even if the job is executed multiple times concurrently or sequentially, the outcome and side effects should remain consistent, without unintended duplication or conflict.</p>
 <h3 id="resource-allocation-caution">Resource Allocation Caution<a class="headerlink" href="#resource-allocation-caution" title="Permanent link">&para;</a></h3>
 <p>Jobs that are marked to support concurrency should be designed carefully to avoid contention over shared resources. This includes, but is not limited to, database connections, file handles, or any external systems. In scenarios where shared resources are unavoidable, proper synchronization mechanisms or concurrency control techniques, such as semaphores, mutexes, or transactional control, should be implemented to prevent race conditions and ensure data integrity.</p>
+<h2 id="skipping-overlapping-cron-runs">Skipping overlapping cron runs<a class="headerlink" href="#skipping-overlapping-cron-runs" title="Permanent link">&para;</a></h2>
+<p>When a cron occurrence comes due while the previous run of the same job is still going, NCronJob queues it and starts it as soon as a slot frees up. That suits catch-up work, but not jobs where a late run is worthless, such as polling or cache refreshes. Opt out with <code>SkipIfStillRunning</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">RefreshCacheJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">SkipIfStillRunning</span><span class="p">()));</span>
+</code></pre></div>
+
+<p>The occurrence is dropped as <code>Skipped</code>, which counts towards the <code>ncronjob.job.skipped</code> metric, and the next occurrence is scheduled as usual. Runs held back only by the <a href="../../advanced/global-concurrency/">global concurrency limit</a> still wait, and instant and dependent runs are never skipped.</p>
+<h3 id="concurrency-limit-vs-skipifstillrunning">Concurrency limit vs <code>SkipIfStillRunning</code><a class="headerlink" href="#concurrency-limit-vs-skipifstillrunning" title="Permanent link">&para;</a></h3>
+<p>The two work together. <code>SupportsConcurrency</code> sets <strong>how many</strong> runs of a job may execute at once (one by default). <code>SkipIfStillRunning</code> decides <strong>what happens</strong> to a cron occurrence that comes due once that limit is already reached.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Without <code>SkipIfStillRunning</code> (default)</th>
+<th>With <code>SkipIfStillRunning</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Occurrence due while the job is at its limit</td>
+<td>Waits in the queue and starts once a slot frees up</td>
+<td>Dropped right away as <code>Skipped</code></td>
+</tr>
+<tr>
+<td>Occurrence held back only by the <a href="../../advanced/global-concurrency/">global limit</a></td>
+<td>Waits, and is dropped as <code>Expired</code> once it exceeds its <a href="../timeouts-and-expiry/">run expiry</a></td>
+<td>Same: waits, and can expire</td>
+</tr>
+<tr>
+<td>Suited to</td>
+<td>Catch-up work, where a late run is still useful</td>
+<td>Polling, cache refreshes and anything where a late run is worthless</td>
+</tr>
+</tbody>
+</table>
+<p>Take a job scheduled every minute whose runs take three minutes:</p>
+<ul>
+<li><strong>Limit only</strong>: the 00:01 run waits and starts late at 00:03. Every following run is late too, though at most one is ever waiting.</li>
+<li><strong>Limit plus <code>SkipIfStillRunning</code></strong>: the 00:01 and 00:02 occurrences are skipped, and the first occurrence after the running instance finishes goes ahead on time.</li>
+<li><strong><code>[SupportsConcurrency(3)]</code> plus <code>SkipIfStillRunning</code></strong>: up to three runs overlap, and an occurrence is skipped only when all three are busy.</li>
+</ul>
               
             </div>
           </div><footer>
