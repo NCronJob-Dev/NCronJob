@@ -52,4 +52,20 @@ builder.Services.AddNCronJob(options => options.AddJob<RefreshCacheJob>(job => j
     .SkipIfStillRunning()));
 ```
 
-The occurrence is dropped as `Skipped`, which counts towards the `ncronjob.job.skipped` metric, and the next occurrence is scheduled as usual. A job counts as still running once it has reached its own `SupportsConcurrency` limit (one by default). Runs held back only by the [global concurrency limit](../advanced/global-concurrency.md) still wait, and instant and dependent runs are never skipped.
+The occurrence is dropped as `Skipped`, which counts towards the `ncronjob.job.skipped` metric, and the next occurrence is scheduled as usual. Runs held back only by the [global concurrency limit](../advanced/global-concurrency.md) still wait, and instant and dependent runs are never skipped.
+
+### Concurrency limit vs `SkipIfStillRunning`
+
+The two work together. `SupportsConcurrency` sets **how many** runs of a job may execute at once (one by default). `SkipIfStillRunning` decides **what happens** to a cron occurrence that comes due once that limit is already reached.
+
+| | Without `SkipIfStillRunning` (default) | With `SkipIfStillRunning` |
+|---|---|---|
+| Occurrence due while the job is at its limit | Waits in the queue and starts once a slot frees up | Dropped right away as `Skipped` |
+| Run that waits longer than its [run expiry](timeouts-and-expiry.md) | Dropped as `Expired` | Not applicable, it never waits |
+| Suited to | Catch-up work, where a late run is still useful | Polling, cache refreshes and anything where a late run is worthless |
+
+Take a job scheduled every minute whose runs take three minutes:
+
+- **Limit only**: the 00:01 run waits and starts late at 00:03. Every following run is late too, though at most one is ever waiting.
+- **Limit plus `SkipIfStillRunning`**: the 00:01 and 00:02 occurrences are skipped, and the first occurrence after the running instance finishes goes ahead on time.
+- **`[SupportsConcurrency(3)]` plus `SkipIfStillRunning`**: up to three runs overlap, and an occurrence is skipped only when all three are busy.
