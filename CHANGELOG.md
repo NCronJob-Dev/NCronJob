@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v4.14.0] - 2026-11-09
+
 ### Added
 
 - `CronSchedule.IsValid` validates a cron expression and `CronSchedule.GetNextOccurrences` previews its upcoming occurrences, both using the same rules as `WithCronExpression`.
@@ -690,7 +692,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.5...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.14.0...HEAD
+[v4.14.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.5...v4.14.0
 [v4.13.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.2...v4.13.5
 [v4.13.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.1...v4.13.2
 [v4.13.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.0...v4.13.1
