@@ -87,9 +87,11 @@ public sealed class ConcurrencyTests : JobIntegrationBase
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         await signal.Started.Task.WaitAsync(CancellationToken);
+        await WaitForNthOrchestrationState(ExecutionState.Scheduled, 2);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         await WaitForNthOrchestrationState(ExecutionState.Skipped, 1);
+        await WaitForNthOrchestrationState(ExecutionState.Scheduled, 3);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         await WaitForNthOrchestrationState(ExecutionState.Skipped, 2);
@@ -111,6 +113,7 @@ public sealed class ConcurrencyTests : JobIntegrationBase
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         await WaitForNthOrchestrationState(ExecutionState.Completed, 1);
         await WaitUntilReleasedAsync(limiter, job);
+        await WaitForNthOrchestrationState(ExecutionState.Scheduled, 2);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         await WaitForNthOrchestrationState(ExecutionState.Completed, 2);

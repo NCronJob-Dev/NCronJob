@@ -50,7 +50,10 @@ public sealed class CronScheduleTests
     {
         var plusTwo = TimeZoneInfo.CreateCustomTimeZone("plus-two", TimeSpan.FromHours(2), "plus-two", "plus-two");
 
-        CronSchedule.GetNextOccurrences("0 3 * * *", 1, From, plusTwo).ShouldBe([From.AddHours(1)]);
+        var occurrence = CronSchedule.GetNextOccurrences("0 3 * * *", 1, From, plusTwo).ShouldHaveSingleItem();
+
+        occurrence.ShouldBe(From.AddHours(1));
+        occurrence.Offset.ShouldBe(TimeSpan.Zero);
     }
 
     [Fact]

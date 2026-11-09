@@ -52,6 +52,9 @@ internal sealed class JobOption
     /// </summary>
     public TimeSpan? JobRunExpiry { get; set; }
 
+    /// <summary>
+    /// Drops a cron occurrence as skipped when the job is still running at its own concurrency limit, instead of queueing it.
+    /// </summary>
     public bool SkipIfStillRunning { get; set; }
 
     /// <summary>

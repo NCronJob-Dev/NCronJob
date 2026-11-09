@@ -59,7 +59,7 @@ internal sealed partial class JobWorker
                 var capacityChanged = concurrencyLimiter.WaitForReleaseAsync();
                 if (!concurrencyLimiter.TryAcquire(nextJob.JobDefinition))
                 {
-                    if (TrySkipOverlappingCronRun(jobQueue, nextJob, priority.NextRunTime))
+                    if (await TrySkipOverlappingCronRunAsync(jobQueue, nextJob, priority.NextRunTime).ConfigureAwait(false))
                     {
                         continue;
                     }
@@ -99,7 +99,7 @@ internal sealed partial class JobWorker
         }
     }
 
-    private bool TrySkipOverlappingCronRun(JobQueue jobQueue, JobRun run, DateTimeOffset scheduledRunTime)
+    private async Task<bool> TrySkipOverlappingCronRunAsync(JobQueue jobQueue, JobRun run, DateTimeOffset scheduledRunTime)
     {
         var job = run.JobDefinition;
         if (run.TriggerType != TriggerType.Cron
@@ -108,6 +108,13 @@ internal sealed partial class JobWorker
             || !jobQueue.TryDequeueIf(run))
         {
             return false;
+        }
+
+        // A run from a pending runtime registration must not schedule a successor if that registration gets rolled back.
+        if (!await run.WaitForActivationAsync().ConfigureAwait(false))
+        {
+            run.NotifyStateChange(JobStateType.Cancelled);
+            return true;
         }
 
         LogSkippingOverlappingRun(job.Name);
