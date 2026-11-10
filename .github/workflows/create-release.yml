@@ -101,5 +101,5 @@ jobs:
 
     - name: Upload to nuget
       run: |
-        dotnet nuget push ${GITHUB_WORKSPACE}/packages/*.nupkg -k ${{ steps.nuget-login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
-        dotnet nuget push ${GITHUB_WORKSPACE}/packages/*.snupkg -k ${{ steps.nuget-login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push "${GITHUB_WORKSPACE}/packages/*.nupkg" -k ${{ steps.nuget-login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push "${GITHUB_WORKSPACE}/packages/*.snupkg" -k ${{ steps.nuget-login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
