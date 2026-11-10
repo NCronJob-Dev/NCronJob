@@ -404,3 +404,7 @@ FodyWeavers.xsd
 
 # mkdocs
 /site/
+
+# Package smoke test output
+tests/PackageSmoke/nupkgs/
+tests/PackageSmoke/publish/
