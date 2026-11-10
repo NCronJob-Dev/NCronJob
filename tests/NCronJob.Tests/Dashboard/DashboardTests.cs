@@ -175,6 +175,20 @@ public class DashboardTests
     }
 
     [Fact]
+    public void PolymorphicParameterRoundTripsThroughItsDeclaredContract()
+    {
+        var json = JsonParameter.Describe(new DerivedRequest(7), typeof(BaseRequest))!.Full;
+
+        JsonParameter.Parse(json, typeof(BaseRequest)).ShouldBe(new DerivedRequest(7));
+    }
+
+    [System.Text.Json.Serialization.JsonPolymorphic]
+    [System.Text.Json.Serialization.JsonDerivedType(typeof(DerivedRequest), "derived")]
+    private abstract record BaseRequest;
+
+    private sealed record DerivedRequest(int Id) : BaseRequest;
+
+    [Fact]
     public void JsonParameterRejectsInvalidJson()
     {
         Should.Throw<JsonException>(() => JsonParameter.Parse("hello", typeof(string)));
