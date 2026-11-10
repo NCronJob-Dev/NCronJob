@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v5.0.0] - 2026-11-10
+
 ### Removed
 
 - The `[Experimental("NCRONJOB_OBSERVER")]` marker: `IJobExecutionProgressReporter`, `ExecutionProgress` and `ExecutionState` are stable. `NCRONJOB_OBSERVER` suppressions can be removed.
@@ -716,7 +718,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.14.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v5.0.0...HEAD
+[v5.0.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.14.0...v5.0.0
 [v4.14.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.5...v4.14.0
 [v4.13.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.2...v4.13.5
 [v4.13.2]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.1...v4.13.2
