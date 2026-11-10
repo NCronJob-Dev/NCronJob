@@ -2,7 +2,7 @@
 
 The `NCronJob.Dashboard` package adds a Blazor Server dashboard to your ASP.NET Core application. It shows:
 
-- **Jobs**: every registered job, its schedule, its next run and its configured parameter. [Startup jobs](startup-jobs.md) are marked *At startup* in the schedule, together with whether a failure stops the application, and their status shows the state and duration of the startup run. Cron jobs can be enabled or disabled, and any job can be triggered as an instant job with a JSON parameter.
+- **Jobs**: every registered job, its schedule, its next run and its configured parameter. [Startup jobs](startup-jobs.md) are marked *At startup* in the schedule, together with whether a failure stops the application, and their status shows the state and duration of the startup run. Cron jobs can be enabled or disabled, and any named or typed job can be triggered as an instant job with a JSON parameter.
 - **Dependencies**: the jobs that run after another job succeeds or fails (see [*"Model Dependencies"*](model-dependencies.md)).
 - **Runs**: live and recent runs, with what triggered them (cron, instant, startup or dependent), their state history and the parameter each run was started with.
 
