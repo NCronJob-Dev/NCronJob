@@ -134,15 +134,19 @@
             {
                 <tr class="run-panel">
                     <td colspan="6">
-                        <label for="parameter-json">Parameter (JSON)</label>
-                        <textarea id="parameter-json" @bind="parameterJson" placeholder="@ParameterPlaceholder"></textarea>
-                        <p class="hint">
-                            Leave empty to use the configured parameter.
-                            @if (job.Parameter is { } configuredParameter)
-                            {
-                                <text>The JSON is deserialized into <span class="mono">@configuredParameter.GetType().Name</span>.</text>
-                            }
-                        </p>
+                        @if (job.ParameterType is { } parameterType)
+                        {
+                            <label for="parameter-json">Parameter (JSON)</label>
+                            <textarea id="parameter-json" @bind="parameterJson" placeholder="@Placeholder(parameterType)"></textarea>
+                            <p class="hint">
+                                Leave empty to use the configured parameter.
+                                The JSON must match <span class="mono">@parameterType.Name</span>.
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="hint">This job takes no parameter.</p>
+                        }
                         <div class="actions">
                             <button @onclick="() => selected = null">Cancel</button>
                             <button title="Ignores concurrency limits" @onclick="() => Trigger(job, force: true)"><Icon Name="bolt" />Force run</button>
@@ -158,13 +162,16 @@
 </div>
 
 @code {
-    private const string ParameterPlaceholder = "\"hello\" or { \"id\": 1 }";
+    private const string UntypedPlaceholder = "\"hello\" or { \"id\": 1 }";
 
     private JobDefinition? selected;
     private string parameterJson = "";
     private string prefilledJson = "";
     private string? message;
     private bool messageIsError;
+
+    private static string Placeholder(Type parameterType) =>
+        parameterType == typeof(object) ? UntypedPlaceholder : JsonParameter.Schema(parameterType) ?? UntypedPlaceholder;
 
     private static bool CanControl(JobDefinition job) => job.CustomName is not null || job.IsTypedJob;
 
@@ -194,7 +201,7 @@
         var parameterUnchanged = string.IsNullOrWhiteSpace(parameterJson) || parameterJson == prefilledJson;
         var parameter = parameterUnchanged
             ? job.Parameter
-            : JsonParameter.Parse(parameterJson, job.Parameter?.GetType());
+            : JsonParameter.Parse(parameterJson, job.ParameterType ?? typeof(object));
 
         var correlationId = (job.CustomName, force) switch
         {

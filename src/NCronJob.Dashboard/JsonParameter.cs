@@ -1,4 +1,7 @@
 using System.Text.Json;
+using System.Text.Json.Schema;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace NCronJob.Dashboard;
 
@@ -10,22 +13,43 @@ internal static class JsonParameter
 
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
-    public static object? Parse(string json, Type? targetType)
+    // Rejects JSON that doesn't follow the structure of the parameter type instead of silently dropping or defaulting members.
+    private static readonly JsonSerializerOptions Strict = new()
     {
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
+        RespectNullableAnnotations = true,
+        RespectRequiredConstructorParameters = true,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+    };
 
-        if (targetType is not null)
+    public static object? Parse(string json, Type parameterType)
+    {
+        if (parameterType != typeof(object))
         {
-            return root.Deserialize(targetType);
+            return JsonSerializer.Deserialize(json, parameterType, Strict);
         }
 
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
         return root.ValueKind switch
         {
             JsonValueKind.Null => null,
             JsonValueKind.String => root.GetString(),
             _ => root.GetRawText(),
         };
+    }
+
+    public static string? Schema(Type parameterType)
+    {
+        try
+        {
+            return JsonSchemaExporter.GetJsonSchemaAsNode(Strict, parameterType).ToJsonString(Indented);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // Only a hint: invalid JSON metadata surfaces as an error when the JSON is parsed, not while rendering.
+            return null;
+        }
     }
 
     public static ParameterText? Describe(object? parameter)

@@ -304,6 +304,11 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
         bool forceExecution,
         CancellationToken token)
     {
+        if (parameter.IsSpecified)
+        {
+            jobDefinition.EnsureAccepts(parameter.Value);
+        }
+
         var run = jobRunFactory.CreateInstant(jobDefinition, startDate, parameter, token);
 
         run.Priority = JobPriority.High;

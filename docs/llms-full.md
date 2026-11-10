@@ -8,7 +8,7 @@ NCronJob is an in-process .NET scheduler for recurring jobs, startup jobs, and m
 
 ## Main concepts
 
-- **Typed jobs** implement `IJob`
+- **Typed jobs** implement `IJob`, or `IJob<TParameter>` to accept a parameter read via `IJobExecutionContext<TParameter>.Parameter`
 - **Minimal jobs** are delegates registered via `AddNCronJob(...)`
 - **Recurring jobs** use cron expressions
 - **Instant jobs** are triggered through `IInstantJobRegistry`
@@ -87,7 +87,7 @@ Unknown macros throw an `ArgumentException`.
 - Name jobs when the same job type is registered more than once
 - Use `RunInstantJob("name")` to avoid ambiguity with duplicate job types
 - Parameters are passed by reference and are not serialized
-- Parameters are `object?` and not type-checked; validate `context.Parameter` at the start of the job
+- Parameters must be assignable to the job's `TParameter`; a wrong type throws `ArgumentException` at registration or trigger time, a missing one is `default(TParameter)`
 - Forced instant and scheduled jobs bypass queueing and concurrency safeguards
 - Startup jobs require `UseNCronJobAsync()` or `UseNCronJob()`
 - In tests, register `FakeTimeProvider` before `AddNCronJob` and `Advance` it to fire cron runs

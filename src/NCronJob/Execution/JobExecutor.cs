@@ -63,7 +63,7 @@ internal sealed partial class JobExecutor : IDisposable
         run.CancellationToken = linkedCts.Token;
 
         await using var scope = serviceProvider.CreateAsyncScope();
-        var runContext = new JobExecutionContext(run);
+        var runContext = JobExecutionContext.Create(run);
         using var activity = StartActivity(runContext);
 
         try

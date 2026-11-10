@@ -17,8 +17,8 @@ This page is a compact entry point for assistants, scripts, and contributors who
 
 ### Job authoring
 
-- `IJob` is the main typed-job abstraction
-- `IJobExecutionContext` provides the parameter, attempt count, correlation id, and execution metadata
+- `IJob` is the main typed-job abstraction; `IJob<TParameter>` is a job that accepts a parameter
+- `IJobExecutionContext` provides the attempt count, correlation id, and execution metadata; `IJobExecutionContext<TParameter>` adds the typed `Parameter`
 - The minimal API style resolves services directly from the delegate signature
 
 ### Scheduling options
@@ -55,7 +55,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - Use **named jobs** when the same job type is registered multiple times or when runtime management is needed
 - `RunInstantJob<TJob>()` can become ambiguous if multiple registrations exist for the same job type; prefer `RunInstantJob("job-name")` in that case
 - Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution
-- `context.Parameter` is `object?` and never type-checked; a parameter of the wrong type fails only at run time (hard cast throws, `as` yields `null`), so validate it at the start of the job
+- A job accepts a parameter only if it implements `IJob<TParameter>`; a parameter that isn't assignable to `TParameter` throws `ArgumentException` at registration or trigger time. A run without a parameter gets `default(TParameter)`; `IJob<object?>` accepts anything
 - Forced instant jobs (`ForceRunInstantJob` / `ForceRunScheduledJob`) bypass queue and concurrency protection
 - A timed-out run is `Cancelled` and does not trigger dependencies; jobs must honor the `CancellationToken`
 - After `Build()`, call `UseNCronJobAsync()` or `UseNCronJob()` whenever `RunAtStartup(...)` is used; see [Running Startup Jobs](features/startup-jobs.md)

@@ -73,9 +73,9 @@ builder.Services.AddNCronJob(options =>
 
 await builder.Build().RunAsync();
 
-public sealed class PrintHelloWorld(ILogger<PrintHelloWorld> logger) : IJob
+public sealed class PrintHelloWorld(ILogger<PrintHelloWorld> logger) : IJob<string>
 {
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext<string> context, CancellationToken token)
     {
         logger.LogInformation("Hello World");
         logger.LogInformation("Parameter: {Parameter}", context.Parameter);

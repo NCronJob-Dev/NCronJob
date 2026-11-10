@@ -128,7 +128,7 @@ using NCronJob;
 2. Create a job
 
 ```csharp
-public class PrintHelloWorld : IJob
+public class PrintHelloWorld : IJob<string>
 {
     private readonly ILogger<PrintHelloWorld> logger;
 
@@ -137,7 +137,7 @@ public class PrintHelloWorld : IJob
         this.logger = logger;
     }
 
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext<string> context, CancellationToken token)
     {
         logger.LogInformation("Hello World");
         logger.LogInformation("Parameter: {Parameter}", context.Parameter);

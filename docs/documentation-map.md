@@ -55,7 +55,7 @@ The repository contains three useful starting points:
 
 - Jobs run in-process and are **not persisted** across restarts
 - Parameters are passed by reference and are **not serialized**
-- Parameters are `object?` and **not type-checked**: a wrong type only fails inside the job
+- Parameters are typed via `IJob<TParameter>`: a wrong type is rejected at registration or trigger time
 - Named jobs are the best choice when you want runtime management or to avoid ambiguity
 - Forced instant jobs bypass queue and concurrency safeguards
 - Startup jobs need `UseNCronJobAsync()` or `UseNCronJob()`

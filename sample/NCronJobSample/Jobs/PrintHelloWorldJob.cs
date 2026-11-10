@@ -3,14 +3,14 @@ using NCronJob;
 namespace NCronJobSample;
 
 [SupportsConcurrency(2)]
-public partial class PrintHelloWorldJob : IJob
+public partial class PrintHelloWorldJob : IJob<string?>
 {
     private static int invocationCount;
     private readonly ILogger<PrintHelloWorldJob> logger;
 
     public PrintHelloWorldJob(ILogger<PrintHelloWorldJob> logger) => this.logger = logger;
 
-    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext<string?> context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 

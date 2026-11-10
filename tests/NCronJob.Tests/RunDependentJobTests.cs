@@ -412,7 +412,7 @@ public class RunDependentJobTests : JobIntegrationBase
 
         await StartNCronJob();
 
-        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(false, token: CancellationToken);
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().ForceRunInstantJob<JobThatThrowsInCtor>(CancellationToken);
 
         await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
@@ -446,13 +446,13 @@ public class RunDependentJobTests : JobIntegrationBase
         Storage.Entries.Count.ShouldBe(3);
     }
 
-    private sealed class PrincipalJob(Storage storage) : IJob
+    private sealed class PrincipalJob(Storage storage) : IJob<bool>
     {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext<bool> context, CancellationToken token)
         {
             var maybeThrow = () => { };
 
-            if (context.Parameter is true)
+            if (context.Parameter)
             {
                 context.Output = "Success";
             }
@@ -470,13 +470,13 @@ public class RunDependentJobTests : JobIntegrationBase
         }
     }
 
-    private sealed class PrincipalCorrelationIdJob(Storage storage) : IJob
+    private sealed class PrincipalCorrelationIdJob(Storage storage) : IJob<bool>
     {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        public Task RunAsync(IJobExecutionContext<bool> context, CancellationToken token)
         {
             storage.Add(context.CorrelationId.ToString());
 
-            if (context.Parameter is true)
+            if (context.Parameter)
             {
                 context.SkipChildren();
             }

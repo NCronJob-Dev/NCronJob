@@ -137,11 +137,41 @@ public class DashboardTests
     }
 
     [Fact]
-    public void JsonParameterWithoutConfiguredTypeUnwrapsStringsAndPassesOtherJsonAsRawText()
+    public void JsonParameterForObjectParameterUnwrapsStringsAndPassesOtherJsonAsRawText()
     {
-        JsonParameter.Parse("\"hello\"", targetType: null).ShouldBe("hello");
-        JsonParameter.Parse("null", targetType: null).ShouldBeNull();
-        JsonParameter.Parse("""{"a":1}""", targetType: null).ShouldBe("""{"a":1}""");
+        JsonParameter.Parse("\"hello\"", typeof(object)).ShouldBe("hello");
+        JsonParameter.Parse("null", typeof(object)).ShouldBeNull();
+        JsonParameter.Parse("""{"a":1}""", typeof(object)).ShouldBe("""{"a":1}""");
+    }
+
+    [Theory]
+    [InlineData("""{ "Id": 1, "Name": "a", "Extra": true }""")]
+    [InlineData("""{ "Id": 1 }""")]
+    [InlineData("""{ "Id": 1, "Name": null }""")]
+    public void JsonParameterRejectsJsonThatDoesNotFollowTheParameterType(string json)
+    {
+        Should.Throw<JsonException>(() => JsonParameter.Parse(json, typeof(Payload)));
+    }
+
+    [Fact]
+    public void JsonParameterSchemaDescribesTheParameterType()
+    {
+        var schema = JsonParameter.Schema(typeof(Payload)).ShouldNotBeNull();
+
+        schema.ShouldContain("\"Id\"");
+        schema.ShouldContain("\"Name\"");
+    }
+
+    [Fact]
+    public void JsonParameterSchemaIsNullWhenTheTypeHasInvalidJsonMetadata()
+    {
+        JsonParameter.Schema(typeof(ClashingNames)).ShouldBeNull();
+    }
+
+    private sealed class ClashingNames
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("x")] public int A { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("x")] public int B { get; set; }
     }
 
     [Fact]

@@ -28,11 +28,9 @@ Parameters are not cloned. If you pass a mutable object and the job changes it, 
 
 Prefer immutable parameter objects, or clone the parameter inside the job before mutating it.
 
-## Parameters are not type-checked
+## Parameters are checked when they are passed, not by the compiler
 
-`context.Parameter` is an `object?`. Passing a parameter of the wrong type compiles and is only noticed inside the job: a hard cast throws, and a soft cast (`as`) silently yields `null`.
-
-Use a dedicated parameter type and validate it at the start of the job. See [Passing parameters](../features/parameters.md#parameters-are-not-type-checked).
+The APIs that pass a parameter accept `object?`, so a parameter of the wrong type compiles. It is rejected with an `ArgumentException` when the job is registered or triggered, not inside the job. A run without a parameter gets `default(TParameter)`. See [Passing parameters](../features/parameters.md#parameters-are-type-checked).
 
 ## Instant jobs can be ambiguous
 
