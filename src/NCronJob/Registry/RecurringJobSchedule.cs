@@ -9,4 +9,4 @@ namespace NCronJob;
 /// <param name="CronExpression">The cron expression that defines when the job should be executed.</param>
 /// <param name="IsEnabled">Whether the job is enabled or not.</param>
 /// <param name="TimeZone">The timezone that is used to evaluate the cron expression.</param>
-public sealed record RecurringJobSchedule(string? JobName, string CronExpression, bool IsEnabled, TimeZoneInfo TimeZone, Type? Type = null, bool IsTypedJob = true);
+public sealed record RecurringJobSchedule(string? JobName, string CronExpression, bool IsEnabled, TimeZoneInfo TimeZone, Type? Type, bool IsTypedJob);
