@@ -49,10 +49,10 @@ If you are new to the project, start with:
 
 ## Packages
 
-| Package | What it adds |
-|---|---|
-| [`NCronJob`](https://www.nuget.org/packages/NCronJob) | The job scheduler |
-| [`NCronJob.Dashboard`](https://www.nuget.org/packages/NCronJob.Dashboard) | Optional Blazor Server dashboard for ASP.NET Core apps: jobs, startup jobs, dependencies, live runs and instant triggers |
+| Name | Description | NuGet Download Link |
+|---|---|---|
+| `NCronJob` | The job scheduler | [![NuGet](https://img.shields.io/nuget/dt/NCronJob?logo=nuget&style=flat-square)](https://www.nuget.org/packages/NCronJob) |
+| `NCronJob.Dashboard` | Optional Blazor Server dashboard for ASP.NET Core apps: jobs, startup jobs, dependencies, live runs and instant triggers | [![NuGet](https://img.shields.io/nuget/dt/NCronJob.Dashboard?logo=nuget&style=flat-square)](https://www.nuget.org/packages/NCronJob.Dashboard) |
 
 ```bash
 dotnet add package NCronJob
