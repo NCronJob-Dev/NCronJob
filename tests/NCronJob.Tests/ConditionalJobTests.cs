@@ -171,7 +171,6 @@ public class ConditionalJobTests : JobIntegrationBase
 
         ServiceCollection.AddNCronJob(n => n
             .AddJob<JobThatFailsFirstTime>(p => p
-                .WithCronExpression(Cron.AtEveryMinute)
                 .OnlyIf(() =>
                 {
                     evaluationCount++;
@@ -180,7 +179,8 @@ public class ConditionalJobTests : JobIntegrationBase
 
         await StartNCronJob();
 
-        var orchestrationId = Events[0].CorrelationId;
+        // An instant run: retries outlast a cron interval, so a cron successor would evaluate the condition again.
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<JobThatFailsFirstTime>(token: CancellationToken);
         await AdvanceTimeUntilOrchestrationCompletion(orchestrationId);
 
         // Condition should be evaluated only once, even though retry happened
