@@ -1,11 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace NCronJob;
 
 /// <summary>
 /// Provides a way to be notified of job execution lifecycle.
 /// </summary>
-[Experimental("NCRONJOB_OBSERVER")]
 public interface IJobExecutionProgressReporter
 {
     /// <summary>

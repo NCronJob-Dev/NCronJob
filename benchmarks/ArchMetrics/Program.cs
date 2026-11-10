@@ -37,8 +37,8 @@ var compilation = CSharpCompilation.Create("NCronJob", trees, refs,
     new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
 
 // Unresolved symbols would be skipped silently by the analysis below and understate coupling, so refuse to continue.
-// CS8795/CS0762 stem from the missing [LoggerMessage] generator output and NCRONJOB_OBSERVER the library's own experimental marker.
-string[] expectedErrors = ["CS8795", "CS0762", "NCRONJOB_OBSERVER"];
+// CS8795/CS0762 stem from the missing [LoggerMessage] generator output.
+string[] expectedErrors = ["CS8795", "CS0762"];
 var bindingErrors = compilation.GetDiagnostics()
     .Where(d => d.Severity == DiagnosticSeverity.Error && !expectedErrors.Contains(d.Id))
     .ToList();
