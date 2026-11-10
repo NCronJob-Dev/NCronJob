@@ -38,9 +38,13 @@ internal sealed class DependentJobDefinition
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        return type.FullName is null || !type.GetInterfaces().Contains(typeof(IJob))
-            ? throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.")
-            : new DependentJobDefinition(customName, type, parameter);
+        if (type.FullName is null || !type.GetInterfaces().Contains(typeof(IJob)))
+        {
+            throw new InvalidOperationException($"Type '{type}' doesn't implement '{nameof(IJob)}'.");
+        }
+
+        JobParameter.EnsureAccepted(JobParameter.TypeOf(type), customName ?? type.FullName, parameter);
+        return new DependentJobDefinition(customName, type, parameter);
     }
 
     public static DependentJobDefinition CreateUntyped(string? customName, Delegate jobDelegate)

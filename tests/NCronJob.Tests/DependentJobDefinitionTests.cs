@@ -30,8 +30,8 @@ public sealed class DependentJobDefinitionTests
 
     [RetryPolicy(retryCount: 2)]
     [SupportsConcurrency(2)]
-    private sealed class ConfiguredJob : IJob
+    private sealed class ConfiguredJob : IJob<object>
     {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token) => Task.CompletedTask;
+        public Task RunAsync(IJobExecutionContext<object> context, CancellationToken token) => Task.CompletedTask;
     }
 }

@@ -17,16 +17,14 @@ Services.AddNCronJob(options =>
 });
 ```
 
-In the `ReportJob` you can now access the parameter via the `JobExecutionContext`:
+A job that accepts a parameter implements `IJob<TParameter>`. The parameter is available, typed, via `context.Parameter`:
 
 ```csharp
-public class ReportJob : IJob
+public class ReportJob : IJob<string>
 {
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext<string> context, CancellationToken token)
     {
-        var parameter = context.Parameter;
-        // Do something with the parameter
-        switch (parameter)
+        switch (context.Parameter)
         {
             case "daily":
                 // Generate daily report
@@ -42,6 +40,8 @@ public class ReportJob : IJob
     }
 }
 ```
+
+A job that implements the plain `IJob` doesn't accept a parameter.
 
 It's also possible to configure a job with only a parameter and no cron expression.
 
@@ -76,39 +76,71 @@ app.MapPost("/maintenance/thorough", (IInstantJobRegistry jobRegistry) =>
 });
 ```
 
-## Parameters are not type-checked
+## Parameters are type-checked
 
-`context.Parameter` is of type `object?`. Every API that sets a parameter accepts any object: `WithParameter`, `RunInstantJob`, `RunScheduledJob`, `IRuntimeJobRegistry.UpdateParameter`, `RunJob<TJob>(parameter)` for dependent jobs, and the [dashboard](dashboard.md). NCronJob does not check that a parameter matches what the job expects, neither when the job is registered nor when it is triggered.
+The parameter of a job must be assignable to its `TParameter`. Every API that sets a parameter checks it and rejects a wrong one with an `ArgumentException` right away:
 
-A wrong parameter only shows up inside the job, when it runs:
+- `WithParameter`, when the job is registered. `IRuntimeJobRegistry.TryRegister` doesn't throw: it returns `false` and hands out the `ArgumentException` through its `out` parameter
+- `RunJob<TJob>(parameter)` for dependent jobs, when the dependency is registered
+- `IRuntimeJobRegistry.UpdateParameter`
+- `RunInstantJob`, `RunScheduledJob`, `ForceRunInstantJob` and `ForceRunScheduledJob`, when the job is triggered
+- the [dashboard](dashboard.md), which deserializes the JSON into `TParameter`
 
 ```csharp
-public class ReportJob : IJob
+public sealed record ReportRequest(string Region);
+
+public class ReportJob : IJob<ReportRequest>
 {
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext<ReportRequest> context, CancellationToken token)
     {
-        var hardCast = (ReportRequest)context.Parameter!;       // InvalidCastException: the run is Faulted
-        var softCast = context.Parameter as ReportRequest;      // null: the job silently does nothing useful
+        var region = context.Parameter.Region;
         return Task.CompletedTask;
     }
 }
 
-jobRegistry.RunInstantJob<ReportJob>("weekly"); // compiles, but ReportJob expects a ReportRequest
+jobRegistry.RunInstantJob<ReportJob>(new ReportRequest("EU")); // runs
+jobRegistry.RunInstantJob<ReportJob>("weekly");                  // throws ArgumentException
 ```
 
-To keep such mistakes visible:
+Passing a parameter to a job that implements the plain `IJob` throws as well.
 
-- Use a dedicated parameter type, for example a `record`, instead of primitives like `string` or `int`.
-- Check the parameter at the start of the job and fail with a clear message:
+The compiler can't check the parameter, because these APIs accept `object?`. The check runs when the call is made, not when the job runs.
 
-  ```csharp
-  if (context.Parameter is not ReportRequest request)
-  {
-      throw new ArgumentException($"Expected {nameof(ReportRequest)} but got '{context.Parameter?.GetType().Name ?? "null"}'.");
-  }
-  ```
+### Optional parameters
 
-- When jobs are triggered from the [dashboard](dashboard.md), configure a default parameter with `WithParameter`. The dashboard deserializes the JSON into the type of that parameter. Without one it can't know the expected type and passes the text instead.
+A run without a parameter gets `default(TParameter)`: `null` for reference types, `0` for an `int`. Declare the parameter as nullable when it is optional, for example `IJob<ReportRequest?>`, and handle `null` in the job.
+
+### Accepting any parameter
+
+`IJob<object?>` accepts every parameter, like an `IJob` did before v5. Prefer a dedicated type, for example a `record`, so that wrong parameters are rejected.
+
+### Delegate jobs
+
+A delegate job declares its parameter type through an `IJobExecutionContext<TParameter>` argument:
+
+```csharp
+builder.Services.AddNCronJob(
+    (IJobExecutionContext<ReportRequest?> context) => Console.WriteLine(context.Parameter?.Region ?? "all regions"),
+    "0 0 * * *");
+```
+
+### Notification handlers and exception handlers
+
+Handlers get an `IJobExecutionContext`. For a job that implements `IJob<TParameter>`, it is an `IJobExecutionContext<TParameter>`:
+
+```csharp
+public class ReportJobHandler : IJobNotificationHandler<ReportJob>
+{
+    public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+    {
+        if (context is IJobExecutionContext<ReportRequest> reportContext)
+        {
+            // reportContext.Parameter.Region
+        }
+        return Task.CompletedTask;
+    }
+}
+```
 
 ## Parameters are not immutable
 
@@ -125,11 +157,11 @@ Services.AddNCronJob(b =>
   b.AddJob<MyJob>(p => p.WithCronExpression(...));
 });
 
-public class MyJob : IJob
+public class MyJob : IJob<MyParameter>
 {
-  public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+  public Task RunAsync(IJobExecutionContext<MyParameter> context, CancellationToken token)
   {
-     var myParam = (MyParameter)context.Parameter;
+     var myParam = context.Parameter;
      myParam.Counter++; // This will be incremented with each job run
   }
 }

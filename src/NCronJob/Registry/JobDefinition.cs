@@ -18,6 +18,8 @@ internal sealed record JobDefinition
         JobFullName = type.FullName!;
         Name = BuildName(customName, JobFullName);
 
+        ParameterType = JobParameter.TypeOf(type);
+        JobParameter.EnsureAccepted(ParameterType, Name, parameter);
         Parameter = parameter;
         JobPolicyMetadata = new JobExecutionAttributes(type);
     }
@@ -35,6 +37,7 @@ internal sealed record JobDefinition
             $"Untyped job {typeof(DynamicJobFactory).Namespace}.{DynamicJobNameGenerator.GenerateJobName(jobDelegate)}";
         Name = BuildName(customName, JobFullName);
 
+        ParameterType = JobParameter.TypeOf(jobDelegate);
         JobPolicyMetadata = new JobExecutionAttributes(jobDelegate);
     }
 
@@ -68,6 +71,11 @@ internal sealed record JobDefinition
     public string? UserDefinedCronExpression => schedule.UserDefinedCronExpression;
 
     public object? Parameter { get; private set; }
+
+    /// <summary>
+    /// The <c>TParameter</c> of <see cref="IJob{TParameter}"/> or of a delegate's <see cref="IJobExecutionContext{TParameter}"/>; <c>null</c> if the job accepts no parameter.
+    /// </summary>
+    public Type? ParameterType { get; }
 
     public TimeZoneInfo? TimeZone => schedule.TimeZone;
 
@@ -173,6 +181,7 @@ internal sealed record JobDefinition
 
         if (jobOption.HasParameter)
         {
+            EnsureAccepts(jobOption.Parameter);
             Parameter = jobOption.Parameter;
         }
 
@@ -201,6 +210,8 @@ internal sealed record JobDefinition
             Condition = JobConditionChain.Append(Condition, jobOption.Conditions);
         }
     }
+
+    public void EnsureAccepts(object? parameter) => JobParameter.EnsureAccepted(ParameterType, Name, parameter);
 
     public void MarkAsStartupJob(bool shouldCrashOnFailure)
     {

@@ -72,12 +72,10 @@ app.MapNCronJobDashboard("/ncronjob", endpoints => endpoints.RequireAuthorizatio
 Click **Run** on a job and enter its parameter as JSON:
 
 - The field is prefilled with the configured parameter. If you leave it unchanged or empty, the configured parameter object itself is passed, not a copy deserialized from JSON.
-- If the job has a configured parameter, the JSON is deserialized into the type of that parameter, including `string`: `"hello"` becomes `hello`, `null` becomes `null`, and JSON that doesn't fit the type is rejected with an error.
-- Otherwise `null` is passed as `null`, a JSON string (`"hello"`) as a `string`, and any other JSON as its raw text, so the job can deserialize it itself.
-
-!!! warning
-
-    Job parameters are of type `object?` and are not type-checked (see [*"Parameters are not type-checked"*](parameters.md#parameters-are-not-type-checked)). If a job has no configured parameter, the dashboard passes a `string`, even when the job expects a complex type. The job then only notices at run time, either through an `InvalidCastException` or through a `null` from a soft cast.
+- The JSON is deserialized into the `TParameter` of the job's `IJob<TParameter>`, including `string`: `"hello"` becomes `hello` and `null` becomes `null`. The empty field shows the JSON schema of `TParameter` as a hint.
+- The JSON must follow the structure of `TParameter`: unknown properties, missing constructor parameters and `null` for non-nullable properties are rejected with an error, and the job isn't triggered.
+- For an `IJob<object?>` job, a JSON string (`"hello"`) is passed as a `string` and any other JSON as its raw text, so the job can deserialize it itself.
+- A job that implements the plain `IJob` takes no parameter, so the dashboard shows no field for it.
 
 Unnamed jobs are triggered by their type. If a type is registered more than once, give each registration a name with `WithName(...)` to trigger it from the dashboard.
 

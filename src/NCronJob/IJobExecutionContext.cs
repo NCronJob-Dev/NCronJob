@@ -21,9 +21,6 @@ public interface IJobExecutionContext
     /// </summary>
     int Attempts { get; }
 
-    /// <summary>The passed in parameters to a job.</summary>
-    object? Parameter { get; }
-
     /// <summary>
     /// The correlation identifier of the job run. The <see cref="CorrelationId"/> stays the same for jobs and their dependencies.
     /// </summary>
@@ -57,6 +54,16 @@ public interface IJobExecutionContext
     /// via <see cref="INotificationStage{TJob}.ExecuteWhen"/>.
     /// </remarks>
     public void SkipChildren();
+}
+
+/// <summary>
+/// Represents the context of a job execution with a typed parameter.
+/// </summary>
+/// <typeparam name="TParameter">The type of the parameter the job accepts, see <see cref="IJob{TParameter}"/>.</typeparam>
+public interface IJobExecutionContext<out TParameter> : IJobExecutionContext
+{
+    /// <summary>The parameter passed to the job, or <c>default</c> if none was passed.</summary>
+    TParameter Parameter { get; }
 }
 
 /// <summary>

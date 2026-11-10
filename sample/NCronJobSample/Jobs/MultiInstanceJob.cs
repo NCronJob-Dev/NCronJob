@@ -5,19 +5,19 @@ namespace NCronJobSample;
 
 
 [SupportsConcurrency(10)]
-public partial class MultiInstanceJob : IJob
+public partial class MultiInstanceJob : IJob<string?>
 {
     private readonly ILogger<MultiInstanceJob> logger;
 
     public MultiInstanceJob(ILogger<MultiInstanceJob> logger) => this.logger = logger;
 
-    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext<string?> context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         token.Register(() => LogCancellationRequestedInJob(context.Parameter));
 
-        if (!string.IsNullOrEmpty(context.Parameter as string))
+        if (!string.IsNullOrEmpty(context.Parameter))
             LogMessage(context.Parameter);
 
         try

@@ -3,19 +3,19 @@ using System.Security.Cryptography;
 
 namespace NCronJobSample;
 
-public partial class TestCancellationJob : IJob
+public partial class TestCancellationJob : IJob<string?>
 {
     private readonly ILogger<TestCancellationJob> logger;
 
     public TestCancellationJob(ILogger<TestCancellationJob> logger) => this.logger = logger;
 
-    public async Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public async Task RunAsync(IJobExecutionContext<string?> context, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         token.Register(() => LogCancellationRequestedInJob(context.Parameter));
 
-        if (!string.IsNullOrEmpty(context.Parameter as string))
+        if (!string.IsNullOrEmpty(context.Parameter))
             LogMessage(context.Parameter);
 
         try

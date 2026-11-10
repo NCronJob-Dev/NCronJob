@@ -2,15 +2,15 @@
 
 **NCronJob** allows you to trigger jobs instantly. This is useful when you want to run a job immediately without waiting for the next scheduled time. For example you get a API request and want to offload the work to a background job immediately.
 
-Instant jobs are like "regular" CRON jobs and inherit from `IJob`. The only difference is that they are triggered manually.
+Instant jobs are like "regular" CRON jobs and implement `IJob`, or `IJob<TParameter>` to accept a parameter. The only difference is that they are triggered manually.
 So also CRON jobs can be triggered instantly.
 
 ```csharp
-public class MyJob : IJob
+public class MyJob : IJob<ParameterDto>
 {
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    public Task RunAsync(IJobExecutionContext<ParameterDto> context, CancellationToken token)
     {
-        ParameterDto dto = (ParameterDto)context.Parameter;
+        ParameterDto dto = context.Parameter;
         // Do something
         return Task.CompletedTask;
     }
@@ -97,14 +97,14 @@ Sometimes you need to run a job immediately, regardless of any running jobs or c
 While regular instant jobs follow the same concurrency rules as CRON jobs, forced jobs ignore these restrictions:
 
 ```csharp
-public class EmailJob : IJob 
+public class EmailJob : IJob<EmailMessage>
 {
     private readonly IEmailService emailService;
     
     public EmailJob(IEmailService emailService) => this.emailService = emailService;
     
-    public Task RunAsync(IJobExecutionContext context, CancellationToken token) =>
-        emailService.SendEmailAsync((EmailMessage)context.Parameter, token);
+    public Task RunAsync(IJobExecutionContext<EmailMessage> context, CancellationToken token) =>
+        emailService.SendEmailAsync(context.Parameter, token);
 }
 
 // Normal instant job - will wait if another EmailJob is running

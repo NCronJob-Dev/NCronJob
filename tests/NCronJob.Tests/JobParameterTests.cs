@@ -157,9 +157,158 @@ public sealed class JobParameterTests : JobIntegrationBase
         return t;
     }
 
-    private sealed class ScopedServiceJob(Storage storage, GuidGenerator guidGenerator) : IJob
+    [Fact]
+    public async Task TypedJobReceivesItsParameterAndHandlersSeeTheTypedContext()
     {
-        public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+        ServiceCollection.AddNCronJob(n => n.AddJob<ReportJob>(p => p.WithName("report").WithParameter(new ReportRequest("EU")))
+            .AddNotificationHandler<ReportHandler>());
+
+        await StartNCronJob();
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob("report", CancellationToken);
+        await WaitForOrchestrationCompletion(orchestrationId);
+
+        Storage.Entries.ShouldBe(["Report EU", "Handled EU"]);
+    }
+
+    [Fact]
+    public async Task DelegateJobReceivesTypedParameter()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob(
+            (IJobExecutionContext<ReportRequest> context, Storage storage) => storage.Add($"Report {context.Parameter.Region}"),
+            Cron.Never,
+            jobName: "report"));
+
+        await StartNCronJob();
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob("report", new ReportRequest("CH"), CancellationToken);
+        await WaitForOrchestrationCompletion(orchestrationId);
+
+        Storage.Entries.ShouldBe(["Report CH"]);
+    }
+
+    [Fact]
+    public void RegisteringParameterForJobWithoutParameterThrows()
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n => n.AddJob<ExceptionJob>(p => p.WithParameter("value")));
+
+        act.ShouldThrow<ArgumentException>().Message.ShouldContain("does not accept a parameter");
+    }
+
+    [Fact]
+    public void RegisteringParameterOfWrongTypeThrows()
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n => n.AddJob<ReportJob>(p => p.WithParameter("EU")));
+
+        act.ShouldThrow<ArgumentException>().Message.ShouldContain($"expects a parameter of type '{typeof(ReportRequest)}'");
+    }
+
+    [Fact]
+    public void DependentJobWithParameterOfWrongTypeThrowsAtRegistration()
+    {
+        Action act = () => ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>()
+            .ExecuteWhen(success: s => s.RunJob<ReportJob>(42)));
+
+        act.ShouldThrow<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task TriggeringWithParameterOfWrongTypeThrowsImmediately()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<ReportJob>());
+
+        await StartNCronJob();
+
+        Action act = () => ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ReportJob>("EU", CancellationToken);
+
+        act.ShouldThrow<ArgumentException>();
+        Storage.Entries.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void UpdatingParameterWithWrongTypeThrows()
+    {
+        ServiceCollection.AddNCronJob(n => n.AddJob<ReportJob>(p => p.WithCronExpression(Cron.Never).WithName("report")));
+        var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
+
+        Action act = () => registry.UpdateParameter("report", "EU");
+
+        act.ShouldThrow<ArgumentException>();
+    }
+
+    [Fact]
+    public void JobRegisteredByItsTypedInterfaceKeepsItsParameterType()
+    {
+        JobDefinition.CreateTyped(typeof(IJob<ReportRequest>), new ReportRequest("EU")).ParameterType.ShouldBe(typeof(ReportRequest));
+    }
+
+    [Fact]
+    public void DelegateWithConflictingParameterTypesIsRejected()
+    {
+        Action act = () => JobDefinition.CreateUntyped(null, (IJobExecutionContext<object> first, IJobExecutionContext<string> second) => { });
+
+        act.ShouldThrow<InvalidOperationException>().Message.ShouldContain("more than one parameter type");
+    }
+
+    [Fact]
+    public async Task DelegateArgumentOfCustomContextTypeIsResolvedFromServices()
+    {
+        ServiceCollection.AddSingleton<ICustomContext, CustomContext>();
+        ServiceCollection.AddNCronJob(n => n.AddJob(
+            (ICustomContext custom, Storage storage) => storage.Add(custom.GetType().Name),
+            Cron.Never,
+            jobName: "custom"));
+
+        await StartNCronJob();
+
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob("custom", CancellationToken);
+        await WaitForOrchestrationCompletion(orchestrationId);
+
+        Storage.Entries.ShouldBe([nameof(CustomContext)]);
+    }
+
+    private interface ICustomContext : IJobExecutionContext;
+
+    private sealed class CustomContext : ICustomContext
+    {
+        public Guid Id => Guid.Empty;
+        public object? Output { get; set; }
+        public int Attempts => 0;
+        public Guid CorrelationId => Guid.Empty;
+        public object? ParentOutput => null;
+        public string? JobName => null;
+        public Type? JobType => null;
+        public TriggerType TriggerType => TriggerType.Instant;
+        public void SkipChildren() { }
+    }
+
+    private sealed record ReportRequest(string Region);
+
+    private sealed class ReportJob(Storage storage) : IJob<ReportRequest>
+    {
+        public Task RunAsync(IJobExecutionContext<ReportRequest> context, CancellationToken token)
+        {
+            storage.Add($"Report {context.Parameter.Region}");
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ReportHandler(Storage storage) : IJobNotificationHandler<ReportJob>
+    {
+        public Task HandleAsync(IJobExecutionContext context, Exception? exception, CancellationToken cancellationToken)
+        {
+            if (context is IJobExecutionContext<ReportRequest> typedContext)
+            {
+                storage.Add($"Handled {typedContext.Parameter.Region}");
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ScopedServiceJob(Storage storage, GuidGenerator guidGenerator) : IJob<string?>
+    {
+        public Task RunAsync(IJobExecutionContext<string?> context, CancellationToken token)
         {
             storage.Add(guidGenerator.NewGuid.ToString());
             return Task.CompletedTask;

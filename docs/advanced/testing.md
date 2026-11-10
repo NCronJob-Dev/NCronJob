@@ -4,13 +4,13 @@ NCronJob takes all time from the registered `TimeProvider`: cron timers, delays 
 
 ## Unit testing the job itself
 
-Start here. `IJob` and `IJobExecutionContext` are interfaces, so a job's logic can be tested by calling `RunAsync` directly: no host, no scheduler, no time provider. Any mocking library or a hand-written fake works:
+Start here. `IJob<TParameter>` and `IJobExecutionContext<TParameter>` are interfaces, so a job's logic can be tested by calling the typed `RunAsync` directly: no host, no scheduler, no time provider. Any mocking library or a hand-written fake works:
 
 ```csharp
 [Fact]
 public async Task DeletesExpiredFiles()
 {
-    var context = Substitute.For<IJobExecutionContext>();
+    var context = Substitute.For<IJobExecutionContext<string>>();
     context.Parameter.Returns("/uploads");
     var job = new CleanupJob(new InMemoryFileStore(expiredFiles: 2));
 

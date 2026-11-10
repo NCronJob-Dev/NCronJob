@@ -28,11 +28,11 @@ builder.Services.AddNCronJob(n => n
 
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob").WithName("HelloWithParameter"))
-    .AddJob<PrintHelloWorldJob>(p =>
+         .AddNotificationHandler<HelloWorldJobHandler>()
+    .AddJob<ReportJob>(p =>
         p.WithCronExpression("0 * * * *")
             .WithParameter(new ReportRequest("EU", ["ops@example.com", "finance@example.com"], new ReportOptions(IncludeCharts: true, Format: "pdf")))
             .WithName("HourlyReport"))
-         .AddNotificationHandler<HelloWorldJobHandler>()
 
     // Multiple instances of the same job with different cron expressions can be supported
     // by marking the job with [SupportsConcurrency] attribute

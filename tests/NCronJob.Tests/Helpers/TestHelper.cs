@@ -14,7 +14,7 @@ public abstract class JobIntegrationBase : IDisposable
     protected Storage Storage { get; }
     protected IList<ExecutionProgress> Events => progressMonitor?.Events ?? [];
 
-    protected static Delegate UntypedJob { get; } = (IJobExecutionContext context, Storage storage, CancellationToken token)
+    protected static Delegate UntypedJob { get; } = (IJobExecutionContext<object?> context, Storage storage, CancellationToken token)
         => { storage.Add($"Done - Parameter : {context.Parameter}"); };
 
     public static TheoryData<Func<IInstantJobRegistry, TimeProvider, object?, CancellationToken, Guid>> InstantJobRunners()
