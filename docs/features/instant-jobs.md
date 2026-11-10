@@ -17,7 +17,7 @@ public class MyJob : IJob<ParameterDto>
 }
 ```
 
-As CRON jobs, they have to be registered in the `AddNCronJob` method.
+Like CRON jobs, they should be registered in the `AddNCronJob` method. An unregistered job still runs, but logs a warning on every trigger.
 
 ```csharp
 Services.AddNCronJob(options => 
@@ -26,7 +26,7 @@ Services.AddNCronJob(options =>
 });
 ```
 
-There is no need of a CRON expression for instant jobs. Also passing in parameters doesn't do anything, they will be passed in differently. Let's have a look at how to trigger an instant job. Imagine we have a Minimal API where we want to send an E-Mail:
+There is no need of a CRON expression for instant jobs. A parameter can be passed when triggering the job, or preconfigured with `WithParameter`. Let's have a look at how to trigger an instant job. Imagine we have a Minimal API where we want to send an E-Mail:
 
 ```csharp
 app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) => 
@@ -46,7 +46,7 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 The `RunInstantJob` method takes the job type and the parameters as arguments. Optionally you can pass in a `CancellationToken` as well. The job will be executed immediately.
 
 ## Starting a job with a delay
-If you find the need to delay the execution of an instant job, you can use the `RunScheduledJob` method with a `TimeSpan` as a delay. The same as `RunInstantJob` applies here, the job has to be registered in the `AddNCronJob` method.
+If you find the need to delay the execution of an instant job, you can use the `RunScheduledJob` method with a `TimeSpan` as a delay. The same as `RunInstantJob` applies here, the job should be registered in the `AddNCronJob` method.
 
 ```csharp
 app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) => 
@@ -64,7 +64,7 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 ```
 
 ## Starting a job at a specific date and time
-If you want to start a job at a specific date and time, compute the delay until that moment and pass the resulting `TimeSpan` to `RunScheduledJob`. The job still has to be registered first.
+If you want to start a job at a specific date and time, compute the delay until that moment and pass the resulting `TimeSpan` to `RunScheduledJob`.
 
 ```csharp
 app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) => 
@@ -76,7 +76,7 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
         Body = dto.Body
     };
 
-    var startAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.FromHours(2));
+    var startAt = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.FromHours(2));
     var delay = startAt - DateTimeOffset.Now;
     jobRegistry.RunScheduledJob<MyJob>(delay, parameterDto);
     return Results.Ok();

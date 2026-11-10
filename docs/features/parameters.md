@@ -154,7 +154,7 @@ public class MyParameter
 
 Services.AddNCronJob(b =>
 {
-  b.AddJob<MyJob>(p => p.WithCronExpression(...));
+  b.AddJob<MyJob>(p => p.WithCronExpression("0 0 * * *"));
 });
 
 public class MyJob : IJob<MyParameter>
@@ -163,6 +163,7 @@ public class MyJob : IJob<MyParameter>
   {
      var myParam = context.Parameter;
      myParam.Counter++; // This will be incremented with each job run
+     return Task.CompletedTask;
   }
 }
 ```

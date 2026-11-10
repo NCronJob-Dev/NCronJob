@@ -61,7 +61,7 @@ The two work together. `SupportsConcurrency` sets **how many** runs of a job may
 | | Without `SkipIfStillRunning` (default) | With `SkipIfStillRunning` |
 |---|---|---|
 | Occurrence due while the job is at its limit | Waits in the queue and starts once a slot frees up | Dropped right away as `Skipped` |
-| Occurrence held back only by the [global limit](../advanced/global-concurrency.md) | Waits, and is dropped as `Expired` once it exceeds its [run expiry](timeouts-and-expiry.md) | Same: waits, and can expire |
+| Occurrence held back only by the [global limit](../advanced/global-concurrency.md) | Waits, and is dropped as `Expired` when it starts later than its [run expiry](timeouts-and-expiry.md) | Same: waits, and can expire |
 | Suited to | Catch-up work, where a late run is still useful | Polling, cache refreshes and anything where a late run is worthless |
 
 Take a job scheduled every minute whose runs take three minutes:

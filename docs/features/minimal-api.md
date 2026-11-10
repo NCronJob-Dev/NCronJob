@@ -22,7 +22,7 @@ builder.Services.AddNCronJob((ILogger<Program> logger, TimeProvider timeProvider
 }, "*/5 * * * * *");
 ```
 
-Also the `JobExecutionContext` and `CancellationToken` can be resolved from the DI container:
+Also the `IJobExecutionContext` and `CancellationToken` can be resolved from the DI container:
 
 ```csharp
 builder.Services.AddNCronJob((IJobExecutionContext context, CancellationToken token) =>
@@ -53,7 +53,7 @@ The minimal job API does support the [**Retry** model](retry-support.md) as well
 builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] () => { }, "0 * * * *");
 ```
 
-To know in which attempt the job currently is, the `JobExecutionContext` can be used:
+To know in which attempt the job currently is, the `IJobExecutionContext` can be used:
 
 ```csharp
 builder.Services.AddNCronJob([RetryPolicy(retryCount: 3)] (IJobExecutionContext context) => 

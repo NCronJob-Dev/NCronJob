@@ -49,6 +49,15 @@ public sealed class CleanupJobTests
         await host.StopAsync();
     }
 }
+
+public sealed class CleanupJob(TaskCompletionSource ran) : IJob
+{
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
+    {
+        ran.TrySetResult();
+        return Task.CompletedTask;
+    }
+}
 ```
 
 `Advance` fires the cron timer, but the job itself runs on the thread pool. Wait for a signal the job sets (as above), a [notification handler](../features/notifications.md), or the [progress observer](observing-job-progress.md). Don't assert right after `Advance`.

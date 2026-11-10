@@ -14,7 +14,7 @@ builder.Services.AddNCronJob(options =>
     .AddNotificationHandler<MyJobNotificationHandler>());
 ```
 
-This allows to run logic after a job is done. The `JobExecutionContext` and the `Exception` (if there was one) are
+This allows to run logic after a job is done. The `IJobExecutionContext` and the `Exception` (if there was one) are
 passed to the `HandleAsync` method.
 
 !!! info "Service scope"

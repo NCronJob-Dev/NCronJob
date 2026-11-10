@@ -15,19 +15,4 @@ Services.AddNCronJob(options =>
 ```
 
 The `And` method is used to chain multiple CRON expressions together. You can chain as many expressions as you like.
-If a given job has the same CRON expression registered multiple times, it will be executed multiple times as well.
-
-```csharp
-Services.AddNCronJob(options =>
-{
-    // Register a job that runs every 5 minutes
-    options.AddJob<ExampleJob>(j =>
-    {
-        j.WithCronExpression("*/5 * * * *") // Run every 5 minutes
-         .And
-         .WithCronExpression("*/5 * * * *"); // Run every 5 minutes
-    });
-});
-```
-
-Two instances of the `ExampleJob` class will be created and executed every 5 minutes.
+Registering the same CRON expression twice for a job throws an `InvalidOperationException` at startup. Give each registration a distinct name with `WithName` or a different parameter if the duplication is intended.

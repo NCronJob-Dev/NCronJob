@@ -19,7 +19,7 @@ This allows very complex job dependencies to be defined in a simple and readable
 ![dependencies](../assets/flow.webp)
 
 ### Passing parameters to dependent jobs
-The `RunJob` method allows optional parameters to be passed to the dependent job. 
+The `RunJob` method allows optional parameters to be passed to the dependent job. The dependent job has to accept the parameter, here `SuccessJob` implements `IJob<string>`.
 
 ```csharp
 Services.AddNCronJob(options => 
@@ -81,12 +81,12 @@ The `OnlyIf` method on dependent jobs supports all the same features as regular 
 When a dependent job's condition is not met, it will be skipped without instantiation, just like parent jobs with `OnlyIf`.
 
 ## Accessing the state of the parent job
-The `JobExecutionContext` object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.
+The `IJobExecutionContext` object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.
 
 ```csharp
 public class JobA : IJob
 {
-    public Task ExecuteAsync(IJobExecutionContext context)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         context.Output = "Hello World";
         return Task.CompletedTask;
@@ -95,7 +95,7 @@ public class JobA : IJob
 
 public class JobB : IJob
 {
-    public Task ExecuteAsync(IJobExecutionContext context)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         var parentOutput = context.ParentOutput; // "Hello World"
         return Task.CompletedTask;
@@ -114,15 +114,15 @@ If a job has a dependency on another job, the dependent job will run after the `
 
 
 ## Tracing requests of dependencies via `CorrelationId`
-Every `JobExecutionContext` has a `CorrelationId` property that can be used to trace the execution of dependent jobs. This property is automatically set to the `CorrelationId` of the parent job and stays the same for all dependent jobs down the chain.
+Every `IJobExecutionContext` has a `CorrelationId` property that can be used to trace the execution of dependent jobs. This property is automatically set to the `CorrelationId` of the parent job and stays the same for all dependent jobs down the chain.
 
 ## Cancelling dependent jobs
-To actively cancel dependent jobs, the `JobExecutionContext` object passed offers a `SkipChildren` method. This method can be called to prevent dependent jobs from running.
+To actively cancel dependent jobs, the `IJobExecutionContext` object passed offers a `SkipChildren` method. This method can be called to prevent dependent jobs from running.
 
 ```csharp
 public class JobA : IJob
 {
-    public Task ExecuteAsync(IJobExecutionContext context)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         context.SkipChildren();
         return Task.CompletedTask;
@@ -131,7 +131,7 @@ public class JobA : IJob
 
 public class JobB : IJob
 {
-    public Task ExecuteAsync(IJobExecutionContext context)
+    public Task RunAsync(IJobExecutionContext context, CancellationToken token)
     {
         // This job will not run
         return Task.CompletedTask;
@@ -156,7 +156,7 @@ builder.Services.AddNCronJob(options =>
 ```
 
 ### Getting the parent job's output in a Minimal API
-If you pass in a `JobExecutionContext` to the dependent job, you can access the parent job's output:
+If you pass in a `IJobExecutionContext` to the dependent job, you can access the parent job's output:
 
 ```csharp
 builder.Services.AddNCronJob(options => 
@@ -171,12 +171,12 @@ builder.Services.AddNCronJob(options =>
 ```
 
 ### Defining dependencies for minimal Jobs
-To define that a job should be executed afterward, you can use the `AddJob` overload like this:
+A minimal job can run as a dependent job. A minimal job can't be a parent, so the parent is a typed job:
 
 ```csharp
 builder.Services.AddNCronJob(options => {
-    options.AddJob(async (IMyService myService) => await myService.Run())
-        .ExecuteWhen(success: b => b.RunJob(() => Console.Write("Run when successful")));
+    options.AddJob<JobA>()
+        .ExecuteWhen(success: b => b.RunJob(async (IMyService myService) => await myService.Run()));
 });
 ```
 
@@ -232,8 +232,8 @@ This can be achieved by:
 ```csharp
 Services.AddNCronJob(options => 
 {
-    options.AddJob<JobA>().ExecuteWhen(success: s => s.RunJob<JobB>()
-           .AddJob<JobB>().ExecuteWhen(success: s => s.RunJob<JobC>());
+    options.AddJob<JobA>().ExecuteWhen(success: s => s.RunJob<JobB>());
+    options.AddJob<JobB>().ExecuteWhen(success: s => s.RunJob<JobC>());
 
     // Register JobC into the container to avoid warnings
     options.AddJob<JobC>();

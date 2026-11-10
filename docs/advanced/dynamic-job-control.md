@@ -14,7 +14,7 @@ builder.Services.AddNCronJob(builder =>
 The same applies to Minimal API:
 
 ```csharp
-builder.Services.AddNCronJob(b => b.AddJob(() => {}, "* * * * *", "MyName"));
+builder.Services.AddNCronJob(b => b.AddJob(() => {}, "* * * * *", jobName: "MyName"));
 ```
 
 ### Job Names
@@ -34,7 +34,7 @@ app.MapPost("/add-job", (IRuntimeJobRegistry registry) =>
     
     if (!hasSucceeded)
     {
-        return TypedResults.Error(exc?.Message);
+        return TypedResults.BadRequest(exc?.Message);
     }
 
     return TypedResults.Ok();
@@ -101,7 +101,7 @@ To retrieve the schedule of a job by name, use the `TryGetSchedule` method:
 var found = registry.TryGetSchedule("MyName", out string? cronExpression, out TimeZoneInfo? timeZone);
 ```
 
-The cron expression and time zone can be `null` even if the job was found. This indicates that the job has no schedule (like dependent jobs).
+The cron expression and time zone can be `null` even if the job was found. This indicates that the job has no schedule (for example a named job registered without a cron expression).
 
 ## Retrieving the next occurrence of a job
 

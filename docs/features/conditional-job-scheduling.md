@@ -365,7 +365,7 @@ builder.Services.AddNCronJob(options =>
 
 ### 3. Combine with Parameters
 
-Different conditions for different parameters:
+Different conditions for different parameters (`DataProcessingJob` implements `IJob<string>`):
 
 ```csharp
 builder.Services.AddNCronJob(options =>
@@ -375,7 +375,6 @@ builder.Services.AddNCronJob(options =>
             .WithCronExpression("0 */6 * * *")
             .WithParameter("production")
             .OnlyIf(() => isProdReady))
-        .And
         .AddJob<DataProcessingJob>(p => p
             .WithCronExpression("0 */2 * * *")
             .WithParameter("staging")
@@ -461,7 +460,7 @@ app.MapPost("/trigger-sync", (IInstantJobRegistry registry) =>
 ```
 
 **Important Notes for Instant Jobs:**
-- Conditions are evaluated when the instant job is triggered
+- Conditions are evaluated when the run is about to start, after queueing and any concurrency wait
 - If the condition returns `false`, the job is skipped and marked as "Skipped" in the execution state
 - The job is never instantiated when conditions fail, saving resources
 - Works with all instant job methods: `RunInstantJob`, `RunScheduledJob`, `ForceRunInstantJob`, `ForceRunScheduledJob`
@@ -488,7 +487,7 @@ app.MapPost("/trigger-sync", (IInstantJobRegistry registry) =>
 
 - Conditions cannot access the `IJobExecutionContext` (job hasn't been created yet)
 - Conditions cannot be changed at runtime without restarting the application
-- Delegate-based (untyped) jobs can use conditions, but condition handlers only work with typed jobs
+- Delegate-based (untyped) jobs can use conditions only as dependent jobs (`RunJob(delegate).OnlyIf(...)`), and condition handlers only work with typed jobs
 
 ## See Also
 

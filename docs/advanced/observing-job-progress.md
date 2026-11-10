@@ -33,8 +33,6 @@ Subscribers to the reporting service will receive an immutable instance of the `
 An `ExecutionProgress` instance exposes the following properties:
 
 - **Timestamp**: The instant this `ExecutionProgress` instance was created.
-  
-  Will be `null` when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
 
 - **CorrelationId**: The correlation identifier of an orchestration run. 
   
