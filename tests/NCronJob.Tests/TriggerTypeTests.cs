@@ -13,7 +13,7 @@ public class TriggerTypeTests : JobIntegrationBase
         var builder = Host.CreateDefaultBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<TriggerTypeJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<TriggerTypeJob>(p => p.RunAtStartup(shouldCrashOnFailure: false)));
             services.AddSingleton(Storage);
             services.Replace(new ServiceDescriptor(typeof(TimeProvider), FakeTimer));
         });

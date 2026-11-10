@@ -13,7 +13,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<DummyJob>(p => p.RunAtStartup(shouldCrashOnFailure: false)));
         });
 
         using var app = BuildApp(builder);
@@ -29,7 +29,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<DummyJob>(p => p.RunAtStartup(shouldCrashOnFailure: false)));
         });
 
         using var app = BuildApp(builder);
@@ -66,18 +66,18 @@ public class RunAtStartupJobTests : JobIntegrationBase
             s =>
             {
                 s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
-                s.AddJob<DummyJob>().RunAtStartup();
+                s.AddJob<DummyJob>(p => p.RunAtStartup(shouldCrashOnFailure: false));
             }
         },
         {
             s =>
             {
-                s.AddJob<DummyJob>().RunAtStartup();
+                s.AddJob<DummyJob>(p => p.RunAtStartup(shouldCrashOnFailure: false));
                 s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5));
             }
         },
         {
-            s => s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5)).RunAtStartup()
+            s => s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5).And.RunAtStartup(shouldCrashOnFailure: false))
         },
     };
 
@@ -87,7 +87,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
         var builder = new HostBuilder();
         builder.ConfigureServices(services =>
         {
-            services.AddNCronJob(s => s.AddJob<DummyJob>().RunAtStartup());
+            services.AddNCronJob(s => s.AddJob<DummyJob>(p => p.RunAtStartup(shouldCrashOnFailure: false)));
             services.AddHostedService<StartingService>();
         });
 
@@ -165,13 +165,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
         {
             s =>
             {
-                s.AddJob<FailingJob>().RunAtStartup(shouldCrashOnFailure: true);
-                s.AddExceptionHandler<ExceptionHandler>();
-            }
-        },
-        {
-            s =>
-            {
                 s.AddJob<FailingJob>(j => j.RunAtStartup());
                 s.AddExceptionHandler<ExceptionHandler>();
             }
@@ -180,13 +173,6 @@ public class RunAtStartupJobTests : JobIntegrationBase
 
     public static TheoryData<Action<NCronJobOptionBuilder>> CrashingCronAndForgivingRunAtStartupBuilders = new()
     {
-        {
-            s =>
-            {
-                s.AddJob<FailingJob>().RunAtStartup();
-                s.AddExceptionHandler<ExceptionHandler>();
-            }
-        },
         {
             s =>
             {

@@ -61,14 +61,14 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
     /// </code>
     /// </example>
-    public IStartupStage<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
+    public INotificationStage<T> AddJob<T>(Action<JobOptionBuilder>? options = null)
         where T : class, IJob
     {
         var jobDefinitions = AddJobInternal(typeof(T), options);
 
         pendingJobDefinitions.Add(jobDefinitions);
 
-        return new StartupStage<T>(services, jobDefinitions, settings, pendingJobDefinitions);
+        return new NotificationStage<T>(services, jobDefinitions, settings, pendingJobDefinitions);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
     /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
     /// </code>
     /// </example>
-    public IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
+    public INotificationStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null)
     {
         ArgumentNullException.ThrowIfNull(jobType);
 
@@ -92,7 +92,7 @@ public class NCronJobOptionBuilder : IJobStage, IRuntimeJobBuilder
 
         pendingJobDefinitions.Add(jobDefinitions);
 
-        return new StartupStage<IJob>(services, jobDefinitions, settings, pendingJobDefinitions);
+        return new NotificationStage<IJob>(services, jobDefinitions, settings, pendingJobDefinitions);
     }
 
     /// <summary>

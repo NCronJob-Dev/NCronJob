@@ -216,17 +216,6 @@ public sealed class JobDefinitionValidationTests
     }
 
     [Fact]
-    public void MarkingAStartupJobTwiceIsRejected()
-    {
-        var job = JobDefinition.CreateTyped("startup", typeof(DummyJob), parameter: null);
-        job.MarkAsStartupJob(shouldCrashOnFailure: false);
-
-        var exception = Should.Throw<InvalidOperationException>(() => job.MarkAsStartupJob(shouldCrashOnFailure: false));
-
-        exception.Message.ShouldBe($"Job '{job.Name}' is already defined as a startup job.");
-    }
-
-    [Fact]
     public void EmptyConditionListDoesNotInstallACondition()
     {
         var job = JobDefinition.CreateTyped("job", typeof(DummyJob), parameter: null);

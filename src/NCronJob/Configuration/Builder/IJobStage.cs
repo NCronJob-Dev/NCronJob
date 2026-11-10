@@ -18,10 +18,10 @@ public interface IJobStage
     /// AddJob&lt;MyJob&gt;(c => c.WithCronExpression("0 * * * *").WithParameter("myParameter"));
     /// </code>
     /// </example>
-    IStartupStage<TJob> AddJob<TJob>(Action<JobOptionBuilder>? options = null) where TJob : class, IJob;
+    INotificationStage<TJob> AddJob<TJob>(Action<JobOptionBuilder>? options = null) where TJob : class, IJob;
 
     /// <summary>
     /// Adds a job to the service collection that gets executed based on the given cron expression.
     /// </summary>
-    IStartupStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null);
+    INotificationStage<IJob> AddJob(Type jobType, Action<JobOptionBuilder>? options = null);
 }

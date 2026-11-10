@@ -18,18 +18,6 @@ internal interface IOptionalParameterInstantJobRegistry
         OptionalParameter parameter,
         bool forceExecution,
         CancellationToken token);
-
-    Guid RunWithOptionalParameter(
-        Type jobType,
-        DateTimeOffset startDate,
-        OptionalParameter parameter,
-        CancellationToken token);
-
-    Guid RunWithOptionalParameter(
-        string jobName,
-        DateTimeOffset startDate,
-        OptionalParameter parameter,
-        CancellationToken token);
 }
 
 #pragma warning disable S3060 // Compatibility dispatch preserves behavior for implementations compiled against the original interface.
@@ -77,46 +65,6 @@ internal static class InstantJobRegistryCompatibility
         return forceExecution
             ? registry.ForceRunScheduledJob(jobName, delay, parameter: null, token)
             : registry.RunScheduledJob(jobName, delay, parameter: null, token);
-    }
-
-    public static Guid RunWithoutParameterOverride<TJob>(
-        IInstantJobRegistry registry,
-        DateTimeOffset startDate,
-        CancellationToken token)
-        where TJob : IJob
-    {
-        if (registry is IOptionalParameterInstantJobRegistry optionalParameterRegistry)
-        {
-            return optionalParameterRegistry.RunWithOptionalParameter(
-                typeof(TJob),
-                startDate,
-                OptionalParameter.Unspecified,
-                token);
-        }
-
-#pragma warning disable CS0618
-        return registry.RunScheduledJob<TJob>(startDate, parameter: null, token);
-#pragma warning restore CS0618
-    }
-
-    public static Guid RunWithoutParameterOverride(
-        IInstantJobRegistry registry,
-        string jobName,
-        DateTimeOffset startDate,
-        CancellationToken token)
-    {
-        if (registry is IOptionalParameterInstantJobRegistry optionalParameterRegistry)
-        {
-            return optionalParameterRegistry.RunWithOptionalParameter(
-                jobName,
-                startDate,
-                OptionalParameter.Unspecified,
-                token);
-        }
-
-#pragma warning disable CS0618
-        return registry.RunScheduledJob(jobName, startDate, parameter: null, token);
-#pragma warning restore CS0618
     }
 }
 #pragma warning restore S3060
@@ -172,35 +120,8 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
         RunJob(jobName, At(delay), parameter, forceExecution, token);
 
     /// <inheritdoc />
-    public Guid RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter, CancellationToken token = default)
-        where TJob : IJob =>
-        RunJob(typeof(TJob), startDate, OptionalParameter.FromValue(parameter), false, token);
-
-    Guid IOptionalParameterInstantJobRegistry.RunWithOptionalParameter(
-        Type jobType,
-        DateTimeOffset startDate,
-        OptionalParameter parameter,
-        CancellationToken token)
-        => RunJob(jobType, startDate, parameter, false, token);
-
-    /// <inheritdoc />
-    public Guid RunScheduledJob(string jobName, DateTimeOffset startDate, object? parameter, CancellationToken token = default)
-        => RunJob(jobName, startDate, OptionalParameter.FromValue(parameter), false, token);
-
-    Guid IOptionalParameterInstantJobRegistry.RunWithOptionalParameter(
-        string jobName,
-        DateTimeOffset startDate,
-        OptionalParameter parameter,
-        CancellationToken token)
-        => RunJob(jobName, startDate, parameter, false, token);
-
-    /// <inheritdoc />
     public Guid RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default) =>
         RunDelegateJob(jobDelegate, At(delay), false, token);
-
-    /// <inheritdoc />
-    public Guid RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
-        RunDelegateJob(jobDelegate, startDate, false, token);
 
     /// <inheritdoc />
     public Guid ForceRunScheduledJob(Type jobType, TimeSpan delay, object? parameter, CancellationToken token = default) =>
@@ -213,10 +134,6 @@ internal sealed partial class InstantJobRegistry : IInstantJobRegistry, IOptiona
     /// <inheritdoc />
     public Guid ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default) =>
         RunDelegateJob(jobDelegate, At(delay), true, token);
-
-    /// <inheritdoc />
-    public Guid ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default) =>
-        RunDelegateJob(jobDelegate, startDate, true, token);
 
     private DateTimeOffset At(TimeSpan delay) => timeProvider.GetUtcNow() + delay;
 

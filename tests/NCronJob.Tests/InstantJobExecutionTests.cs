@@ -189,37 +189,13 @@ public sealed class InstantJobExecutionTests : JobIntegrationBase
     }
 
     [Fact]
-    public async Task ExecuteAScheduledJobWithDateTimeOffset()
+    public async Task ExecuteAScheduledJobWithNegativeDelayExpires()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>());
 
-        var runDate = FakeTimer.GetUtcNow().AddMinutes(1);
-
         await StartNCronJob();
 
-        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<DummyJob>(runDate, token: CancellationToken);
-
-        FakeTimer.Advance(TimeSpan.FromMinutes(1));
-
-        await WaitForOrchestrationCompletion(orchestrationId);
-
-        var filteredOrchestrationEvents = Events.FilterByOrchestrationId(orchestrationId);
-        filteredOrchestrationEvents.ShouldBeInstantThenCompleted<DummyJob>();
-
-        Storage.Entries[0].ShouldBe("DummyJob - Parameter: ");
-        Storage.Entries.Count.ShouldBe(1);
-    }
-
-    [Fact]
-    public async Task ExecuteAScheduledJobWithDateTimeOffsetInThePast()
-    {
-        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>());
-
-        var runDate = FakeTimer.GetUtcNow().AddDays(-1);
-
-        await StartNCronJob();
-
-        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<DummyJob>(runDate, token: CancellationToken);
+        var orchestrationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunScheduledJob<DummyJob>(TimeSpan.FromDays(-1), token: CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
 

@@ -213,16 +213,6 @@ internal sealed record JobDefinition
 
     public void EnsureAccepts(object? parameter) => JobParameter.EnsureAccepted(ParameterType, Name, parameter);
 
-    public void MarkAsStartupJob(bool shouldCrashOnFailure)
-    {
-        if (IsStartupJob)
-        {
-            throw new InvalidOperationException($"Job '{Name}' is already defined as a startup job.");
-        }
-
-        UpdateWith(new JobOption { ShouldCrashOnStartupFailure = shouldCrashOnFailure });
-    }
-
     public bool IsExemptFromUniqueParameterizedTypedJobCheck =>
         CustomName is not null
         || CronExpression is not null
