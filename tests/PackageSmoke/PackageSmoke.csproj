@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <EnableNETAnalyzers>false</EnableNETAnalyzers>
+        <!-- Consumes the packed packages from ./nupkgs, not the projects; see .github/scripts/package-smoke.sh. -->
+        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+        <!-- Keeps a locally packed version from being served out of the global cache on the next run. -->
+        <RestorePackagesPath>$(MSBuildThisFileDirectory)obj/packages</RestorePackagesPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NCronJob.Dashboard" Version="$(NCronJobVersion)" />
+    </ItemGroup>
+
+</Project>
