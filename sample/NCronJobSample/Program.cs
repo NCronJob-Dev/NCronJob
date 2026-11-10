@@ -1,4 +1,5 @@
 using NCronJob;
+using NCronJob.Dashboard;
 using NCronJobSample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,12 +19,19 @@ builder.Services.AddNCronJob(n => n
     .AddJob<PrintHelloWorldJob>(p =>
         p.WithCronExpression("*/4 * * * * *"))
 
-    // Execute the job every 2 minutes
+    // Execute the job every 2 minutes, then run its dependents
     .AddJob<DataProcessingJob>(p =>
         p.WithCronExpression("*/2 * * * *"))
+    .ExecuteWhen(
+        success: s => s.RunJob<ConcurrentTaskExecutorJob>(),
+        faulted: f => f.RunJob((ILogger<DataProcessingJob> logger) => logger.LogWarning("Data processing failed"), "DataProcessingFailed"))
 
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
+        p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob").WithName("HelloWithParameter"))
+    .AddJob<PrintHelloWorldJob>(p =>
+        p.WithCronExpression("0 * * * *")
+            .WithParameter(new ReportRequest("EU", ["ops@example.com", "finance@example.com"], new ReportOptions(IncludeCharts: true, Format: "pdf")))
+            .WithName("HourlyReport"))
          .AddNotificationHandler<HelloWorldJobHandler>()
 
     // Multiple instances of the same job with different cron expressions can be supported
@@ -34,7 +42,11 @@ builder.Services.AddNCronJob(n => n
     // A job can support retries by marking it with [RetryPolicy(retryCount: 4)] attribute
     .AddJob<TestRetryJob>(p =>
         p.WithCronExpression("*/5 * * * * *"))
+
+    .AddJob<WarmupCacheJob>(p => p.RunAtStartup(shouldCrashOnFailure: false))
 );
+
+builder.Services.AddNCronJobDashboard();
 
 var app = builder.Build();
 
@@ -46,6 +58,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapNCronJobDashboard("/ncronjob");
 
 app.MapPost("/trigger-instant", (IInstantJobRegistry instantJobRegistry) =>
 {
@@ -61,4 +75,5 @@ app.MapPost("/trigger-instant-forced", (IInstantJobRegistry instantJobRegistry, 
     .WithSummary("Triggers a job regardless of concurrency setting for that Job Type")
     .WithName("ForceTriggerInstantJob");
 
+await app.UseNCronJobAsync();
 await app.RunAsync();

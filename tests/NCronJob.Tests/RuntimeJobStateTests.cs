@@ -25,6 +25,49 @@ public class RuntimeJobStateTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task DisablingOneRegistrationKeepsTheScheduledRunsOfOtherRegistrationsOfTheSameType()
+    {
+        ServiceCollection.AddNCronJob(s => s
+            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("First"))
+            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2).WithName("Second")));
+        await StartNCronJob();
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().DisableJob("First");
+
+        Events.ShouldContain(e => e.Name == "First" && e.State == ExecutionState.Cancelled);
+        Events.ShouldNotContain(e => e.Name == "Second" && e.State == ExecutionState.Cancelled);
+    }
+
+    [Fact]
+    public async Task RemovingOneRegistrationByNameKeepsTheScheduledRunsOfOtherRegistrationsOfTheSameType()
+    {
+        ServiceCollection.AddNCronJob(s => s
+            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("First"))
+            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2).WithName("Second")));
+        await StartNCronJob();
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().RemoveJob("First");
+
+        Events.ShouldContain(e => e.Name == "First" && e.State == ExecutionState.Cancelled);
+        Events.ShouldNotContain(e => e.Name == "Second" && e.State == ExecutionState.Cancelled);
+    }
+
+    [Fact]
+    public async Task RemovingAFinishedOnDemandJobByNameRemovesItsEmptyQueue()
+    {
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("OnDemand")));
+        await StartNCronJob();
+        var queues = ServiceProvider.GetRequiredService<JobQueueManager>();
+        var correlationId = ServiceProvider.GetRequiredService<IInstantJobRegistry>().RunInstantJob("OnDemand", token: CancellationToken);
+        await WaitForOrchestrationCompletion(correlationId);
+        queues.TryGetQueue(typeof(DummyJob).FullName!, out _).ShouldBeTrue();
+
+        ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().RemoveJob("OnDemand");
+
+        queues.TryGetQueue(typeof(DummyJob).FullName!, out _).ShouldBeFalse();
+    }
+
+    [Fact]
     public void DisablingAndEnablingByJobTypeAccountsForAllJobs()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>());

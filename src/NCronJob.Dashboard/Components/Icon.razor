@@ -1,0 +1,22 @@
+<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">@((MarkupString)Path)</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+
+    private string Path => Name switch
+    {
+        "clock" => """<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>""",
+        "play" => """<path d="M8 5.5v13l10-6.5z" fill="currentColor"/>""",
+        "bolt" => """<path d="M13 3 5 14h6l-1 7 8-11h-6z"/>""",
+        "check" => """<path d="m5 12.5 4.5 4.5L19 7.5"/>""",
+        "xmark" => """<path d="M6 6l12 12M18 6 6 18"/>""",
+        "retry" => """<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5"/>""",
+        "skip" => """<path d="M6 6l8 6-8 6zM18 6v12"/>""",
+        "pause" => """<path d="M9 6v12M15 6v12"/>""",
+        "calendar" => """<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>""",
+        "branch" => """<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5v7M8.3 7.2l7.4 3.6"/>""",
+        "warning" => """<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>""",
+        "chevron" => """<path d="m9 6 6 6-6 6"/>""",
+        _ => """<circle cx="12" cy="12" r="3" fill="currentColor"/>""",
+    };
+}

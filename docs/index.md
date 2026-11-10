@@ -27,6 +27,7 @@ jobs:
 - [Triggering instant jobs](features/instant-jobs.md)
 - [Concurrency control](features/concurrency-control.md)
 - [Dynamic Job Control](advanced/dynamic-job-control.md)
+- [Dashboard](features/dashboard.md) (`NCronJob.Dashboard` package)
 - [Known gotchas](advanced/known-gotchas.md)
 
 ## Sample applications

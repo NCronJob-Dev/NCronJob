@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>NCronJob.Dashboard</RootNamespace>
+		<!-- From .NET 10 on, blazor.web.js is only shipped as a package; this pulls it in so it can be embedded below. -->
+		<RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
+	</PropertyGroup>
+
+	<PropertyGroup Label="NuGet">
+		<PackageId>NCronJob.Dashboard</PackageId>
+		<Title>NCronJob.Dashboard</Title>
+		<Description>A Blazor Server dashboard for NCronJob: registered jobs, dependency graph, live runs and instant job triggering.</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/NCronJob-Dev/NCronJob</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/NCronJob-Dev/NCronJob</PackageProjectUrl>
+		<PackageTags>job;jobs;scheduler;cron;dashboard;blazor;ncronjob</PackageTags>
+		<Authors>Steven Giesel</Authors>
+		<Company>Giesel Engineering</Company>
+		<Copyright>Steven Giesel</Copyright>
+		<Product>NCronJob</Product>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<PackageIcon>logo_small.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<PropertyGroup Label="Build information">
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\assets\logo_small.png" Pack="true" PackagePath="" Visible="false" />
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="..\..\assets\logo_small.png" LogicalName="NCronJob.Dashboard.logo.png" Visible="false" />
+		<EmbeddedResource Include="$(BlazorFrameworkStaticWebAssetRoot)\blazor.web.js" LogicalName="NCronJob.Dashboard.blazor.web.js" Condition="'$(BlazorFrameworkStaticWebAssetRoot)' != ''" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<InternalsVisibleTo Include="NCronJob.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\NCronJob\NCronJob.csproj" />
+	</ItemGroup>
+
+	<!-- The dashboard uses NCronJob internals, so it only works with the exact NCronJob version it was built against. -->
+	<Target Name="PinNCronJobPackageVersion" AfterTargets="_GetProjectReferenceVersions">
+		<ItemGroup>
+			<_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)" ProjectVersion="[%(ProjectVersion)]" />
+		</ItemGroup>
+	</Target>
+</Project>

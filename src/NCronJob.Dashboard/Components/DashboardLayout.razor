@@ -1,0 +1,14 @@
+@inherits LayoutComponentBase
+<header class="toolbar">
+    <div class="brand">
+        <img class="app-icon" src="logo.png" alt="" width="28" height="28" />
+        <span>NCronJob</span>
+    </div>
+    <nav class="segmented" aria-label="Sections">
+        <NavLink href="" Match="NavLinkMatch.All">Jobs</NavLink>
+        <NavLink href="graph">Dependencies</NavLink>
+        <NavLink href="runs">Runs</NavLink>
+    </nav>
+    <div class="toolbar-end"></div>
+</header>
+<main class="content">@Body</main>

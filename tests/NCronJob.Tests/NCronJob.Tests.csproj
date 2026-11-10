@@ -27,6 +27,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\NCronJob\NCronJob.csproj" />
+      <ProjectReference Include="..\..\src\NCronJob.Dashboard\NCronJob.Dashboard.csproj" />
     </ItemGroup>
 
 </Project>

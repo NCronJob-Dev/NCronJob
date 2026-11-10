@@ -22,6 +22,7 @@
     <Project Path="sample/RunOnceSample/RunOnceSample.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/NCronJob.Dashboard/NCronJob.Dashboard.csproj" />
     <Project Path="src/NCronJob/NCronJob.csproj" />
   </Folder>
   <Folder Name="/tests/">

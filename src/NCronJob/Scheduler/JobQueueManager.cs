@@ -85,6 +85,41 @@ internal sealed class JobQueueManager : IDisposable
         }
     }
 
+    // Registrations of the same job type share one queue, so only this registration's runs may be removed.
+    public void RemoveRunsOf(JobDefinition jobDefinition)
+    {
+        var queueName = jobDefinition.JobFullName;
+        IReadOnlyCollection<JobRun> removedRuns;
+
+        lock (syncLock)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (!jobQueues.TryGetValue(queueName, out var jobQueue))
+            {
+                return;
+            }
+
+            removedRuns = jobQueue.RemoveWhere(run => ReferenceEquals(run.JobDefinition, jobDefinition));
+
+            if (jobQueue.Count == 0)
+            {
+                jobQueues.TryRemove(queueName, out _);
+                DetachQueueUnsafe(queueName, jobQueue);
+            }
+            else if (removedRuns.Count > 0)
+            {
+                SignalJobQueueUnsafe(queueName);
+            }
+        }
+
+        // Progress callbacks run user code, so they must not be invoked while holding the lock.
+        foreach (var run in removedRuns.Where(run => run.IsCancellable))
+        {
+            run.NotifyStateChange(JobStateType.Cancelled);
+        }
+    }
+
     public void RemoveRuns(
         IReadOnlyCollection<JobRun> runs,
         IReadOnlyCollection<string>? createdQueueNames = null)

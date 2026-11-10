@@ -32,6 +32,11 @@ Use this page to decide where to go next based on the way you plan to use **NCro
 2. [Conditional Job Scheduling](features/conditional-job-scheduling.md)
 3. [Notifications](features/notifications.md)
 
+### I want to see and trigger jobs from a UI
+
+1. [Dashboard](features/dashboard.md)
+2. [Observing progress of jobs](advanced/observing-job-progress.md)
+
 ### I want to change jobs at runtime
 
 1. [Dynamic Job Control](advanced/dynamic-job-control.md)
@@ -43,13 +48,14 @@ Use this page to decide where to go next based on the way you plan to use **NCro
 The repository contains three useful starting points:
 
 - [`sample/MinimalSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample): smallest recurring job setup
-- [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample): typed jobs, retries, concurrency, notifications, and HTTP-triggered instant jobs
+- [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample): typed jobs, retries, concurrency, notifications, dependent jobs, HTTP-triggered instant jobs, and the dashboard at `/ncronjob`
 - [`sample/RunOnceSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample): startup jobs via `RunAtStartup(...)` and `UseNCronJobAsync()`
 
 ## Important concepts to keep in mind
 
 - Jobs run in-process and are **not persisted** across restarts
 - Parameters are passed by reference and are **not serialized**
+- Parameters are `object?` and **not type-checked**: a wrong type only fails inside the job
 - Named jobs are the best choice when you want runtime management or to avoid ambiguity
 - Forced instant jobs bypass queue and concurrency safeguards
 - Startup jobs need `UseNCronJobAsync()` or `UseNCronJob()`

@@ -1,5 +1,9 @@
 # Running Startup Jobs
 
+!!! tip
+
+    The [dashboard](dashboard.md) lists every startup job together with the state of its run.
+
 **NCronJob** allows you to configure jobs to run at application startup. This is useful for tasks that need to be executed immediately when the application starts, such as initial data loading, cleanup tasks, or other setup procedures.
 
 Startup jobs are defined like regular CRON jobs and inherit from `IJob`. The only difference is that they are configured to run at startup.  **All** startup jobs must be completed prior to the start of any other CRON (or instant) jobs.

@@ -1,0 +1,224 @@
+@page "/"
+@using System.Text.Json
+@inherits LivePage
+@inject JobRegistry Registry
+@inject IRuntimeJobRegistry RuntimeRegistry
+@inject IInstantJobRegistry InstantRegistry
+@inject TimeProvider TimeProvider
+
+@{
+    var jobs = Registry.GetAllRootJobs();
+    var now = TimeProvider.GetUtcNow();
+    var startupRuns = Store.GetRuns().Where(r => r.TriggerType == TriggerType.Startup).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1>Jobs</h1>
+        <p class="subtitle">@jobs.Count registered @(jobs.Count == 1 ? "job" : "jobs")</p>
+    </div>
+</div>
+
+@if (message is not null)
+{
+    <div class="banner @(messageIsError ? "tone-red" : "tone-green")" role="status">
+        <Icon Name="@(messageIsError ? "warning" : "check")" />
+        <span>@message</span>
+        <button aria-label="Dismiss" @onclick="() => message = null"><Icon Name="xmark" /></button>
+    </div>
+}
+
+<div class="card">
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr><th>Job</th><th>Schedule</th><th>Next run</th><th>Parameter</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var job in jobs)
+        {
+            var nextRun = job.GetNextCronOccurrence(now);
+            <tr class="row">
+                <td>
+                    <span class="primary-text">@(job.CustomName ?? job.Type?.Name ?? job.Name)</span>
+                    <span class="secondary-text">@(job.Type?.FullName ?? "Delegate job")</span>
+                </td>
+                <td class="schedule">
+                    @if (job.UserDefinedCronExpression is not null)
+                    {
+                        <span class="mono">@job.UserDefinedCronExpression</span>
+                        <span class="secondary-text">@(job.TimeZone?.Id ?? "UTC")</span>
+                    }
+                    @if (job.IsStartupJob)
+                    {
+                        <span class="startup"><Icon Name="bolt" />At startup</span>
+                        <span class="secondary-text">@(job.ShouldCrashOnStartupFailure == true ? "Stops the app on failure" : "Failure is only logged")</span>
+                    }
+                    @if (job.UserDefinedCronExpression is null && !job.IsStartupJob)
+                    {
+                        <span class="muted">On demand</span>
+                    }
+                </td>
+                <td class="numeric">
+                    @if (nextRun is { } at)
+                    {
+                        <span>@Display.Relative(at, now)</span>
+                        <span class="secondary-text">@Display.Timestamp(at)</span>
+                    }
+                    else
+                    {
+                        <span class="muted">—</span>
+                    }
+                </td>
+                <td>
+                    @if (JsonParameter.Describe(job.Parameter) is { } parameter)
+                    {
+                        <code class="code" title="@parameter.Full">@parameter.Preview</code>
+                    }
+                    else
+                    {
+                        <span class="muted">None</span>
+                    }
+                </td>
+                <td>
+                    @if (job.CronExpression is not null)
+                    {
+                        if (job.IsEnabled)
+                        {
+                            <span class="badge tone-green"><Icon Name="check" />Enabled</span>
+                        }
+                        else
+                        {
+                            <span class="badge tone-orange"><Icon Name="pause" />Disabled</span>
+                        }
+                    }
+                    @if (job.IsStartupJob)
+                    {
+                        var startupRun = startupRuns.FirstOrDefault(r => r.BelongsTo(job));
+                        <div class="status-line" title="Startup run">
+                            @if (startupRun is null)
+                            {
+                                <span class="muted">Startup pending</span>
+                            }
+                            else
+                            {
+                                <StateBadge State="startupRun.Current.State" />
+                                @if (startupRun.Duration is { } duration)
+                                {
+                                    <span class="secondary-text">at startup, @Display.Duration(duration)</span>
+                                }
+                            }
+                        </div>
+                    }
+                    @if (job.CronExpression is null && !job.IsStartupJob)
+                    {
+                        <span class="badge tone-gray"><Icon Name="bolt" />Manual</span>
+                    }
+                </td>
+                <td>
+                    <div class="actions">
+                        @if (CanControl(job))
+                        {
+                            if (job.CronExpression is not null)
+                            {
+                                <button title="@(job.CustomName is null ? "Applies to every registration of this type" : null)" @onclick="() => ToggleEnabled(job)">
+                                    <Icon Name="@(job.IsEnabled ? "pause" : "play")" />@(job.IsEnabled ? "Disable" : "Enable")
+                                </button>
+                            }
+                            <button class="tinted" @onclick="() => Select(job)"><Icon Name="play" />Run</button>
+                        }
+                    </div>
+                </td>
+            </tr>
+            @if (ReferenceEquals(selected, job))
+            {
+                <tr class="run-panel">
+                    <td colspan="6">
+                        <label for="parameter-json">Parameter (JSON)</label>
+                        <textarea id="parameter-json" @bind="parameterJson" placeholder="@ParameterPlaceholder"></textarea>
+                        <p class="hint">
+                            Leave empty to use the configured parameter.
+                            @if (job.Parameter is { } configuredParameter)
+                            {
+                                <text>The JSON is deserialized into <span class="mono">@configuredParameter.GetType().Name</span>.</text>
+                            }
+                        </p>
+                        <div class="actions">
+                            <button @onclick="() => selected = null">Cancel</button>
+                            <button title="Ignores concurrency limits" @onclick="() => Trigger(job, force: true)"><Icon Name="bolt" />Force run</button>
+                            <button class="prominent" @onclick="() => Trigger(job, force: false)"><Icon Name="play" />Run now</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+</div>
+</div>
+
+@code {
+    private const string ParameterPlaceholder = "\"hello\" or { \"id\": 1 }";
+
+    private JobDefinition? selected;
+    private string parameterJson = "";
+    private string prefilledJson = "";
+    private string? message;
+    private bool messageIsError;
+
+    private static bool CanControl(JobDefinition job) => job.CustomName is not null || job.IsTypedJob;
+
+    private void Select(JobDefinition job)
+    {
+        selected = job;
+        prefilledJson = JsonParameter.Describe(job.Parameter)?.Full ?? "";
+        parameterJson = prefilledJson;
+    }
+
+    private void ToggleEnabled(JobDefinition job) => Execute(() =>
+    {
+        var enable = !job.IsEnabled;
+        switch (job.CustomName, enable)
+        {
+            case ({ } name, true): RuntimeRegistry.EnableJob(name); break;
+            case ({ } name, false): RuntimeRegistry.DisableJob(name); break;
+            case (null, true): RuntimeRegistry.EnableJob(job.Type!); break;
+            case (null, false): RuntimeRegistry.DisableJob(job.Type!); break;
+        }
+
+        return $"{job.Name} {(enable ? "enabled" : "disabled")}.";
+    });
+
+    private void Trigger(JobDefinition job, bool force) => Execute(() =>
+    {
+        var parameterUnchanged = string.IsNullOrWhiteSpace(parameterJson) || parameterJson == prefilledJson;
+        var parameter = parameterUnchanged
+            ? job.Parameter
+            : JsonParameter.Parse(parameterJson, job.Parameter?.GetType());
+
+        var correlationId = (job.CustomName, force) switch
+        {
+            ({ } name, false) => InstantRegistry.RunScheduledJob(name, TimeSpan.Zero, parameter),
+            ({ } name, true) => InstantRegistry.ForceRunScheduledJob(name, TimeSpan.Zero, parameter),
+            (null, false) => InstantRegistry.RunScheduledJob(job.Type!, TimeSpan.Zero, parameter),
+            (null, true) => InstantRegistry.ForceRunScheduledJob(job.Type!, TimeSpan.Zero, parameter),
+        };
+
+        selected = null;
+        return $"{job.Name} started (correlation id {correlationId}).";
+    });
+
+    private void Execute(Func<string> action)
+    {
+        try
+        {
+            message = action();
+            messageIsError = false;
+        }
+        catch (Exception e) when (e is JsonException or InvalidOperationException or NotSupportedException or ArgumentException)
+        {
+            message = e.Message;
+            messageIsError = true;
+        }
+    }
+}
