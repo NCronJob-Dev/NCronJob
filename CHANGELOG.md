@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Breaking: NCronJob and NCronJob.Dashboard target `net10.0` and `net11.0`; `net8.0` and `net9.0` are no longer supported. See the [v5 migration guide](https://docs.ncronjob.dev/migration/v5/).
+
 ### Added
 
 - New `NCronJob.Dashboard` package: a Blazor Server dashboard served via `services.AddNCronJobDashboard()` and `app.MapNCronJobDashboard("/ncronjob")`. It lists all registered jobs and startup jobs with their state, shows the dependency graph, and shows live and recent runs with their parameters. It can enable and disable jobs, and trigger instant jobs with a JSON parameter. Endpoints can be secured, e.g. `e => e.RequireAuthorization("Admin")`.

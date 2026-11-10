@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>NCronJob.Dashboard</RootNamespace>
-		<!-- From .NET 10 on, blazor.web.js is only shipped as a package; this pulls it in so it can be embedded below. -->
+		<!-- blazor.web.js is only shipped as a package; this pulls it in so it can be embedded below. -->
 		<RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
 	</PropertyGroup>
 
@@ -41,7 +41,6 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="..\..\assets\logo_small.png" LogicalName="NCronJob.Dashboard.logo.png" Visible="false" />
-		<EmbeddedResource Include="$(BlazorFrameworkStaticWebAssetRoot)\blazor.web.js" LogicalName="NCronJob.Dashboard.blazor.web.js" Condition="'$(BlazorFrameworkStaticWebAssetRoot)' != ''" Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -52,6 +51,16 @@
 	<ItemGroup>
 		<ProjectReference Include="..\NCronJob\NCronJob.csproj" />
 	</ItemGroup>
+
+	<!-- net10 exposes the asset folder as a property, net11 only through the static web asset package manifest. -->
+	<Target Name="EmbedBlazorWebJs" BeforeTargets="AssignTargetPaths">
+		<ItemGroup>
+			<_BlazorWebJs Include="$(BlazorFrameworkStaticWebAssetRoot)\blazor.web.js" Condition="'$(BlazorFrameworkStaticWebAssetRoot)' != ''" />
+			<_BlazorWebJs Include="%(StaticWebAssetPackageManifest.ContentRoot)_framework\blazor.web.js" Condition="'%(StaticWebAssetPackageManifest.SourceId)' == 'Microsoft.AspNetCore.App.Internal.Assets'" />
+			<EmbeddedResource Include="@(_BlazorWebJs)" LogicalName="NCronJob.Dashboard.blazor.web.js" />
+		</ItemGroup>
+		<Error Condition="'@(_BlazorWebJs)' == ''" Text="blazor.web.js could not be located for $(TargetFramework)." />
+	</Target>
 
 	<!-- The dashboard uses NCronJob internals, so it only works with the exact NCronJob version it was built against. -->
 	<Target Name="PinNCronJobPackageVersion" AfterTargets="_GetProjectReferenceVersions">

@@ -5,7 +5,7 @@ internal sealed class JobConcurrencyLimiter
     private readonly Dictionary<string, int> runningJobCounts = [];
     private int totalRunningJobCount;
     private readonly AsyncSignal capacitySignal = new();
-    private readonly SyncLock slotLock = new();
+    private readonly Lock slotLock = new();
     private readonly ConcurrencySettings concurrencySettings;
 
     public JobConcurrencyLimiter(ConcurrencySettings concurrencySettings)

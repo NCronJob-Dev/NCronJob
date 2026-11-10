@@ -9,7 +9,7 @@ internal class JobRun
     private readonly Action<JobRun> progressReporter;
     private readonly JobRunActivationGate? activationGate;
     private List<JobRun>? pendingDependents;
-    private readonly SyncLock orchestrationStateLock = new();
+    private readonly Lock orchestrationStateLock = new();
 
     private JobRun(
         TimeProvider timeProvider,

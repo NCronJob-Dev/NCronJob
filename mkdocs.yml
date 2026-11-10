@@ -48,6 +48,7 @@ nav:
     - Exception handler: features/exception-handler.md
     - Dashboard: features/dashboard.md
   - Migration:
+    - v5 Migration Guide: migration/v5.md
     - v4 Migration Guide: migration/v4.md
     - v3 Migration Guide: migration/v3.md
     - v2 Migration Guide: migration/v2.md

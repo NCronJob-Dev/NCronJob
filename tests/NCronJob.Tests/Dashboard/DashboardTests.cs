@@ -33,9 +33,7 @@ public class DashboardTests
 
     [Theory]
     [InlineData("/logo.png", "image/png")]
-#if NET10_0_OR_GREATER
     [InlineData("/_framework/blazor.web.js", "text/javascript")]
-#endif
     public async Task EmbeddedAssetsAreServedWithoutHostStaticFiles(string path, string contentType)
     {
         var context = new DefaultHttpContext { Request = { Path = path }, Response = { Body = new MemoryStream() } };

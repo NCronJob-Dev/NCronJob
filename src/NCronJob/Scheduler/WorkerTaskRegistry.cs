@@ -9,7 +9,7 @@ internal sealed class WorkerTaskRegistry
 {
     private readonly Dictionary<string, Task> tasks = [];
     private readonly AsyncSignal changed = new();
-    private readonly SyncLock gate = new();
+    private readonly Lock gate = new();
     private bool isClosed;
 
     /// <summary>

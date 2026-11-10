@@ -36,6 +36,17 @@
 
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposed || !disposing)
+        {
+            return;
+        }
+
         disposed = true;
         Store.Changed -= OnStoreChanged;
         relativeTimeTimer?.Dispose();

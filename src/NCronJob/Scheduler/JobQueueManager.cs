@@ -8,7 +8,7 @@ internal sealed class JobQueueManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, JobQueue> jobQueues = new();
     private readonly Dictionary<string, AsyncSignal> queueSignals = [];
-    private readonly SyncLock syncLock = new();
+    private readonly Lock syncLock = new();
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event Action<string>? QueueAdded;
