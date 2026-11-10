@@ -52,7 +52,7 @@ internal static class JsonParameter
         }
     }
 
-    public static ParameterText? Describe(object? parameter)
+    public static ParameterText? Describe(object? parameter, Type? contractType = null)
     {
         if (parameter is null)
         {
@@ -61,7 +61,7 @@ internal static class JsonParameter
 
         try
         {
-            var type = parameter.GetType();
+            var type = contractType ?? parameter.GetType();
             return new ParameterText(
                 JsonSerializer.Serialize(parameter, type, Indented),
                 Truncate(JsonSerializer.Serialize(parameter, type)));

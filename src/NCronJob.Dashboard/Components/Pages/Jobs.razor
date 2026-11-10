@@ -178,7 +178,7 @@
     private void Select(JobDefinition job)
     {
         selected = job;
-        prefilledJson = JsonParameter.Describe(job.Parameter)?.Full ?? "";
+        prefilledJson = JsonParameter.Describe(job.Parameter, job.ParameterType)?.Full ?? "";
         parameterJson = prefilledJson;
     }
 
