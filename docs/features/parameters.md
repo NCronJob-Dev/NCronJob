@@ -154,7 +154,7 @@ public class MyParameter
 
 Services.AddNCronJob(b =>
 {
-  b.AddJob<MyJob>(p => p.WithCronExpression("0 0 * * *"));
+  b.AddJob<MyJob>(p => p.WithCronExpression("0 0 * * *").WithParameter(new MyParameter()));
 });
 
 public class MyJob : IJob<MyParameter>
