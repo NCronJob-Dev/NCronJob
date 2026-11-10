@@ -101,9 +101,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -153,27 +157,27 @@
               
                 <h1 id="triggering-instant-jobs">Triggering instant jobs<a class="headerlink" href="#triggering-instant-jobs" title="Permanent link">&para;</a></h1>
 <p><strong>NCronJob</strong> allows you to trigger jobs instantly. This is useful when you want to run a job immediately without waiting for the next scheduled time. For example you get a API request and want to offload the work to a background job immediately.</p>
-<p>Instant jobs are like &ldquo;regular&rdquo; CRON jobs and inherit from <code>IJob</code>. The only difference is that they are triggered manually.
+<p>Instant jobs are like &ldquo;regular&rdquo; CRON jobs and implement <code>IJob</code>, or <code>IJob&lt;TParameter&gt;</code> to accept a parameter. The only difference is that they are triggered manually.
 So also CRON jobs can be triggered instantly.</p>
-<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="o">&lt;</span><span class="n">ParameterDto</span><span class="o">&gt;</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="o">&lt;</span><span class="n">ParameterDto</span><span class="o">&gt;</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">ParameterDto</span><span class="w"> </span><span class="n">dto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ParameterDto</span><span class="p">)</span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">;</span>
+<span class="w">        </span><span class="n">ParameterDto</span><span class="w"> </span><span class="n">dto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">;</span>
 <span class="w">        </span><span class="c1">// Do something</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 
-<p>As CRON jobs, they have to be registered in the <code>AddNCronJob</code> method.</p>
+<p>Like CRON jobs, they should be registered in the <code>AddNCronJob</code> method. An unregistered job still runs, but logs a warning on every trigger.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// No need to specify a CRON expression</span>
 <span class="p">});</span>
 </code></pre></div>
 
-<p>There is no need of a CRON expression for instant jobs. Also passing in parameters doesn&rsquo;t do anything, they will be passed in differently. Let&rsquo;s have a look at how to trigger an instant job. Imagine we have a Minimal API where we want to send an E-Mail:</p>
+<p>There is no need of a CRON expression for instant jobs. A parameter can be passed when triggering the job, or preconfigured with <code>WithParameter</code>. Let&rsquo;s have a look at how to trigger an instant job. Imagine we have a Minimal API where we want to send an E-Mail:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">RequestDto</span><span class="w"> </span><span class="n">dto</span><span class="p">,</span><span class="w"> </span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">parameterDto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterDto</span>
@@ -190,7 +194,7 @@ So also CRON jobs can be triggered instantly.</p>
 
 <p>The <code>RunInstantJob</code> method takes the job type and the parameters as arguments. Optionally you can pass in a <code>CancellationToken</code> as well. The job will be executed immediately.</p>
 <h2 id="starting-a-job-with-a-delay">Starting a job with a delay<a class="headerlink" href="#starting-a-job-with-a-delay" title="Permanent link">&para;</a></h2>
-<p>If you find the need to delay the execution of an instant job, you can use the <code>RunScheduledJob</code> method with a <code>TimeSpan</code> as a delay. The same as <code>RunInstantJob</code> applies here, the job has to be registered in the <code>AddNCronJob</code> method.</p>
+<p>If you find the need to delay the execution of an instant job, you can use the <code>RunScheduledJob</code> method with a <code>TimeSpan</code> as a delay. The same as <code>RunInstantJob</code> applies here, the job should be registered in the <code>AddNCronJob</code> method.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">RequestDto</span><span class="w"> </span><span class="n">dto</span><span class="p">,</span><span class="w"> </span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">parameterDto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterDto</span>
@@ -206,7 +210,7 @@ So also CRON jobs can be triggered instantly.</p>
 </code></pre></div>
 
 <h2 id="starting-a-job-at-a-specific-date-and-time">Starting a job at a specific date and time<a class="headerlink" href="#starting-a-job-at-a-specific-date-and-time" title="Permanent link">&para;</a></h2>
-<p>If you want to start a job at a specific date and time, compute the delay until that moment and pass the resulting <code>TimeSpan</code> to <code>RunScheduledJob</code>. The job still has to be registered first.</p>
+<p>If you want to start a job at a specific date and time, compute the delay until that moment and pass the resulting <code>TimeSpan</code> to <code>RunScheduledJob</code>.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">&quot;/send-email&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">RequestDto</span><span class="w"> </span><span class="n">dto</span><span class="p">,</span><span class="w"> </span><span class="n">IInstantJobRegistry</span><span class="w"> </span><span class="n">jobRegistry</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">parameterDto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterDto</span>
@@ -216,7 +220,7 @@ So also CRON jobs can be triggered instantly.</p>
 <span class="w">        </span><span class="n">Body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dto</span><span class="p">.</span><span class="n">Body</span>
 <span class="w">    </span><span class="p">};</span>
 
-<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">startAt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromHours</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">startAt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">(</span><span class="mi">2030</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromHours</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
 <span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">delay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">startAt</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
 <span class="w">    </span><span class="n">jobRegistry</span><span class="p">.</span><span class="n">RunScheduledJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span><span class="w"> </span><span class="n">parameterDto</span><span class="p">);</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
@@ -225,21 +229,21 @@ So also CRON jobs can be triggered instantly.</p>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Older <code>DateTimeOffset</code> overloads still exist for compatibility, but they are obsolete and scheduled for removal in the next major version.</p>
+<p>The <code>DateTimeOffset</code> overloads were removed in v5. Compute a delay as shown above (see the <a href="../../migration/v5/#removed-obsolete-apis">v5 migration guide</a>).</p>
 </div>
 <h2 id="priority">Priority<a class="headerlink" href="#priority" title="Permanent link">&para;</a></h2>
 <p>Instant jobs are executed with a higher priority than CRON jobs. This means that if you have a CRON job that is scheduled to run at the same time as an instant job, the instant job will be executed first (and if both of them are competing for the same resources, only the instant job will be executed).</p>
 <h2 id="force-a-job-run">Force a job run<a class="headerlink" href="#force-a-job-run" title="Permanent link">&para;</a></h2>
 <p>Sometimes you need to run a job immediately, regardless of any running jobs or concurrency settings. The <code>ForceRunInstantJob</code> methods allow you to bypass the job queue and execute a job directly.</p>
 <p>While regular instant jobs follow the same concurrency rules as CRON jobs, forced jobs ignore these restrictions:</p>
-<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EmailJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="w"> </span>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EmailJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="o">&lt;</span><span class="n">EmailMessage</span><span class="o">&gt;</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">IEmailService</span><span class="w"> </span><span class="n">emailService</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">EmailJob</span><span class="p">(</span><span class="n">IEmailService</span><span class="w"> </span><span class="n">emailService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">emailService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">emailService</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
-<span class="w">        </span><span class="n">emailService</span><span class="p">.</span><span class="n">SendEmailAsync</span><span class="p">((</span><span class="n">EmailMessage</span><span class="p">)</span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="o">&lt;</span><span class="n">EmailMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">        </span><span class="n">emailService</span><span class="p">.</span><span class="n">SendEmailAsync</span><span class="p">(</span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="c1">// Normal instant job - will wait if another EmailJob is running</span>
@@ -292,10 +296,10 @@ So also CRON jobs can be triggered instantly.</p>
 <p>This capability provides an escape hatch to situations as described in <a href="#precautions-of-use"><em>&ldquo;Precautions of use&rdquo;</em></a> below.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 * * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;nightly&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;nightly&quot;</span><span class="p">).</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 * * *&quot;</span><span class="p">))</span>
 <span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SendReportToStaffJob</span><span class="o">&gt;</span><span class="p">());</span>
 
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 1 * *&quot;</span><span class="p">).</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;monthly&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">GatherDataJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">WithName</span><span class="p">(</span><span class="s">&quot;monthly&quot;</span><span class="p">).</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 0 1 * *&quot;</span><span class="p">))</span>
 <span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SendReportToManagementJob</span><span class="o">&gt;</span><span class="p">());</span>
 <span class="p">});</span>
 

@@ -119,9 +119,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -185,7 +189,7 @@
 <p>This allows very complex job dependencies to be defined in a simple and readable way.
 <img alt="dependencies" src="../../assets/flow.webp" /></p>
 <h3 id="passing-parameters-to-dependent-jobs">Passing parameters to dependent jobs<a class="headerlink" href="#passing-parameters-to-dependent-jobs" title="Permanent link">&para;</a></h3>
-<p>The <code>RunJob</code> method allows optional parameters to be passed to the dependent job. </p>
+<p>The <code>RunJob</code> method allows optional parameters to be passed to the dependent job. The dependent job has to accept the parameter, here <code>SuccessJob</code> implements <code>IJob&lt;string&gt;</code>.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">SuccessJob</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;Foo&quot;</span><span class="p">));</span>
@@ -234,10 +238,10 @@
 
 <p>When a dependent job&rsquo;s condition is not met, it will be skipped without instantiation, just like parent jobs with <code>OnlyIf</code>.</p>
 <h2 id="accessing-the-state-of-the-parent-job">Accessing the state of the parent job<a class="headerlink" href="#accessing-the-state-of-the-parent-job" title="Permanent link">&para;</a></h2>
-<p>The <code>JobExecutionContext</code> object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.</p>
+<p>The <code>IJobExecutionContext</code> object passed to the dependent job contains the output of the parent job. This allows access to the state of the parent job. This can be helpful if information should flow from the parent to the child job.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">Output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
@@ -246,7 +250,7 @@
 
 <span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobB</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">parentOutput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">ParentOutput</span><span class="p">;</span><span class="w"> </span><span class="c1">// &quot;Hello World&quot;</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
@@ -263,12 +267,12 @@
 <h2 id="order-of-execution-between-inotificationjobhandler-and-dependent-jobs">Order of execution between <code>INotificationJobHandler</code> and dependent jobs<a class="headerlink" href="#order-of-execution-between-inotificationjobhandler-and-dependent-jobs" title="Permanent link">&para;</a></h2>
 <p>If a job has a dependency on another job, the dependent job will run after the <code>INotificationJobHandler</code> has been executed and awaited.</p>
 <h2 id="tracing-requests-of-dependencies-via-correlationid">Tracing requests of dependencies via <code>CorrelationId</code><a class="headerlink" href="#tracing-requests-of-dependencies-via-correlationid" title="Permanent link">&para;</a></h2>
-<p>Every <code>JobExecutionContext</code> has a <code>CorrelationId</code> property that can be used to trace the execution of dependent jobs. This property is automatically set to the <code>CorrelationId</code> of the parent job and stays the same for all dependent jobs down the chain.</p>
+<p>Every <code>IJobExecutionContext</code> has a <code>CorrelationId</code> property that can be used to trace the execution of dependent jobs. This property is automatically set to the <code>CorrelationId</code> of the parent job and stays the same for all dependent jobs down the chain.</p>
 <h2 id="cancelling-dependent-jobs">Cancelling dependent jobs<a class="headerlink" href="#cancelling-dependent-jobs" title="Permanent link">&para;</a></h2>
-<p>To actively cancel dependent jobs, the <code>JobExecutionContext</code> object passed offers a <code>SkipChildren</code> method. This method can be called to prevent dependent jobs from running.</p>
+<p>To actively cancel dependent jobs, the <code>IJobExecutionContext</code> object passed offers a <code>SkipChildren</code> method. This method can be called to prevent dependent jobs from running.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobA</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">SkipChildren</span><span class="p">();</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
@@ -277,7 +281,7 @@
 
 <span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">JobB</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// This job will not run</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
@@ -301,7 +305,7 @@
 </code></pre></div>
 
 <h3 id="getting-the-parent-jobs-output-in-a-minimal-api">Getting the parent job&rsquo;s output in a Minimal API<a class="headerlink" href="#getting-the-parent-jobs-output-in-a-minimal-api" title="Permanent link">&para;</a></h3>
-<p>If you pass in a <code>JobExecutionContext</code> to the dependent job, you can access the parent job&rsquo;s output:</p>
+<p>If you pass in a <code>IJobExecutionContext</code> to the dependent job, you can access the parent job&rsquo;s output:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ImportDataJob</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span>
@@ -314,10 +318,10 @@
 </code></pre></div>
 
 <h3 id="defining-dependencies-for-minimal-jobs">Defining dependencies for minimal Jobs<a class="headerlink" href="#defining-dependencies-for-minimal-jobs" title="Permanent link">&para;</a></h3>
-<p>To define that a job should be executed afterward, you can use the <code>AddJob</code> overload like this:</p>
+<p>A minimal job can run as a dependent job. A minimal job can&rsquo;t be a parent, so the parent is a typed job:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IMyService</span><span class="w"> </span><span class="n">myService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">myService</span><span class="p">.</span><span class="n">Run</span><span class="p">())</span>
-<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Run when successful&quot;</span><span class="p">)));</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">RunJob</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">IMyService</span><span class="w"> </span><span class="n">myService</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">myService</span><span class="p">.</span><span class="n">Run</span><span class="p">()));</span>
 <span class="p">});</span>
 </code></pre></div>
 
@@ -361,8 +365,8 @@ If you need to ensure the order of execution, see the next section.</p>
 <p>This can be achieved by:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">()</span>
-<span class="w">           </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobA</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobB</span><span class="o">&gt;</span><span class="p">().</span><span class="n">ExecuteWhen</span><span class="p">(</span><span class="n">success</span><span class="p">:</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">RunJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">());</span>
 
 <span class="w">    </span><span class="c1">// Register JobC into the container to avoid warnings</span>
 <span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">JobC</span><span class="o">&gt;</span><span class="p">();</span>

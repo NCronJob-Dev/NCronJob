@@ -83,9 +83,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -105,8 +109,6 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#subscribing-to-the-executions-of-jobs">Subscribing to the executions of jobs</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#forewords">Forewords</a>
-    </li>
     <li class="toctree-l3"><a class="reference internal" href="#registering-a-notifier-callback">Registering a notifier callback</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#described-executionprogress">Described ExecutionProgress</a>
@@ -159,29 +161,6 @@
 <p>An orchestration is uniquely identifed by an identifier. All jobs belonging to an orchestration share this same <code>CorrelationId</code> (See <a href="../../features/model-dependencies/#tracing-requests-of-dependencies-via-correlationid"><em>&ldquo;Tracing requests of dependencies via <code>CorrelationId</code>&ldquo;</em></a>).</p>
 <p>From a timeline perspective, an orchestration starts before the root job that initiated it and completes when <strong>all</strong> of its leaf jobs have reached a final state.</p>
 <h2 id="subscribing-to-the-executions-of-jobs">Subscribing to the executions of jobs<a class="headerlink" href="#subscribing-to-the-executions-of-jobs" title="Permanent link">&para;</a></h2>
-<h3 id="forewords">Forewords<a class="headerlink" href="#forewords" title="Permanent link">&para;</a></h3>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This is an <strong>experimental</strong> feature subject to breaking changes independently of the standard semver lifecycle release of <strong>NCronJob</strong>.</p>
-<p>While reporting feedback or bugs about it, please do not forget to
-mention in the issue which version of NCronJob you&rsquo;re using.</p>
-</div>
-<p>Would you decide to give it an early try, in order to suppress the warnings that comes with the <a href="https://learn.microsoft.com/en-us/dotnet/fundamentals/apicompat/preview-apis#experimentalattribute">.NET Experimental attribute</a>, update your <code>.csproj</code> with a <code>&lt;NoWarn&gt;</code> project setting:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">&lt;PropertyGroup&gt;</span>
-<span class="w">    </span>...
-<span class="w">    </span><span class="nt">&lt;NoWarn&gt;</span>$(NoWarn);NCRONJOB_OBSERVER<span class="nt">&lt;/NoWarn&gt;</span>
-<span class="nt">&lt;/PropertyGroup&gt;</span>
-</code></pre></div>
-
-<p>Alternatively, it can also be silenced through an <code>.editorconfig</code> setting.</p>
-<div class="codehilite"><pre><span></span><code>[*.cs]
-
-...
-
-# NCRONJOB_OBSERVER: Type is for evaluation purposes only and is subject to change or removal in future updates.
-dotnet_diagnostic.NCRONJOB_OBSERVER.severity = none
-</code></pre></div>
-
 <h3 id="registering-a-notifier-callback">Registering a notifier callback<a class="headerlink" href="#registering-a-notifier-callback" title="Permanent link">&para;</a></h3>
 <p><strong>NCronJob</strong> exposes the capability to notify whenever jobs change states. One can
 suscribe to this by leveraging the <code>IJobExecutionProgressReporter</code> service.</p>
@@ -198,11 +177,12 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <h3 id="described-executionprogress">Described ExecutionProgress<a class="headerlink" href="#described-executionprogress" title="Permanent link">&para;</a></h3>
 <p>An <code>ExecutionProgress</code> instance exposes the following properties:</p>
 <ul>
-<li><strong>Timestamp</strong>: The instant this <code>ExecutionProgress</code> instance was created.</li>
-</ul>
-<p>Will be <code>null</code> when the <code>ExecutionProgress</code> instance relates to the start or completion of an orchestration.</p>
-<ul>
-<li><strong>CorrelationId</strong>: The correlation identifier of an orchestration run. </li>
+<li>
+<p><strong>Timestamp</strong>: The instant this <code>ExecutionProgress</code> instance was created.</p>
+</li>
+<li>
+<p><strong>CorrelationId</strong>: The correlation identifier of an orchestration run. </p>
+</li>
 </ul>
 <p>Will decorate every reported progress of the root job and all of its dependencies.</p>
 <ul>
@@ -229,6 +209,14 @@ In order to stop the callback from receiving notifications anymore, invoke the <
 <li><strong>IsTypedJob</strong>: Whether the job is a class based job (implementing <code>IJob</code>) or not. </li>
 </ul>
 <p>Will be <code>null</code> when the reported instance is the root job of an orchestration, or when the <code>ExecutionProgress</code> instance relates to the start or completion of an orchestration.</p>
+<ul>
+<li><strong>Parameter</strong>: The parameter the job run was started with (the configured parameter, or the one passed to an instant job).</li>
+</ul>
+<p>Will be <code>null</code> when the job has no parameter or when the <code>ExecutionProgress</code> instance relates to the start or completion of an orchestration.</p>
+<ul>
+<li><strong>TriggerType</strong>: What started the job run: <code>Cron</code>, <code>Instant</code>, <code>Startup</code> or <code>Dependent</code>.</li>
+</ul>
+<p>Will be <code>null</code> when the <code>ExecutionProgress</code> instance relates to the start or completion of an orchestration.</p>
 <h2 id="sample-usage">Sample usage<a class="headerlink" href="#sample-usage" title="Permanent link">&para;</a></h2>
 <p>Considering the following orchestration</p>
 <div class="codehilite"><pre><span></span><code>A ─┬─ (successful) ──&gt; B

@@ -83,9 +83,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -150,7 +154,7 @@
 <span class="w">    </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">MyJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;* * * * *&quot;</span><span class="p">)));</span>
 </code></pre></div>
 
-<p>If you have a CPU with 12 Cores (like a M2 Processor), the maximum amount of concurrent jobs will be 48. A CRON job is rescheduled after it has been executed. This means that the queue will always be filled with jobs that are ready to be executed. If that queue is full, no more jobs will be added to the queue until a job has been executed.</p>
+<p>If you have a CPU with 12 Cores (like a M2 Processor), the maximum amount of concurrent jobs will be 48. A CRON job is rescheduled as soon as it starts. This means that the queue will always be filled with jobs that are ready to be executed. If that queue is full, no more jobs will be added to the queue until a job has been executed.</p>
 <p>A simple example: You have only one processor (therefore maximum 4 jobs executed at the same time) and a cron job that runs every minute. The job takes six minutes to complete. 
 So after four minutes the queue is full, and no more jobs will be added to the queue. After the fifth minute, the queue is still full, and no more jobs will be added to the queue. After the sixth minute, the first job is removed from the queue, and the next job is added to the queue. Therefore it can happen that jobs are skipped and not executed.</p>
 <p>The same applies to the <code>SupportsConcurrencyAttribute</code> discussed in: <em><a href="../../features/concurrency-control/">Concurrency Control</a></em></p>

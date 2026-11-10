@@ -111,9 +111,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v3/">v3 Migration Guide</a>
@@ -177,12 +181,13 @@
 </ul>
 <h3 id="job-authoring">Job authoring<a class="headerlink" href="#job-authoring" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>IJob</code> is the main typed-job abstraction</li>
-<li><code>IJobExecutionContext</code> provides the parameter, attempt count, correlation id, and execution metadata</li>
+<li><code>IJob</code> is the main typed-job abstraction; <code>IJob&lt;TParameter&gt;</code> is a job that accepts a parameter</li>
+<li><code>IJobExecutionContext</code> provides the attempt count, correlation id, and execution metadata; <code>IJobExecutionContext&lt;TParameter&gt;</code> adds the typed <code>Parameter</code></li>
 <li>The minimal API style resolves services directly from the delegate signature</li>
 </ul>
 <h3 id="scheduling-options">Scheduling options<a class="headerlink" href="#scheduling-options" title="Permanent link">&para;</a></h3>
 <ul>
+<li>Builder order is <code>WithName(...)</code>, then <code>WithCronExpression(...)</code>, then <code>WithParameter(...)</code> / <code>RunAtStartup(...)</code>; <code>WithName</code> is not available after the cron expression</li>
 <li><code>WithCronExpression(...)</code> accepts cron expressions (with optional seconds) and macros such as <code>@hourly</code>, <code>@daily</code>, <code>@weekly</code>, <code>@monthly</code>, <code>@yearly</code>, <code>@every_minute</code> and <code>@every_second</code>; see <a href="../features/define-and-schedule-jobs/#cron-macros">Cron macros</a></li>
 <li><code>WithTimeout(TimeSpan)</code> cancels a run that executes too long; see <a href="../features/timeouts-and-expiry/">Timeouts and run expiry</a></li>
 <li><code>WithMaxDegreeOfParallelism(int)</code> limits concurrently executing jobs scheduler-wide; see <a href="../advanced/global-concurrency/">Global concurrency</a></li>
@@ -192,6 +197,7 @@
 <li>Every run executes in a log scope with <code>JobName</code>, <code>JobRunId</code>, <code>CorrelationId</code> and <code>TriggerType</code>; see <a href="../advanced/log-level/#log-scopes">Log level and log scopes</a></li>
 <li>Every run is an <code>Activity</code> from the <code>"NCronJob"</code> <code>ActivitySource</code> (<code>NCronJobDiagnostics.ActivitySourceName</code>); see <a href="../advanced/observing-job-progress/#tracing-with-opentelemetry">Tracing with OpenTelemetry</a></li>
 <li>Runs, failures, retries, skipped/expired runs and run duration are metrics of the <code>"NCronJob"</code> <code>Meter</code> (<code>NCronJobDiagnostics.MeterName</code>); see <a href="../advanced/observing-job-progress/#metrics-with-opentelemetry">Metrics with OpenTelemetry</a></li>
+<li><code>NCronJob.Dashboard</code> package: <code>services.AddNCronJobDashboard()</code> + <code>app.MapNCronJobDashboard(path, configureEndpoints)</code> serve a Blazor Server dashboard; see <a href="../features/dashboard/">Dashboard</a></li>
 </ul>
 <h3 id="runtime-interaction">Runtime interaction<a class="headerlink" href="#runtime-interaction" title="Permanent link">&para;</a></h3>
 <ul>
@@ -214,6 +220,7 @@
 <li>Use <strong>named jobs</strong> when the same job type is registered multiple times or when runtime management is needed</li>
 <li><code>RunInstantJob&lt;TJob&gt;()</code> can become ambiguous if multiple registrations exist for the same job type; prefer <code>RunInstantJob("job-name")</code> in that case</li>
 <li>Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution</li>
+<li>A job accepts a parameter only if it implements <code>IJob&lt;TParameter&gt;</code>; a parameter that isn&rsquo;t assignable to <code>TParameter</code> throws <code>ArgumentException</code> at registration or trigger time. A run without a parameter gets <code>default(TParameter)</code>; <code>IJob&lt;object?&gt;</code> accepts anything</li>
 <li>Forced instant jobs (<code>ForceRunInstantJob</code> / <code>ForceRunScheduledJob</code>) bypass queue and concurrency protection</li>
 <li>A timed-out run is <code>Cancelled</code> and does not trigger dependencies; jobs must honor the <code>CancellationToken</code></li>
 <li>After <code>Build()</code>, call <code>UseNCronJobAsync()</code> or <code>UseNCronJob()</code> whenever <code>RunAtStartup(...)</code> is used; see <a href="../features/startup-jobs/">Running Startup Jobs</a></li>
@@ -221,7 +228,7 @@
 <h2 id="repository-sample-map">Repository sample map<a class="headerlink" href="#repository-sample-map" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>sample/MinimalSample</code>: minimal recurring delegate job</li>
-<li><code>sample/NCronJobSample</code>: typed jobs, notifications, retries, concurrency, instant job endpoints</li>
+<li><code>sample/NCronJobSample</code>: typed jobs, notifications, retries, concurrency, dependencies, a startup job, instant job endpoints, and the dashboard at <code>/ncronjob</code></li>
 <li><code>sample/RunOnceSample</code>: startup job flow</li>
 </ul>
 <h2 id="preferred-source-of-truth">Preferred source of truth<a class="headerlink" href="#preferred-source-of-truth" title="Permanent link">&para;</a></h2>

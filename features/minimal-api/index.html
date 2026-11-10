@@ -99,9 +99,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -166,7 +170,7 @@
 <span class="p">},</span><span class="w"> </span><span class="s">&quot;*/5 * * * * *&quot;</span><span class="p">);</span>
 </code></pre></div>
 
-<p>Also the <code>JobExecutionContext</code> and <code>CancellationToken</code> can be resolved from the DI container:</p>
+<p>Also the <code>IJobExecutionContext</code> and <code>CancellationToken</code> can be resolved from the DI container:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">((</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
 
@@ -191,7 +195,7 @@
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">([</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">retryCount</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">)]</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="s">&quot;0 * * * *&quot;</span><span class="p">);</span>
 </code></pre></div>
 
-<p>To know in which attempt the job currently is, the <code>JobExecutionContext</code> can be used:</p>
+<p>To know in which attempt the job currently is, the <code>IJobExecutionContext</code> can be used:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">([</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">retryCount</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">)]</span><span class="w"> </span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
 <span class="p">{</span>
 <span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="n">context</span><span class="p">.</span><span class="n">Attempts</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>

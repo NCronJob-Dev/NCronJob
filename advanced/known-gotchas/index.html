@@ -83,9 +83,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -114,6 +118,8 @@
     <li class="toctree-l2"><a class="reference internal" href="#conditions-are-not-re-evaluated-for-retries">Conditions are not re-evaluated for retries</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#parameters-are-passed-by-reference">Parameters are passed by reference</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parameters-are-checked-when-they-are-passed-not-by-the-compiler">Parameters are checked when they are passed, not by the compiler</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#instant-jobs-can-be-ambiguous">Instant jobs can be ambiguous</a>
     </li>
@@ -171,6 +177,8 @@ If one startup job depends on another, model that dependency explicitly instead 
 <h2 id="parameters-are-passed-by-reference">Parameters are passed by reference<a class="headerlink" href="#parameters-are-passed-by-reference" title="Permanent link">&para;</a></h2>
 <p>Parameters are not cloned. If you pass a mutable object and the job changes it, later executions can observe that mutated state.</p>
 <p>Prefer immutable parameter objects, or clone the parameter inside the job before mutating it.</p>
+<h2 id="parameters-are-checked-when-they-are-passed-not-by-the-compiler">Parameters are checked when they are passed, not by the compiler<a class="headerlink" href="#parameters-are-checked-when-they-are-passed-not-by-the-compiler" title="Permanent link">&para;</a></h2>
+<p>The APIs that pass a parameter accept <code>object?</code>, so a parameter of the wrong type compiles. It is rejected with an <code>ArgumentException</code> when the job is registered or triggered, not inside the job. A run without a parameter gets <code>default(TParameter)</code>. See <a href="../../features/parameters/#parameters-are-type-checked">Passing parameters</a>.</p>
 <h2 id="instant-jobs-can-be-ambiguous">Instant jobs can be ambiguous<a class="headerlink" href="#instant-jobs-can-be-ambiguous" title="Permanent link">&para;</a></h2>
 <p>Triggering an instant job by type only works when NCronJob can uniquely identify the target registration.</p>
 <p>If you registered the same job type more than once, prefer giving each registration a unique name and trigger the intended one by name.</p>

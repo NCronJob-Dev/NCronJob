@@ -99,9 +99,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v3/">v3 Migration Guide</a>
@@ -157,6 +161,10 @@
 </code></pre></div>
 
 <p>If you prefer editing the project file directly, copy the current version from <a href="https://www.nuget.org/packages/NCronJob">NuGet</a>.</p>
+<p>For an ASP.NET Core app you can also add the optional <a href="../features/dashboard/">dashboard</a>:</p>
+<div class="codehilite"><pre><span></span><code>dotnet<span class="w"> </span>add<span class="w"> </span>package<span class="w"> </span>NCronJob.Dashboard
+</code></pre></div>
+
 <h2 id="2-choose-a-starting-style">2. Choose a starting style<a class="headerlink" href="#2-choose-a-starting-style" title="Permanent link">&para;</a></h2>
 <p>NCronJob supports two main authoring styles:</p>
 <ul>
@@ -203,9 +211,9 @@
 
 <span class="k">await</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="n">Build</span><span class="p">().</span><span class="n">RunAsync</span><span class="p">();</span>
 
-<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">PrintHelloWorld</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">PrintHelloWorld</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">PrintHelloWorld</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">);</span>
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Parameter: {Parameter}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">);</span>
@@ -251,6 +259,7 @@
 <li><a href="../features/retry-support/">Retry support</a></li>
 <li><a href="../features/startup-jobs/">Running Startup Jobs</a></li>
 <li><a href="../advanced/dynamic-job-control/">Dynamic Job Control</a></li>
+<li><a href="../features/dashboard/">Dashboard</a></li>
 </ul>
 <h2 id="7-need-a-documentation-map">7. Need a documentation map?<a class="headerlink" href="#7-need-a-documentation-map" title="Permanent link">&para;</a></h2>
 <p>Use the <a href="../documentation-map/">Documentation Map</a> for a guided tour of the docs, samples, and recommended reading order.</p>

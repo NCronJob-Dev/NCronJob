@@ -107,9 +107,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -216,7 +220,7 @@ By default jobs are not executed concurrently if the <code>SupportsConcurrency</
 </tr>
 <tr>
 <td>Occurrence held back only by the <a href="../../advanced/global-concurrency/">global limit</a></td>
-<td>Waits, and is dropped as <code>Expired</code> once it exceeds its <a href="../timeouts-and-expiry/">run expiry</a></td>
+<td>Waits, and is dropped as <code>Expired</code> when it starts later than its <a href="../timeouts-and-expiry/">run expiry</a></td>
 <td>Same: waits, and can expire</td>
 </tr>
 <tr>

@@ -60,6 +60,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#i-want-orchestration-between-jobs">I want orchestration between jobs</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#i-want-to-see-and-trigger-jobs-from-a-ui">I want to see and trigger jobs from a UI</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#i-want-to-change-jobs-at-runtime">I want to change jobs at runtime</a>
     </li>
         </ul>
@@ -105,9 +107,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../migration/v3/">v3 Migration Guide</a>
@@ -186,6 +192,11 @@
 <li><a href="../features/conditional-job-scheduling/">Conditional Job Scheduling</a></li>
 <li><a href="../features/notifications/">Notifications</a></li>
 </ol>
+<h3 id="i-want-to-see-and-trigger-jobs-from-a-ui">I want to see and trigger jobs from a UI<a class="headerlink" href="#i-want-to-see-and-trigger-jobs-from-a-ui" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="../features/dashboard/">Dashboard</a></li>
+<li><a href="../advanced/observing-job-progress/">Observing progress of jobs</a></li>
+</ol>
 <h3 id="i-want-to-change-jobs-at-runtime">I want to change jobs at runtime<a class="headerlink" href="#i-want-to-change-jobs-at-runtime" title="Permanent link">&para;</a></h3>
 <ol>
 <li><a href="../advanced/dynamic-job-control/">Dynamic Job Control</a></li>
@@ -196,13 +207,14 @@
 <p>The repository contains three useful starting points:</p>
 <ul>
 <li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/MinimalSample"><code>sample/MinimalSample</code></a>: smallest recurring job setup</li>
-<li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample"><code>sample/NCronJobSample</code></a>: typed jobs, retries, concurrency, notifications, and HTTP-triggered instant jobs</li>
+<li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample"><code>sample/NCronJobSample</code></a>: typed jobs, retries, concurrency, notifications, dependent jobs, HTTP-triggered instant jobs, and the dashboard at <code>/ncronjob</code></li>
 <li><a href="https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/RunOnceSample"><code>sample/RunOnceSample</code></a>: startup jobs via <code>RunAtStartup(...)</code> and <code>UseNCronJobAsync()</code></li>
 </ul>
 <h2 id="important-concepts-to-keep-in-mind">Important concepts to keep in mind<a class="headerlink" href="#important-concepts-to-keep-in-mind" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Jobs run in-process and are <strong>not persisted</strong> across restarts</li>
 <li>Parameters are passed by reference and are <strong>not serialized</strong></li>
+<li>Parameters are typed via <code>IJob&lt;TParameter&gt;</code>: a wrong type is rejected at registration or trigger time</li>
 <li>Named jobs are the best choice when you want runtime management or to avoid ambiguity</li>
 <li>Forced instant jobs bypass queue and concurrency safeguards</li>
 <li>Startup jobs need <code>UseNCronJobAsync()</code> or <code>UseNCronJob()</code></li>

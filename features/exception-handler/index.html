@@ -89,9 +89,13 @@
     </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -143,7 +147,7 @@
 <p><strong>NCronJob</strong>, much like <strong>ASP.NET</strong>, offers a central way to handle exceptions. This is useful when you want to log exceptions or send an E-Mail when a job fails. The exception handler has to inherit from the <code>IExceptionHandler</code> interface.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyExceptionHandler</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IExceptionHandler</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TryHandleAsync</span><span class="p">(</span><span class="n">JobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">exc</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TryHandleAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">exc</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Handle the exception</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">FromResult</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
@@ -156,14 +160,14 @@
 <h2 id="order-of-execution-with-notificationhandlers">Order of execution with NotificationHandlers<a class="headerlink" href="#order-of-execution-with-notificationhandlers" title="Permanent link">&para;</a></h2>
 <p>All exception handlers are executed before the <code>IJobNotificationHandler</code> for that specific job is called. Independent if the exception handler returns <code>true</code> or <code>false</code>, the <code>IJobNotificationHandler</code> will get the exception passed in.</p>
 <h2 id="exceptions-when-a-job-is-created">Exceptions when a job is created<a class="headerlink" href="#exceptions-when-a-job-is-created" title="Permanent link">&para;</a></h2>
-<p>If an exception occurs when a job is created and therefore the job can not be executed/scheduled, the exception handler will be called with the exception that occurred (and logs the exception to the active logger). <strong>NCronJob</strong> will not crash in this case.</p>
+<p>If an exception occurs when a job is created and therefore the job can not be executed/scheduled, the exception handler will be called with the exception that occurred (and logs that the job failed). <strong>NCronJob</strong> will not crash in this case.</p>
 <p>Furthermore, if a dependent job is configured that should run when the parent job fails, the dependent job will be executed in this case.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../model-dependencies/" class="btn btn-neutral float-left" title="Model dependencies"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../migration/v4/" class="btn btn-neutral float-right" title="v4 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../dashboard/" class="btn btn-neutral float-right" title="Dashboard">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -194,7 +198,7 @@
       <span><a href="../model-dependencies/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../migration/v4/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../dashboard/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

@@ -85,9 +85,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -150,20 +154,7 @@
 </code></pre></div>
 
 <p>The <code>And</code> method is used to chain multiple CRON expressions together. You can chain as many expressions as you like.
-If a given job has the same CRON expression registered multiple times, it will be executed multiple times as well.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Register a job that runs every 5 minutes</span>
-<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">ExampleJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=&gt;</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">j</span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">)</span><span class="w"> </span><span class="c1">// Run every 5 minutes</span>
-<span class="w">         </span><span class="p">.</span><span class="n">And</span>
-<span class="w">         </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;*/5 * * * *&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// Run every 5 minutes</span>
-<span class="w">    </span><span class="p">});</span>
-<span class="p">});</span>
-</code></pre></div>
-
-<p>Two instances of the <code>ExampleJob</code> class will be created and executed every 5 minutes.</p>
+Registering the same CRON expression twice for a job throws an <code>InvalidOperationException</code> at startup. Give each registration a distinct name with <code>WithName</code> or a different parameter if the duplication is intended.</p>
               
             </div>
           </div><footer>

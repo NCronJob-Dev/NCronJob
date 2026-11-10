@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.ncronjob.dev/features/dashboard/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Dashboard - NCronJob</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Dashboard";
+        var mkdocs_page_input_path = "features/dashboard.md";
+        var mkdocs_page_url = "/features/dashboard/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../..">
+          <img src="../../logo_small.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">NCronJob</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Overview</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting Started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../documentation-map/">Documentation Map</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../agent-guide/">Agent & Automation Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../llms-full/">Compact Markdown Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../define-and-schedule-jobs/">Define and Schedule Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameters/">Passing Parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../conditional-job-scheduling/">Conditional Job Scheduling</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../notifications/">Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multiple-cron-expressions/">Registering multiple CRON expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../instant-jobs/">Triggering instant jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../concurrency-control/">Concurrency control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../timeouts-and-expiry/">Job timeouts and run expiry</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../retry-support/">Retry support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../minimal-api/">Minimal API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../startup-jobs/">Startup Jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model-dependencies/">Model dependencies</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Dashboard</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#path-host-and-port">Path, host and port</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#securing-the-dashboard">Securing the dashboard</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#triggering-a-job-with-a-json-parameter">Triggering a job with a JSON parameter</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#run-history">Run history</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Migration</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v2/">v2 Migration Guide</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Advanced</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/log-level/">Logging and log scopes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/global-concurrency/">Global Concurrency</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/dynamic-job-control/">Dynamic Job Control</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/observing-job-progress/">Observing progress of jobs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/testing/">Testing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../advanced/known-gotchas/">Known gotchas</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">NCronJob</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Features</li>
+      <li class="breadcrumb-item active">Dashboard</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/NCronJob-Dev/NCronJob/edit/main/docs/features/dashboard.md">Edit on NCronJob-Dev/NCronJob</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="dashboard">Dashboard<a class="headerlink" href="#dashboard" title="Permanent link">&para;</a></h1>
+<p>The <code>NCronJob.Dashboard</code> package adds a Blazor Server dashboard to your ASP.NET Core application. It shows:</p>
+<ul>
+<li><strong>Jobs</strong>: every registered job, its schedule, its next run and its configured parameter. <a href="../startup-jobs/">Startup jobs</a> are marked <em>At startup</em> in the schedule, together with whether a failure stops the application, and their status shows the state and duration of the startup run. Cron jobs can be enabled or disabled, and any named or typed job can be triggered as an instant job with a JSON parameter.</li>
+<li><strong>Dependencies</strong>: the jobs that run after another job succeeds or fails (see <a href="../model-dependencies/"><em>&ldquo;Model Dependencies&rdquo;</em></a>).</li>
+<li><strong>Runs</strong>: live and recent runs, with what triggered them (cron, instant, startup or dependent), their state history and the parameter each run was started with.</li>
+</ul>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code>dotnet<span class="w"> </span>add<span class="w"> </span>package<span class="w"> </span>NCronJob.Dashboard
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="cm">/* your jobs */</span><span class="p">);</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJobDashboard</span><span class="p">();</span>
+
+<span class="kt">var</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="n">Build</span><span class="p">();</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapNCronJobDashboard</span><span class="p">(</span><span class="s">&quot;/ncronjob&quot;</span><span class="p">);</span>
+</code></pre></div>
+
+<p>The dashboard is now served at <code>/ncronjob</code>. It runs in its own branch of the request pipeline, so it doesn&rsquo;t clash with a Blazor app you already host.</p>
+<h2 id="path-host-and-port">Path, host and port<a class="headerlink" href="#path-host-and-port" title="Permanent link">&para;</a></h2>
+<p>The first argument of <code>MapNCronJobDashboard</code> sets the path the dashboard is served from:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapNCronJobDashboard</span><span class="p">(</span><span class="s">&quot;/admin/jobs&quot;</span><span class="p">);</span>
+</code></pre></div>
+
+<p>The dashboard runs on your application&rsquo;s own server, so it listens on the same URLs as the rest of the app. To serve it only on a separate port, for example an internal admin port, have the app listen on both ports and map the dashboard only for connections that arrived on the admin port:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">WebHost</span><span class="p">.</span><span class="n">UseUrls</span><span class="p">(</span><span class="s">&quot;http://*:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://*:9090&quot;</span><span class="p">);</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapWhen</span><span class="p">(</span>
+<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Connection</span><span class="p">.</span><span class="n">LocalPort</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">9090</span><span class="p">,</span>
+<span class="w">    </span><span class="n">admin</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">admin</span><span class="p">.</span><span class="n">MapNCronJobDashboard</span><span class="p">(</span><span class="s">&quot;/ncronjob&quot;</span><span class="p">));</span>
+</code></pre></div>
+
+<p><code>Connection.LocalPort</code> is the port of the listener that accepted the connection, so a client on port 8080 can&rsquo;t reach the dashboard. The rest of the app keeps answering on both ports. Behind a reverse proxy or in a container, check the port the app itself listens on, and make sure the admin port isn&rsquo;t exposed publicly.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Don&rsquo;t use <code>RequireHost("*:9090")</code> to isolate a port. It only checks the <code>Host</code> header of the request, which the client controls. A client connected to port 8080 can send <code>Host: example.com:9090</code> and reach the dashboard. <code>RequireHost</code> is fine for routing by host name, for example <code>endpoints =&gt; endpoints.RequireHost("admin.example.com")</code>, but it is not an access control.</p>
+</div>
+<p>Port isolation is not a replacement for authorization; combine both:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapWhen</span><span class="p">(</span>
+<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Connection</span><span class="p">.</span><span class="n">LocalPort</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">9090</span><span class="p">,</span>
+<span class="w">    </span><span class="n">admin</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">admin</span><span class="p">.</span><span class="n">MapNCronJobDashboard</span><span class="p">(</span><span class="s">&quot;/ncronjob&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">endpoints</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">endpoints</span><span class="p">.</span><span class="n">RequireAuthorization</span><span class="p">(</span><span class="s">&quot;Admin&quot;</span><span class="p">)));</span>
+</code></pre></div>
+
+<h2 id="securing-the-dashboard">Securing the dashboard<a class="headerlink" href="#securing-the-dashboard" title="Permanent link">&para;</a></h2>
+<p>The dashboard can enable, disable and trigger jobs, so protect it outside of development. <code>MapNCronJobDashboard</code> lets you configure its endpoints. The configuration applies to the pages and to the Blazor hub:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddAuthorizationBuilder</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddPolicy</span><span class="p">(</span><span class="s">&quot;Admin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">policy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">policy</span><span class="p">.</span><span class="n">RequireRole</span><span class="p">(</span><span class="s">&quot;Admin&quot;</span><span class="p">));</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">UseAuthentication</span><span class="p">();</span>
+<span class="n">app</span><span class="p">.</span><span class="n">MapNCronJobDashboard</span><span class="p">(</span><span class="s">&quot;/ncronjob&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">endpoints</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">endpoints</span><span class="p">.</span><span class="n">RequireAuthorization</span><span class="p">(</span><span class="s">&quot;Admin&quot;</span><span class="p">));</span>
+</code></pre></div>
+
+<h2 id="triggering-a-job-with-a-json-parameter">Triggering a job with a JSON parameter<a class="headerlink" href="#triggering-a-job-with-a-json-parameter" title="Permanent link">&para;</a></h2>
+<p>Click <strong>Run</strong> on a job and enter its parameter as JSON:</p>
+<ul>
+<li>The field is prefilled with the configured parameter. If you leave it unchanged or empty, the configured parameter object itself is passed, not a copy deserialized from JSON.</li>
+<li>The JSON is deserialized into the <code>TParameter</code> of the job&rsquo;s <code>IJob&lt;TParameter&gt;</code>, including <code>string</code>: <code>"hello"</code> becomes <code>hello</code> and <code>null</code> becomes <code>null</code>. The empty field shows the JSON schema of <code>TParameter</code> as a hint.</li>
+<li>The JSON must follow the structure of <code>TParameter</code>: unknown properties, missing constructor parameters and <code>null</code> for non-nullable properties are rejected with an error, and the job isn&rsquo;t triggered.</li>
+<li>For an <code>IJob&lt;object?&gt;</code> job, a JSON string (<code>"hello"</code>) is passed as a <code>string</code> and any other JSON as its raw text, so the job can deserialize it itself.</li>
+<li>A job that implements the plain <code>IJob</code> takes no parameter, so the dashboard shows no field for it.</li>
+</ul>
+<p>Unnamed jobs are triggered by their type. If a type is registered more than once, give each registration a name with <code>WithName(...)</code> to trigger it from the dashboard.</p>
+<h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<p>Parameters are shown as JSON. Tables show a shortened one-line preview, and hovering it shows the full JSON. Expanding a run shows its full, indented parameter. A parameter that can&rsquo;t be serialized to JSON, for example an object graph with a cycle or <code>double.NaN</code>, is shown by its type name, such as <code>Node (not serializable to JSON)</code>. <code>ToString()</code> isn&rsquo;t used, because a record&rsquo;s generated <code>ToString()</code> follows the same cycle.</p>
+<h2 id="run-history">Run history<a class="headerlink" href="#run-history" title="Permanent link">&para;</a></h2>
+<p>The run history is kept in memory. It keeps every active run, the outcome of every startup job, and the last 500 finished runs. It is lost when the application restarts. Recording starts when NCronJob starts, so startup jobs run by <code>UseNCronJobAsync()</code> are captured even when it is called before <code>MapNCronJobDashboard</code>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../exception-handler/" class="btn btn-neutral float-left" title="Exception handler"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../migration/v5/" class="btn btn-neutral float-right" title="v5 Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>©2024-Present <a href="https://github.com/NCronJob-Dev">NCronJob-Dev</a>.</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/NCronJob-Dev/NCronJob" class="fa fa-code-fork" style="color: #fcfcfc"> NCronJob-Dev/NCronJob</a>
+        </span>
+    
+    
+      <span><a href="../exception-handler/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../migration/v5/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

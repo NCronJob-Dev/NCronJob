@@ -175,9 +175,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -524,7 +528,7 @@
 </code></pre></div>
 
 <h3 id="3-combine-with-parameters">3. Combine with Parameters<a class="headerlink" href="#3-combine-with-parameters" title="Permanent link">&para;</a></h3>
-<p>Different conditions for different parameters:</p>
+<p>Different conditions for different parameters (<code>DataProcessingJob</code> implements <code>IJob&lt;string&gt;</code>):</p>
 <div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddNCronJob</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">options</span>
@@ -532,7 +536,6 @@
 <span class="w">            </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 */6 * * *&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;production&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="p">.</span><span class="n">OnlyIf</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">isProdReady</span><span class="p">))</span>
-<span class="w">        </span><span class="p">.</span><span class="n">And</span>
 <span class="w">        </span><span class="p">.</span><span class="n">AddJob</span><span class="o">&lt;</span><span class="n">DataProcessingJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
 <span class="w">            </span><span class="p">.</span><span class="n">WithCronExpression</span><span class="p">(</span><span class="s">&quot;0 */2 * * *&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="p">.</span><span class="n">WithParameter</span><span class="p">(</span><span class="s">&quot;staging&quot;</span><span class="p">)</span>
@@ -599,7 +602,7 @@
 </code></pre></div>
 
 <p><strong>Important Notes for Instant Jobs:</strong>
-- Conditions are evaluated when the instant job is triggered
+- Conditions are evaluated when the run is about to start, after queueing and any concurrency wait
 - If the condition returns <code>false</code>, the job is skipped and marked as &ldquo;Skipped&rdquo; in the execution state
 - The job is never instantiated when conditions fail, saving resources
 - Works with all instant job methods: <code>RunInstantJob</code>, <code>RunScheduledJob</code>, <code>ForceRunInstantJob</code>, <code>ForceRunScheduledJob</code></p>
@@ -623,7 +626,7 @@
 <ul>
 <li>Conditions cannot access the <code>IJobExecutionContext</code> (job hasn&rsquo;t been created yet)</li>
 <li>Conditions cannot be changed at runtime without restarting the application</li>
-<li>Delegate-based (untyped) jobs can use conditions, but condition handlers only work with typed jobs</li>
+<li>Delegate-based (untyped) jobs can use conditions only as dependent jobs (<code>RunJob(delegate).OnlyIf(...)</code>), and condition handlers only work with typed jobs</li>
 </ul>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

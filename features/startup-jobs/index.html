@@ -95,9 +95,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -146,6 +150,10 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="running-startup-jobs">Running Startup Jobs<a class="headerlink" href="#running-startup-jobs" title="Permanent link">&para;</a></h1>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <a href="../dashboard/">dashboard</a> lists every startup job together with the state of its run.</p>
+</div>
 <p><strong>NCronJob</strong> allows you to configure jobs to run at application startup. This is useful for tasks that need to be executed immediately when the application starts, such as initial data loading, cleanup tasks, or other setup procedures.</p>
 <p>Startup jobs are defined like regular CRON jobs and inherit from <code>IJob</code>. The only difference is that they are configured to run at startup.  <strong>All</strong> startup jobs must be completed prior to the start of any other CRON (or instant) jobs.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyStartupJob</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>

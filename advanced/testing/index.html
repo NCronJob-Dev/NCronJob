@@ -83,9 +83,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/exception-handler/">Exception handler</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/dashboard/">Dashboard</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Migration</span></p>
               <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../migration/v5/">v5 Migration Guide</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v4/">v4 Migration Guide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../migration/v3/">v3 Migration Guide</a>
@@ -105,6 +109,8 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Testing</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#unit-testing-the-job-itself">Unit testing the job itself</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#driving-cron-jobs-with-faketimeprovider">Driving cron jobs with FakeTimeProvider</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#checking-a-schedule-without-starting-the-host">Checking a schedule without starting the host</a>
@@ -143,6 +149,22 @@
               
                 <h1 id="testing-jobs-and-schedules">Testing jobs and schedules<a class="headerlink" href="#testing-jobs-and-schedules" title="Permanent link">&para;</a></h1>
 <p>NCronJob takes all time from the registered <code>TimeProvider</code>: cron timers, delays of scheduled instant jobs, retry back-off, timeouts and expiry. Swap it for a <code>FakeTimeProvider</code> and tests can fire cron jobs without waiting for real time to pass.</p>
+<h2 id="unit-testing-the-job-itself">Unit testing the job itself<a class="headerlink" href="#unit-testing-the-job-itself" title="Permanent link">&para;</a></h2>
+<p>Start here. <code>IJob&lt;TParameter&gt;</code> and <code>IJobExecutionContext&lt;TParameter&gt;</code> are interfaces, so a job&rsquo;s logic can be tested by calling the typed <code>RunAsync</code> directly: no host, no scheduler, no time provider. Any mocking library or a hand-written fake works:</p>
+<div class="codehilite"><pre><span></span><code><span class="na">[Fact]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">DeletesExpiredFiles</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Substitute</span><span class="p">.</span><span class="n">For</span><span class="o">&lt;</span><span class="n">IJobExecutionContext</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="n">context</span><span class="p">.</span><span class="n">Parameter</span><span class="p">.</span><span class="n">Returns</span><span class="p">(</span><span class="s">&quot;/uploads&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">job</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CleanupJob</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">InMemoryFileStore</span><span class="p">(</span><span class="n">expiredFiles</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">RunAsync</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="p">.</span><span class="n">None</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">context</span><span class="p">.</span><span class="n">Output</span><span class="p">.</span><span class="n">ShouldBe</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Reach for the host setup below only when the test is about scheduling: cron timing, retries, timeouts, concurrency or dependencies between jobs.</p>
 <h2 id="driving-cron-jobs-with-faketimeprovider">Driving cron jobs with <code>FakeTimeProvider</code><a class="headerlink" href="#driving-cron-jobs-with-faketimeprovider" title="Permanent link">&para;</a></h2>
 <p>Add the <code>Microsoft.Extensions.TimeProvider.Testing</code> package to the test project. Register the fake <strong>before</strong> <code>AddNCronJob</code>, because NCronJob only adds <code>TimeProvider.System</code> when no provider is registered yet.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">CleanupJobTests</span>
@@ -165,6 +187,15 @@
 
 <span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">ran</span><span class="p">.</span><span class="n">Task</span><span class="p">.</span><span class="n">WaitAsync</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
 <span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">host</span><span class="p">.</span><span class="n">StopAsync</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">CleanupJob</span><span class="p">(</span><span class="n">TaskCompletionSource</span><span class="w"> </span><span class="n">ran</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IJob</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RunAsync</span><span class="p">(</span><span class="n">IJobExecutionContext</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">ran</span><span class="p">.</span><span class="n">TrySetResult</span><span class="p">();</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
