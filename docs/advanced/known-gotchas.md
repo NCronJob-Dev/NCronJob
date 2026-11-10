@@ -28,6 +28,12 @@ Parameters are not cloned. If you pass a mutable object and the job changes it, 
 
 Prefer immutable parameter objects, or clone the parameter inside the job before mutating it.
 
+## Parameters are not type-checked
+
+`context.Parameter` is an `object?`. Passing a parameter of the wrong type compiles and is only noticed inside the job: a hard cast throws, and a soft cast (`as`) silently yields `null`.
+
+Use a dedicated parameter type and validate it at the start of the job. See [Passing parameters](../features/parameters.md#parameters-are-not-type-checked).
+
 ## Instant jobs can be ambiguous
 
 Triggering an instant job by type only works when NCronJob can uniquely identify the target registration.

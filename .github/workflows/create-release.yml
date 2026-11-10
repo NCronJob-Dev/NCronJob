@@ -92,6 +92,7 @@ jobs:
     - name: Create release package
       run: |
           dotnet pack -c RELEASE src/NCronJob/NCronJob.csproj -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
+          dotnet pack -c RELEASE src/NCronJob.Dashboard/NCronJob.Dashboard.csproj -p:PackageVersion=${{ steps.version.outputs.version }} --property:PackageOutputPath=${GITHUB_WORKSPACE}/packages /p:ContinuousIntegrationBuild=true --nologo --include-symbols -p:SymbolPackageFormat=snupkg
 
     - name: NuGet login (Trusted Publishing)
       id: nuget-login

@@ -6,6 +6,15 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- New `NCronJob.Dashboard` package: a Blazor Server dashboard served via `services.AddNCronJobDashboard()` and `app.MapNCronJobDashboard("/ncronjob")`. It lists all registered jobs and startup jobs with their state, shows the dependency graph, and shows live and recent runs with their parameters. It can enable and disable jobs, and trigger instant jobs with a JSON parameter. Endpoints can be secured, e.g. `e => e.RequireAuthorization("Admin")`.
+- `ExecutionProgress.Parameter` exposes the parameter a job run was started with, and `ExecutionProgress.TriggerType` exposes what started it.
+
+### Fixed
+
+- Disabling, enabling or removing a job by name, or changing its schedule or parameter at runtime, cancelled the pending runs of every other registration of the same job type. Only the affected registration's runs are cancelled now.
+
 ## [v4.14.0] - 2026-11-09
 
 ### Added

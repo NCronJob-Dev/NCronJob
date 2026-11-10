@@ -55,4 +55,19 @@ public record ExecutionProgress(
     Guid? ParentRunId,
     string? Name,
     Type? Type,
-    bool? IsTypedJob);
+    bool? IsTypedJob)
+{
+    /// <summary>
+    /// The parameter the job run was started with.
+    /// Will be <c>null</c> when the job has no parameter or when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
+    /// </summary>
+    public object? Parameter { get; init; }
+
+    /// <summary>
+    /// What started the job run: a cron schedule, an instant job, the application startup or a parent job.
+    /// Will be <c>null</c> when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
+    /// </summary>
+    public TriggerType? TriggerType { get; init; }
+
+    internal JobDefinition? JobDefinition { get; init; }
+}

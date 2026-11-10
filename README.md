@@ -3,6 +3,7 @@
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
+[![NuGet Dashboard](https://img.shields.io/nuget/vpre/NCronJob.Dashboard.svg?label=NCronJob.Dashboard)](https://www.nuget.org/packages/NCronJob.Dashboard)
 [![Coverage](https://codecov.io/gh/NCronJob-Dev/NCronJob/graph/badge.svg?token=HM8G8TCYUC)](https://codecov.io/gh/NCronJob-Dev/NCronJob)
 
 <p align="center">
@@ -34,6 +35,7 @@ If you are new to the project, start with:
 - [`llms.txt`](https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/docs/llms.txt) for machine-friendly discovery
 - [Compact Markdown Reference](https://docs.ncronjob.dev/llms-full/)
 
+- [Packages](#packages)
 - [Features](#features)
 - [Not features](#not-features)
 - [Choose your starting point](#choose-your-starting-point)
@@ -41,8 +43,21 @@ If you are new to the project, start with:
 - [When to call `UseNCronJobAsync`](#when-to-call-usencronjobasync)
 - [Samples and detailed docs](#samples-and-detailed-docs)
 - [Triggering an instant job](#triggering-an-instant-job)
+- [Dashboard](#dashboard)
 - [Support \& Contributing](#support--contributing)
 
+
+## Packages
+
+| Package | What it adds |
+|---|---|
+| [`NCronJob`](https://www.nuget.org/packages/NCronJob) | The job scheduler |
+| [`NCronJob.Dashboard`](https://www.nuget.org/packages/NCronJob.Dashboard) | Optional Blazor Server dashboard for ASP.NET Core apps: jobs, startup jobs, dependencies, live runs and instant triggers |
+
+```bash
+dotnet add package NCronJob
+dotnet add package NCronJob.Dashboard # optional
+```
 
 ## Features
 
@@ -58,6 +73,7 @@ If you are new to the project, start with:
 - [x] Define job dependencies - trigger another job if one was successful or faulted!
 - [x] Add, remove, and update jobs at runtime.
 - [x] Observe the progress of a job's execution.
+- [x] Dashboard - See jobs, startup jobs, dependencies and live runs, and trigger jobs with a JSON parameter.
 
 ## Not features
 
@@ -65,7 +81,7 @@ As this is a simple scheduler, some features are not included by design. If you 
 look into a more advanced scheduler like `Hangfire` or `Quartz`.
 
 - [ ] Job persistence - Jobs are not persisted between restarts of the application.
-- [ ] Job history - There is no history of jobs that have been run.
+- [ ] Job history - There is no persisted history of jobs that have been run. The dashboard only keeps the last runs in memory.
 
 ## Choose your starting point
 
@@ -199,6 +215,7 @@ Detailed feature docs:
 - [Model Dependencies](https://docs.ncronjob.dev/features/model-dependencies/)
 - [Dynamic Job Control](https://docs.ncronjob.dev/advanced/dynamic-job-control/)
 - [Known gotchas](https://docs.ncronjob.dev/advanced/known-gotchas/)
+- [Dashboard](https://docs.ncronjob.dev/features/dashboard/)
 
 Sample applications:
 
@@ -223,6 +240,20 @@ public class MyService
   public void MyOtherMethod() => jobRegistry.RunInstantJob((MyOtherService service) => service.Do());
 }
 ```
+
+## Dashboard
+
+The optional `NCronJob.Dashboard` package serves a Blazor Server dashboard from your ASP.NET Core app:
+
+```csharp
+builder.Services.AddNCronJob(/* your jobs */);
+builder.Services.AddNCronJobDashboard();
+
+var app = builder.Build();
+app.MapNCronJobDashboard("/ncronjob", endpoints => endpoints.RequireAuthorization("Admin"));
+```
+
+It shows every registered job and its next run, startup jobs and their state, the dependency graph, and live and recent runs with their parameters. From the dashboard you can enable or disable jobs and trigger instant jobs with a JSON parameter. Run [`sample/NCronJobSample`](sample/NCronJobSample) and open `/ncronjob` to try it. See [Dashboard](https://docs.ncronjob.dev/features/dashboard/) for details.
 
 ## Support & Contributing
 

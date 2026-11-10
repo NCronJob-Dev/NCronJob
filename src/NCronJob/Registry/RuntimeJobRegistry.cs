@@ -30,10 +30,22 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         registrar.TryRegister(jobBuilder, out exception);
 
     /// <inheritdoc />
-    public void RemoveJob(string jobName) => RemoveJob(() => jobRegistry.RemoveByName(jobName));
+    public void RemoveJob(string jobName)
+    {
+        if (jobRegistry.RemoveByName(jobName) is { } removedJob)
+        {
+            jobQueueManager.RemoveRunsOf(removedJob);
+        }
+    }
 
     /// <inheritdoc />
-    public void RemoveJob(Type type) => RemoveJob(() => jobRegistry.RemoveByType(type));
+    public void RemoveJob(Type type)
+    {
+        if (jobRegistry.RemoveByType(type) is { } jobFullName)
+        {
+            jobQueueManager.RemoveQueue(jobFullName);
+        }
+    }
 
     /// <inheritdoc />
     public void UpdateSchedule(string jobName, string cronExpression, TimeZoneInfo? timeZoneInfo = null)
@@ -153,16 +165,6 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
         RescheduleJob(job);
     }
 
-    private void RemoveJob(Func<string?> unregister)
-    {
-        var jobFullName = unregister();
-
-        if (jobFullName is not null)
-        {
-            jobQueueManager.RemoveQueue(jobFullName);
-        }
-    }
-
     private void UpdateAndReschedule(string jobName, JobOption option)
     {
         var job = jobRegistry.FindRootJobDefinitionOrThrow(jobName);
@@ -173,7 +175,7 @@ internal sealed class RuntimeJobRegistry : IRuntimeJobRegistry
 
     private void RescheduleJob(JobDefinition job)
     {
-        jobQueueManager.RemoveQueue(job.JobFullName);
+        jobQueueManager.RemoveRunsOf(job);
         cronRunScheduler.ScheduleNextRun(job);
     }
 }

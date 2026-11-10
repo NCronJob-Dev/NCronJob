@@ -93,6 +93,14 @@ An `ExecutionProgress` instance exposes the following properties:
   
   Will be `null` when the reported instance is the root job of an orchestration, or when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
 
+- **Parameter**: The parameter the job run was started with (the configured parameter, or the one passed to an instant job).
+
+  Will be `null` when the job has no parameter or when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
+- **TriggerType**: What started the job run: `Cron`, `Instant`, `Startup` or `Dependent`.
+
+  Will be `null` when the `ExecutionProgress` instance relates to the start or completion of an orchestration.
+
 ## Sample usage
 
 Considering the following orchestration

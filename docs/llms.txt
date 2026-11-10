@@ -18,6 +18,7 @@ Important feature docs:
 - Dependencies: https://docs.ncronjob.dev/features/model-dependencies/
 - Conditional scheduling: https://docs.ncronjob.dev/features/conditional-job-scheduling/
 - Dynamic job control: https://docs.ncronjob.dev/advanced/dynamic-job-control/
+- Dashboard: https://docs.ncronjob.dev/features/dashboard/
 - Testing: https://docs.ncronjob.dev/advanced/testing/
 - Known gotchas: https://docs.ncronjob.dev/advanced/known-gotchas/
 

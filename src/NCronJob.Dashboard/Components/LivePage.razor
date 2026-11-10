@@ -1,0 +1,43 @@
+@implements IDisposable
+@code {
+    private static readonly TimeSpan RefreshThrottle = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan RelativeTimeRefresh = TimeSpan.FromSeconds(1);
+    private int refreshPending;
+    private bool disposed;
+    private ITimer? relativeTimeTimer;
+
+    [Inject] internal DashboardRunStore Store { get; set; } = default!;
+
+    [Inject] internal TimeProvider Clock { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Store.Changed += OnStoreChanged;
+        relativeTimeTimer = Clock.CreateTimer(_ => OnStoreChanged(), null, RelativeTimeRefresh, RelativeTimeRefresh);
+    }
+
+    private void OnStoreChanged()
+    {
+        if (Interlocked.Exchange(ref refreshPending, 1) == 0)
+        {
+            _ = RefreshAsync();
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        await Task.Delay(RefreshThrottle);
+        Volatile.Write(ref refreshPending, 0);
+        if (!disposed)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        Store.Changed -= OnStoreChanged;
+        relativeTimeTimer?.Dispose();
+    }
+}

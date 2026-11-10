@@ -111,6 +111,32 @@ public class ExecutionProgressObserverTests
         received[^1].State.ShouldBe(ExecutionState.OrchestrationCompleted);
     }
 
+    [Fact]
+    public void JobProgressCarriesRunParameterAndTriggerButOrchestrationProgressDoesNot()
+    {
+        var observer = new JobExecutionProgressObserver(NullLogger<JobExecutionProgressObserver>.Instance);
+        var received = new List<ExecutionProgress>();
+        using var subscription = observer.Register(received.Add);
+        var definition = JobDefinition.CreateTyped(typeof(DummyJob), parameter: "configured");
+
+        _ = JobRun.CreateInstant(
+            TimeProvider.System,
+            observer.Report,
+            definition,
+            DateTimeOffset.UtcNow,
+            OptionalParameter.FromValue("override"),
+            CancellationToken.None);
+
+        var orchestration = received.Single(p => p.State == ExecutionState.OrchestrationStarted);
+        orchestration.Parameter.ShouldBeNull();
+        orchestration.TriggerType.ShouldBeNull();
+        orchestration.JobDefinition.ShouldBeNull();
+        var job = received.Single(p => p.State == ExecutionState.NotStarted);
+        job.Parameter.ShouldBe("override");
+        job.TriggerType.ShouldBe(TriggerType.Instant);
+        job.JobDefinition.ShouldBeSameAs(definition);
+    }
+
     private static JobRun CreateRun(JobExecutionProgressObserver observer) =>
         JobRun.CreateInstant(
             TimeProvider.System,

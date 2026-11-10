@@ -1,0 +1,122 @@
+@page "/runs"
+@inherits LivePage
+@inject TimeProvider TimeProvider
+
+@{
+    var runs = Store.GetRuns();
+    var active = runs.Where(r => !r.IsFinished).OrderBy(r => r.CreatedAt).ToList();
+    var finished = runs.Where(r => r.IsFinished).ToList();
+    var running = active.Count(r => r.Current.State is not (ExecutionState.NotStarted or ExecutionState.Scheduled));
+    var completed = finished.Count(r => r.Current.State == ExecutionState.Completed);
+    var failed = finished.Count(r => r.Current.State is ExecutionState.Faulted or ExecutionState.Expired);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Runs</h1>
+        <p class="subtitle">Live job runs from cron schedules, instant triggers, startup and dependencies</p>
+    </div>
+</div>
+
+<div class="stats">
+    @Stat("Running", "blue", "play", running)
+    @Stat("Upcoming", "indigo", "clock", active.Count - running)
+    @Stat("Completed", "green", "check", completed)
+    @Stat("Failed", "red", "xmark", failed)
+</div>
+
+<h2>Active and upcoming</h2>
+@RunTable(active, "No job is running or scheduled.")
+
+<h2>History · last @DashboardRunStore.Capacity finished runs</h2>
+@RunTable(finished, "No run has finished yet.")
+
+@code {
+    private Guid? expanded;
+
+    private void Toggle(Guid runId) => expanded = expanded == runId ? null : runId;
+
+    private static RenderFragment Stat(string label, string tone, string icon, int value) =>
+        @<div class="stat tone-@tone">
+            <div class="stat-label"><Icon Name="@icon" />@label</div>
+            <div class="stat-value">@value</div>
+        </div>;
+
+    private RenderFragment RunTable(IReadOnlyList<RunRecord> runs, string emptyText) =>
+        @<div class="card">
+            @if (runs.Count == 0)
+            {
+                <div class="empty">@emptyText</div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Job</th><th>State</th><th>Created</th><th>Duration</th><th>Parameter</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var run in runs)
+                        {
+                            var isExpanded = expanded == run.RunId;
+                            <tr class="row clickable @(isExpanded ? "expanded" : null)" @onclick="() => Toggle(run.RunId)">
+                                <td>
+                                    <button type="button" class="row-toggle primary-text" aria-expanded="@(isExpanded ? "true" : "false")" @onclick="() => Toggle(run.RunId)" @onclick:stopPropagation="true">
+                                        <span class="chevron"><Icon Name="chevron" /></span>@run.JobName
+                                    </button>
+                                    <span class="secondary-text mono">@run.CorrelationId</span>
+                                    @if (run.TriggerType is { } trigger)
+                                    {
+                                        <span class="tag">@trigger</span>
+                                    }
+                                </td>
+                                <td><StateBadge State="run.Current.State" /></td>
+                                <td class="numeric">
+                                    @Display.Relative(run.CreatedAt, TimeProvider.GetUtcNow())
+                                    <span class="secondary-text">@Display.Timestamp(run.CreatedAt)</span>
+                                </td>
+                                <td class="numeric">
+                                    @if (run.Duration is { } duration)
+                                    {
+                                        @Display.Duration(duration)
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (run.Parameter is not null)
+                                    {
+                                        <code class="code" title="@run.Parameter.Full">@run.Parameter.Preview</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">None</span>
+                                    }
+                                </td>
+                            </tr>
+                            @if (isExpanded)
+                            {
+                                <tr>
+                                    <td colspan="5">
+                                        <ol class="timeline">
+                                            @foreach (var change in run.States)
+                                            {
+                                                <li><span class="numeric mono">@Display.Time(change.Timestamp)</span><StateBadge State="change.State" /></li>
+                                            }
+                                        </ol>
+                                        @if (run.Parameter is not null)
+                                        {
+                                            <pre class="code-block">@run.Parameter.Full</pre>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </div>;
+}

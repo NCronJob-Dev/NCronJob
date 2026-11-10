@@ -12,6 +12,12 @@ dotnet add package NCronJob
 
 If you prefer editing the project file directly, copy the current version from [NuGet](https://www.nuget.org/packages/NCronJob).
 
+For an ASP.NET Core app you can also add the optional [dashboard](features/dashboard.md):
+
+```bash
+dotnet add package NCronJob.Dashboard
+```
+
 ## 2. Choose a starting style
 
 NCronJob supports two main authoring styles:
@@ -120,6 +126,7 @@ Once the first job is running, the next pages most users need are:
 - [Retry support](features/retry-support.md)
 - [Running Startup Jobs](features/startup-jobs.md)
 - [Dynamic Job Control](advanced/dynamic-job-control.md)
+- [Dashboard](features/dashboard.md)
 
 ## 7. Need a documentation map?
 

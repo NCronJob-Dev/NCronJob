@@ -1,0 +1,65 @@
+@page "/graph"
+@inject JobRegistry Registry
+
+@{
+    var roots = Registry.GetAllRootJobs()
+        .Select(job => (Job: job, Dependents: DependencyTree.DependentsOf(Registry, job)))
+        .Where(root => root.Dependents.Count > 0)
+        .ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1>Dependencies</h1>
+        <p class="subtitle">Jobs that run after another job succeeds or fails</p>
+    </div>
+</div>
+
+@if (roots.Count == 0)
+{
+    <div class="card empty">
+        <Icon Name="branch" />
+        <div>No job has dependent jobs. Add some with <span class="mono">ExecuteWhen(...)</span>.</div>
+    </div>
+}
+
+<div class="graph">
+    @foreach (var root in roots)
+    {
+        <div class="card graph-card">
+            <ul class="tree">
+                <li>
+                    <span class="node root"><Icon Name="calendar" /><span class="primary-text">@root.Job.Name</span></span>
+                    @Branch(root.Dependents)
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+
+@code {
+    // ponytail: CSS tree, not a laid-out DAG; switch to SVG/Mermaid if diamonds get unreadable
+    private RenderFragment Branch(IReadOnlyList<DependencyNode> nodes) =>
+        @<ul>
+            @foreach (var node in nodes)
+            {
+                <li class="@(node.RunsOnFault ? "on-fault" : "on-success")">
+                    <span class="node">
+                        <span>@node.JobName</span>
+                        @if (node.RunsOnFault)
+                        {
+                            <span class="badge tone-red"><Icon Name="xmark" />On failure</span>
+                        }
+                        else
+                        {
+                            <span class="badge tone-green"><Icon Name="check" />On success</span>
+                        }
+                    </span>
+                    @if (node.Dependents.Count > 0)
+                    {
+                        @Branch(node.Dependents)
+                    }
+                </li>
+            }
+        </ul>;
+}

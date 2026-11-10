@@ -96,7 +96,7 @@ internal sealed class JobRegistry
         rootJobs.Add(jobDefinition);
     }
 
-    public string? RemoveByName(string jobName)
+    public JobDefinition? RemoveByName(string jobName)
     {
         lock (syncLock)
         {
@@ -111,7 +111,7 @@ internal sealed class JobRegistry
 
             Remove(jobDefinition);
 
-            return jobDefinition.JobFullName;
+            return jobDefinition;
         }
     }
 

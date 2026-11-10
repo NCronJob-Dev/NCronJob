@@ -46,6 +46,7 @@ nav:
     - Startup Jobs: features/startup-jobs.md
     - Model dependencies: features/model-dependencies.md
     - Exception handler: features/exception-handler.md
+    - Dashboard: features/dashboard.md
   - Migration:
     - v4 Migration Guide: migration/v4.md
     - v3 Migration Guide: migration/v3.md

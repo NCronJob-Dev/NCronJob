@@ -1,0 +1,28 @@
+<span class="badge tone-@Style.Tone">
+    @if (Style.Tone == "blue")
+    {
+        <span class="pulse" aria-hidden="true"></span>
+    }
+    else
+    {
+        <Icon Name="@Style.Icon" />
+    }
+    @Label
+</span>
+
+@code {
+    [Parameter, EditorRequired] public ExecutionState State { get; set; }
+
+    private string Label => string.Concat(State.ToString().Select((c, i) => i > 0 && char.IsUpper(c) ? $" {char.ToLowerInvariant(c)}" : c.ToString()));
+
+    private (string Tone, string Icon) Style => State switch
+    {
+        ExecutionState.Completed => ("green", "check"),
+        ExecutionState.Faulted or ExecutionState.Expired => ("red", "xmark"),
+        ExecutionState.Retrying => ("orange", "retry"),
+        ExecutionState.Cancelled or ExecutionState.Skipped => ("gray", "skip"),
+        ExecutionState.Initializing or ExecutionState.Running or ExecutionState.Completing
+            or ExecutionState.WaitingForDependency => ("blue", "play"),
+        _ => ("indigo", "clock"),
+    };
+}

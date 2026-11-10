@@ -50,6 +50,9 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
             Name = null,
             Type = null,
             IsTypedJob = null,
+            Parameter = null,
+            TriggerType = null,
+            JobDefinition = null,
         };
 
     private static ExecutionProgress ToExecutionProgress(JobRun run) =>
@@ -61,7 +64,12 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
             run.ParentJobRunId,
             run.JobDefinition.CustomName,
             run.JobDefinition.Type,
-            run.JobDefinition.IsTypedJob);
+            run.JobDefinition.IsTypedJob)
+        {
+            Parameter = run.Parameter,
+            TriggerType = run.TriggerType,
+            JobDefinition = run.JobDefinition,
+        };
 
     private static ExecutionState MapFrom(JobStateType currentState) =>
         currentState switch

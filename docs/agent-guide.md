@@ -32,6 +32,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - Every run executes in a log scope with `JobName`, `JobRunId`, `CorrelationId` and `TriggerType`; see [Log level and log scopes](advanced/log-level.md#log-scopes)
 - Every run is an `Activity` from the `"NCronJob"` `ActivitySource` (`NCronJobDiagnostics.ActivitySourceName`); see [Tracing with OpenTelemetry](advanced/observing-job-progress.md#tracing-with-opentelemetry)
 - Runs, failures, retries, skipped/expired runs and run duration are metrics of the `"NCronJob"` `Meter` (`NCronJobDiagnostics.MeterName`); see [Metrics with OpenTelemetry](advanced/observing-job-progress.md#metrics-with-opentelemetry)
+- `NCronJob.Dashboard` package: `services.AddNCronJobDashboard()` + `app.MapNCronJobDashboard(path, configureEndpoints)` serve a Blazor Server dashboard; see [Dashboard](features/dashboard.md)
 
 ### Runtime interaction
 
@@ -54,6 +55,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 - Use **named jobs** when the same job type is registered multiple times or when runtime management is needed
 - `RunInstantJob<TJob>()` can become ambiguous if multiple registrations exist for the same job type; prefer `RunInstantJob("job-name")` in that case
 - Parameters are passed by reference, not serialized, so mutation after enqueueing can affect execution
+- `context.Parameter` is `object?` and never type-checked; a parameter of the wrong type fails only at run time (hard cast throws, `as` yields `null`), so validate it at the start of the job
 - Forced instant jobs (`ForceRunInstantJob` / `ForceRunScheduledJob`) bypass queue and concurrency protection
 - A timed-out run is `Cancelled` and does not trigger dependencies; jobs must honor the `CancellationToken`
 - After `Build()`, call `UseNCronJobAsync()` or `UseNCronJob()` whenever `RunAtStartup(...)` is used; see [Running Startup Jobs](features/startup-jobs.md)
@@ -61,7 +63,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 ## Repository sample map
 
 - `sample/MinimalSample`: minimal recurring delegate job
-- `sample/NCronJobSample`: typed jobs, notifications, retries, concurrency, instant job endpoints
+- `sample/NCronJobSample`: typed jobs, notifications, retries, concurrency, dependencies, a startup job, instant job endpoints, and the dashboard at `/ncronjob`
 - `sample/RunOnceSample`: startup job flow
 
 ## Preferred source of truth
