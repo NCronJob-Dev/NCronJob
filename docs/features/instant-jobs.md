@@ -84,7 +84,7 @@ app.MapPost("/send-email", (RequestDto dto, IInstantJobRegistry jobRegistry) =>
 ```
 
 !!! note
-    Older `DateTimeOffset` overloads still exist for compatibility, but they are obsolete and scheduled for removal in the next major version.
+    The `DateTimeOffset` overloads were removed in v5. Compute a delay as shown above (see the [v5 migration guide](../migration/v5.md#removed-obsolete-apis)).
 
 ## Priority
 

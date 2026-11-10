@@ -6,6 +6,11 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Removed
+
+- Breaking: the obsolete `DateTimeOffset` overloads of `IInstantJobRegistry` (`RunScheduledJob` and `ForceRunScheduledJob`); pass a `TimeSpan` delay instead.
+- Breaking: the obsolete `IStartupStage<TJob>` and its `RunAtStartup()`; `AddJob` returns `INotificationStage<TJob>`. Use `AddJob<TJob>(j => j.RunAtStartup(...))`. See the [v5 migration guide](https://docs.ncronjob.dev/migration/v5/).
+
 ### Changed
 
 - Breaking: job parameters are typed. A job that accepts a parameter implements `IJob<TParameter>` and reads it from `IJobExecutionContext<TParameter>.Parameter`; `IJobExecutionContext.Parameter` is removed. A parameter of the wrong type, or any parameter for a plain `IJob`, throws an `ArgumentException` at registration or trigger time. `IJob<object?>` keeps the v4 behaviour. See the [v5 migration guide](https://docs.ncronjob.dev/migration/v5/).

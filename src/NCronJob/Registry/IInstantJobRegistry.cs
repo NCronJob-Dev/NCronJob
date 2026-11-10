@@ -48,51 +48,6 @@ public interface IInstantJobRegistry
     Guid RunScheduledJob(string jobName, TimeSpan delay, object? parameter, CancellationToken token = default);
 
     /// <summary>
-    /// Runs a job that will be executed at <paramref name="startDate"/>.
-    /// </summary>
-    /// <param name="startDate">The starting point when the job will be executed.</param>
-    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
-    /// <param name="token">An optional token to cancel the job.</param>
-    /// <returns>The job correlation id.</returns>
-    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob<TJob>(TimeSpan, object?, CancellationToken) instead.")]
-    Guid RunScheduledJob<TJob>(DateTimeOffset startDate, object? parameter, CancellationToken token = default)
-        where TJob : IJob;
-
-    /// <summary>
-    /// Runs a job without supplying a parameter override at <paramref name="startDate"/>.
-    /// </summary>
-    /// <remarks>
-    /// The built-in registry uses the configured job parameter. For compatibility, implementations compiled against
-    /// earlier versions receive <c>null</c> through the existing parameter overload.
-    /// </remarks>
-    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob<TJob>(TimeSpan, CancellationToken) instead.")]
-    Guid RunScheduledJob<TJob>(DateTimeOffset startDate, CancellationToken token = default)
-        where TJob : IJob
-        => InstantJobRegistryCompatibility.RunWithoutParameterOverride<TJob>(this, startDate, token);
-
-    /// <summary>
-    /// Runs a job that will be executed at <paramref name="startDate"/>.
-    /// </summary>
-    /// <param name="jobName">The name of the job to execute.</param>
-    /// <param name="startDate">The starting point when the job will be executed.</param>
-    /// <param name="parameter">An optional parameter that is passed down as the <see cref="JobExecutionContext"/> to the job.</param>
-    /// <param name="token">An optional token to cancel the job.</param>
-    /// <returns>The job correlation id.</returns>
-    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob(string, TimeSpan, object?, CancellationToken) instead.")]
-    Guid RunScheduledJob(string jobName, DateTimeOffset startDate, object? parameter, CancellationToken token = default);
-
-    /// <summary>
-    /// Runs a named job without supplying a parameter override at <paramref name="startDate"/>.
-    /// </summary>
-    /// <remarks>
-    /// The built-in registry uses the configured job parameter. For compatibility, implementations compiled against
-    /// earlier versions receive <c>null</c> through the existing parameter overload.
-    /// </remarks>
-    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob(string, TimeSpan, CancellationToken) instead.")]
-    Guid RunScheduledJob(string jobName, DateTimeOffset startDate, CancellationToken token = default)
-        => InstantJobRegistryCompatibility.RunWithoutParameterOverride(this, jobName, startDate, token);
-
-    /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>.
     /// </summary>
     /// <param name="jobDelegate">The delegate to execute.</param>
@@ -106,20 +61,6 @@ public interface IInstantJobRegistry
     Guid RunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default);
 
     /// <summary>
-    /// Runs a job that will be executed at the given <paramref name="startDate"/>.
-    /// </summary>
-    /// <param name="jobDelegate">The delegate to execute.</param>
-    /// <param name="startDate">The starting point when the job will be executed.</param>
-    /// <param name="token">An optional token to cancel the job.</param>
-    /// <returns>The job correlation id.</returns>
-    /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
-    /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
-    /// </remarks>
-    [Obsolete("This method will be dropped in the next major version. Use RunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
-    Guid RunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
-
-    /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.
     /// </summary>
     /// <param name="jobDelegate">The delegate to execute.</param>
@@ -131,20 +72,6 @@ public interface IInstantJobRegistry
     /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
     /// </remarks>
     Guid ForceRunScheduledJob(Delegate jobDelegate, TimeSpan delay, CancellationToken token = default);
-
-    /// <summary>
-    /// Runs a job that will be executed at the given <paramref name="startDate"/>. The job will not be queued into the JobQueue, but executed directly.
-    /// </summary>
-    /// <param name="jobDelegate">The delegate to execute.</param>
-    /// <param name="startDate">The starting point when the job will be executed.</param>
-    /// <param name="token">An optional token to cancel the job.</param>
-    /// <returns>The job correlation id.</returns>
-    /// <remarks>
-    /// The <paramref name="jobDelegate"/> delegate supports, like <see cref="NCronJobExtensions.AddNCronJob(IServiceCollection, Delegate, string, TimeZoneInfo)"/>, that services can be retrieved dynamically.
-    /// Also, the <see cref="CancellationToken"/> can be retrieved in this way.
-    /// </remarks>
-    [Obsolete("This method will be dropped in the next major version. Use ForceRunScheduledJob(Delegate, TimeSpan, CancellationToken) instead.")]
-    Guid ForceRunScheduledJob(Delegate jobDelegate, DateTimeOffset startDate, CancellationToken token = default);
 
     /// <summary>
     /// Runs a job that will be executed after the given <paramref name="delay"/>. The job will not be queued into the JobQueue, but executed directly.

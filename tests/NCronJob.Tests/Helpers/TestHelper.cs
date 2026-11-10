@@ -21,7 +21,7 @@ public abstract class JobIntegrationBase : IDisposable
     {
         var t = new TheoryData<Func<IInstantJobRegistry, TimeProvider, object?, CancellationToken, Guid>>();
         t.Add((i, f, p, t) => i.RunInstantJob<DummyJob>(p, t));
-        t.Add((i, f, p, t) => i.RunScheduledJob<DummyJob>(f.GetUtcNow(), p, t));
+        t.Add((i, f, p, t) => i.RunScheduledJob<DummyJob>(TimeSpan.Zero, p, t));
         t.Add((i, f, p, t) => i.ForceRunInstantJob<DummyJob>(p, t));
         t.Add((i, f, p, t) => i.ForceRunScheduledJob<DummyJob>(TimeSpan.Zero, p, t));
         return t;

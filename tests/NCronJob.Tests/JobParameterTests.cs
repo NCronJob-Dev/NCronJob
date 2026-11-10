@@ -151,7 +151,7 @@ public sealed class JobParameterTests : JobIntegrationBase
     {
         var t = new TheoryData<Func<IInstantJobRegistry, TimeProvider, string, object?, CancellationToken, Guid>>();
         t.Add((i, f, n, p, t) => i.RunInstantJob(n, p, t));
-        t.Add((i, f, n, p, t) => i.RunScheduledJob(n, f.GetUtcNow(), p, t));
+        t.Add((i, f, n, p, t) => i.RunScheduledJob(n, TimeSpan.Zero, p, t));
         t.Add((i, f, n, p, t) => i.ForceRunInstantJob(n, p, t));
         t.Add((i, f, n, p, t) => i.ForceRunScheduledJob(n, TimeSpan.Zero, p, t));
         return t;
