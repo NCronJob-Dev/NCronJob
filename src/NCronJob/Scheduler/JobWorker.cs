@@ -81,12 +81,13 @@ internal sealed partial class JobWorker
                     continue;
                 }
 
-                _ = StartJobProcessingAsync(nextJob, cancellationToken);
-
+                // Before the run starts: once it can finish, the clock may have moved past the next slot, which would then be skipped.
                 if (nextJob.TriggerType == TriggerType.Cron)
                 {
                     cronRunScheduler.ScheduleNextRun(nextJob.JobDefinition, priority.NextRunTime);
                 }
+
+                _ = StartJobProcessingAsync(nextJob, cancellationToken);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -118,8 +119,8 @@ internal sealed partial class JobWorker
         }
 
         LogSkippingOverlappingRun(job.Name);
-        run.NotifyStateChange(JobStateType.Skipped);
         cronRunScheduler.ScheduleNextRun(job, scheduledRunTime);
+        run.NotifyStateChange(JobStateType.Skipped);
         return true;
     }
 
