@@ -23,7 +23,7 @@ public sealed class LoggingScopeTests : JobIntegrationBase
     public async Task LogsWrittenByAJobCarryTheRunScope()
     {
         ServiceCollection.AddLogging(b => b.AddProvider(loggerProvider));
-        ServiceCollection.AddNCronJob(n => n.AddJob<LoggingJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("LoggingJob")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<LoggingJob>(p => p.WithName("LoggingJob").WithCronExpression(Cron.AtEveryMinute)));
 
         await StartNCronJob();
 

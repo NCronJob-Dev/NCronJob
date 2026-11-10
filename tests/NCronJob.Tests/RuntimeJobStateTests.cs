@@ -8,7 +8,7 @@ public class RuntimeJobStateTests : JobIntegrationBase
     [Fact]
     public async Task ShouldDisableJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEveryMinute)));
 
         await StartNCronJob();
 
@@ -28,8 +28,8 @@ public class RuntimeJobStateTests : JobIntegrationBase
     public async Task DisablingOneRegistrationKeepsTheScheduledRunsOfOtherRegistrationsOfTheSameType()
     {
         ServiceCollection.AddNCronJob(s => s
-            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("First"))
-            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2).WithName("Second")));
+            .AddJob<DummyJob>(p => p.WithName("First").WithCronExpression(Cron.AtEveryMinute))
+            .AddJob<DummyJob>(p => p.WithName("Second").WithCronExpression(Cron.AtMinute2)));
         await StartNCronJob();
 
         ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().DisableJob("First");
@@ -42,8 +42,8 @@ public class RuntimeJobStateTests : JobIntegrationBase
     public async Task RemovingOneRegistrationByNameKeepsTheScheduledRunsOfOtherRegistrationsOfTheSameType()
     {
         ServiceCollection.AddNCronJob(s => s
-            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("First"))
-            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2).WithName("Second")));
+            .AddJob<DummyJob>(p => p.WithName("First").WithCronExpression(Cron.AtEveryMinute))
+            .AddJob<DummyJob>(p => p.WithName("Second").WithCronExpression(Cron.AtMinute2)));
         await StartNCronJob();
 
         ServiceProvider.GetRequiredService<IRuntimeJobRegistry>().RemoveJob("First");
@@ -112,7 +112,7 @@ public class RuntimeJobStateTests : JobIntegrationBase
     [Fact]
     public async Task ShouldEnableJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEveryMinute)));
 
         var jobQueueManager = ServiceProvider.GetRequiredService<JobQueueManager>();
 
@@ -145,7 +145,7 @@ public class RuntimeJobStateTests : JobIntegrationBase
     [Fact]
     public async Task ShouldEnableJobWithSecondPrecision()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEverySecond).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEverySecond)));
 
         await StartNCronJob();
 

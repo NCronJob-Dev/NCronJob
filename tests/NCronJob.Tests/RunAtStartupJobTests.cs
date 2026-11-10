@@ -77,7 +77,7 @@ public class RunAtStartupJobTests : JobIntegrationBase
             }
         },
         {
-            s => s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5).And.RunAtStartup(shouldCrashOnFailure: false))
+            s => s.AddJob<DummyJob>(jo => jo.WithCronExpression(Cron.AtMinute5).RunAtStartup(shouldCrashOnFailure: false))
         },
     };
 

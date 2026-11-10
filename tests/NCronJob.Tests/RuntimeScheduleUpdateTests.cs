@@ -8,7 +8,7 @@ public class RuntimeScheduleUpdateTests : JobIntegrationBase
     [Fact]
     public async Task CanUpdateScheduleOfAJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression("0 0 * * *").WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression("0 0 * * *")));
 
         await StartNCronJob();
 
@@ -60,9 +60,9 @@ public class RuntimeScheduleUpdateTests : JobIntegrationBase
     public async Task UpdatingParameterHasImmediateEffect()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
+            .WithName("JobName")
             .WithCronExpression(Cron.AtEveryMinute)
-            .WithParameter("foo")
-            .WithName("JobName")));
+            .WithParameter("foo")));
 
         await StartNCronJob();
 
@@ -90,9 +90,9 @@ public class RuntimeScheduleUpdateTests : JobIntegrationBase
     public void UpdatingParameterCanSetAndClearConfiguredParameter()
     {
         ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p
+            .WithName("JobName")
             .WithCronExpression(Cron.AtEveryMinute)
-            .WithParameter("foo")
-            .WithName("JobName")));
+            .WithParameter("foo")));
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
         var jobDefinition = ServiceProvider.GetRequiredService<JobRegistry>().FindRootJobDefinition("JobName");

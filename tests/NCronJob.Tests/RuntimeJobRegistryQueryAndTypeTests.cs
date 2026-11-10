@@ -122,7 +122,7 @@ public class RuntimeJobRegistryQueryAndTypeTests : JobIntegrationBase
     [Fact]
     public void ShouldRetrieveScheduleForCronJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEvery2ndMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEvery2ndMinute)));
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
@@ -152,7 +152,7 @@ public class RuntimeJobRegistryQueryAndTypeTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(s =>
         {
-            s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Job1"))
+            s.AddJob<DummyJob>(p => p.WithName("Job1").WithCronExpression(Cron.AtEveryMinute))
                 .ExecuteWhen(r => r.RunJob(() => { }, "Job2"));
         });
 
@@ -237,7 +237,7 @@ public class RuntimeJobRegistryQueryAndTypeTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(p => p.AddJob<DummyJob>());
 
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
-        registry.TryRegister(n => n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        registry.TryRegister(n => n.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEveryMinute)));
 
         var allSchedules = registry.GetAllRecurringJobs();
 
@@ -295,7 +295,7 @@ public class RuntimeJobRegistryQueryAndTypeTests : JobIntegrationBase
     [Fact]
     public async Task ProgressCallbackCanUseTheRegistryWhileAJobIsBeingRemoved()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEveryMinute)));
 
         await StartNCronJob();
 

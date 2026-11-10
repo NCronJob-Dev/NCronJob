@@ -25,7 +25,7 @@ public sealed class CronJobExecutionTests : JobIntegrationBase
     [Fact]
     public async Task CronJobScheduledWithAMacroShouldBeExecuted()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithCronExpression("@hourly").WithName("Hourly")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<DummyJob>(p => p.WithName("Hourly").WithCronExpression("@hourly")));
 
         await StartNCronJob();
 

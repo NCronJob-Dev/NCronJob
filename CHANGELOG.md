@@ -14,6 +14,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Changed
 
+- Breaking: `JobOptionBuilder.WithCronExpression` returns a `ParameterAndRunAtStartupBuilder`, so `WithName` has to come before `WithCronExpression`, and a cron job can be marked to run at startup. `ParameterBuilder` is removed.
 - Breaking: `RecurringJobSchedule.Type` and `RecurringJobSchedule.IsTypedJob` have no default values anymore.
 - Breaking: job parameters are typed. A job that accepts a parameter implements `IJob<TParameter>` and reads it from `IJobExecutionContext<TParameter>.Parameter`; `IJobExecutionContext.Parameter` is removed. A parameter of the wrong type, or any parameter for a plain `IJob`, throws an `ArgumentException` at registration or trigger time. `IJob<object?>` keeps the v4 behaviour. See the [v5 migration guide](https://docs.ncronjob.dev/migration/v5/).
 - Breaking: the dashboard deserializes the JSON parameter into the job's `TParameter` and rejects JSON that doesn't follow its structure. It shows the JSON schema as a hint and no parameter field for jobs without a parameter.

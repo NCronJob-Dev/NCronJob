@@ -165,10 +165,10 @@ This capability provides an escape hatch to situations as described in [*"Precau
 ```csharp
 Services.AddNCronJob(options =>
 {
-    options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 * * *").WithName("nightly"))
+    options.AddJob<GatherDataJob>(s => s.WithName("nightly").WithCronExpression("0 0 * * *"))
         .ExecuteWhen(success: s => s.RunJob<SendReportToStaffJob>());
 
-    options.AddJob<GatherDataJob>(s => s.WithCronExpression("0 0 1 * *").WithName("monthly"))
+    options.AddJob<GatherDataJob>(s => s.WithName("monthly").WithCronExpression("0 0 1 * *"))
         .ExecuteWhen(success: s => s.RunJob<SendReportToManagementJob>());
 });
 

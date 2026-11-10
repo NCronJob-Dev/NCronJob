@@ -228,7 +228,7 @@ public sealed class JobParameterTests : JobIntegrationBase
     [Fact]
     public void UpdatingParameterWithWrongTypeThrows()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<ReportJob>(p => p.WithCronExpression(Cron.Never).WithName("report")));
+        ServiceCollection.AddNCronJob(n => n.AddJob<ReportJob>(p => p.WithName("report").WithCronExpression(Cron.Never)));
         var registry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         Action act = () => registry.UpdateParameter("report", "EU");
