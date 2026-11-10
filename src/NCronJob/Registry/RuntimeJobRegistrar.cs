@@ -8,7 +8,7 @@ namespace NCronJob;
 /// </summary>
 internal sealed class RuntimeJobRegistrar
 {
-    private readonly SyncLock registrationLock = new();
+    private readonly Lock registrationLock = new();
 
     private readonly IServiceCollection services;
     private readonly JobRegistry jobRegistry;

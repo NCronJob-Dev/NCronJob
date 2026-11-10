@@ -4,11 +4,7 @@ namespace NCronJob.Tests;
 
 public sealed class Storage(TimeProvider timeProvider)
 {
-#if NET9_0_OR_GREATER
     private readonly Lock locker = new();
-#else
-    private readonly object locker = new();
-#endif
     private readonly List<(string, string)> timedEntries = [];
 
     public IList<string> Entries

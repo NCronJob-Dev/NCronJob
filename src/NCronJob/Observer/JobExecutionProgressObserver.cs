@@ -11,7 +11,7 @@ internal sealed partial class JobExecutionProgressObserver : IJobExecutionProgre
         this.logger = logger;
     }
 
-    private readonly SyncLock subscribersLock = new();
+    private readonly Lock subscribersLock = new();
 
     private Action<ExecutionProgress>[] subscribers = [];
 

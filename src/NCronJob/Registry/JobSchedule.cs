@@ -41,7 +41,7 @@ internal sealed record JobSchedule(
 
     private static CronExpression ParseCronExpression(string expression)
     {
-        if (expression.StartsWith('@'))
+        if (expression is ['@', ..])
         {
             return CronExpression.TryParse(expression, CronFormat.IncludeSeconds, out var macroExpression)
                 ? macroExpression
