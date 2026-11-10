@@ -32,7 +32,7 @@ jobs:
       with:
         dotnet-version: |
           10.0.x
-          11.0.100-rc.2.26504.105
+          11.0.x
 
     - name: Restore dependencies
       run: dotnet restore
