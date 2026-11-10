@@ -27,12 +27,12 @@ builder.Services.AddNCronJob(n => n
         faulted: f => f.RunJob((ILogger<DataProcessingJob> logger) => logger.LogWarning("Data processing failed"), "DataProcessingFailed"))
 
     .AddJob<PrintHelloWorldJob>(p =>
-        p.WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob").WithName("HelloWithParameter"))
+        p.WithName("HelloWithParameter").WithCronExpression("*/1 * * * * *").WithParameter("Hello from NCronJob"))
          .AddNotificationHandler<HelloWorldJobHandler>()
     .AddJob<ReportJob>(p =>
-        p.WithCronExpression("0 * * * *")
-            .WithParameter(new ReportRequest("EU", ["ops@example.com", "finance@example.com"], new ReportOptions(IncludeCharts: true, Format: "pdf")))
-            .WithName("HourlyReport"))
+        p.WithName("HourlyReport")
+            .WithCronExpression("0 * * * *")
+            .WithParameter(new ReportRequest("EU", ["ops@example.com", "finance@example.com"], new ReportOptions(IncludeCharts: true, Format: "pdf"))))
 
     // Multiple instances of the same job with different cron expressions can be supported
     // by marking the job with [SupportsConcurrency] attribute

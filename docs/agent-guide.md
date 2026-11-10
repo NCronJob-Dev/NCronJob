@@ -23,6 +23,7 @@ This page is a compact entry point for assistants, scripts, and contributors who
 
 ### Scheduling options
 
+- Builder order is `WithName(...)`, then `WithCronExpression(...)`, then `WithParameter(...)` / `RunAtStartup(...)`; `WithName` is not available after the cron expression
 - `WithCronExpression(...)` accepts cron expressions (with optional seconds) and macros such as `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly`, `@every_minute` and `@every_second`; see [Cron macros](features/define-and-schedule-jobs.md#cron-macros)
 - `WithTimeout(TimeSpan)` cancels a run that executes too long; see [Timeouts and run expiry](features/timeouts-and-expiry.md)
 - `WithMaxDegreeOfParallelism(int)` limits concurrently executing jobs scheduler-wide; see [Global concurrency](advanced/global-concurrency.md)

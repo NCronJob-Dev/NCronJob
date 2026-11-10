@@ -46,12 +46,13 @@ public sealed class JobOptionBuilder
     /// </summary>
     /// <param name="cronExpression">The cron expression that defines when the job should be executed.</param>
     /// <param name="timeZoneInfo">Optional, provides the timezone that is used to evaluate the cron expression. Defaults to UTC.</param>
-    /// <returns>Returns a <see cref="ParameterBuilder"/> that allows naming the job or adding a parameter to it.</returns>
-    public ParameterBuilder WithCronExpression(string cronExpression, TimeZoneInfo? timeZoneInfo = null)
+    /// <returns>Returns a <see cref="ParameterAndRunAtStartupBuilder"/> that allows adding a parameter or a startup trigger.</returns>
+    /// <remarks>To name the job, call <see cref="WithName"/> before the cron expression.</remarks>
+    public ParameterAndRunAtStartupBuilder WithCronExpression(string cronExpression, TimeZoneInfo? timeZoneInfo = null)
     {
         ArgumentNullException.ThrowIfNull(cronExpression);
 
-        return new ParameterBuilder(this, AddOption(o =>
+        return new ParameterAndRunAtStartupBuilder(this, AddOption(o =>
         {
             o.CronExpression = cronExpression;
             o.TimeZoneInfo = timeZoneInfo;

@@ -26,8 +26,8 @@ public sealed class StartupSummaryTests : JobIntegrationBase
         var helsinki = TimeZoneInfo.FindSystemTimeZoneById("Europe/Helsinki");
         ServiceCollection.AddLogging(b => b.SetMinimumLevel(LogLevel.Debug).AddProvider(loggerProvider));
         ServiceCollection.AddNCronJob(n => n
-            .AddJob<DummyJob>(p => p.WithCronExpression("0 2 * * *", helsinki).WithName("nightly-import"))
-            .AddJob<AnotherDummyJob>(p => p.WithCronExpression("*/5 * * * *").WithName("cache-warmup")));
+            .AddJob<DummyJob>(p => p.WithName("nightly-import").WithCronExpression("0 2 * * *", helsinki))
+            .AddJob<AnotherDummyJob>(p => p.WithName("cache-warmup").WithCronExpression("*/5 * * * *")));
 
         await StartNCronJob();
 

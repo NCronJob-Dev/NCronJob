@@ -32,10 +32,10 @@ public sealed class ConcurrencyTests : JobIntegrationBase
     public async Task ConcurrentJobConfigurationShouldBeRespected()
     {
         ServiceCollection.AddNCronJob(n => n.AddJob<ConcurrentJob>(p => p
-            .WithCronExpression(Cron.AtEveryMinute).WithName("Job 1")
-            .And.WithCronExpression(Cron.AtEveryMinute).WithName("Job 2")
-            .And.WithCronExpression(Cron.AtEveryMinute).WithName("Job 3")
-            .And.WithCronExpression(Cron.AtEveryMinute).WithName("Job 4")));
+            .WithName("Job 1").WithCronExpression(Cron.AtEveryMinute)
+            .And.WithName("Job 2").WithCronExpression(Cron.AtEveryMinute)
+            .And.WithName("Job 3").WithCronExpression(Cron.AtEveryMinute)
+            .And.WithName("Job 4").WithCronExpression(Cron.AtEveryMinute)));
 
         await StartNCronJob();
 

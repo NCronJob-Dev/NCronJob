@@ -7,7 +7,7 @@ The core idea is to define an unique job name for each job that might be mutated
 ```csharp
 builder.Services.AddNCronJob(builder => 
 {
-    builder.AddJob<SampleJob>(p => p.WithCronExpression("* * * * *").WithName("MyName"));
+    builder.AddJob<SampleJob>(p => p.WithName("MyName").WithCronExpression("* * * * *"));
 });
 ```
 
@@ -29,7 +29,7 @@ app.MapPost("/add-job", (IRuntimeJobRegistry registry) =>
 {
     var hasSucceeded = registry.TryRegister(
         n => n.AddJob<SampleJob>(
-            p => p.WithCronExpression("* * * * *").WithName("MyName")),
+            p => p.WithName("MyName").WithCronExpression("* * * * *")),
         out Exception? exc);
     
     if (!hasSucceeded)

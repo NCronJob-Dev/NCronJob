@@ -106,7 +106,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
     [Fact]
     public void ShouldThrowRuntimeExceptionWithDuplicateJob()
     {
-        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("JobName")));
+        ServiceCollection.AddNCronJob(s => s.AddJob<DummyJob>(p => p.WithName("JobName").WithCronExpression(Cron.AtEveryMinute)));
         var runtimeJobRegistry = ServiceProvider.GetRequiredService<IRuntimeJobRegistry>();
 
         var successful = runtimeJobRegistry.TryRegister(s => s.AddJob(() =>
@@ -129,7 +129,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
 
         var successful = runtimeJobRegistry.TryRegister(s =>
         {
-            s.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Duplicate"));
+            s.AddJob<AnotherDummyJob>(p => p.WithName("Duplicate").WithCronExpression(Cron.AtEveryMinute));
             s.AddJob(() => { }, Cron.AtEveryMinute, jobName: "Duplicate");
         }, out var exception);
 
@@ -140,7 +140,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         queueManager.TryGetQueue(typeof(AnotherDummyJob).FullName!, out _).ShouldBeFalse();
 
         runtimeJobRegistry.TryRegister(
-            s => s.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Duplicate")),
+            s => s.AddJob<AnotherDummyJob>(p => p.WithName("Duplicate").WithCronExpression(Cron.AtEveryMinute)),
             out _).ShouldBeTrue();
 
         var registeredJob = jobRegistry.FindRootJobDefinition("Duplicate");
@@ -151,7 +151,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
     public void SchedulingFailureRollsBackRegistryQueuesDependenciesAndServices()
     {
         ServiceCollection.AddNCronJob(s =>
-            s.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute2).WithName("Existing"))
+            s.AddJob<DummyJob>(p => p.WithName("Existing").WithCronExpression(Cron.AtMinute2))
                 .ExecuteWhen(success: d => d.RunJob<ExceptionJob>()));
 
         var serviceDescriptors = ServiceCollection.ToArray();
@@ -178,10 +178,10 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
             fullBuilder
                 .WithMaxDegreeOfParallelism(previousMaxDegreeOfParallelism + 1)
                 .WithDefaultJobRunExpiry(TimeSpan.FromMinutes(3));
-            fullBuilder.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5).WithName("Batch"))
+            fullBuilder.AddJob<DummyJob>(p => p.WithName("Batch").WithCronExpression(Cron.AtMinute5))
                 .AddNotificationHandler<RollbackNotificationHandler>()
                 .ExecuteWhen(success: d => d.RunJob<AnotherDummyJob>());
-            fullBuilder.AddJob<AnotherDummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Failure"));
+            fullBuilder.AddJob<AnotherDummyJob>(p => p.WithName("Failure").WithCronExpression(Cron.AtEveryMinute));
         }, out var exception);
         queueManager.QueueAdded -= ThrowOnNewQueue;
 
@@ -203,7 +203,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         runtimeJobRegistry.TryRegister(
             builder => builder.AddJob(
                 typeof(DummyJob),
-                p => p.WithCronExpression(Cron.AtMinute5).WithName("Batch")),
+                p => p.WithName("Batch").WithCronExpression(Cron.AtMinute5)),
             out _).ShouldBeTrue();
 
         var reRegisteredJob = jobRegistry.FindRootJobDefinition("Batch");
@@ -236,10 +236,10 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
             {
                 builder.AddJob(
                     typeof(DummyJob),
-                    p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Earlier"));
+                    p => p.WithName("Earlier").WithCronExpression(Cron.AtEveryMinute));
                 builder.AddJob(
                     typeof(AnotherDummyJob),
-                    p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Failure"));
+                    p => p.WithName("Failure").WithCronExpression(Cron.AtEveryMinute));
             }, out var exception);
 
             return (successful, exception);
@@ -283,7 +283,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         runtimeJobRegistry.TryRegister(
             builder => builder.AddJob(
                 typeof(DummyJob),
-                p => p.WithCronExpression(Cron.AtEveryMinute).WithName("AfterRollback")),
+                p => p.WithName("AfterRollback").WithCronExpression(Cron.AtEveryMinute)),
             out _).ShouldBeTrue();
 
         var followUpRun = await WaitForJobState(ExecutionState.Scheduled, name: "AfterRollback");
@@ -316,10 +316,10 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         {
             builder.AddJob(
                 typeof(LongRunningJob),
-                p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Earlier").SkipIfStillRunning());
+                p => p.WithName("Earlier").WithCronExpression(Cron.AtEveryMinute).SkipIfStillRunning());
             builder.AddJob(
                 typeof(AnotherDummyJob),
-                p => p.WithCronExpression(Cron.AtEveryMinute).WithName("Failure"));
+                p => p.WithName("Failure").WithCronExpression(Cron.AtEveryMinute));
         }, out _), CancellationToken);
 
         try

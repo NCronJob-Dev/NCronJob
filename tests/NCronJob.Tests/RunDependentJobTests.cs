@@ -278,7 +278,7 @@ public class RunDependentJobTests : JobIntegrationBase
     public async Task UpdatingTheParameterKeepsDependentJobs()
     {
         ServiceCollection.AddNCronJob(n => n
-            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never).WithName("Root"))
+            .AddJob<DummyJob>(p => p.WithName("Root").WithCronExpression(Cron.Never))
             .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>()));
 
         await StartNCronJob();
@@ -298,7 +298,7 @@ public class RunDependentJobTests : JobIntegrationBase
         ServiceCollection.AddNCronJob(n =>
         {
             n.AddJob<PrincipalJob>().ExecuteWhen(success: s => s.RunJob<DummyJob>());
-            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never).WithName("Dummy"))
+            n.AddJob<DummyJob>(p => p.WithName("Dummy").WithCronExpression(Cron.Never))
                 .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
         });
 
@@ -331,8 +331,8 @@ public class RunDependentJobTests : JobIntegrationBase
     {
         ServiceCollection.AddNCronJob(n =>
         {
-            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtMinute5).WithName("Removed"));
-            n.AddJob<DummyJob>(p => p.WithCronExpression(Cron.Never).WithName("Kept"))
+            n.AddJob<DummyJob>(p => p.WithName("Removed").WithCronExpression(Cron.AtMinute5));
+            n.AddJob<DummyJob>(p => p.WithName("Kept").WithCronExpression(Cron.Never))
                 .ExecuteWhen(success: s => s.RunJob<AnotherDummyJob>());
         });
 
