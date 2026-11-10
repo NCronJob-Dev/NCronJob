@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace NCronJob;
 
 /// <summary>
@@ -46,7 +44,6 @@ namespace NCronJob;
 /// Will be <c>null</c> when the <see cref="ExecutionProgress"/> instance relates to the start or completion of an orchestration.
 /// </param>
 ///
-[Experimental("NCRONJOB_OBSERVER")]
 public record ExecutionProgress(
     DateTimeOffset Timestamp,
     Guid CorrelationId,

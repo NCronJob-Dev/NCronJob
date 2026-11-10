@@ -1,11 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace NCronJob;
 
 /// <summary>
 /// The state of a reported orchestration or job.
 /// </summary>
-[Experimental("NCRONJOB_OBSERVER")]
 public enum ExecutionState
 {
     /// <summary>

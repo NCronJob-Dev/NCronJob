@@ -8,6 +8,7 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ### Removed
 
+- The `[Experimental("NCRONJOB_OBSERVER")]` marker: `IJobExecutionProgressReporter`, `ExecutionProgress` and `ExecutionState` are stable. `NCRONJOB_OBSERVER` suppressions can be removed.
 - Breaking: the obsolete `DateTimeOffset` overloads of `IInstantJobRegistry` (`RunScheduledJob` and `ForceRunScheduledJob`); pass a `TimeSpan` delay instead.
 - Breaking: the obsolete `IStartupStage<TJob>` and its `RunAtStartup()`; `AddJob` returns `INotificationStage<TJob>`. Use `AddJob<TJob>(j => j.RunAtStartup(...))`. See the [v5 migration guide](https://docs.ncronjob.dev/migration/v5/).
 

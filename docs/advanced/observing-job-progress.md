@@ -10,35 +10,6 @@ From a timeline perspective, an orchestration starts before the root job that in
 
 ## Subscribing to the executions of jobs
 
-### Forewords
-
-!!! warning
-
-    This is an **experimental** feature subject to breaking changes independently of the standard semver lifecycle release of **NCronJob**.
-
-    While reporting feedback or bugs about it, please do not forget to
-    mention in the issue which version of NCronJob you're using.
-
-Would you decide to give it an early try, in order to suppress the warnings that comes with the [.NET Experimental attribute](https://learn.microsoft.com/en-us/dotnet/fundamentals/apicompat/preview-apis#experimentalattribute), update your `.csproj` with a `<NoWarn>` project setting:
-
-```xml
-<PropertyGroup>
-    ...
-    <NoWarn>$(NoWarn);NCRONJOB_OBSERVER</NoWarn>
-</PropertyGroup>
-```
-
-Alternatively, it can also be silenced through an `.editorconfig` setting.
-
-```text
-[*.cs]
-
-...
-
-# NCRONJOB_OBSERVER: Type is for evaluation purposes only and is subject to change or removal in future updates.
-dotnet_diagnostic.NCRONJOB_OBSERVER.severity = none
-```
-
 ### Registering a notifier callback
 
 **NCronJob** exposes the capability to notify whenever jobs change states. One can
