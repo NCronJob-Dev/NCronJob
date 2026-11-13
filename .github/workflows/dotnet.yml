@@ -39,12 +39,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore -c Release /p:ContinuousIntegrationBuild=true
     - name: Test
-      run: dotnet test -c Release --no-build --output Detailed -- --coverage --coverage-output-format cobertura
-
-    - name: Upload results to Codecov
-      uses: codecov/codecov-action@v7
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      run: dotnet test -c Release --no-build --output Detailed
 
   package:
     runs-on: ubuntu-latest

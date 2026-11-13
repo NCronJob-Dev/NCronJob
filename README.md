@@ -4,7 +4,6 @@
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet Dashboard](https://img.shields.io/nuget/vpre/NCronJob.Dashboard.svg?label=NCronJob.Dashboard)](https://www.nuget.org/packages/NCronJob.Dashboard)
-[![Coverage](https://codecov.io/gh/NCronJob-Dev/NCronJob/graph/badge.svg?token=HM8G8TCYUC)](https://codecov.io/gh/NCronJob-Dev/NCronJob)
 
 <p align="center">
   <img src="/assets/showcase.svg" alt="NCronJob showcase: cron with time zones, job chains, conditional runs, runtime control, instant jobs" width="880"/>
