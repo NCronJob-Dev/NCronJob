@@ -36,7 +36,7 @@ internal sealed class DashboardRunStore : IDisposable
 {
     internal const int Capacity = 500;
 
-    private readonly object sync = new();
+    private readonly Lock sync = new();
     private readonly Dictionary<Guid, RunRecord> runs = [];
     private readonly Queue<Guid> evictableFinishedRuns = new();
     private IDisposable? subscription;
