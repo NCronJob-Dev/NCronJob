@@ -169,7 +169,7 @@ public class RuntimeJobRegistrationTests : JobIntegrationBase
         queueManager.TryGetQueue(typeof(DummyJob).FullName!, out var sharedQueue).ShouldBeTrue();
         var existingRun = sharedQueue.Single();
 
-        void ThrowOnNewQueue(string _) => throw new InvalidOperationException("Scheduling failed.");
+        static void ThrowOnNewQueue(string _) => throw new InvalidOperationException("Scheduling failed.");
 
         queueManager.QueueAdded += ThrowOnNewQueue;
         var successful = runtimeJobRegistry.TryRegister(builder =>
