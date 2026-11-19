@@ -6,6 +6,10 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- Delegate jobs (including dependent ones) whose parameters aren't registered in the DI container now fail at startup instead of at their first run. Typed jobs are already covered by `ValidateOnBuild`, which ASP.NET Core enables in Development.
+
 ### Fixed
 
 - An `async void` delegate job crashed the process when it threw. It is now rejected and its run faults with an `InvalidOperationException`.

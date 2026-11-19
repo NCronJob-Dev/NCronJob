@@ -36,6 +36,18 @@ internal sealed class JobRegistry
         }
     }
 
+    public IReadOnlyCollection<Delegate> GetAllJobDelegates()
+    {
+        lock (syncLock)
+        {
+            return allRootJobs
+                .Concat(AllDependentJobDefinitions.Select(d => d.ToJobDefinition()))
+                .Select(j => j.JobDelegate)
+                .OfType<Delegate>()
+                .ToList();
+        }
+    }
+
     public IReadOnlyCollection<JobDefinition> FindAllRootJobDefinition(Type type)
     {
         lock (syncLock)
