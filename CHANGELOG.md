@@ -6,6 +6,12 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+### Fixed
+
+- An `async void` delegate job crashed the process when it threw. It is now rejected and its run faults with an `InvalidOperationException`.
+- A notification handler that throws in its constructor no longer marks a successful job as faulted or prevents its dependent jobs from running.
+- A scoped service that throws on dispose no longer marks a successful job as faulted; the exception is logged.
+
 ## [v5.0.0] - 2026-11-10
 
 ### Removed

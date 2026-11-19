@@ -55,6 +55,11 @@ internal sealed class DynamicJobFactory : IJob
                 return DelegateInvoker.Build<Task>(jobDelegate);
             }
 
+            if (IsAsyncVoid(jobDelegate.Method))
+            {
+                throw new InvalidOperationException("The job action must not be 'async void' as its exceptions would crash the process. Return a Task instead.");
+            }
+
             if (returnType == typeof(void))
             {
                 var action = DelegateInvoker.BuildAction(jobDelegate);
@@ -63,5 +68,8 @@ internal sealed class DynamicJobFactory : IJob
 
             throw new InvalidOperationException("The job action must return a Task or void type.");
         }
+
+        private static bool IsAsyncVoid(MethodInfo method) =>
+            method.ReturnType == typeof(void) && method.IsDefined(typeof(AsyncStateMachineAttribute));
     }
 }
