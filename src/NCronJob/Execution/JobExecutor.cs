@@ -62,9 +62,9 @@ internal sealed partial class JobExecutor : IDisposable
             : CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, stoppingToken, run.CancellationToken, timeoutCts.Token);
         run.CancellationToken = linkedCts.Token;
 
-        await using var scope = serviceProvider.CreateAsyncScope();
         var runContext = JobExecutionContext.Create(run);
         using var activity = StartActivity(runContext);
+        var scope = serviceProvider.CreateAsyncScope();
 
         try
         {
@@ -83,6 +83,14 @@ internal sealed partial class JobExecutor : IDisposable
         finally
         {
             activity?.SetTag("ncronjob.attempts", runContext.Attempts);
+            try
+            {
+                await scope.DisposeAsync();
+            }
+            catch (Exception exc)
+            {
+                LogScopeDisposalFailed(run.JobDefinition.Name, exc);
+            }
         }
     }
 
@@ -149,21 +157,20 @@ internal sealed partial class JobExecutor : IDisposable
         dependentJobDispatcher.Dispatch(runContext, exc is null);
     }
 
-    private Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct) =>
-        TypedJobHandlerInvoker.InvokeNotificationHandlerAsync(
-            serviceProvider,
-            runContext.JobRun.JobDefinition,
-            async notificationService =>
-            {
-                try
-                {
-                    await notificationService.HandleAsync(runContext, exc, ct).ConfigureAwait(false);
-                }
-                catch (Exception innerExc) when (!IsRequestedCancellation(innerExc, ct))
-                {
-                    LogNotificationHandlerFailed(notificationService.GetType(), innerExc);
-                }
-            });
+    private async Task TriggerNotifications(JobExecutionContext runContext, Exception? exc, CancellationToken ct)
+    {
+        try
+        {
+            await TypedJobHandlerInvoker.InvokeNotificationHandlerAsync(
+                serviceProvider,
+                runContext.JobRun.JobDefinition,
+                notificationService => notificationService.HandleAsync(runContext, exc, ct));
+        }
+        catch (Exception innerExc) when (!IsRequestedCancellation(innerExc, ct))
+        {
+            LogNotificationHandlerFailed(runContext.JobRun.JobDefinition.Name, innerExc);
+        }
+    }
 
     private static bool IsRequestedCancellation(Exception exception, CancellationToken token) =>
         exception is OperationCanceledException && token.IsCancellationRequested;
