@@ -1,15 +1,11 @@
-<h1 align="center">NCronJob</h1>
+# NCronJob
 
 [![.NET](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml/badge.svg)](https://github.com/NCronJob-Dev/NCronJob/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/dt/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet](https://img.shields.io/nuget/vpre/NCronJob.svg)](https://www.nuget.org/packages/NCronJob)
 [![NuGet Dashboard](https://img.shields.io/nuget/vpre/NCronJob.Dashboard.svg?label=NCronJob.Dashboard)](https://www.nuget.org/packages/NCronJob.Dashboard)
 
-<p align="center">
-  <img src="/assets/showcase.svg" alt="NCronJob showcase: cron with time zones, job chains, conditional runs, runtime control, instant jobs" width="880"/>
-</p>
-
-# NCronJob
+![NCronJob showcase: cron with time zones, job chains, conditional runs, runtime control, instant jobs](https://raw.githubusercontent.com/NCronJob-Dev/NCronJob/main/assets/showcase.svg)
 
 A Job Scheduler sitting on top of `IHostedService` in .NET.
 
@@ -92,7 +88,7 @@ look into a more advanced scheduler like `Hangfire` or `Quartz`.
 Working samples live in:
 
 - [`sample/MinimalSample`](sample/MinimalSample)
-- [`sample/NCronJobSample`](sample/NCronJobSample)
+- [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample)
 - [`sample/RunOnceSample`](sample/RunOnceSample)
 
 For the generic-host examples below, use an ASP.NET app, a worker service, or another project that already references `Microsoft.Extensions.Hosting`.
@@ -219,7 +215,7 @@ Detailed feature docs:
 Sample applications:
 
 - [`sample/MinimalSample`](sample/MinimalSample)
-- [`sample/NCronJobSample`](sample/NCronJobSample)
+- [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample)
 - [`sample/RunOnceSample`](sample/RunOnceSample)
 
 ## Triggering an instant job
@@ -252,16 +248,14 @@ var app = builder.Build();
 app.MapNCronJobDashboard("/ncronjob", endpoints => endpoints.RequireAuthorization("Admin"));
 ```
 
-It shows every registered job and its next run, startup jobs and their state, the dependency graph, and live and recent runs with their parameters. From the dashboard you can enable or disable jobs and trigger instant jobs with a JSON parameter. Run [`sample/NCronJobSample`](sample/NCronJobSample) and open `/ncronjob` to try it. See [Dashboard](https://docs.ncronjob.dev/features/dashboard/) for details.
+It shows every registered job and its next run, startup jobs and their state, the dependency graph, and live and recent runs with their parameters. From the dashboard you can enable or disable jobs and trigger instant jobs with a JSON parameter. Run [`sample/NCronJobSample`](https://github.com/NCronJob-Dev/NCronJob/tree/main/sample/NCronJobSample) and open `/ncronjob` to try it. See [Dashboard](https://docs.ncronjob.dev/features/dashboard/) for details.
 
 ## Support & Contributing
 
 Thanks to all [contributors](https://github.com/NCronJob-Dev/NCronJob/graphs/contributors) and people who are creating
 bug reports and valuable input:
 
-<a href="https://github.com/NCronJob-Dev/NCronJob/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=NCronJob-Dev/NCronJob" alt="Supporters" />
-</a>
+[![Supporters](https://contrib.rocks/image?repo=NCronJob-Dev/NCronJob)](https://github.com/NCronJob-Dev/NCronJob/graphs/contributors)
 
 If you have any questions or suggestions, feel free to open a new issue or pull request.
 Do you want to contribute? Great! We have a predefined codespace for you to get started right away! With that you don't need any local setup and can start right away!
