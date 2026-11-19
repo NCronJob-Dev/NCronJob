@@ -6,6 +6,8 @@ All notable changes to **NCronJob** will be documented in this file. The project
 
 ## [Unreleased]
 
+## [v5.0.1] - 2026-11-19
+
 ### Added
 
 - Delegate jobs (including dependent ones) whose parameters aren't registered in the DI container now fail at startup instead of at their first run. Typed jobs are already covered by `ValidateOnBuild`, which ASP.NET Core enables in Development.
@@ -729,7 +731,8 @@ services.AddNCronJob(options =>
 - Parameterized jobs - instant as well as cron jobs!
 - Integrated in ASP.NET - Access your DI container like you would in any other service
 
-[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v5.0.0...HEAD
+[unreleased]: https://github.com/NCronJob-Dev/NCronJob/compare/v5.0.1...HEAD
+[v5.0.1]: https://github.com/NCronJob-Dev/NCronJob/compare/v5.0.0...v5.0.1
 [v5.0.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.14.0...v5.0.0
 [v4.14.0]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.5...v4.14.0
 [v4.13.5]: https://github.com/NCronJob-Dev/NCronJob/compare/v4.13.2...v4.13.5
