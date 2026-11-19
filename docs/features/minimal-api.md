@@ -45,6 +45,7 @@ builder.Services.AddNCronJob(async (HttpClient httpClient) =>
 There are certain restrictions that can't be enforced at compile time (due to a missing interface) which will lead to a runtime exception:
  
  * The job has to return `void` or `Task`, otherwise an `InvalidOperationException` will be thrown.
+ * Every parameter besides `IJobExecutionContext` and `CancellationToken` has to be registered in the DI container, otherwise the host fails to start with an `InvalidOperationException`.
   
 ## Retry-Support
 The minimal job API does support the [**Retry** model](retry-support.md) as well. The minimal job API leverages the fact that lambdas also can have attributes:

@@ -8,11 +8,14 @@ internal static class DelegateParameterResolver
     public static Func<IServiceProvider, object>?[] BuildServiceResolvers(ParameterInfo[] parameters)
     {
         return parameters.Select(p =>
-            JobParameter.IsExecutionContext(p.ParameterType) || p.ParameterType == typeof(CancellationToken)
-                ? null
-                : new Func<IServiceProvider, object>(sp => sp.GetRequiredService(p.ParameterType))
+            IsService(p.ParameterType)
+                ? new Func<IServiceProvider, object>(sp => sp.GetRequiredService(p.ParameterType))
+                : null
         ).ToArray();
     }
+
+    public static bool IsService(Type parameterType) =>
+        !JobParameter.IsExecutionContext(parameterType) && parameterType != typeof(CancellationToken);
 
     public static object[] ResolveArguments(
         IServiceProvider serviceProvider,

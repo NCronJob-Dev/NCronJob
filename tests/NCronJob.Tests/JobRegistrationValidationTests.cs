@@ -33,6 +33,20 @@ public sealed class JobRegistrationValidationTests : JobIntegrationBase
     }
 
     [Fact]
+    public async Task StartingWithJobDelegatesDependingOnUnregisteredServicesThrows()
+    {
+        ServiceCollection.AddNCronJob(n => n
+            .AddJob<DummyJob>(p => p.WithCronExpression(Cron.AtEveryMinute))
+            .ExecuteWhen(success: s => s.RunJob((IUnregisteredDependentService _) => { })));
+        ServiceCollection.AddNCronJob((IUnregisteredService _, CancellationToken _) => { }, Cron.AtEveryMinute);
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(StartNCronJob);
+
+        exception.Message.ShouldContain(nameof(IUnregisteredService));
+        exception.Message.ShouldContain(nameof(IUnregisteredDependentService));
+    }
+
+    [Fact]
     public async Task TwoJobsWithDifferentDefinitionLeadToTwoExecutions()
     {
         ServiceCollection.AddNCronJob(n => n
@@ -255,4 +269,8 @@ public sealed class JobRegistrationValidationTests : JobIntegrationBase
             }
         },
     };
+
+    private interface IUnregisteredService;
+
+    private interface IUnregisteredDependentService;
 }

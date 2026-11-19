@@ -74,6 +74,7 @@ public static class NCronJobExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
         services.TryAddSingleton<MissingMethodCalledHandler>();
+        services.TryAddSingleton<DelegateServiceValidator>();
 
         return services;
     }
@@ -172,6 +173,7 @@ public static class NCronJobExtensions
     {
         ArgumentNullException.ThrowIfNull(host);
 
+        host.Services.GetRequiredService<DelegateServiceValidator>().EnsureDelegateServicesAreRegistered();
         var jobManager = host.Services.GetRequiredService<StartupJobManager>();
         var stopToken = host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
         await jobManager.ProcessStartupJobs(stopToken);

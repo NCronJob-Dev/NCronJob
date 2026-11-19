@@ -10,6 +10,7 @@ internal sealed partial class QueueWorker : BackgroundService
     private readonly CronRunScheduler cronRunScheduler;
     private readonly ILogger<QueueWorker> logger;
     private readonly MissingMethodCalledHandler missingMethodCalledHandler;
+    private readonly DelegateServiceValidator delegateServiceValidator;
     private readonly WorkerTaskRegistry workerTasks = new();
     private CancellationTokenSource? shutdown;
     private volatile bool isStopping;
@@ -21,6 +22,7 @@ internal sealed partial class QueueWorker : BackgroundService
         CronRunScheduler cronRunScheduler,
         ILogger<QueueWorker> logger,
         MissingMethodCalledHandler missingMethodCalledHandler,
+        DelegateServiceValidator delegateServiceValidator,
         IHostApplicationLifetime lifetime)
     {
         this.jobQueueManager = jobQueueManager;
@@ -28,6 +30,7 @@ internal sealed partial class QueueWorker : BackgroundService
         this.cronRunScheduler = cronRunScheduler;
         this.logger = logger;
         this.missingMethodCalledHandler = missingMethodCalledHandler;
+        this.delegateServiceValidator = delegateServiceValidator;
 
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
     }
@@ -73,6 +76,7 @@ internal sealed partial class QueueWorker : BackgroundService
     public override Task StartAsync(CancellationToken cancellationToken)
     {
         missingMethodCalledHandler.EnsureUseWasCalledWhenStartupJobsExist();
+        delegateServiceValidator.EnsureDelegateServicesAreRegistered();
 
         shutdown?.Dispose();
         shutdown = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
