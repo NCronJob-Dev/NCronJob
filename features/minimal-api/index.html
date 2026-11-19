@@ -189,6 +189,7 @@
 <p>There are certain restrictions that can&rsquo;t be enforced at compile time (due to a missing interface) which will lead to a runtime exception:</p>
 <ul>
 <li>The job has to return <code>void</code> or <code>Task</code>, otherwise an <code>InvalidOperationException</code> will be thrown.</li>
+<li>Every parameter besides <code>IJobExecutionContext</code> and <code>CancellationToken</code> has to be registered in the DI container, otherwise the host fails to start with an <code>InvalidOperationException</code>.</li>
 </ul>
 <h2 id="retry-support">Retry-Support<a class="headerlink" href="#retry-support" title="Permanent link">&para;</a></h2>
 <p>The minimal job API does support the <a href="../retry-support/"><strong>Retry</strong> model</a> as well. The minimal job API leverages the fact that lambdas also can have attributes:</p>
